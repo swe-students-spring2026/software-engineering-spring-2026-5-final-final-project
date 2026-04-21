@@ -6,12 +6,12 @@ An exercise to put to practice software development teamwork, database integrati
 
 This is an open-ended exercise for you to show your mastery of software engineering, with some specific requirements:
 
-- Your software must be composed of at least 2 different subsystems.
+- Your software must be composed of at least 3 different subsystems.
 - One of those subsystems must be a MongoDB database.
-- The other subsystem(s) can be anything of your choosing, but code must be primarily written in Python.
-- If you build more than one custom subsystem, each subsystem's code must reside within its own subdirectory within this "monorepo". If building only one subsystem, you can place the code in the project's main directory.
+- The other subsystems are custom - they can be anything of your choosing. Code must be primarily written in Python.
+- Each custom subsystem's code must reside within its own subdirectory within this "monorepo".
 - Each custom subsystem must be a containerized application, each having its own `Dockerfile` with the image hosted on [Docker Hub](https://hub.docker.com/).
-- Each custom subsystem must have its own CI/CD pipeline using [GitHub Actions](https://docs.github.com/en/actions), with a separate workflow files for each subsystem. These workflows must be triggered by any code change, whether via `push` or merged `pull request`, to the `main` or `master` branch. The workflows must build, test, deliver the images to Docker Hub, and deploy any subsystems that are designed to run online (i.e. any web apps or other online services) to [Digital Ocean](https://m.do.co/c/4d1066078eb0).
+- Each custom subsystem must have its own CI/CD pipeline using [GitHub Actions](https://docs.github.com/en/actions), with a separate workflow files for each subsystem. These workflows must be triggered by any code change, whether via `push` or `pull request`, to the `main`/`master` branch. The workflows must build, test, deliver the images to Docker Hub, and deploy any subsystems that are designed to run online (i.e. any web apps or other online services) to [Digital Ocean](https://m.do.co/c/4d1066078eb0).
 - Each custom subsystem must contain unit tests that provide at least 80% code coverage.
 - You are welcome to use computing platforms such as [Raspberry Pi](https://www.raspberrypi.com/) or other embedded or mobile devices you have available, if they make sense for your project.
 
