@@ -35,8 +35,8 @@ def save_playlist():
     if not data or not isinstance(data.get("tracks"), list):
         return jsonify({"ok": False, "message": "Invalid payload"}), 400
     doc = {
-        "tracks":   data["tracks"],
-        "savedAt":  data.get("savedAt", datetime.now(timezone.utc).isoformat()),
+        "tracks": data["tracks"],
+        "savedAt": data.get("savedAt", datetime.now(timezone.utc).isoformat()),
         "createdAt": datetime.now(timezone.utc),
     }
     result = db["playlists"].insert_one(doc)
