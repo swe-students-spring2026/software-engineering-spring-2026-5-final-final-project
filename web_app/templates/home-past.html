@@ -1,34 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="../static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Afacad:ital,wght@0,400..700;1,400..700&display=swap"
+        rel="stylesheet">
     <title>Home</title>
 </head>
+
 <body>
     <section class="header">
-        <p class="logo"></p>
+        <span class="logo"><img src="../icons/fm copy.svg" alt="fm"></span>
         <h1>FlakeMate</h1>
     </section>
     <section class="nav-up">
-        <a href="/home/past">past</a>
-        <a href="/home/upcoming">upcoming</a>
+        <button class="nav-button-past"><a href="/home">past</a></button>
+        <button class="nav-button-upcoming"><a href="/home">upcoming</a></button>
     </section>
     <section class="content">
-        <h2>past events info</h2>
+        <div class="content-header">
+            <h2>past events info</h2>
+            <a href="/home/past"><img src="../icons/arrow.up.arrow.down.circle.svg" alt="filter"></a>
+        </div>
         <ul class="past-events">
             {% for event in past_events %}
-            <li>{{ event.name }}</li>
-            <li>{{ event.location }} @ {{ event.date }}</li>
-            <li>{{ event.details }}</li>
+            <li class="past-event">
+                <h3>{{ event.name }}</h3>
+                <p>{{ event.location }} @ {{ event.date }}</p>
+                <p>{{ event.details }}</p>
+            </li>
             {% endfor %}
         </ul>
     </section>
     <section class="nav-bottom">
-        <a href="/home/past">past</a>
-        <a href="inbox">inbox</a>
-        <a href="/create">create</a>
-        <a href="/user">user</a>
+        <a href="/home/past"><img src="../icons/calendar (3) 1 copy.svg" alt="calendar"></a>
+        <a href="inbox"><img src="../icons/tray.fill.svg" alt="inbox" /></a>
+        <a href="/create"><img src="../icons/plus.app.svg" alt="create" /></a>
+        <a href="/user"><img src="../icons/person.svg" alt="user" /></a>
 </body>
+
 </html>
