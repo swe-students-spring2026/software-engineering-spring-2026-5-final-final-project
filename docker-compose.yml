@@ -1,0 +1,19 @@
+services:
+  web-app:
+    build: ./web_app
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mongodb
+
+  invite-adjuster:
+    build: ./invite_adjuster
+    ports:
+      - "5001:5000"
+    depends_on:
+      - mongodb
+
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
