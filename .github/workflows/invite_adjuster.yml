@@ -1,0 +1,28 @@
+name: invite_adjuster CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'invite-adjuster/**'
+      - '.github/workflows/invite-adjuster.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'invite-adjuster/**'
+      - '.github/workflows/invite-adjuster.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: invite-adjuster
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+      - run: pip install pipenv
+      - run: pipenv install --dev
+      - run: pipenv run pytest
