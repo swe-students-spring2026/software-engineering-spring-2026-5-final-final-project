@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Web App</title>
+  <style>
+    body { font-family: sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; }
+    h1 { color: #333; }
+    #status { margin-top: 20px; padding: 12px; border-radius: 6px; background: #f0f0f0; }
+    .ok { background: #d4edda; color: #155724; }
+    .error { background: #f8d7da; color: #721c24; }
+  </style>
+</head>
+<body>
+  <h1>Web App</h1>
+  <p>Welcome! This app is connected to MongoDB.</p>
+  <button onclick="checkHealth()">Check DB Connection</button>
+  <div id="status"></div>
+
+  <script>
+    async function checkHealth() {
+      const el = document.getElementById("status");
+      try {
+        const res = await fetch("/health");
+        const data = await res.json();
+        el.textContent = JSON.stringify(data, null, 2);
+        el.className = data.status === "ok" ? "ok" : "error";
+      } catch (e) {
+        el.textContent = "Request failed: " + e;
+        el.className = "error";
+      }
+    }
+  </script>
+</body>
+</html>
