@@ -26,7 +26,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/api-service:latest ./apis
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/api-service:latest -f apis/Dockerfile .
 
       - name: Smoke test
         run: |
