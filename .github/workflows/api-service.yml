@@ -21,22 +21,29 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r apis/requirements.txt
+
+      - name: Run tests
+        working-directory: apis
+        env:
+          GEMINI_API_KEY: test_key_for_ci
+          GEMINI_MODEL: gemini-2.5-flash
+          MONGO_URI: mongodb://localhost:27017/test
+          MONGO_DB_NAME: test
+        run: pytest tests/ --cov=app --cov-report=term-missing --cov-fail-under=80
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Build Docker image
         run: |
           docker build -t ${{ secrets.DOCKER_USERNAME }}/api-service:latest ./apis
-
-      - name: Smoke test
-        run: |
-          docker run --rm \
-            -e MONGO_URI=mongodb://localhost:27017/test \
-            -e MONGO_DB_NAME=test \
-            -e API_INTERNAL_PORT=8000 \
-            -e GEMINI_API_KEY=ci_dummy_key \
-            ${{ secrets.DOCKER_USERNAME }}/api-service:latest \
-            python -c "from app.main import app; print('smoke test passed')"
 
       - name: Log in to Docker Hub
         if: github.event_name == 'push'

@@ -20,6 +20,24 @@ def classes():
     return jsonify(resp.json()), resp.status_code
 
 
+@app.get("/api/schools")
+def schools():
+    resp = requests.get(f"{API_URL}/schools")
+    return jsonify(resp.json()), resp.status_code
+
+
+@app.get("/api/campuses")
+def campuses():
+    resp = requests.get(f"{API_URL}/campuses")
+    return jsonify(resp.json()), resp.status_code
+
+
+@app.post("/api/chat")
+def chat():
+    resp = requests.post(f"{API_URL}/chat", json=request.get_json())
+    return jsonify(resp.json()), resp.status_code
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT") or os.environ.get("FRONTEND_INTERNAL_PORT", "3000"))
     app.run(host="0.0.0.0", port=port)

@@ -21,19 +21,27 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r frontend/requirements.txt
+
+      - name: Run tests
+        working-directory: frontend
+        env:
+          API_URL: http://test-backend:8000
+          FRONTEND_INTERNAL_PORT: "3000"
+        run: pytest tests/ --cov=app --cov-report=term-missing --cov-fail-under=80
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Build Docker image
         run: |
           docker build -t ${{ secrets.DOCKER_USERNAME }}/web-app:latest ./frontend
-
-      - name: Smoke test
-        run: |
-          docker run --rm \
-            -e FRONTEND_INTERNAL_PORT=3000 \
-            ${{ secrets.DOCKER_USERNAME }}/web-app:latest \
-            python -c "from app.main import app; print('smoke test passed')"
 
       - name: Log in to Docker Hub
         if: github.event_name == 'push'
