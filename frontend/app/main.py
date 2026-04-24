@@ -13,10 +13,26 @@ def index():
     return render_template("index.html")
 
 
+@app.get("/schedule")
+def schedule():
+    return render_template("schedule.html")
+
+
 @app.get("/api/classes")
 def classes():
-    params = dict(request.args)
-    resp = requests.get(f"{API_URL}/classes", params=params)
+    resp = requests.get(f"{API_URL}/classes", params=dict(request.args))
+    return jsonify(resp.json()), resp.status_code
+
+
+@app.get("/api/schools")
+def schools():
+    resp = requests.get(f"{API_URL}/classes/schools")
+    return jsonify(resp.json()), resp.status_code
+
+
+@app.get("/api/campuses")
+def campuses():
+    resp = requests.get(f"{API_URL}/classes/campuses")
     return jsonify(resp.json()), resp.status_code
 
 
