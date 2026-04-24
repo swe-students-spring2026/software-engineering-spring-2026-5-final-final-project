@@ -17,7 +17,10 @@ except ModuleNotFoundError:
 
 load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
+from app.routes.chat import chat_bp
+
 app = Flask(__name__)
+app.register_blueprint(chat_bp)
 
 mongo_uri = os.getenv("MONGO_URI")
 mongo_db_name = os.getenv("MONGO_DB_NAME")
@@ -110,4 +113,5 @@ def get_program_requirements():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.getenv("API_INTERNAL_PORT", "8000")))
+    port = int(os.environ.get("PORT") or os.environ.get("API_INTERNAL_PORT", "8000"))
+    app.run(host="0.0.0.0", port=port)

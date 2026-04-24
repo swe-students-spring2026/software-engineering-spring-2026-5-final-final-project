@@ -12,6 +12,8 @@ services:
       MONGO_URI: ${MONGO_URI}
       MONGO_DB_NAME: ${MONGO_DB_NAME}
       API_INTERNAL_PORT: ${API_INTERNAL_PORT}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash}
     ports:
       - "${API_PORT}:${API_INTERNAL_PORT}"
 
