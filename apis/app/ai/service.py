@@ -39,7 +39,7 @@ def chat(user_message: str) -> str:
     Returns the model's final plain-text reply.
     """
     contents: list[types.Content] = [
-        types.Content(role="user", parts=[types.Part.from_text(user_message)])
+        types.Content(role="user", parts=[types.Part.from_text(text=user_message)])
     ]
 
     response = _client.models.generate_content(
