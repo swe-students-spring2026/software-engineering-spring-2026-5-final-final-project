@@ -3,7 +3,7 @@
 ## 1. Project Overview
 
 Project Name: AI Course Selection Assistant  
-Type: Full-stack web application with AI-powered planning  
+Type: Full-stack web application with AI-powered planning
 
 This project is a web application that helps students plan their semester by combining:
 
@@ -27,17 +27,12 @@ Users can:
 
 ### 2.2 Section-Level Details
 Each course may have multiple sections. Each section includes:
-- Professor/instructor
+- Section number
 - Meeting days and times
-- Location (if available)
+- Location if available
 - Enrollment status: Open / Closed / Waitlisted
 
-### 2.3 Professor Lookup
-- Display instructor name
-- Provide link to RateMyProfessors search
-- Optional cached rating data (non-critical)
-
-### 2.4 AI Course Recommendation
+### 2.3 AI Course Recommendation
 Users provide:
 - Completed courses
 - Intended major
@@ -49,13 +44,13 @@ The AI:
 - Avoids schedule conflicts
 - Suggests best courses
 
-### 2.5 Schedule Builder
+### 2.4 Schedule Builder
 - Add/remove course sections
 - Detect time conflicts
 - Generate weekly schedule
 - Export schedule
 
-### 2.6 Enrollment Status Refresh
+### 2.5 Enrollment Status Refresh
 Users can:
 - View enrollment status
 - Click refresh to trigger targeted scraping
@@ -88,7 +83,7 @@ Catalog Scraper:
 Section Scraper:
 - On-demand
 - Uses browser automation
-- Collects professor, time, status
+- Collects meeting time, section metadata, and enrollment status
 
 ### Database
 Uses MongoDB
@@ -101,33 +96,36 @@ Bulletins API:
 Albert/Public Search:
 - Section-level data
 
-RateMyProfessors:
-- Optional linking
-
 ## 5. Data Model
 
 Course:
+```json
 {
   "course_code": "CSCI-UA-101",
   "title": "...",
   "description": "...",
   "credits": 4
 }
+```
 
 Section:
+```json
 {
   "course_code": "CSCI-UA-101",
   "section": "001",
-  "professor": "...",
+  "meeting_times": "...",
   "status": "Open"
 }
+```
 
 User:
+```json
 {
   "user_id": "...",
   "taken_courses": [],
   "major": "..."
 }
+```
 
 ## 6. AI Responsibilities
 
@@ -141,11 +139,13 @@ User:
 - Data may be incomplete
 - External APIs may change
 - Not all majors supported
+- Professor-specific data is out of scope for the current version
 
 ## 8. Non-Goals
 
 - Perfect transcript parsing
 - Real-time registration integration
+- Professor analytics or rating aggregation
 
 ## 9. Guidelines
 
@@ -156,6 +156,6 @@ User:
 
 ## 10. Future
 
-- Multi-university
-- NLP parsing
+- Multi-university support
+- NLP transcript parsing
 - GPA optimization

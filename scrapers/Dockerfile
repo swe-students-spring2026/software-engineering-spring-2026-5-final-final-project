@@ -1,4 +1,5 @@
-FROM python:3.14
+ARG PYTHON_IMAGE_TAG=3.14
+FROM python:${PYTHON_IMAGE_TAG}
 
 WORKDIR /app
 
@@ -7,5 +8,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Default: list available schools (safe smoke-test; override CMD to run a real scrape)
 CMD ["python", "scraper.py", "--list-schools"]

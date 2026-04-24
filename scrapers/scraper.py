@@ -1,14 +1,16 @@
 import argparse
-import csv
 import json
+import os
 import re
 import sys
 import time
 import urllib.parse
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional
 
 import requests
+from dotenv import load_dotenv
 
 BASE = "https://bulletins.nyu.edu/class-search/api/"
 HEADERS = {
@@ -366,6 +368,89 @@ def save_filter_schema(term_code: str, path: str):
 
 
 # ── CLI ────────────────────────────────────────────────────────────────────────
+
+def load_env() -> None:
+    load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+
+
+def get_mongo_settings() -> tuple[str, str]:
+    load_env()
+    mongo_uri = os.getenv("MONGO_URI")
+    mongo_db_name = os.getenv("MONGO_DB_NAME")
+    if not mongo_uri or not mongo_db_name:
+        raise RuntimeError("Missing MONGO_URI or MONGO_DB_NAME in the environment or repo root .env.")
+    return mongo_uri, mongo_db_name
+
+
+def scrape_all_schools_for_term(
+    term_code: str,
+    *,
+    fetch_details: bool = True,
+    delay: float = 0.1,
+) -> list[dict]:
+    docs: list[dict] = []
+    seen_ids: set[str] = set()
+
+    for school_name, school_code in SCHOOL_CODES.items():
+        print(f"Fetching {school_name} for term {term_code}...", flush=True)
+        results = search(term_code, [{"field": "coll", "value": school_code}])
+        print(f"  Found {len(results)} classes.", flush=True)
+
+        for result in results:
+            code_full = result.get("code", "")
+            subject_code, catalog_number = split_code(code_full)
+            section = result.get("no", "")
+            doc_id = make_id(term_code, subject_code, catalog_number, section)
+            if doc_id in seen_ids:
+                continue
+
+            details = None
+            if fetch_details:
+                details = get_class_details(code_full, result.get("crn", ""), term_code)
+                time.sleep(delay)
+
+            docs.append(result_to_document(result, term_code, details))
+            seen_ids.add(doc_id)
+
+    return docs
+
+
+def find_course_result(
+    term_code: str,
+    *,
+    code: str,
+    crn: str | None = None,
+    section: str | None = None,
+) -> dict | None:
+    subject_code, _ = split_code(code)
+    if not subject_code:
+        return None
+
+    results = search(term_code, [{"field": "subject", "value": subject_code}])
+    for result in results:
+        if result.get("code", "").strip() != code.strip():
+            continue
+        if crn and result.get("crn", "").strip() == str(crn).strip():
+            return result
+        if section and result.get("no", "").strip() == str(section).strip():
+            return result
+    return None
+
+
+def refresh_course_document(
+    term_code: str,
+    *,
+    code: str,
+    crn: str | None = None,
+    section: str | None = None,
+) -> dict | None:
+    result = find_course_result(term_code, code=code, crn=crn, section=section)
+    if not result:
+        return None
+
+    details = get_class_details(result.get("code", ""), result.get("crn", ""), term_code)
+    return result_to_document(result, term_code, details)
+
 
 def main():
     p = argparse.ArgumentParser(description="NYU Course Scraper — Full Details + MongoDB")
