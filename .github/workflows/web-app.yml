@@ -1,0 +1,48 @@
+name: Frontend CI/CD
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/web-app.yml"
+  pull_request:
+    branches: [main, master]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/web-app.yml"
+
+jobs:
+  build-test-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/web-app:latest ./frontend
+
+      - name: Smoke test
+        run: |
+          docker run --rm \
+            -e FRONTEND_INTERNAL_PORT=3000 \
+            ${{ secrets.DOCKER_USERNAME }}/web-app:latest \
+            python -c "from app.main import app; print('smoke test passed')"
+
+      - name: Log in to Docker Hub
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Push to Docker Hub
+        if: github.event_name == 'push'
+        run: |
+          docker push ${{ secrets.DOCKER_USERNAME }}/web-app:latest
