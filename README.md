@@ -1,115 +1,157 @@
 # Final Project
 
-![API CI/CD badge](https://github.com/<owner>/<repo>/actions/workflows/apis.yml/badge.svg)
-![Frontend CI/CD badge](https://github.com/<owner>/<repo>/actions/workflows/frontend.yml/badge.svg)
+![API CI/CD](https://github.com/swe-students-spring2026/5-final-final_project/actions/workflows/api-service.yml/badge.svg)
+![Frontend CI/CD](https://github.com/swe-students-spring2026/5-final-final_project/actions/workflows/web-app.yml/badge.svg)
+![Scraper CI/CD](https://github.com/swe-students-spring2026/5-final-final_project/actions/workflows/scraper.yml/badge.svg)
 
 An exercise to practice software development teamwork, database integration, containers, deployment, and CI/CD pipelines.
 
 ## Overview
 
-This repository is...
+This repository contains three subsystems:
 
-- MongoDB as the backing database
-- `apis`, a Flask-based API service
-- `frontend`, a Flask-based web frontend
+- **`apis/`** — Flask API service (port 8000). Connects to MongoDB and exposes `/health`, `/classes`, and `/chat` (Gemini AI).
+- **`frontend/`** — Flask web frontend (port 3000). Proxies class search to the API and serves the UI.
+- **`scrapers/`** — CLI scraper that pulls course data from the NYU bulletin and writes to MongoDB or JSON files.
 
-The API service exposes a `/health` endpoint and the frontend service serves a simple landing response. Both custom services run in their own containers and are orchestrated with Docker Compose alongside MongoDB.
-
-## Container Images
-
-Replace the placeholder links below with the published Docker Hub repositories for each custom subsystem.
-
-- API image: `https://hub.docker.com/r/<dockerhub-namespace>/<api-image-name>`
-- Frontend image: `https://hub.docker.com/r/<dockerhub-namespace>/<frontend-image-name>`
+MongoDB is **not** containerized in production. It is provided as an external Atlas connection string via `MONGO_URI`.
 
 ## Team
 
 - [Robin Chen](https://github.com/localhost433)
 - [Minho Eune](https://github.com/minhoeune)
-- 
-- 
-- 
 
-## Requirements
+## Docker Hub Repositories
 
-- Docker Desktop or the Docker Engine with Docker Compose
-- Python 3.14 only if you want to run the Flask apps outside containers
-- A MongoDB account is not required for local development because the database runs in a container
+Create the following public repositories on Docker Hub before running CI/CD:
 
-## Configuration
+| Subsystem | Docker Hub repo |
+|---|---|
+| API service | `kylec55/api-service` |
+| Frontend | `kylec55/web-app` |
+| Scraper | `kylec55/scraper` |
 
-1. Copy the example environment file into place:
 
- ```bash
- cp .env.example .env
- ```
+## GitHub Secrets Required
 
-1. Update the values in `.env` before starting the stack.
+Add these secrets in **Settings → Secrets and variables → Actions** on GitHub:
 
-2. At minimum, change `MONGO_INITDB_ROOT_PASSWORD` from the dummy value in the example file.
+| Secret | Description |
+|---|---|
+| `DOCKER_USERNAME` | Your Docker Hub username |
+| `DOCKER_PASSWORD` | Your Docker Hub password or access token |
+| `GEMINI_API_KEY` | Google Gemini API key (used by the API service) |
 
-The current example configuration lives in [`.env.example`](.env.example).
+## CI/CD Workflows
 
-### Environment Variables
+Each subsystem has its own workflow under `.github/workflows/`:
 
-The Compose file expects the following values:
+| File | Triggers on changes to | Pushes image to |
+|---|---|---|
+| `api-service.yml` | `apis/**` | `DOCKER_USERNAME/api-service:latest` |
+| `web-app.yml` | `frontend/**` | `DOCKER_USERNAME/web-app:latest` |
+| `scraper.yml` | `scrapers/**` | `DOCKER_USERNAME/scraper:latest` |
 
-- `PYTHON_IMAGE_TAG`
-- `MONGO_IMAGE_TAG`
-- `MONGO_CONTAINER_NAME`
-- `API_CONTAINER_NAME`
-- `FRONTEND_CONTAINER_NAME`
-- `MONGO_INITDB_ROOT_USERNAME`
-- `MONGO_INITDB_ROOT_PASSWORD`
-- `MONGO_DB_NAME`
-- `MONGO_HOST`
-- `MONGO_PORT`
-- `MONGO_INTERNAL_PORT`
-- `MONGO_AUTH_SOURCE`
-- `API_PORT`
-- `API_INTERNAL_PORT`
-- `FRONTEND_PORT`
-- `FRONTEND_INTERNAL_PORT`
+Workflows run on every push and pull request to `main`/`master`. The Docker image is only pushed to Docker Hub on a push to `main`/`master` (not on PRs).
 
-## Run Locally
+## DigitalOcean App Platform Deployment
 
-1. Install Docker Desktop on your platform.
-2. Clone the repository.
-3. Create `.env` from `.env.example` and update the secrets.
-4. Start the stack:
+1. Go to **App Platform → Create App → Docker Hub**.
+2. Add two services (the scraper runs manually, not as an App Platform service):
 
- ```bash
- docker compose up --build
- ```
+**API service**
+- Source: `kylec55/api-service:latest`
+- HTTP port: `8000`
+- Environment variables:
+  - `MONGO_URI` = your Atlas connection string
+  - `MONGO_DB_NAME` = `final_project`
+  - `GEMINI_API_KEY` = your Gemini key
+  - `GEMINI_MODEL` = `gemini-2.0-flash`
 
-5. Open the services in your browser:
+**Frontend**
+- Source: `kylec55/web-app:latest`
+- HTTP port: `3000`
+- Environment variables:
+  - `API_URL` = the internal URL of the API service (e.g. `http://api-service:8000`)
 
+> DigitalOcean injects a `PORT` environment variable automatically. Both services read `PORT` first, then fall back to their own port variable, so no extra config is needed.
+
+## Run Locally with Docker
+
+### Run the API service only
+
+```bash
+docker run --rm -p 8000:8000 \
+  -e MONGO_URI="your-atlas-uri" \
+  -e MONGO_DB_NAME=final_project \
+  -e GEMINI_API_KEY="your-key" \
+  kylec55/api-service:latest
+```
+
+### Run the frontend only
+
+```bash
+docker run --rm -p 3000:3000 \
+  -e API_URL=http://host.docker.internal:8000 \
+  kylec55/web-app:latest
+```
+
+### Run the scraper
+
+```bash
+# List available schools
+docker run --rm kylec55/scraper:latest
+
+# Scrape a subject and save to MongoDB
+docker run --rm \
+  kylec55/scraper:latest \
+  python scraper.py --term 1268 --subject CSCI-UA --details \
+    --to-mongo "your-atlas-uri"
+```
+
+### Run the full local stack with Docker Compose
+
+```bash
+cp .env.example .env
+# Edit .env and fill in MONGO_URI, GEMINI_API_KEY, etc.
+docker compose up --build
+```
+
+Services:
 - Frontend: `http://localhost:3000`
 - API health check: `http://localhost:8000/health`
-- MongoDB: `localhost:27017`
 
-To stop the stack, run:
+To stop:
 
 ```bash
 docker compose down
 ```
 
-## Database Setup
+## Configuration
 
-MongoDB starts with an empty data volume the first time you bring the stack up. There is currently no starter data import script, so no additional seeding step is required.
+Copy the example env file and fill in your values:
 
-If you later add starter data, document the import command here and commit the seed file or script alongside it.
+```bash
+cp .env.example .env
+```
+
+### Environment Variables
+
+| Variable | Used by | Description |
+|---|---|---|
+| `MONGO_URI` | `apis`, `scrapers` | Full MongoDB connection string |
+| `MONGO_DB_NAME` | `apis` | Database name, e.g. `final_project` |
+| `GEMINI_API_KEY` | `apis` | Google Gemini API key |
+| `GEMINI_MODEL` | `apis` | Model name, default `gemini-2.0-flash` |
+| `API_URL` | `frontend` | Internal URL of the API service |
+| `API_PORT` / `API_INTERNAL_PORT` | `apis` | External / internal port (default `8000`) |
+| `FRONTEND_PORT` / `FRONTEND_INTERNAL_PORT` | `frontend` | External / internal port (default `3000`) |
+| `PYTHON_IMAGE_TAG` | Docker build | Python base image version, default `3.14` |
 
 ## Development Notes
 
-- `apis/app/main.py` contains the API entrypoint.
-- `frontend/app/main.py` contains the frontend entrypoint.
-- Each subsystem has its own `Dockerfile` and is built independently by Compose.
-- The API service reads `MONGO_URI`, `MONGO_DB_NAME`, and `API_INTERNAL_PORT` from the environment.
-- The frontend service reads `FRONTEND_INTERNAL_PORT` from the environment.
-
-## CI/CD
-
-Each custom subsystem should have its own GitHub Actions workflow that runs on pushes and pull requests to `main` or `master`, builds the image, runs tests, publishes to Docker Hub, and deploys the online service when appropriate.
-
-When those workflows are added, link them here and keep the badges above in sync.
+- `apis/app/main.py` — API entrypoint; registers the chat blueprint and the `/classes` route.
+- `frontend/app/main.py` — Frontend entrypoint; proxies class search to the API.
+- `apis/app/ai/` — Gemini AI client, tool-calling loop, and mock tool handlers.
+- `scrapers/scraper.py` — Full scraper CLI; run with `--help` to see all options.
+- Each subsystem has its own `Dockerfile` and `requirements.txt`.
