@@ -174,55 +174,10 @@
     let pendingLecture = null, pendingRcts = [], selectedRct = null;
     const sectionMap = {};
 
-    // ── Day parsing from meets_human (source of truth) ──
-    // meets_human uses: M=Mon, T=Tue, W=Wed, R=Thu, F=Fri
-    const MEETS_DAY_MAP = { M: 0, T: 1, W: 2, R: 3, F: 4 };
-
-    function parseMeetsHuman(meetsHuman) {
-      // e.g. "MWF 9:30-10:45a", "TR 2-3:15p", "M 6:20-8:50p"
-      if (!meetsHuman) return [];
-      const match = meetsHuman.match(/^([MTWRF]+)\s+([\d:]+[ap]?)-([\d:]+[ap]?)/);
-      if (!match) return [];
-      const [, dayStr, startRaw, endRaw] = match;
-
-      // Parse days — handle "TR", "MWF", "MW" etc.
-      const days = [];
-      let i = 0;
-      while (i < dayStr.length) {
-        if (dayStr[i] === 'T' && dayStr[i+1] === 'h') { days.push(3); i += 2; } // Th edge case
-        else {
-          const d = MEETS_DAY_MAP[dayStr[i]];
-          if (d !== undefined) days.push(d);
-          i++;
-        }
-      }
-
-      // Parse times to HH:MM 24h
-      function parseHM(raw) {
-        const suffix = raw.slice(-1);
-        const clean = (suffix === 'a' || suffix === 'p') ? raw.slice(0, -1) : raw;
-        const [h, m] = clean.includes(':') ? clean.split(':').map(Number) : [parseInt(clean), 0];
-        return { h, m: m || 0, suffix };
-      }
-      function to24(h, m, isPm) {
-        if (isPm && h !== 12) h += 12;
-        if (!isPm && h === 12) h = 0;
-        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-      }
-
-      const s = parseHM(startRaw);
-      const e = parseHM(endRaw);
-      // Infer am/pm: end suffix is most reliable, then infer start from end
-      const endIsPm   = e.suffix === 'p' ? true
-                      : e.suffix === 'a' ? false
-                      : e.h < 8; // no suffix, assume pm unless clearly morning
-      const startIsPm = s.suffix === 'p' ? true
-                      : s.suffix === 'a' ? false
-                      : endIsPm && s.h <= e.h; // inherit from end when no suffix
-      const start = to24(s.h, s.m, startIsPm);
-      const end   = to24(e.h, e.m, endIsPm);
-
-      return days.map(d => ({ dayIdx: d, start, end }));
+    function getMeetingSlots(section) {
+      return (section?.meeting_times || [])
+        .filter(t => t.start && t.end && typeof t.day_num === "number")
+        .map(t => ({ dayIdx: t.day_num, start: t.start, end: t.end }));
     }
 
     function timeToFrac(t) {
@@ -242,7 +197,7 @@
 
     // ── Conflict detection ──
     function getSectionSlots(sec) {
-      return parseMeetsHuman(sec.meets_human).map(({ dayIdx, start, end }) => ({
+      return getMeetingSlots(sec).map(({ dayIdx, start, end }) => ({
         dayIdx, start: timeToFrac(start), end: timeToFrac(end)
       }));
     }
@@ -478,7 +433,7 @@
 
       schedule.forEach(({ lecture, recitation, color }) => {
         [lecture, recitation].filter(Boolean).forEach(sec => {
-          parseMeetsHuman(sec.meets_human).forEach(({ dayIdx, start, end }) => {
+          getMeetingSlots(sec).forEach(({ dayIdx, start, end }) => {
             const startFrac = timeToFrac(start);
             const endFrac   = timeToFrac(end);
             const hourCell  = Math.floor(startFrac);

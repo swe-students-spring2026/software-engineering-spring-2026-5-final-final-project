@@ -67,49 +67,14 @@
     const DAYS = ["Mon","Tue","Wed","Thu","Fri"];
     const HOUR_START = 8, HOUR_END = 22;
     const PX_PER_HOUR = 60;
-    const MEETS_DAY_MAP = { M: 0, T: 1, W: 2, R: 3, F: 4 };
 
     let schedule = JSON.parse(localStorage.getItem("nyu_schedule") || "[]");
     function saveSchedule() { localStorage.setItem("nyu_schedule", JSON.stringify(schedule)); }
 
-    function parseMeetsHuman(meetsHuman) {
-      if (!meetsHuman) return [];
-      const match = meetsHuman.match(/^([MTWRF]+)\s+([\d:]+[ap]?)-([\d:]+[ap]?)/);
-      if (!match) return [];
-      const [, dayStr, startRaw, endRaw] = match;
-
-      const days = [];
-      let i = 0;
-      while (i < dayStr.length) {
-        const d = MEETS_DAY_MAP[dayStr[i]];
-        if (d !== undefined) days.push(d);
-        i++;
-      }
-
-      function parseHM(raw) {
-        const suffix = raw.slice(-1);
-        const clean = (suffix === 'a' || suffix === 'p') ? raw.slice(0, -1) : raw;
-        const [h, m] = clean.includes(':') ? clean.split(':').map(Number) : [parseInt(clean), 0];
-        return { h, m: m || 0, suffix };
-      }
-      function to24(h, m, isPm) {
-        if (isPm && h !== 12) h += 12;
-        if (!isPm && h === 12) h = 0;
-        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-      }
-
-      const s = parseHM(startRaw);
-      const e = parseHM(endRaw);
-      const endIsPm   = e.suffix === 'p' ? true
-                      : e.suffix === 'a' ? false
-                      : e.h < 8;
-      const startIsPm = s.suffix === 'p' ? true
-                      : s.suffix === 'a' ? false
-                      : endIsPm && s.h <= e.h;
-      const start = to24(s.h, s.m, startIsPm);
-      const end   = to24(e.h, e.m, endIsPm);
-
-      return days.map(d => ({ dayIdx: d, start, end }));
+    function getMeetingSlots(section) {
+      return (section?.meeting_times || [])
+        .filter(t => t.start && t.end && typeof t.day_num === "number")
+        .map(t => ({ dayIdx: t.day_num, start: t.start, end: t.end }));
     }
 
     function timeToFrac(t) {
@@ -147,7 +112,7 @@
       schedule.forEach(({ lecture, recitation, color }) => {
         [lecture, recitation].filter(Boolean).forEach(sec => {
           const isRct = recitation && sec.crn === recitation.crn;
-          parseMeetsHuman(sec.meets_human).forEach(({ dayIdx, start, end }) => {
+          getMeetingSlots(sec).forEach(({ dayIdx, start, end }) => {
             const startFrac = timeToFrac(start);
             const endFrac   = timeToFrac(end);
             const hourCell  = Math.floor(startFrac);
