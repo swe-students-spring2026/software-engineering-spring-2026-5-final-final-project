@@ -2,29 +2,27 @@ from __future__ import annotations
 
 from typing import Any
 
-try:
-    from apis.app.scrapers.bulletins import NYUBulletinScraper
-except ModuleNotFoundError:
-    from scrapers.bulletins import NYUBulletinScraper
-
-
 class RequirementsService:
-    """Application-facing wrapper around bulletin scraping logic."""
+    """Read program requirements from MongoDB for API responses."""
 
-    def __init__(self, scraper: NYUBulletinScraper | None = None) -> None:
-        self.scraper = scraper or NYUBulletinScraper()
+    def __init__(self, db: Any, collection_name: str = "program_requirements") -> None:
+        self.collection = db[collection_name]
 
     def list_undergraduate_programs(self) -> list[dict[str, Any]]:
-        programs = self.scraper.collect_undergraduate_program_links()
-        return [
+        cursor = self.collection.find(
+            {},
             {
-                "title": program.title,
-                "url": program.url,
-                "school": program.school,
-                "award": program.award,
-            }
-            for program in programs
-        ]
+                "_id": 0,
+                "title": 1,
+                "url": 1,
+                "school": 1,
+                "award": 1,
+                "source.bulletin_year": 1,
+                "scraped_at": 1,
+            },
+        ).sort("title", 1)
+        return list(cursor)
 
     def fetch_program_requirements(self, url: str) -> dict[str, Any]:
-        return self.scraper.scrape_program(url)
+        program = self.collection.find_one({"url": url}, {"_id": 0})
+        return program or {}

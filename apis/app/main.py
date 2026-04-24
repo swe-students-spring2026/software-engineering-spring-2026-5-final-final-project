@@ -25,7 +25,7 @@ if not mongo_uri or not mongo_db_name:
 
 client = MongoClient(mongo_uri)
 db = client[mongo_db_name]
-requirements_service = RequirementsService()
+requirements_service = RequirementsService(db)
 
 
 @app.get("/health")
@@ -64,6 +64,8 @@ def get_program_requirements():
         return jsonify({"error": "missing required query parameter: url"}), 400
 
     program = requirements_service.fetch_program_requirements(url)
+    if not program:
+        return jsonify({"error": "program not found"}), 404
     return jsonify(program)
 
 

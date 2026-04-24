@@ -1,16 +1,22 @@
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup, Tag
+from dotenv import load_dotenv
+from pymongo import MongoClient, UpdateOne
 
 
 BASE_URL = "https://bulletins.nyu.edu"
 PROGRAM_FINDER_URL = f"{BASE_URL}/programs/"
 USER_AGENT = "ai-course-selection-assistant/0.1"
+COLLECTION_NAME = "program_requirements"
 
 
 @dataclass(frozen=True)
@@ -64,36 +70,42 @@ class NYUBulletinScraper:
 
     def scrape_program(self, url: str) -> dict[str, Any]:
         soup = self.get_soup(url)
-        title = self._clean_text(soup.select_one("h1").get_text(" ", strip=True)) if soup.select_one("h1") else ""
+        title_node = soup.select_one("h1")
+        title = self._clean_text(title_node.get_text(" ", strip=True)) if title_node else ""
+        award = self._extract_award_from_title(title)
 
         return {
+            "_id": url,
             "url": url,
             "title": title,
+            "school": self._extract_school_from_page(soup),
+            "award": award,
             "program_description": self._extract_section_text(
                 soup,
-                {
-                    "Program Description",
-                    "Program Overview",
-                },
+                {"Program Description", "Program Overview"},
             ),
             "program_requirements": self._extract_section_text(
                 soup,
-                {
-                    "Program Requirements",
-                    "Major Requirements",
-                    "Minor Requirements",
-                    "Curriculum",
-                },
+                {"Program Requirements", "Major Requirements", "Minor Requirements", "Curriculum"},
             ),
             "policies": self._extract_section_text(
                 soup,
-                {
-                    "Policies",
-                    "Program Policies",
-                },
+                {"Policies", "Program Policies"},
             ),
             "tables": self._extract_tables(soup),
+            "source": {
+                "system": "nyu_bulletins",
+                "url": url,
+                "bulletin_year": self._extract_bulletin_year(soup),
+            },
+            "scraped_at": datetime.now(timezone.utc),
         }
+
+    def scrape_all_programs(self, *, limit: int = 0) -> list[dict[str, Any]]:
+        programs = self.collect_undergraduate_program_links()
+        if limit > 0:
+            programs = programs[:limit]
+        return [self.scrape_program(program.url) for program in programs]
 
     def _extract_section_text(self, soup: BeautifulSoup, titles: set[str]) -> str:
         for heading in soup.select("h2, h3, h4"):
@@ -153,5 +165,56 @@ class NYUBulletinScraper:
                 return school
         return None
 
+    def _extract_school_from_page(self, soup: BeautifulSoup) -> str | None:
+        breadcrumbs = [self._clean_text(node.get_text(" ", strip=True)) for node in soup.select(".breadcrumb li, nav li")]
+        for breadcrumb in breadcrumbs:
+            school = self._extract_school_from_anchor_text(breadcrumb)
+            if school:
+                return school
+        return None
+
+    def _extract_bulletin_year(self, soup: BeautifulSoup) -> str | None:
+        page_text = self._clean_text(soup.get_text(" ", strip=True))
+        for token in page_text.split():
+            if len(token) == 9 and token[4] == "-" and token[:4].isdigit() and token[5:].isdigit():
+                return token
+        return None
+
     def _clean_text(self, value: str) -> str:
         return " ".join(value.split())
+
+
+def save_programs_to_mongo(
+    docs: list[dict[str, Any]],
+    mongo_uri: str,
+    db_name: str,
+    *,
+    collection: str = COLLECTION_NAME,
+) -> None:
+    client = MongoClient(mongo_uri)
+    coll = client[db_name][collection]
+
+    coll.create_index("url", unique=True)
+    coll.create_index("title")
+    coll.create_index("award")
+    coll.create_index("school")
+    coll.create_index([("title", "text"), ("program_requirements", "text"), ("program_description", "text")])
+
+    if not docs:
+        return
+
+    operations = [UpdateOne({"_id": doc["_id"]}, {"$set": doc}, upsert=True) for doc in docs]
+    coll.bulk_write(operations, ordered=False)
+
+
+def load_env() -> None:
+    load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+
+
+def get_mongo_settings() -> tuple[str, str]:
+    load_env()
+    mongo_uri = os.getenv("MONGO_URI")
+    mongo_db_name = os.getenv("MONGO_DB_NAME")
+    if not mongo_uri or not mongo_db_name:
+        raise RuntimeError("Missing MONGO_URI or MONGO_DB_NAME in the environment or repo root .env.")
+    return mongo_uri, mongo_db_name
