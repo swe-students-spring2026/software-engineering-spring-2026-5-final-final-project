@@ -24,6 +24,12 @@ def classes():
     return jsonify(resp.json()), resp.status_code
 
 
+@app.post("/api/chat")
+def chat():
+    resp = requests.post(f"{API_URL}/chat", json=request.get_json(silent=True) or {})
+    return jsonify(resp.json()), resp.status_code
+
+
 @app.get("/api/schools")
 def schools():
     resp = requests.get(f"{API_URL}/classes/schools")
