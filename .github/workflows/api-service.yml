@@ -43,7 +43,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/api-service:latest ./apis
+          docker build -t ${{ secrets.DOCKER_USERNAME || 'kylec55' }}/api-service:latest -f apis/Dockerfile .
 
       - name: Log in to Docker Hub
         if: github.event_name == 'push'
@@ -55,4 +55,4 @@ jobs:
       - name: Push to Docker Hub
         if: github.event_name == 'push'
         run: |
-          docker push ${{ secrets.DOCKER_USERNAME }}/api-service:latest
+          docker push ${{ secrets.DOCKER_USERNAME || 'kylec55' }}/api-service:latest

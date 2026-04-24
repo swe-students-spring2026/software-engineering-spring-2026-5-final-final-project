@@ -41,7 +41,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/web-app:latest ./frontend
+          docker build -t ${{ secrets.DOCKER_USERNAME || 'kylec55' }}/web-app:latest ./frontend
 
       - name: Log in to Docker Hub
         if: github.event_name == 'push'
@@ -53,4 +53,4 @@ jobs:
       - name: Push to Docker Hub
         if: github.event_name == 'push'
         run: |
-          docker push ${{ secrets.DOCKER_USERNAME }}/web-app:latest
+          docker push ${{ secrets.DOCKER_USERNAME || 'kylec55' }}/web-app:latest

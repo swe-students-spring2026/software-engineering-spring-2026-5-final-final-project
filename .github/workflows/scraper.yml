@@ -26,12 +26,12 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/scraper:latest ./scrapers
+          docker build -t ${{ secrets.DOCKER_USERNAME || 'kylec55' }}/scraper:latest ./scrapers
 
       - name: Smoke test
         run: |
           docker run --rm \
-            ${{ secrets.DOCKER_USERNAME }}/scraper:latest \
+            ${{ secrets.DOCKER_USERNAME || 'kylec55' }}/scraper:latest \
             python scraper.py --list-schools
 
       - name: Log in to Docker Hub
@@ -44,4 +44,4 @@ jobs:
       - name: Push to Docker Hub
         if: github.event_name == 'push'
         run: |
-          docker push ${{ secrets.DOCKER_USERNAME }}/scraper:latest
+          docker push ${{ secrets.DOCKER_USERNAME || 'kylec55' }}/scraper:latest
