@@ -24,6 +24,7 @@ services:
     restart: unless-stopped
     environment:
       FRONTEND_INTERNAL_PORT: ${FRONTEND_INTERNAL_PORT}
+      API_URL: http://backend:8000
     ports:
       - "${FRONTEND_PORT}:${FRONTEND_INTERNAL_PORT}"
     depends_on:
