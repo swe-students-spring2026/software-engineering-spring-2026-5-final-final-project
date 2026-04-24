@@ -8,6 +8,7 @@ COPY apis/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY apis/app ./app
+COPY scrapers ./scrapers
 
 EXPOSE ${API_INTERNAL_PORT}
 
