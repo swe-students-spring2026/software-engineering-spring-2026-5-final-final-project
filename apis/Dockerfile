@@ -4,12 +4,12 @@ ARG API_INTERNAL_PORT=8000
 
 WORKDIR /app
 
-COPY apis/requirements.txt ./apis/requirements.txt
-RUN pip install --no-cache-dir -r ./apis/requirements.txt
+COPY apis/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-COPY apis ./apis
+COPY apis/app ./app
 COPY scrapers ./scrapers
 
 EXPOSE ${API_INTERNAL_PORT}
 
-CMD ["python", "-m", "apis.app.main"]
+CMD ["python", "-m", "app.main"]
