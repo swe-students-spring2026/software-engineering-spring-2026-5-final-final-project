@@ -17,8 +17,18 @@ def health():
 @app.get("/classes")
 def get_classes():
     term = request.args.get("term")
-    query = {"term_code": term} if term else {}
-    classes = list(db.classes.find(query, {"_id": 0}))
+    q = request.args.get("q")
+    query = {}
+    if term:
+        query["term.code"] = term
+    if q:
+        query["$or"] = [
+            {"title": {"$regex": q, "$options": "i"}},
+            {"code": {"$regex": q, "$options": "i"}},
+            {"subject_code": {"$regex": q, "$options": "i"}},
+            {"instructor": {"$regex": q, "$options": "i"}},
+        ]
+    classes = list(db.classes.find(query, {"_id": 0, "_details_raw": 0}))
     return jsonify(classes)
 
 
