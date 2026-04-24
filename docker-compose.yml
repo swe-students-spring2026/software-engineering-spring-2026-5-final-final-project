@@ -1,7 +1,8 @@
 services:
   apis:
     build:
-      context: ./apis
+      context: .
+      dockerfile: apis/Dockerfile
       args:
         PYTHON_IMAGE_TAG: ${PYTHON_IMAGE_TAG}
         API_INTERNAL_PORT: ${API_INTERNAL_PORT}
@@ -23,7 +24,9 @@ services:
     environment:
       MONGO_URI: ${MONGO_URI}
       MONGO_DB_NAME: ${MONGO_DB_NAME}
-    restart: "no"
+      SCRAPER_TERMS: ${SCRAPER_TERMS}
+      SCRAPE_INTERVAL_HOURS: ${SCRAPE_INTERVAL_HOURS}
+    restart: unless-stopped
 
   frontend:
     build:

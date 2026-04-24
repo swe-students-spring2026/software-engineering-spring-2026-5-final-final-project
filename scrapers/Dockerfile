@@ -8,4 +8,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD ["python", "scrape_bulletins.py", "--to-mongo"]
+CMD ["python", "run_daily_scrape.py"]

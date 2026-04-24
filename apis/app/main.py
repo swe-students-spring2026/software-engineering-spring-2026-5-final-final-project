@@ -10,6 +10,11 @@ try:
 except ModuleNotFoundError:
     from services.requirements_service import RequirementsService
 
+try:
+    from scrapers.scraper import refresh_course_document
+except ModuleNotFoundError:
+    refresh_course_document = None
+
 load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
 app = Flask(__name__)
@@ -49,6 +54,41 @@ def get_classes():
         ]
     classes = list(db.classes.find(query, {"_id": 0, "_details_raw": 0}))
     return jsonify(classes)
+
+
+@app.post("/classes/refresh")
+def refresh_class():
+    if refresh_course_document is None:
+        return jsonify({"error": "course refresh is not available in this runtime"}), 503
+
+    payload = request.get_json(silent=True) or {}
+    term = payload.get("term") or request.args.get("term")
+    class_id = payload.get("_id") or request.args.get("_id")
+    code = payload.get("code") or request.args.get("code")
+    crn = payload.get("crn") or request.args.get("crn")
+    section = payload.get("section") or request.args.get("section")
+
+    existing = None
+    if class_id:
+        existing = db.classes.find_one({"_id": class_id})
+    elif term and crn:
+        existing = db.classes.find_one({"term.code": term, "crn": str(crn)})
+
+    if existing:
+        term = term or existing.get("term", {}).get("code")
+        code = code or existing.get("code")
+        crn = crn or existing.get("crn")
+        section = section or existing.get("section")
+
+    if not term or not code:
+        return jsonify({"error": "provide term and either _id or code (optionally crn/section)"}), 400
+
+    refreshed = refresh_course_document(term, code=code, crn=crn, section=section)
+    if not refreshed:
+        return jsonify({"error": "course could not be refreshed"}), 404
+
+    db.classes.update_one({"_id": refreshed["_id"]}, {"$set": refreshed}, upsert=True)
+    return jsonify({key: value for key, value in refreshed.items() if key != "_details_raw"})
 
 
 @app.get("/programs")
