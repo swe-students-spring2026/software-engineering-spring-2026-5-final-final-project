@@ -1,17 +1,4 @@
 services:
-  mongodb:
-    image: mongo:${MONGO_IMAGE_TAG}
-    container_name: ${MONGO_CONTAINER_NAME}
-    restart: unless-stopped
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
-      MONGO_INITDB_DATABASE: ${MONGO_DB_NAME}
-    ports:
-      - "${MONGO_PORT}:${MONGO_INTERNAL_PORT}"
-    volumes:
-      - mongodb_data:/data/db
-
   apis:
     build:
       context: ./apis
@@ -21,13 +8,11 @@ services:
     container_name: ${API_CONTAINER_NAME}
     restart: unless-stopped
     environment:
-      MONGO_URI: mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@${MONGO_HOST}:${MONGO_INTERNAL_PORT}/${MONGO_DB_NAME}?authSource=${MONGO_AUTH_SOURCE}
+      MONGO_URI: ${MONGO_URI}
       MONGO_DB_NAME: ${MONGO_DB_NAME}
       API_INTERNAL_PORT: ${API_INTERNAL_PORT}
     ports:
       - "${API_PORT}:${API_INTERNAL_PORT}"
-    depends_on:
-      - mongodb
 
   frontend:
     build:
@@ -43,6 +28,3 @@ services:
       - "${FRONTEND_PORT}:${FRONTEND_INTERNAL_PORT}"
     depends_on:
       - apis
-
-volumes:
-  mongodb_data:
