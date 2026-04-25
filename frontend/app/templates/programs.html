@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Programs — NYU Course Planner</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #f4f4f4; color: #333; }
+    header { background: #57068c; color: white; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; }
+    header h1 { font-size: 1.3rem; }
+    header a { color: white; background: rgba(255,255,255,0.15); padding: 6px 14px; border-radius: 4px; text-decoration: none; font-size: 0.9rem; }
+
+    .container { display: grid; grid-template-columns: 340px 1fr; gap: 16px; padding: 16px; height: calc(100vh - 56px); }
+    .list-panel, .detail-panel { background: white; border-radius: 6px; padding: 16px; overflow-y: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.07); }
+
+    .list-panel h2 { font-size: 0.95rem; color: #57068c; margin-bottom: 10px; }
+    .search { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.85rem; margin-bottom: 10px; }
+
+    .school-group { margin-bottom: 4px; }
+    .school-header { display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; background: #f0e6f7; border-radius: 4px; cursor: pointer; user-select: none; font-size: 0.82rem; font-weight: bold; color: #57068c; }
+    .school-header:hover { background: #e5d4f5; }
+    .school-header .count { font-size: 0.72rem; color: #9a5cc6; font-weight: normal; }
+    .school-header .chevron { font-size: 0.65rem; transition: transform 0.15s; }
+    .school-group.collapsed .chevron { transform: rotate(-90deg); }
+    .school-programs { padding: 2px 0 4px 0; }
+    .school-group.collapsed .school-programs { display: none; }
+
+    .program-item { padding: 7px 10px 7px 18px; border-radius: 4px; cursor: pointer; font-size: 0.82rem; margin-bottom: 1px; }
+    .program-item:hover { background: #f5eeff; }
+    .program-item.active { background: #f0e6f7; color: #57068c; font-weight: bold; }
+    .program-award { color: #aaa; font-size: 0.72rem; margin-top: 1px; }
+
+    .detail-panel h2 { font-size: 1.1rem; color: #57068c; margin-bottom: 4px; }
+    .detail-meta { font-size: 0.82rem; color: #888; margin-bottom: 6px; }
+    .detail-divider { border: none; border-top: 2px solid #f0e6f7; margin: 4px 0 0; }
+
+    /* Section blocks */
+    .detail-section { margin-top: 20px; border-radius: 6px; overflow: hidden; border: 1px solid #e8e8e8; }
+    .detail-section-header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; }
+    .detail-section-header h3 { font-size: 0.88rem; font-weight: bold; margin: 0; }
+    .detail-section-body { padding: 0 14px 12px; }
+    .desc { font-size: 0.85rem; line-height: 1.5; color: #444; padding-top: 10px; }
+
+    /* About — neutral */
+    .section-about .detail-section-header { background: #f7f7f7; border-bottom: 1px solid #e8e8e8; }
+    .section-about .detail-section-header h3 { color: #555; }
+
+    /* Course Requirements — purple */
+    .section-requirements .detail-section-header { background: #f5eeff; border-bottom: 2px solid #c9a7e0; }
+    .section-requirements .detail-section-header h3 { color: #57068c; }
+
+    /* Honors / Supplemental — amber */
+    .section-honors .detail-section-header { background: #fffbeb; border-bottom: 2px solid #f59e0b; }
+    .section-honors .detail-section-header h3 { color: #92400e; }
+    .section-honors .detail-section-header .section-badge { background: #fde68a; color: #92400e; }
+
+    /* Sample Plan — teal */
+    .section-plan .detail-section-header { background: #f0fdfa; border-bottom: 2px solid #2dd4bf; }
+    .section-plan .detail-section-header h3 { color: #0f766e; }
+
+    /* Policies — gray */
+    .section-policies .detail-section-header { background: #f9fafb; border-bottom: 1px solid #e8e8e8; }
+    .section-policies .detail-section-header h3 { color: #6b7280; }
+
+    .section-badge { font-size: 0.68rem; font-weight: bold; padding: 2px 7px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .badge-requirements { background: #ede9fe; color: #57068c; }
+    .badge-honors      { background: #fde68a; color: #92400e; }
+    .badge-plan        { background: #ccfbf1; color: #0f766e; }
+
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-top: 8px; }
+    th { background: #f5eeff; padding: 6px 10px; text-align: left; color: #57068c; border-bottom: 2px solid #c9a7e0; }
+    td { padding: 6px 10px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
+    tr.section-row td { background: #faf5ff; font-weight: bold; color: #57068c; padding-top: 10px; padding-bottom: 6px; border-top: 1px solid #e0cef5; }
+    tr.alt-row td { color: #777; padding-left: 24px; font-style: italic; }
+    tr.alt-row td:first-child::before { content: "↳ "; color: #aaa; font-style: normal; }
+    tr.summary-row td { background: #fafafa; font-style: italic; color: #666; }
+    tr.total-row td { font-weight: bold; background: #f0e6f7; border-top: 2px solid #c9a7e0; }
+    .course-code { font-family: monospace; color: #57068c; font-weight: bold; }
+    tr.alt-row .course-code { color: #999; font-weight: normal; }
+
+    /* Sample plan table */
+    .sample-plan-table td { padding: 5px 10px; border-bottom: 1px solid #f0f0f0; font-size: 0.82rem; vertical-align: top; }
+    tr.term-header-row td { background: #0f766e; color: white; font-weight: bold; font-size: 0.82rem; padding: 7px 10px; border: none; letter-spacing: 0.03em; }
+    tr.term-subtotal-row td { background: #f0fdfa; color: #0f766e; font-style: italic; font-size: 0.78rem; border-top: 1px solid #99f6e4; }
+    tr.plan-elective-row td { color: #555; }
+    .section-plan th { background: #f0fdfa; color: #0f766e; border-bottom: 2px solid #2dd4bf; }
+    .section-plan tr.total-row td { background: #ccfbf1; border-top: 2px solid #2dd4bf; color: #0f766e; }
+
+    /* Honors table overrides */
+    .section-honors th { background: #fffbeb; color: #92400e; border-bottom: 2px solid #f59e0b; }
+    .section-honors tr.section-row td { background: #fffbeb; color: #92400e; border-top-color: #fde68a; }
+    .section-honors tr.total-row td { background: #fef3c7; border-top-color: #f59e0b; color: #92400e; }
+    .section-honors .course-code { color: #b45309; }
+
+    .placeholder { color: #bbb; padding: 40px 0; text-align: center; font-size: 0.9rem; }
+    .loading { color: #999; font-size: 0.85rem; padding: 20px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Programs</h1>
+    <a href="/">← Course Search</a>
+  </header>
+
+  <div class="container">
+    <div class="list-panel">
+      <h2>Undergraduate Programs</h2>
+      <input type="text" class="search" id="search" placeholder="Filter programs…">
+      <div id="program-list"></div>
+    </div>
+    <div class="detail-panel" id="detail">
+      <div class="placeholder">Select a program to see its requirements</div>
+    </div>
+  </div>
+
+  <script>
+    let allPrograms = [];
+    let activeUrl = null;
+
+    async function loadPrograms() {
+      const list = document.getElementById("program-list");
+      list.innerHTML = '<div class="loading">Loading…</div>';
+      try {
+        const res = await fetch("/api/programs");
+        allPrograms = await res.json();
+        renderList("");
+      } catch (e) {
+        list.innerHTML = `<div class="loading">Error: ${e.message}</div>`;
+      }
+    }
+
+    const SCHOOL_ORDER = [
+      "Arts & Science", "Tandon", "Steinhardt", "Tisch", "Stern",
+      "Liberal Studies", "Gallatin", "SPS", "Global Public Health",
+      "Wagner", "Silver", "Rory Meyers", "Dentistry", "Abu Dhabi", "Shanghai"
+    ];
+
+    function renderList(filter) {
+      const list = document.getElementById("program-list");
+      const f = filter.toLowerCase();
+      const filtered = allPrograms.filter(p =>
+        !f || (p.title || "").toLowerCase().includes(f) || (p.school || "").toLowerCase().includes(f)
+      );
+      if (filtered.length === 0) {
+        list.innerHTML = '<div class="loading">No programs match.</div>';
+        return;
+      }
+
+      // Group by school
+      const groups = new Map();
+      filtered.forEach(p => {
+        const school = p.school || "Other";
+        if (!groups.has(school)) groups.set(school, []);
+        groups.get(school).push(p);
+      });
+
+      // Sort schools by preferred order, then alphabetically
+      const sortedSchools = [...groups.keys()].sort((a, b) => {
+        const ai = SCHOOL_ORDER.indexOf(a), bi = SCHOOL_ORDER.indexOf(b);
+        if (ai !== -1 && bi !== -1) return ai - bi;
+        if (ai !== -1) return -1;
+        if (bi !== -1) return 1;
+        return a.localeCompare(b);
+      });
+
+      // Expand the group containing the active program, all when filtering, else collapse others
+      const isFiltering = f.length > 0;
+      const activeSchool = activeUrl ? (allPrograms.find(p => p.url === activeUrl) || {}).school || "Other" : null;
+
+      list.innerHTML = sortedSchools.map((school, i) => {
+        const programs = groups.get(school);
+        const isActive = school === activeSchool;
+        const collapsed = !isFiltering && i !== 0 && !isActive ? " collapsed" : "";
+        const items = programs.map(p => `
+          <div class="program-item ${p.url === activeUrl ? "active" : ""}" data-url="${encodeURIComponent(p.url)}">
+            <div>${p.title || "(untitled)"}</div>
+            ${p.award ? `<div class="program-award">${p.award}</div>` : ""}
+          </div>`).join("");
+        return `
+          <div class="school-group${collapsed}" data-school="${school}">
+            <div class="school-header" onclick="toggleSchool(this)">
+              <span>${school}</span>
+              <span style="display:flex;align-items:center;gap:6px">
+                <span class="count">${programs.length}</span>
+                <span class="chevron">▾</span>
+              </span>
+            </div>
+            <div class="school-programs">${items}</div>
+          </div>`;
+      }).join("");
+
+      list.querySelectorAll(".program-item").forEach(el => {
+        el.addEventListener("click", () => loadDetail(decodeURIComponent(el.dataset.url)));
+      });
+    }
+
+    function toggleSchool(header) {
+      header.closest(".school-group").classList.toggle("collapsed");
+    }
+
+    function looksLikeCourseCode(s) {
+      return /^(or\s+)?[A-Z]{2,5}[-][A-Z]{2,3}[\s\/]/.test(s || "");
+    }
+
+    function isSamplePlan(label) {
+      return /sample|plan|semester|term/i.test(label || "");
+    }
+
+    function renderSamplePlan(rows) {
+      let html = `<table class="sample-plan-table"><tbody>`;
+      rows.forEach(row => {
+        const cells = row || [];
+        const first = (cells[0] || "").trim();
+        const isTermHeader = /^\d+(st|nd|rd|th)\s+Semester/i.test(first) && cells.length === 1;
+        const isSubtotal   = first === "" && /credits/i.test(cells[1] || "");
+        const isGrandTotal = first === "" && /total credits/i.test(cells[1] || "");
+        const isTotal      = /total\s+credits/i.test(first);
+
+        if (isTermHeader) {
+          html += `<tr class="term-header-row"><td colspan="3">${first}</td></tr>`;
+        } else if (isGrandTotal || isTotal) {
+          const label = isTotal ? first : cells[1];
+          const credits = isTotal ? (cells[1] || "") : (cells[2] || "");
+          html += `<tr class="total-row"><td colspan="2">${label}</td><td>${credits}</td></tr>`;
+        } else if (isSubtotal) {
+          html += `<tr class="term-subtotal-row"><td colspan="2">Semester Credits</td><td>${cells[2] || ""}</td></tr>`;
+        } else if (looksLikeCourseCode(first)) {
+          const title = cells[1] || "";
+          const credits = cells[2] || "";
+          html += `<tr><td><span class="course-code">${first}</span></td><td>${title}</td><td>${credits}</td></tr>`;
+        } else if (first) {
+          const credits = cells[1] || cells[2] || "";
+          html += `<tr class="plan-elective-row"><td colspan="2">${first}</td><td>${credits}</td></tr>`;
+        }
+      });
+      html += `</tbody></table>`;
+      return html;
+    }
+
+    function renderRequirementsTable(rows) {
+      let html = `<table><thead><tr><th>Course</th><th>Title</th><th>Credits</th></tr></thead><tbody>`;
+      rows.forEach(row => {
+        const cells = row || [];
+        const first = (cells[0] || "").trim();
+        const firstIsCourse = looksLikeCourseCode(first);
+        const isAlt   = first.toLowerCase().startsWith("or ");
+        const isTotal = /total\s+credits/i.test(first);
+
+        if (isTotal) {
+          html += `<tr class="total-row"><td colspan="2">${first}</td><td>${cells[1] || ""}</td></tr>`;
+        } else if (!firstIsCourse && cells.length <= 2) {
+          const rightCol = cells[1] || "";
+          const cls = rightCol ? "summary-row" : "section-row";
+          html += `<tr class="${cls}"><td colspan="2">${first}</td><td>${rightCol}</td></tr>`;
+        } else {
+          const title = cells[1] || "";
+          const credits = cells.length >= 3 ? cells[2] : "";
+          const cls = isAlt ? "alt-row" : "";
+          html += `<tr class="${cls}"><td><span class="course-code">${first}</span></td><td>${title}</td><td>${credits}</td></tr>`;
+        }
+      });
+      html += `</tbody></table>`;
+      return html;
+    }
+
+    function renderTable(t) {
+      if (!t || !t.rows) return "";
+      return isSamplePlan(t.label) ? renderSamplePlan(t.rows) : renderRequirementsTable(t.rows);
+    }
+
+    async function loadDetail(url) {
+      activeUrl = url;
+      renderList(document.getElementById("search").value);
+      const detail = document.getElementById("detail");
+      detail.innerHTML = '<div class="loading">Loading requirements…</div>';
+      try {
+        const res = await fetch(`/api/program-requirements?url=${encodeURIComponent(url)}`);
+        const p = await res.json();
+        if (!res.ok) throw new Error(p.error || "Failed to load");
+
+        let html = `
+          <h2>${p.title || ""}</h2>
+          <div class="detail-meta">${p.school || ""}${p.award ? " · " + p.award : ""}${p.source?.bulletin_year ? " · " + p.source.bulletin_year : ""}</div>
+          <hr class="detail-divider">
+        `;
+        if (p.program_description) {
+          html += `
+            <div class="detail-section section-about">
+              <div class="detail-section-header"><h3>About</h3></div>
+              <div class="detail-section-body"><div class="desc">${p.program_description}</div></div>
+            </div>`;
+        }
+        if (p.tables && p.tables.length) {
+          p.tables.forEach(t => {
+            const label = t.label || "Course Requirements";
+            const plan    = isSamplePlan(label);
+            const honors  = !plan && /honor|supplement/i.test(label);
+            const cls     = plan ? "section-plan" : honors ? "section-honors" : "section-requirements";
+            const badge   = plan
+              ? `<span class="section-badge badge-plan">Sample Plan</span>`
+              : honors
+                ? `<span class="section-badge badge-honors">Honors</span>`
+                : `<span class="section-badge badge-requirements">Requirements</span>`;
+            html += `
+              <div class="detail-section ${cls}">
+                <div class="detail-section-header">${badge}<h3>${label}</h3></div>
+                <div class="detail-section-body">${renderTable(t)}</div>
+              </div>`;
+          });
+        }
+        if (p.policies) {
+          html += `
+            <div class="detail-section section-policies">
+              <div class="detail-section-header"><h3>Policies</h3></div>
+              <div class="detail-section-body"><div class="desc">${p.policies}</div></div>
+            </div>`;
+        }
+        detail.innerHTML = html;
+      } catch (e) {
+        detail.innerHTML = `<div class="loading">Error: ${e.message}</div>`;
+      }
+    }
+
+    document.getElementById("search").addEventListener("input", e => renderList(e.target.value));
+    loadPrograms();
+  </script>
+</body>
+</html>

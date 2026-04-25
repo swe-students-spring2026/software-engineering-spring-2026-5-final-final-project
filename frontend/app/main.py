@@ -13,6 +13,28 @@ def index():
     return render_template("index.html")
 
 
+@app.get("/schedule")
+def schedule():
+    return render_template("schedule.html")
+
+
+@app.get("/programs")
+def programs_page():
+    return render_template("programs.html")
+
+
+@app.get("/api/programs")
+def programs():
+    resp = requests.get(f"{API_URL}/programs")
+    return jsonify(resp.json()), resp.status_code
+
+
+@app.get("/api/program-requirements")
+def program_requirements():
+    resp = requests.get(f"{API_URL}/program-requirements", params=dict(request.args))
+    return jsonify(resp.json()), resp.status_code
+
+
 @app.get("/api/classes")
 def proxy_classes():
     params = dict(request.args)
@@ -22,13 +44,13 @@ def proxy_classes():
 
 @app.get("/api/schools")
 def proxy_schools():
-    resp = requests.get(f"{API_URL}/schools")
+    resp = requests.get(f"{API_URL}/classes/schools")
     return jsonify(resp.json()), resp.status_code
 
 
 @app.get("/api/campuses")
 def proxy_campuses():
-    resp = requests.get(f"{API_URL}/campuses")
+    resp = requests.get(f"{API_URL}/classes/campuses")
     return jsonify(resp.json()), resp.status_code
 
 

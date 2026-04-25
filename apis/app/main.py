@@ -49,44 +49,52 @@ def get_classes():
     term      = request.args.get("term")
     q         = request.args.get("q")
     school    = request.args.get("school")
-    campus    = request.args.get("campus")
     component = request.args.get("component")
     mode      = request.args.get("mode")
+    campus    = request.args.get("campus")
 
     query = {}
 
     if term:
         query["term.code"] = term
     if school:
-        query["school"] = school
-    if campus:
-        query["campus_location"] = campus
+        query["school"] = {"$regex": school, "$options": "i"}
     if component:
         query["component"] = {"$regex": component, "$options": "i"}
     if mode:
-        query["instructional_method"] = {"$regex": mode, "$options": "i"}
+        query["_details_raw.instructional_method"] = {"$regex": mode, "$options": "i"}
+    if campus:
+        query["_details_raw.campus_location"] = {"$regex": campus, "$options": "i"}
     if q:
         query["$or"] = [
-            {"title": {"$regex": q, "$options": "i"}},
-            {"code": {"$regex": q, "$options": "i"}},
+            {"title":        {"$regex": q, "$options": "i"}},
+            {"code":         {"$regex": q, "$options": "i"}},
             {"subject_code": {"$regex": q, "$options": "i"}},
-            {"instructor": {"$regex": q, "$options": "i"}},
+            {"instructor":   {"$regex": q, "$options": "i"}},
         ]
 
-    classes = list(db.classes.find(query))
+    classes = list(db.classes.aggregate([
+        {"$match": query},
+        {"$set": {
+            "clssnotes":            "$_details_raw.clssnotes",
+            "instructional_method": "$_details_raw.instructional_method",
+            "campus_location":      "$_details_raw.campus_location",
+        }},
+        {"$unset": ["_id", "_details_raw"]},
+    ]))
     return jsonify(classes)
 
 
-@app.get("/schools")
+@app.get("/classes/schools")
 def get_schools():
-    schools = sorted([s for s in db.classes.distinct("school") if s])
-    return jsonify(schools)
+    schools = db.classes.distinct("school")
+    return jsonify(sorted(s for s in schools if s))
 
 
-@app.get("/campuses")
+@app.get("/classes/campuses")
 def get_campuses():
-    campuses = sorted([c for c in db.classes.distinct("campus_location") if c])
-    return jsonify(campuses)
+    campuses = db.classes.distinct("_details_raw.campus_location")
+    return jsonify(sorted(c for c in campuses if c))
 
 
 @app.post("/classes/refresh")
