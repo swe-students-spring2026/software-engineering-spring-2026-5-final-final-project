@@ -1,106 +1,216 @@
 """
-Tool definitions and mock handler functions.
+Tool definitions and handler functions that query MongoDB.
 
-GEMINI_TOOL is a single types.Tool object containing all function declarations.
-Each handler in TOOL_HANDLERS is the Python function that runs when the model
-invokes the corresponding tool. Replace the mock return values here later
-when real data sources are wired in.
+GEMINI_TOOL contains all function declarations.
+TOOL_HANDLERS maps each tool name to its handler.
+Call init_tools(db) once at startup to wire in the database.
 """
 
 from typing import Any
 
 from google.genai import types
 
+_db = None
+
+
+def init_tools(db) -> None:
+    global _db
+    _db = db
+
+
 # ── Gemini tool schema ────────────────────────────────────────────────────────
 
 GEMINI_TOOL = types.Tool(
     function_declarations=[
         types.FunctionDeclaration(
-            name="get_courses",
+            name="search_courses",
             description=(
-                "Retrieve a list of available courses, optionally filtered by "
-                "department code or course level."
+                "Search the NYU course catalog for courses matching a keyword, "
+                "department/subject code, or component type. Returns matching "
+                "courses with titles, descriptions, sections, and enrollment status."
             ),
             parameters=types.Schema(
                 type=types.Type.OBJECT,
                 properties={
+                    "query": types.Schema(
+                        type=types.Type.STRING,
+                        description="Keyword to match against course title, code, or description.",
+                    ),
                     "department": types.Schema(
                         type=types.Type.STRING,
-                        description="Department code to filter by, e.g. 'CS' or 'MATH'.",
+                        description="Subject/department code to filter by, e.g. 'CSCI' or 'MATH'.",
                     ),
-                    "level": types.Schema(
+                    "term": types.Schema(
+                        type=types.Type.STRING,
+                        description="Term code to filter by, e.g. '1268' for Fall 2026.",
+                    ),
+                    "component": types.Schema(
+                        type=types.Type.STRING,
+                        description="Component type: Lecture, Recitation, Seminar, or Lab.",
+                    ),
+                    "limit": types.Schema(
                         type=types.Type.INTEGER,
-                        description="Course level to filter by, e.g. 3000 for 3000-level courses.",
+                        description="Maximum number of results to return (default 20).",
                     ),
                 },
             ),
         ),
         types.FunctionDeclaration(
-            name="generate_schedule",
+            name="get_course_sections",
             description=(
-                "Generate a weekly course schedule given a list of course IDs "
-                "and a target semester."
+                "Get all available sections for a specific course code, "
+                "including meeting times, instructor, location, and enrollment status."
             ),
             parameters=types.Schema(
                 type=types.Type.OBJECT,
                 properties={
-                    "courses": types.Schema(
-                        type=types.Type.ARRAY,
-                        items=types.Schema(type=types.Type.STRING),
-                        description="List of course IDs to include, e.g. ['CS-3001', 'CS-4001'].",
-                    ),
-                    "semester": types.Schema(
+                    "course_code": types.Schema(
                         type=types.Type.STRING,
-                        description="Target semester, e.g. 'Fall 2025'.",
+                        description=(
+                            "The course code to look up, e.g. 'CSCI-UA 101'."
+                        ),
+                    ),
+                    "term": types.Schema(
+                        type=types.Type.STRING,
+                        description=(
+                            "Term code to filter by, e.g. '1268' for Fall 2026."
+                        ),
                     ),
                 },
-                required=["courses"],
+                required=["course_code"],
+            ),
+        ),
+        types.FunctionDeclaration(
+            name="list_programs",
+            description="List all available NYU undergraduate programs and majors.",
+            parameters=types.Schema(
+                type=types.Type.OBJECT,
+                properties={},
+            ),
+        ),
+        types.FunctionDeclaration(
+            name="get_program_requirements",
+            description=(
+                "Get the full degree requirements for a specific NYU program, "
+                "identified by its URL from list_programs."
+            ),
+            parameters=types.Schema(
+                type=types.Type.OBJECT,
+                properties={
+                    "url": types.Schema(
+                        type=types.Type.STRING,
+                        description="The program URL returned by list_programs.",
+                    ),
+                },
+                required=["url"],
             ),
         ),
     ]
 )
 
-# ── Mock handler functions ────────────────────────────────────────────────────
 
-def get_courses(department: str = "", level: int = 0) -> dict[str, Any]:
-    """Return mock course data. Will be replaced by real DB queries."""
-    all_courses = [
-        {"id": "CS-3001", "name": "Algorithms", "department": "CS", "level": 3000, "credits": 3},
-        {"id": "CS-3002", "name": "Computer Networks", "department": "CS", "level": 3000, "credits": 3},
-        {"id": "CS-4001", "name": "Machine Learning", "department": "CS", "level": 4000, "credits": 3},
-        {"id": "CS-4002", "name": "Distributed Systems", "department": "CS", "level": 4000, "credits": 3},
-        {"id": "MATH-3001", "name": "Linear Algebra", "department": "MATH", "level": 3000, "credits": 4},
-    ]
+# ── Handler functions ─────────────────────────────────────────────────────────
 
-    filtered = all_courses
+def search_courses(
+    query: str = "",
+    department: str = "",
+    term: str = "",
+    component: str = "",
+    limit: int = 20,
+) -> dict[str, Any]:
+    """Search course catalog in MongoDB."""
+    if _db is None:
+        return {"error": "Database not initialized"}
+
+    conditions: list[dict] = []
+
+    if term:
+        conditions.append({"term.code": term})
+    if component:
+        conditions.append({"component": {"$regex": component, "$options": "i"}})
     if department:
-        filtered = [c for c in filtered if c["department"].upper() == department.upper()]
-    if level:
-        filtered = [c for c in filtered if c["level"] == level]
+        conditions.append({"$or": [
+            {"subject_code": {"$regex": department, "$options": "i"}},
+            {"code": {"$regex": department, "$options": "i"}},
+        ]})
+    if query:
+        conditions.append({"$or": [
+            {"title": {"$regex": query, "$options": "i"}},
+            {"code": {"$regex": query, "$options": "i"}},
+            {"description": {"$regex": query, "$options": "i"}},
+        ]})
 
-    return {"courses": filtered}
+    if len(conditions) > 1:
+        filter_query: dict = {"$and": conditions}
+    elif conditions:
+        filter_query = conditions[0]
+    else:
+        filter_query = {}
 
-
-def generate_schedule(courses: list[str], semester: str = "Fall 2025") -> dict[str, Any]:
-    """Return a mock schedule. Will be replaced by real scheduling logic."""
-    days_cycle = ["MWF", "TTh", "MWF", "TTh"]
-    times_cycle = ["9:00 AM", "10:30 AM", "1:00 PM", "2:30 PM"]
-
-    schedule = [
+    courses = list(_db.classes.find(
+        filter_query,
         {
-            "course_id": course_id,
-            "days": days_cycle[i % len(days_cycle)],
-            "time": times_cycle[i % len(times_cycle)],
-        }
-        for i, course_id in enumerate(courses)
-    ]
+            "_id": 0, "code": 1, "title": 1, "description": 1, "credits": 1,
+            "school": 1, "subject_code": 1, "component": 1, "section": 1,
+            "crn": 1, "instructor": 1, "meets_human": 1, "status": 1,
+            "term": 1, "prerequisites": 1,
+        },
+    ).limit(limit))
 
-    return {"semester": semester, "schedule": schedule}
+    return {"courses": courses, "count": len(courses)}
+
+
+def get_course_sections(course_code: str, term: str = "") -> dict[str, Any]:
+    """Get all sections for a specific course code from MongoDB."""
+    if _db is None:
+        return {"error": "Database not initialized"}
+
+    query: dict = {"code": {"$regex": course_code, "$options": "i"}}
+    if term:
+        query["term.code"] = term
+
+    sections = list(_db.classes.find(
+        query,
+        {
+            "_id": 0, "code": 1, "title": 1, "section": 1, "crn": 1,
+            "instructor": 1, "meets_human": 1, "meeting_times": 1,
+            "status": 1, "component": 1, "instructional_method": 1,
+            "campus_location": 1, "credits": 1,
+        },
+    ))
+
+    return {"course_code": course_code, "sections": sections, "count": len(sections)}
+
+
+def list_programs() -> dict[str, Any]:
+    """List all undergraduate programs from MongoDB."""
+    if _db is None:
+        return {"error": "Database not initialized"}
+
+    programs = list(_db.program_requirements.find(
+        {},
+        {"_id": 0, "title": 1, "url": 1, "school": 1, "award": 1},
+    ).sort("title", 1).limit(200))
+
+    return {"programs": programs, "count": len(programs)}
+
+
+def get_program_requirements(url: str) -> dict[str, Any]:
+    """Fetch full degree requirements for a program by URL."""
+    if _db is None:
+        return {"error": "Database not initialized"}
+
+    program = _db.program_requirements.find_one({"url": url}, {"_id": 0})
+    if not program:
+        return {"error": f"Program not found for URL: {url}"}
+    return program
 
 
 # ── Dispatch table ────────────────────────────────────────────────────────────
 
 TOOL_HANDLERS: dict[str, Any] = {
-    "get_courses": get_courses,
-    "generate_schedule": generate_schedule,
+    "search_courses": search_courses,
+    "get_course_sections": get_course_sections,
+    "list_programs": list_programs,
+    "get_program_requirements": get_program_requirements,
 }
