@@ -29,72 +29,72 @@ class TestClassesRoute:
         assert isinstance(data, list)
 
     def test_get_classes_with_term_filter(self, client, mock_db):
-        mock_db.classes.find.return_value = []
+        mock_db.classes.aggregate.return_value = []
         res = client.get("/classes?term=1268")
         assert res.status_code == 200
-        call_args = mock_db.classes.find.call_args
-        assert call_args[0][0].get("term.code") == "1268"
+        match = mock_db.classes.aggregate.call_args[0][0][0]["$match"]
+        assert match.get("term.code") == "1268"
 
     def test_get_classes_with_query_filter(self, client, mock_db):
-        mock_db.classes.find.return_value = []
+        mock_db.classes.aggregate.return_value = []
         res = client.get("/classes?q=algorithms")
         assert res.status_code == 200
-        call_args = mock_db.classes.find.call_args
-        assert "$or" in call_args[0][0]
+        match = mock_db.classes.aggregate.call_args[0][0][0]["$match"]
+        assert "$or" in match
 
     def test_get_classes_with_term_and_query(self, client, mock_db):
-        mock_db.classes.find.return_value = []
+        mock_db.classes.aggregate.return_value = []
         res = client.get("/classes?term=1268&q=CS")
         assert res.status_code == 200
-        query = mock_db.classes.find.call_args[0][0]
-        assert "term.code" in query
-        assert "$or" in query
+        match = mock_db.classes.aggregate.call_args[0][0][0]["$match"]
+        assert "term.code" in match
+        assert "$or" in match
 
     def test_get_classes_with_school_filter(self, client, mock_db):
-        mock_db.classes.find.return_value = []
+        mock_db.classes.aggregate.return_value = []
         res = client.get("/classes?school=CAS")
         assert res.status_code == 200
-        query = mock_db.classes.find.call_args[0][0]
-        assert query.get("school") == "CAS"
+        match = mock_db.classes.aggregate.call_args[0][0][0]["$match"]
+        assert "school" in match
 
     def test_get_classes_with_campus_filter(self, client, mock_db):
-        mock_db.classes.find.return_value = []
+        mock_db.classes.aggregate.return_value = []
         res = client.get("/classes?campus=Brooklyn")
         assert res.status_code == 200
-        query = mock_db.classes.find.call_args[0][0]
-        assert query.get("campus_location") == "Brooklyn"
+        match = mock_db.classes.aggregate.call_args[0][0][0]["$match"]
+        assert "_details_raw.campus_location" in match
 
     def test_get_classes_with_component_filter(self, client, mock_db):
-        mock_db.classes.find.return_value = []
+        mock_db.classes.aggregate.return_value = []
         res = client.get("/classes?component=Lecture")
         assert res.status_code == 200
-        query = mock_db.classes.find.call_args[0][0]
-        assert "component" in query
+        match = mock_db.classes.aggregate.call_args[0][0][0]["$match"]
+        assert "component" in match
 
     def test_get_classes_with_mode_filter(self, client, mock_db):
-        mock_db.classes.find.return_value = []
+        mock_db.classes.aggregate.return_value = []
         res = client.get("/classes?mode=In-Person")
         assert res.status_code == 200
-        query = mock_db.classes.find.call_args[0][0]
-        assert "instructional_method" in query
+        match = mock_db.classes.aggregate.call_args[0][0][0]["$match"]
+        assert "_details_raw.instructional_method" in match
 
 
 class TestSchoolsRoute:
     def test_get_schools_returns_200(self, client, mock_db):
         mock_db.classes.distinct.return_value = ["CAS", "Tandon", "Stern"]
-        res = client.get("/schools")
+        res = client.get("/classes/schools")
         assert res.status_code == 200
 
     def test_get_schools_returns_sorted_list(self, client, mock_db):
         mock_db.classes.distinct.return_value = ["Tandon", "CAS", "Stern"]
-        res = client.get("/schools")
+        res = client.get("/classes/schools")
         data = res.get_json()
         assert isinstance(data, list)
         assert data == sorted(data)
 
     def test_get_schools_filters_empty_values(self, client, mock_db):
         mock_db.classes.distinct.return_value = ["CAS", None, "", "Tandon"]
-        res = client.get("/schools")
+        res = client.get("/classes/schools")
         data = res.get_json()
         assert None not in data
         assert "" not in data
@@ -103,19 +103,19 @@ class TestSchoolsRoute:
 class TestCampusesRoute:
     def test_get_campuses_returns_200(self, client, mock_db):
         mock_db.classes.distinct.return_value = ["Brooklyn", "Manhattan"]
-        res = client.get("/campuses")
+        res = client.get("/classes/campuses")
         assert res.status_code == 200
 
     def test_get_campuses_returns_sorted_list(self, client, mock_db):
         mock_db.classes.distinct.return_value = ["Manhattan", "Brooklyn"]
-        res = client.get("/campuses")
+        res = client.get("/classes/campuses")
         data = res.get_json()
         assert isinstance(data, list)
         assert data == sorted(data)
 
     def test_get_campuses_filters_empty_values(self, client, mock_db):
         mock_db.classes.distinct.return_value = ["Brooklyn", None, "Manhattan"]
-        res = client.get("/campuses")
+        res = client.get("/classes/campuses")
         data = res.get_json()
         assert None not in data
 
