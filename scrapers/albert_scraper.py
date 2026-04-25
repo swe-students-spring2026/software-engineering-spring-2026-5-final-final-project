@@ -233,8 +233,10 @@ def apply_limit(rows: list[dict[str, Any]], limit: int) -> list[dict[str, Any]]:
 
 def write_docs(output_path: Path, docs: list[dict[str, Any]]) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    existing_docs = load_existing_docs(output_path)
+    merged_docs = merge_docs_by_id(existing_docs, docs)
     output_path.write_text(
-        json.dumps(docs, indent=2, ensure_ascii=False, cls=DateTimeJSONEncoder),
+        json.dumps(merged_docs, indent=2, ensure_ascii=False, cls=DateTimeJSONEncoder),
         encoding="utf-8",
     )
 
@@ -256,6 +258,38 @@ def write_debug_dump(page: Any, output_path: Path) -> None:
             continue
         parts.append(f"\n--- frame {index}: {getattr(frame, 'url', '')} ---\n{text[:8000]}")
     debug_path.write_text("\n".join(parts), encoding="utf-8")
+
+
+def load_existing_docs(output_path: Path) -> list[dict[str, Any]]:
+    if not output_path.exists():
+        return []
+    try:
+        raw = json.loads(output_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return []
+    if isinstance(raw, list):
+        return [doc for doc in raw if isinstance(doc, dict)]
+    return []
+
+
+def merge_docs_by_id(existing_docs: list[dict[str, Any]], new_docs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    merged = list(existing_docs)
+    index_by_id: dict[str, int] = {}
+    for idx, doc in enumerate(merged):
+        doc_id = str(doc.get("_id", "")).strip()
+        if doc_id:
+            index_by_id[doc_id] = idx
+
+    for doc in new_docs:
+        doc_id = str(doc.get("_id", "")).strip()
+        if doc_id and doc_id in index_by_id:
+            merged[index_by_id[doc_id]] = doc
+        else:
+            if doc_id:
+                index_by_id[doc_id] = len(merged)
+            merged.append(doc)
+
+    return merged
 
 
 def scrape_subject_pages(page: Any, *, term_code: str, wait_ms: int, limit: int) -> tuple[list[dict[str, Any]], dict[str, Any]]:
@@ -467,23 +501,38 @@ def extract_subject_candidates_from_frame(frame: Any) -> list[str]:
         return frame.evaluate(
             """
             () => {
-              const visible = (el) => {
-                const style = window.getComputedStyle(el);
-                const box = el.getBoundingClientRect();
-                return style.visibility !== "hidden" && style.display !== "none" && box.width > 0 && box.height > 0;
-              };
               const clean = (text) => (text || "").replace(/\\s+/g, " ").trim();
               const skip = /^(return|search|next|previous|class search|browse by subject)$/i;
-              const out = [];
-              for (const el of Array.from(document.querySelectorAll('a, button, input[type="button"], input[type="submit"], [role="button"]'))) {
-                if (!visible(el)) continue;
-                const text = clean(el.innerText || el.value || el.textContent);
-                if (!text || skip.test(text)) continue;
-                if (/[A-Z]{2,5}-[A-Z]{2,3}/.test(text)) {
-                  out.push(text);
+              const isCandidate = (text) => text && !skip.test(text) && /[A-Z]{2,5}-[A-Z]{2,3}/.test(text);
+              const candidates = new Set();
+              const selectors = 'a, button, input[type="button"], input[type="submit"], [role="button"]';
+              const collect = () => {
+                for (const el of Array.from(document.querySelectorAll(selectors))) {
+                  const text = clean(el.innerText || el.value || el.textContent);
+                  if (isCandidate(text)) {
+                    candidates.add(text);
+                  }
                 }
+              };
+              const isScrollable = (el) => el && el.scrollHeight > el.clientHeight + 20;
+              const scrollables = [
+                document.scrollingElement,
+                ...Array.from(document.querySelectorAll('*')).filter(isScrollable),
+              ].filter(Boolean);
+              collect();
+              for (const container of scrollables) {
+                const start = container.scrollTop;
+                const step = Math.max(container.clientHeight * 0.9, 300);
+                const maxTop = Math.max(container.scrollHeight - container.clientHeight, 0);
+                for (let top = 0; top <= maxTop; top += step) {
+                  container.scrollTop = top;
+                  collect();
+                }
+                container.scrollTop = maxTop;
+                collect();
+                container.scrollTop = start;
               }
-              return out;
+              return Array.from(candidates);
             }
             """
         )
@@ -497,16 +546,11 @@ def click_subject_candidate(page: Any, candidate: str, wait_ms: int) -> bool:
             clicked = frame.evaluate(
                 """
                 (targetText) => {
-                  const visible = (el) => {
-                    const style = window.getComputedStyle(el);
-                    const box = el.getBoundingClientRect();
-                    return style.visibility !== "hidden" && style.display !== "none" && box.width > 0 && box.height > 0;
-                  };
                   const clean = (text) => (text || "").replace(/\\s+/g, " ").trim();
                   for (const el of Array.from(document.querySelectorAll('a, button, input[type="button"], input[type="submit"], [role="button"]'))) {
-                    if (!visible(el)) continue;
                     const text = clean(el.innerText || el.value || el.textContent);
                     if (text === targetText) {
+                      el.scrollIntoView({block: 'center'});
                       el.click();
                       return true;
                     }
@@ -551,17 +595,12 @@ def click_control_by_text(page: Any, label: str) -> bool:
             clicked = frame.evaluate(
                 """
                 (targetText) => {
-                  const visible = (el) => {
-                    const style = window.getComputedStyle(el);
-                    const box = el.getBoundingClientRect();
-                    return style.visibility !== "hidden" && style.display !== "none" && box.width > 0 && box.height > 0;
-                  };
                   const clean = (text) => (text || "").replace(/\\s+/g, " ").trim();
                   const matches = (text, target) => clean(text).toLowerCase() === target.toLowerCase();
                   for (const el of Array.from(document.querySelectorAll('a, button, input[type="button"], input[type="submit"], [role="button"]'))) {
-                    if (!visible(el)) continue;
                     const text = clean(el.innerText || el.value || el.textContent);
                     if (matches(text, targetText)) {
+                      el.scrollIntoView({block: 'center'});
                       el.click();
                       return true;
                     }

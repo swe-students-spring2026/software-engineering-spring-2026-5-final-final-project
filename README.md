@@ -109,6 +109,22 @@ docker run --rm \
     --to-mongo "your-atlas-uri"
 ```
 
+### Run the Albert scraper from an already-open browser
+
+Start any Chromium-based browser with remote debugging enabled. Replace `<browser-exe>` with your browser executable path or command:
+
+```bash
+"<browser-exe>" --remote-debugging-port=9222 --user-data-dir="/tmp/albert-cdp-profile"
+```
+
+Then log in to Albert in that browser window, pass reCAPTCHA, and open the Browse by Subject page. After that, run:
+
+```bash
+python3 scrapers/albert_scraper.py --cdp-url http://127.0.0.1:9222 --term 1268
+```
+
+This writes scraped classes to `scrapers/classes_example.json` and a coverage summary to `scrapers/classes_example_report.json` so you can verify how many subjects were discovered and visited.
+
 ### Run the full local stack with Docker Compose
 
 ```bash

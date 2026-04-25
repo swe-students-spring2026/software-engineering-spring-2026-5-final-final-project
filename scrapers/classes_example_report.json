@@ -1,0 +1,2933 @@
+{
+  "generated_at": "2026-04-25T17:31:07.944998+00:00",
+  "limited_run": false,
+  "discovered_subject_count": 625,
+  "visited_subject_count": 286,
+  "attempted_subject_count": 285,
+  "successful_subject_count": 255,
+  "failed_subject_count": 0,
+  "document_count": 13683,
+  "attempted_subjects": [
+    "Africana Studies - Social and Cultural Analysis (SCA-UA_1)",
+    "American Studies - Social and Cultural Analysis (SCA-UA_2)",
+    "Animal Studies (ANST-UA)",
+    "Anthropology (ANTH-UA)",
+    "Art History (ARTH-UA)",
+    "Asian/Pacific/American Studies - Social and Cultural Analysis (SCA-UA_3)",
+    "Biology (BIOL-UA)",
+    "CAS Scholars Program (SCHOL-UA)",
+    "Chemistry (CHEM-UA)",
+    "Child/Adoles Mental Hlth Stds (CAMS-UA)",
+    "Classics (CLASS-UA)",
+    "College Core Curriculum (CORE-UA)",
+    "Columbia Language Exchange (COLU-UA)",
+    "Comparative Literature (COLIT-UA)",
+    "Computer Science (CSCI-UA)",
+    "Creative Writing (CRWRI-UA)",
+    "Data Science (DS-UA)",
+    "Dramatic Literature (DRLIT-UA)",
+    "East Asian Studies (EAST-UA)",
+    "Economics (ECON-UA)",
+    "English (ENGL-UA)",
+    "Environmental Studies (ENVST-UA)",
+    "European and Mediterranean Studies (EURO-UA)",
+    "Expository Writing (EXPOS-UA)",
+    "Expository Writing Engineers (EXPOS-UY)",
+    "First-Year Cohort (COHRT-UA)",
+    "First-Year Seminars (FYSEM-UA)",
+    "French (FREN-UA)",
+    "Gender & Sexuality Studies - Social and Cultural Analysis (SCA-UA_4)",
+    "German (GERM-UA)",
+    "Hebrew & Judaic Studies (HBRJD-UA)",
+    "Hellenic Studies (HEL-UA)",
+    "History (HIST-UA)",
+    "International Relations (INTRL-UA)",
+    "Irish Studies (IRISH-UA)",
+    "Italian (ITAL-UA)",
+    "Journalism (JOUR-UA)",
+    "Latin Amer-Caribbean Studies (LATC-UA)",
+    "Latino Studies - Social and Cultural Analysis (SCA-UA_5)",
+    "Law and Society (LWSOC-UA)",
+    "Linguistics (LING-UA)",
+    "Math (MATH-UA)",
+    "Medieval & Renaissance Studies (MEDI-UA)",
+    "Metropolitan Studies - Social and Cultural Analysis (SCA-UA_6)",
+    "Middle Eastern and Islamic Studies (MEIS-UA)",
+    "Minor in Medical Humanities (MHUM-UA)",
+    "Music (MUSIC-UA)",
+    "Neural Science (NEURL-UA)",
+    "Non-Departmental (NODEP-UA)",
+    "Philosophy (PHIL-UA)",
+    "Physics (PHYS-UA)",
+    "Politics (POL-UA)",
+    "Portuguese (PORT-UA)",
+    "Psychology (PSYCH-UA)",
+    "Public Policy (PUBPL-UA)",
+    "Religious Studies (RELST-UA)",
+    "Russian & Slavic Studies (RUSSN-UA)",
+    "Sociology (SOC-UA)",
+    "Spanish (SPAN-UA)",
+    "Urban Studies (URBS-UA)",
+    "Advanced Writing Courses (WRTNG-UG)",
+    "Arts Workshops (ARTS-UG)",
+    "First Year program (FIRST-UG)",
+    "Individualized Projects (INDIV-UG)",
+    "Interdisciplinary Seminars (IDSEM-UG)",
+    "Practicum (PRACT-UG)",
+    "Research Workshops (RSRCH-UG)",
+    "Accounting (ACCT-UB)",
+    "Business and Political Economy Program (BPEP-UB)",
+    "Business and Society (BSPA-UB)",
+    "Business, Technology & Entrepreneurship Program (BTEP-UB)",
+    "Computing and Data Science (TECH-UB)",
+    "Economics (ECON-UB)",
+    "Finance (FINC-UB)",
+    "Management (MGMT-UB)",
+    "Marketing (MKTG-UB)",
+    "Multidisciplinary (MULT-UB)",
+    "Operations Management (OPMG-UB)",
+    "Social Impact (SOIM-UB)",
+    "Statistics & Operations Research (STAT-UB)",
+    "Academic English for Liberal Studies (AELS-UF)",
+    "Advanced Global Topics (AGT-UF)",
+    "Advanced Writing Studio (AWS-UF)",
+    "African Cultures- Global Cultures (AFGC-UF)",
+    "Approaches to Global Studies (APRGS-UF)",
+    "Art and Cultures across Antiquity (ACA-UF)",
+    "Art and Cultures of Modernity (ACM-UF)",
+    "Caribbean Cultures (CAGC-UF)",
+    "City as Text (CAT-UF)",
+    "Creative Writing Experiments (CWE-UF)",
+    "Creative Writing Studio (CWS-UF)",
+    "Dean's Circle (DC-UF)",
+    "East Asian Cultures- Global Cultures (EAGC-UF)",
+    "Economics I (ECI-UF)",
+    "Economics II (ECII-UF)",
+    "Environmental Studies (ENSTU-UF)",
+    "Fieldwork Seminar (FWS-UF)",
+    "Global Topics (GT-UF)",
+    "Global Works and Society: Antiquity (GWA-UF)",
+    "Global Works and Society: Modernity (GWM-UF)",
+    "Global Writing Seminar (GWS-UF)",
+    "History of the Universe (HOU-UF)",
+    "Independent Fieldwork (IF-UF)",
+    "Independent Study (IND-UF)",
+    "Junior Independent Research Seminar (JIRS-UF)",
+    "Latin American Cultures- Global Cultures (LAGC-UF)",
+    "Life Science (LISCI-UF)",
+    "Middle Eastern Cultures- Global Cultures (MEGC-UF)",
+    "Science of Technology (SCTEC-UF)",
+    "Senior Capstone I (SCAI-UF)",
+    "Senior Colloquium I (SCOI-UF)",
+    "South Asian Cultures- Global Cultures (SAGC-UF)",
+    "Topics in Humanities (ELEC-UF)",
+    "Writing as Critical Inquiry (WRCI-UF)",
+    "Writing as Exploration (WREX-UF)",
+    "Ancient World (AW-UH)",
+    "Arab Crossroads Studies (ACS-UH)",
+    "Arabic Language (ARABL-UH)",
+    "Art History (ARTH-UH)",
+    "Biology (BIOL-UH)",
+    "Business & Organization Soc (BUSOR-UH)",
+    "Chemistry (CHEM-UH)",
+    "Chinese Language (CHINL-UH)",
+    "Computer Science (CS-UH)",
+    "Core: Arts, Design and Technology (CADT-UH)",
+    "Core: Colloquium (CCOL-UH)",
+    "Core: Cultural Exploration & Analysis (CCEA-UH)",
+    "Core: Data and Discovery (CDAD-UH)",
+    "Core: Structures of Thought & Society (CSTS-UH)",
+    "Economics (ECON-UH)",
+    "Engineering (ENGR-UH)",
+    "Film and New Media (FILMM-UH)",
+    "History (HIST-UH)",
+    "History - Non-Majors (HISTN-UH)",
+    "Interactive Media (IM-UH)",
+    "Japanese Language (JAPNL-UH)",
+    "Legal Studies (LAW-UH)",
+    "Literature & Creative Writing (LITCW-UH)",
+    "Mathematics (MATH-UH)",
+    "Music (MUSIC-UH)",
+    "Philosophy (PHIL-UH)",
+    "Physical Education (PHYED-UH)",
+    "Physics (PHYS-UH)",
+    "Political Science (POLSC-UH)",
+    "Psychology (PSYCH-UH)",
+    "Science (SCIEN-UH)",
+    "Social Research & Public Policy (SRPP-UH)",
+    "Social Sciences (SOCSC-UH)",
+    "Spanish Language (SPANL-UH)",
+    "Theater (THEAT-UH)",
+    "Visual Arts (VISAR-UH)",
+    "Writing (WRIT-UH)",
+    "Art (ART-SHU)",
+    "Art and Cultures of Modernity (ACM-SHU)",
+    "Biology (BIOL-SHU)",
+    "Business and Finance (BUSF-SHU)",
+    "Chemistry (CHEM-SHU)",
+    "Chinese Language (CHIN-SHU)",
+    "Computer Engineering (CENG-SHU)",
+    "Computer Science (CSCI-SHU)",
+    "Creativity and Innovation (PCIX-SHU)",
+    "Data Science (DATS-SHU)",
+    "Economics (ECON-SHU)",
+    "English for Academic Purposes (EAP-SHU)",
+    "Exper Discovery in Nat World (CCEX-SHU)",
+    "Experiential Learning (EXLI-SHU)",
+    "French Language (FREN-SHU)",
+    "Global China Studies (GCHN-SHU)",
+    "Global Works and Society: Modernity (GWM-SHU)",
+    "History (HIST-SHU)",
+    "Humanities (HUMN-SHU)",
+    "Interactive Media Arts (INTM-SHU)",
+    "Interactive Media and Business (IMBX-SHU)",
+    "Japanese Language (JAPN-SHU)",
+    "Management (MGMT-SHU)",
+    "Marketing (MKTG-SHU)",
+    "Mathematics (MATH-SHU)",
+    "Music (MUS-SHU)",
+    "Neural Science (NEUR-SHU)",
+    "Philosophy (PHIL-SHU)",
+    "Physics (PHYS-SHU)",
+    "Psychology (PSYC-SHU)",
+    "Social Foundations (CCSF-SHU)",
+    "Social Impact (SOIM-SHU)",
+    "Social Science (SOCS-SHU)",
+    "World Languages (ENGD-SHU)",
+    "Writing (WRIT-SHU)",
+    "MLK Scholars Program (MLK-UZ)",
+    "Opportunity Programs Support Course (OPSC-UZ)",
+    "UG Public and Nonprofit Management and Policy (UPADM-GP)",
+    "Nursing - Undergraduate (NURSE-UN)",
+    "Undergraduate Global Public Health (UGPH-GU)",
+    "Undergrad Social Work (UNDSW-US)",
+    "Advanced College Essay (ACE-UE)",
+    "American Sign Language (ASL-UE)",
+    "Applied Psychology (APSY-UE)",
+    "Applied Statistics (APSTA-UE)",
+    "Art Theory & Critical Studies (ARTCR-UE)",
+    "Art and Costume Studies (ARCS-UE)",
+    "Childhood Education (CHDED-UE)",
+    "Communicative Sciences & Disorders (CSCD-UE)",
+    "Dance Education (MPADE-UE)",
+    "Departmental Courses (MPAGC-UE)",
+    "Early Childhood (ECED-UE)",
+    "Education Studies (EDST-UE)",
+    "Educational Communication and Technology (EDCT-UE)",
+    "Educational Leadership (EDLED-UE)",
+    "Educational Theatre (MPAET-UE)",
+    "English Education (ENGED-UE)",
+    "Food Studies (FOOD-UE)",
+    "Health and Wellbeing Studies (HLWB-UE)",
+    "History of Education (HSED-UE)",
+    "International Education (INTE-UE)",
+    "Literacy Education (LITC-UE)",
+    "Maintenance (MAINT-UE)",
+    "Mathematics Education (MTHED-UE)",
+    "Media, Culture & Communication (MCC-UE)",
+    "Music Business (MPAMB-UE)",
+    "Music Instrumental: Brass (MPABR-UE)",
+    "Music Instrumental: Jazz (MPAJZ-UE)",
+    "Music Instrumental: Percussion (MPAPS-UE)",
+    "Music Instrumental: Piano (MPAPE-UE)",
+    "Music Instrumental: Strings (MPASS-UE)",
+    "Music Instrumental: Voice (MPAVP-UE)",
+    "Music Instrumental: Woodwinds (MPAWW-UE)",
+    "Music Technology (MPATE-UE)",
+    "Music Theory and Composition (MPATC-UE)",
+    "Music Therapy (MPAMT-UE)",
+    "Nutrition & Dietetics (NUTR-UE)",
+    "Occupational Therapy (OT-UE)",
+    "Philosophy of Education (PHED-UE)",
+    "Science Education (SCIED-UE)",
+    "Social Studies Education (SOCED-UE)",
+    "Sociology of Education (SOED-UE)",
+    "Special Education (SPCED-UE)",
+    "Student Affairs Honors & Seminars (SAHS-UE)",
+    "Studio Art (ART-UE)",
+    "Teaching & Learning (TCHL-UE)",
+    "Teaching World Languages (WLGED-UE)",
+    "Aerospace Engineering (AE-UY)",
+    "Biomolecular Science (BMS-UY)",
+    "Chemical & Biomolecular Engineering (CBE-UY)",
+    "Chemistry (CM-UY)",
+    "Civil & Urban Engineering (CE-UY)",
+    "Co-op Education Program (CP-UY)",
+    "Computer Science (CS-UY)",
+    "Culture, Arts, and Media (CAM-UY)",
+    "Elect. Engineering - ECE UGRD (ECE-UY)",
+    "Exam Hour (EX-UY)",
+    "Finance (FIN-UY)",
+    "Finance and Risk Engineering (FRE-UY)",
+    "General Engineering (EG-UY)",
+    "Integrated Design and Media (DM-UY)",
+    "Interdisciplinary Studies (IS-UY)",
+    "Cultural Foundations I (CFI-UA)",
+    "Cultural Foundations II (CFII-UA)",
+    "Cultural Foundations III (CFIII-UA)",
+    "Global Programs (GLBL-UA)",
+    "Social Foundations I (SFI-UA)",
+    "Social Foundations II (SFII-UA)",
+    "Social Foundations III (SFIII-UA)",
+    "Basic Sciences (BASCI-DN)",
+    "Behavioral Sciences (BEHSC-DN)",
+    "Biomaterials (BIOMS-DN)",
+    "Clinical Sciences (CLSCI-DN)",
+    "Diagnostic Sciences (DGSCI-DN)",
+    "Intro to Clinics (PRECL-DN)",
+    "Maintenance (MAINT-UD)",
+    "Basic Sciences (BASCI-CD)",
+    "Behavioral Sciences (BEHSC-CD)",
+    "Biomaterials (BIOM-CD)",
+    "Clinical Sciences (CLSCI-CD)",
+    "Dental Ceramic Mastery (CERAM-CD)",
+    "Diagnostic Sciences (DGSCI-CD)",
+    "Ethics (ETHIC-CD)",
+    "Implant Dentistry (IMPLA-CD)",
+    "Intro to Clinics (PRECL-CD)",
+    "Co-Curricular Programs (COCUR-UG)",
+    "Core (CORE-GG)",
+    "Electives (ELEC-GG)",
+    "Individualized Projects (INDIV-GG)",
+    "Maintenance (MAINT-GG)",
+    "Scholarly Communities (SCHOL-GG)",
+    "Scholarly Communities (SCHOL-UG)",
+    "Study Away Seminar (SASEM-UG)"
+  ],
+  "successful_subjects": [
+    {
+      "subject_key": "ACA-UF",
+      "label": "Art and Cultures across Antiquity (ACA-UF)",
+      "new_documents": 36
+    },
+    {
+      "subject_key": "ACCT-UB",
+      "label": "Accounting (ACCT-UB)",
+      "new_documents": 39
+    },
+    {
+      "subject_key": "ACE-UE",
+      "label": "Advanced College Essay (ACE-UE)",
+      "new_documents": 3
+    },
+    {
+      "subject_key": "ACM-SHU",
+      "label": "Art and Cultures of Modernity (ACM-SHU)",
+      "new_documents": 3
+    },
+    {
+      "subject_key": "ACM-UF",
+      "label": "Art and Cultures of Modernity (ACM-UF)",
+      "new_documents": 32
+    },
+    {
+      "subject_key": "ACS-UH",
+      "label": "Arab Crossroads Studies (ACS-UH)",
+      "new_documents": 17
+    },
+    {
+      "subject_key": "AE-UY",
+      "label": "Aerospace Engineering (AE-UY)",
+      "new_documents": 4
+    },
+    {
+      "subject_key": "AELS-UF",
+      "label": "Academic English for Liberal Studies (AELS-UF)",
+      "new_documents": 5
+    },
+    {
+      "subject_key": "AFGC-UF",
+      "label": "African Cultures- Global Cultures (AFGC-UF)",
+      "new_documents": 6
+    },
+    {
+      "subject_key": "AGT-UF",
+      "label": "Advanced Global Topics (AGT-UF)",
+      "new_documents": 2
+    },
+    {
+      "subject_key": "ANST-UA",
+      "label": "Animal Studies (ANST-UA)",
+      "new_documents": 9
+    },
+    {
+      "subject_key": "ANTH-UA",
+      "label": "Anthropology (ANTH-UA)",
+      "new_documents": 135
+    },
+    {
+      "subject_key": "APRGS-UF",
+      "label": "Approaches to Global Studies (APRGS-UF)",
+      "new_documents": 3
+    },
+    {
+      "subject_key": "APSTA-UE",
+      "label": "Applied Statistics (APSTA-UE)",
+      "new_documents": 14
+    },
+    {
+      "subject_key": "APSY-UE",
+      "label": "Applied Psychology (APSY-UE)",
+      "new_documents": 118
+    },
+    {
+      "subject_key": "ARABL-UH",
+      "label": "Arabic Language (ARABL-UH)",
+      "new_documents": 22
+    },
+    {
+      "subject_key": "ARCS-UE",
+      "label": "Art and Costume Studies (ARCS-UE)",
+      "new_documents": 10
+    },
+    {
+      "subject_key": "ART-SHU",
+      "label": "Art (ART-SHU)",
+      "new_documents": 36
+    },
+    {
+      "subject_key": "ART-UE",
+      "label": "Studio Art (ART-UE)",
+      "new_documents": 141
+    },
+    {
+      "subject_key": "ARTCR-UE",
+      "label": "Art Theory & Critical Studies (ARTCR-UE)",
+      "new_documents": 19
+    },
+    {
+      "subject_key": "ARTH-UA",
+      "label": "Art History (ARTH-UA)",
+      "new_documents": 132
+    },
+    {
+      "subject_key": "ARTH-UH",
+      "label": "Art History (ARTH-UH)",
+      "new_documents": 46
+    },
+    {
+      "subject_key": "ARTS-UG",
+      "label": "Arts Workshops (ARTS-UG)",
+      "new_documents": 81
+    },
+    {
+      "subject_key": "ASL-UE",
+      "label": "American Sign Language (ASL-UE)",
+      "new_documents": 17
+    },
+    {
+      "subject_key": "AW-UH",
+      "label": "Ancient World (AW-UH)",
+      "new_documents": 3
+    },
+    {
+      "subject_key": "AWS-UF",
+      "label": "Advanced Writing Studio (AWS-UF)",
+      "new_documents": 3
+    },
+    {
+      "subject_key": "BASCI-DN",
+      "label": "Basic Sciences (BASCI-DN)",
+      "new_documents": 22
+    },
+    {
+      "subject_key": "BEHSC-DN",
+      "label": "Behavioral Sciences (BEHSC-DN)",
+      "new_documents": 9
+    },
+    {
+      "subject_key": "BIOL-SHU",
+      "label": "Biology (BIOL-SHU)",
+      "new_documents": 24
+    },
+    {
+      "subject_key": "BIOL-UA",
+      "label": "Biology (BIOL-UA)",
+      "new_documents": 215
+    },
+    {
+      "subject_key": "BIOL-UH",
+      "label": "Biology (BIOL-UH)",
+      "new_documents": 47
+    },
+    {
+      "subject_key": "BIOMS-DN",
+      "label": "Biomaterials (BIOMS-DN)",
+      "new_documents": 38
+    },
+    {
+      "subject_key": "BMS-UY",
+      "label": "Biomolecular Science (BMS-UY)",
+      "new_documents": 52
+    },
+    {
+      "subject_key": "BPEP-UB",
+      "label": "Business and Political Economy Program (BPEP-UB)",
+      "new_documents": 15
+    },
+    {
+      "subject_key": "BSPA-UB",
+      "label": "Business and Society (BSPA-UB)",
+      "new_documents": 26
+    },
+    {
+      "subject_key": "BTEP-UB",
+      "label": "Business, Technology & Entrepreneurship Program (BTEP-UB)",
+      "new_documents": 15
+    },
+    {
+      "subject_key": "BUSF-SHU",
+      "label": "Business and Finance (BUSF-SHU)",
+      "new_documents": 80
+    },
+    {
+      "subject_key": "BUSOR-UH",
+      "label": "Business & Organization Soc (BUSOR-UH)",
+      "new_documents": 53
+    },
+    {
+      "subject_key": "CADT-UH",
+      "label": "Core: Arts, Design and Technology (CADT-UH)",
+      "new_documents": 33
+    },
+    {
+      "subject_key": "CAGC-UF",
+      "label": "Caribbean Cultures (CAGC-UF)",
+      "new_documents": 4
+    },
+    {
+      "subject_key": "CAM-UY",
+      "label": "Culture, Arts, and Media (CAM-UY)",
+      "new_documents": 20
+    },
+    {
+      "subject_key": "CAMS-UA",
+      "label": "Child/Adoles Mental Hlth Stds (CAMS-UA)",
+      "new_documents": 190
+    },
+    {
+      "subject_key": "CAT-UF",
+      "label": "City as Text (CAT-UF)",
+      "new_documents": 13
+    },
+    {
+      "subject_key": "CBE-UY",
+      "label": "Chemical & Biomolecular Engineering (CBE-UY)",
+      "new_documents": 85
+    },
+    {
+      "subject_key": "CCEA-UH",
+      "label": "Core: Cultural Exploration & Analysis (CCEA-UH)",
+      "new_documents": 41
+    },
+    {
+      "subject_key": "CCEX-SHU",
+      "label": "Exper Discovery in Nat World (CCEX-SHU)",
+      "new_documents": 8
+    },
+    {
+      "subject_key": "CCOL-UH",
+      "label": "Core: Colloquium (CCOL-UH)",
+      "new_documents": 63
+    },
+    {
+      "subject_key": "CCSF-SHU",
+      "label": "Social Foundations (CCSF-SHU)",
+      "new_documents": 39
+    },
+    {
+      "subject_key": "CDAD-UH",
+      "label": "Core: Data and Discovery (CDAD-UH)",
+      "new_documents": 60
+    },
+    {
+      "subject_key": "CE-UY",
+      "label": "Civil & Urban Engineering (CE-UY)",
+      "new_documents": 105
+    },
+    {
+      "subject_key": "CENG-SHU",
+      "label": "Computer Engineering (CENG-SHU)",
+      "new_documents": 11
+    },
+    {
+      "subject_key": "CHDED-UE",
+      "label": "Childhood Education (CHDED-UE)",
+      "new_documents": 2
+    },
+    {
+      "subject_key": "CHEM-SHU",
+      "label": "Chemistry (CHEM-SHU)",
+      "new_documents": 29
+    },
+    {
+      "subject_key": "CHEM-UA",
+      "label": "Chemistry (CHEM-UA)",
+      "new_documents": 299
+    },
+    {
+      "subject_key": "CHEM-UH",
+      "label": "Chemistry (CHEM-UH)",
+      "new_documents": 42
+    },
+    {
+      "subject_key": "CHIN-SHU",
+      "label": "Chinese Language (CHIN-SHU)",
+      "new_documents": 72
+    },
+    {
+      "subject_key": "CHINL-UH",
+      "label": "Chinese Language (CHINL-UH)",
+      "new_documents": 10
+    },
+    {
+      "subject_key": "CLASS-UA",
+      "label": "Classics (CLASS-UA)",
+      "new_documents": 48
+    },
+    {
+      "subject_key": "CM-UY",
+      "label": "Chemistry (CM-UY)",
+      "new_documents": 61
+    },
+    {
+      "subject_key": "COHRT-UA",
+      "label": "First-Year Cohort (COHRT-UA)",
+      "new_documents": 50
+    },
+    {
+      "subject_key": "COLIT-UA",
+      "label": "Comparative Literature (COLIT-UA)",
+      "new_documents": 32
+    },
+    {
+      "subject_key": "COLU-UA",
+      "label": "Columbia Language Exchange (COLU-UA)",
+      "new_documents": 32
+    },
+    {
+      "subject_key": "CORE-GG",
+      "label": "Core (CORE-GG)",
+      "new_documents": 24
+    },
+    {
+      "subject_key": "CORE-UA",
+      "label": "College Core Curriculum (CORE-UA)",
+      "new_documents": 435
+    },
+    {
+      "subject_key": "CP-UY",
+      "label": "Co-op Education Program (CP-UY)",
+      "new_documents": 32
+    },
+    {
+      "subject_key": "CRWRI-UA",
+      "label": "Creative Writing (CRWRI-UA)",
+      "new_documents": 84
+    },
+    {
+      "subject_key": "CS-UH",
+      "label": "Computer Science (CS-UH)",
+      "new_documents": 96
+    },
+    {
+      "subject_key": "CS-UY",
+      "label": "Computer Science (CS-UY)",
+      "new_documents": 172
+    },
+    {
+      "subject_key": "CSCD-UE",
+      "label": "Communicative Sciences & Disorders (CSCD-UE)",
+      "new_documents": 24
+    },
+    {
+      "subject_key": "CSCI-SHU",
+      "label": "Computer Science (CSCI-SHU)",
+      "new_documents": 72
+    },
+    {
+      "subject_key": "CSCI-UA",
+      "label": "Computer Science (CSCI-UA)",
+      "new_documents": 220
+    },
+    {
+      "subject_key": "CSTS-UH",
+      "label": "Core: Structures of Thought & Society (CSTS-UH)",
+      "new_documents": 41
+    },
+    {
+      "subject_key": "CWE-UF",
+      "label": "Creative Writing Experiments (CWE-UF)",
+      "new_documents": 3
+    },
+    {
+      "subject_key": "CWS-UF",
+      "label": "Creative Writing Studio (CWS-UF)",
+      "new_documents": 2
+    },
+    {
+      "subject_key": "DATS-SHU",
+      "label": "Data Science (DATS-SHU)",
+      "new_documents": 13
+    },
+    {
+      "subject_key": "DC-UF",
+      "label": "Dean's Circle (DC-UF)",
+      "new_documents": 2
+    },
+    {
+      "subject_key": "DGSCI-DN",
+      "label": "Diagnostic Sciences (DGSCI-DN)",
+      "new_documents": 133
+    },
+    {
+      "subject_key": "DM-UY",
+      "label": "Integrated Design and Media (DM-UY)",
+      "new_documents": 63
+    },
+    {
+      "subject_key": "DRLIT-UA",
+      "label": "Dramatic Literature (DRLIT-UA)",
+      "new_documents": 49
+    },
+    {
+      "subject_key": "DS-UA",
+      "label": "Data Science (DS-UA)",
+      "new_documents": 91
+    },
+    {
+      "subject_key": "EAGC-UF",
+      "label": "East Asian Cultures- Global Cultures (EAGC-UF)",
+      "new_documents": 4
+    },
+    {
+      "subject_key": "EAP-SHU",
+      "label": "English for Academic Purposes (EAP-SHU)",
+      "new_documents": 29
+    },
+    {
+      "subject_key": "EAST-UA",
+      "label": "East Asian Studies (EAST-UA)",
+      "new_documents": 147
+    },
+    {
+      "subject_key": "ECE-UY",
+      "label": "Elect. Engineering - ECE UGRD (ECE-UY)",
+      "new_documents": 100
+    },
+    {
+      "subject_key": "ECED-UE",
+      "label": "Early Childhood (ECED-UE)",
+      "new_documents": 11
+    },
+    {
+      "subject_key": "ECI-UF",
+      "label": "Economics I (ECI-UF)",
+      "new_documents": 13
+    },
+    {
+      "subject_key": "ECII-UF",
+      "label": "Economics II (ECII-UF)",
+      "new_documents": 6
+    },
+    {
+      "subject_key": "ECON-SHU",
+      "label": "Economics (ECON-SHU)",
+      "new_documents": 66
+    },
+    {
+      "subject_key": "ECON-UA",
+      "label": "Economics (ECON-UA)",
+      "new_documents": 275
+    },
+    {
+      "subject_key": "ECON-UB",
+      "label": "Economics (ECON-UB)",
+      "new_documents": 68
+    },
+    {
+      "subject_key": "ECON-UH",
+      "label": "Economics (ECON-UH)",
+      "new_documents": 87
+    },
+    {
+      "subject_key": "EDCT-UE",
+      "label": "Educational Communication and Technology (EDCT-UE)",
+      "new_documents": 8
+    },
+    {
+      "subject_key": "EDLED-UE",
+      "label": "Educational Leadership (EDLED-UE)",
+      "new_documents": 2
+    },
+    {
+      "subject_key": "EDST-UE",
+      "label": "Education Studies (EDST-UE)",
+      "new_documents": 15
+    },
+    {
+      "subject_key": "EG-UY",
+      "label": "General Engineering (EG-UY)",
+      "new_documents": 85
+    },
+    {
+      "subject_key": "ELEC-GG",
+      "label": "Electives (ELEC-GG)",
+      "new_documents": 12
+    },
+    {
+      "subject_key": "ELEC-UF",
+      "label": "Topics in Humanities (ELEC-UF)",
+      "new_documents": 4
+    },
+    {
+      "subject_key": "ENGD-SHU",
+      "label": "World Languages (ENGD-SHU)",
+      "new_documents": 6
+    },
+    {
+      "subject_key": "ENGED-UE",
+      "label": "English Education (ENGED-UE)",
+      "new_documents": 8
+    },
+    {
+      "subject_key": "ENGL-UA",
+      "label": "English (ENGL-UA)",
+      "new_documents": 144
+    },
+    {
+      "subject_key": "ENGR-UH",
+      "label": "Engineering (ENGR-UH)",
+      "new_documents": 211
+    },
+    {
+      "subject_key": "ENSTU-UF",
+      "label": "Environmental Studies (ENSTU-UF)",
+      "new_documents": 8
+    },
+    {
+      "subject_key": "ENVST-UA",
+      "label": "Environmental Studies (ENVST-UA)",
+      "new_documents": 55
+    },
+    {
+      "subject_key": "EURO-UA",
+      "label": "European and Mediterranean Studies (EURO-UA)",
+      "new_documents": 35
+    },
+    {
+      "subject_key": "EX-UY",
+      "label": "Exam Hour (EX-UY)",
+      "new_documents": 2
+    },
+    {
+      "subject_key": "EXLI-SHU",
+      "label": "Experiential Learning (EXLI-SHU)",
+      "new_documents": 3
+    },
+    {
+      "subject_key": "EXPOS-UA",
+      "label": "Expository Writing (EXPOS-UA)",
+      "new_documents": 36
+    },
+    {
+      "subject_key": "FILMM-UH",
+      "label": "Film and New Media (FILMM-UH)",
+      "new_documents": 34
+    },
+    {
+      "subject_key": "FIN-UY",
+      "label": "Finance (FIN-UY)",
+      "new_documents": 18
+    },
+    {
+      "subject_key": "FINC-UB",
+      "label": "Finance (FINC-UB)",
+      "new_documents": 99
+    },
+    {
+      "subject_key": "FIRST-UG",
+      "label": "First Year program (FIRST-UG)",
+      "new_documents": 134
+    },
+    {
+      "subject_key": "FOOD-UE",
+      "label": "Food Studies (FOOD-UE)",
+      "new_documents": 51
+    },
+    {
+      "subject_key": "FRE-UY",
+      "label": "Finance and Risk Engineering (FRE-UY)",
+      "new_documents": 9
+    },
+    {
+      "subject_key": "FREN-SHU",
+      "label": "French Language (FREN-SHU)",
+      "new_documents": 5
+    },
+    {
+      "subject_key": "FREN-UA",
+      "label": "French (FREN-UA)",
+      "new_documents": 174
+    },
+    {
+      "subject_key": "FWS-UF",
+      "label": "Fieldwork Seminar (FWS-UF)",
+      "new_documents": 2
+    },
+    {
+      "subject_key": "FYSEM-UA",
+      "label": "First-Year Seminars (FYSEM-UA)",
+      "new_documents": 2
+    },
+    {
+      "subject_key": "GCHN-SHU",
+      "label": "Global China Studies (GCHN-SHU)",
+      "new_documents": 45
+    },
+    {
+      "subject_key": "GERM-UA",
+      "label": "German (GERM-UA)",
+      "new_documents": 77
+    },
+    {
+      "subject_key": "GT-UF",
+      "label": "Global Topics (GT-UF)",
+      "new_documents": 7
+    },
+    {
+      "subject_key": "GWA-UF",
+      "label": "Global Works and Society: Antiquity (GWA-UF)",
+      "new_documents": 35
+    },
+    {
+      "subject_key": "GWM-SHU",
+      "label": "Global Works and Society: Modernity (GWM-SHU)",
+      "new_documents": 3
+    },
+    {
+      "subject_key": "GWM-UF",
+      "label": "Global Works and Society: Modernity (GWM-UF)",
+      "new_documents": 26
+    },
+    {
+      "subject_key": "GWS-UF",
+      "label": "Global Writing Seminar (GWS-UF)",
+      "new_documents": 9
+    },
+    {
+      "subject_key": "HBRJD-UA",
+      "label": "Hebrew & Judaic Studies (HBRJD-UA)",
+      "new_documents": 64
+    },
+    {
+      "subject_key": "HEL-UA",
+      "label": "Hellenic Studies (HEL-UA)",
+      "new_documents": 18
+    },
+    {
+      "subject_key": "HIST-SHU",
+      "label": "History (HIST-SHU)",
+      "new_documents": 10
+    },
+    {
+      "subject_key": "HIST-UA",
+      "label": "History (HIST-UA)",
+      "new_documents": 199
+    },
+    {
+      "subject_key": "HIST-UH",
+      "label": "History (HIST-UH)",
+      "new_documents": 25
+    },
+    {
+      "subject_key": "HISTN-UH",
+      "label": "History - Non-Majors (HISTN-UH)",
+      "new_documents": 4
+    },
+    {
+      "subject_key": "HLWB-UE",
+      "label": "Health and Wellbeing Studies (HLWB-UE)",
+      "new_documents": 3
+    },
+    {
+      "subject_key": "HOU-UF",
+      "label": "History of the Universe (HOU-UF)",
+      "new_documents": 9
+    },
+    {
+      "subject_key": "HSED-UE",
+      "label": "History of Education (HSED-UE)",
+      "new_documents": 7
+    },
+    {
+      "subject_key": "HUMN-SHU",
+      "label": "Humanities (HUMN-SHU)",
+      "new_documents": 5
+    },
+    {
+      "subject_key": "IDSEM-UG",
+      "label": "Interdisciplinary Seminars (IDSEM-UG)",
+      "new_documents": 352
+    },
+    {
+      "subject_key": "IF-UF",
+      "label": "Independent Fieldwork (IF-UF)",
+      "new_documents": 2
+    },
+    {
+      "subject_key": "IM-UH",
+      "label": "Interactive Media (IM-UH)",
+      "new_documents": 39
+    },
+    {
+      "subject_key": "IMBX-SHU",
+      "label": "Interactive Media and Business (IMBX-SHU)",
+      "new_documents": 25
+    },
+    {
+      "subject_key": "IND-UF",
+      "label": "Independent Study (IND-UF)",
+      "new_documents": 2
+    },
+    {
+      "subject_key": "INDIV-GG",
+      "label": "Individualized Projects (INDIV-GG)",
+      "new_documents": 12
+    },
+    {
+      "subject_key": "INDIV-UG",
+      "label": "Individualized Projects (INDIV-UG)",
+      "new_documents": 51
+    },
+    {
+      "subject_key": "INTE-UE",
+      "label": "International Education (INTE-UE)",
+      "new_documents": 9
+    },
+    {
+      "subject_key": "INTM-SHU",
+      "label": "Interactive Media Arts (INTM-SHU)",
+      "new_documents": 78
+    },
+    {
+      "subject_key": "INTRL-UA",
+      "label": "International Relations (INTRL-UA)",
+      "new_documents": 4
+    },
+    {
+      "subject_key": "IRISH-UA",
+      "label": "Irish Studies (IRISH-UA)",
+      "new_documents": 17
+    },
+    {
+      "subject_key": "ITAL-UA",
+      "label": "Italian (ITAL-UA)",
+      "new_documents": 110
+    },
+    {
+      "subject_key": "JAPN-SHU",
+      "label": "Japanese Language (JAPN-SHU)",
+      "new_documents": 6
+    },
+    {
+      "subject_key": "JAPNL-UH",
+      "label": "Japanese Language (JAPNL-UH)",
+      "new_documents": 4
+    },
+    {
+      "subject_key": "JIRS-UF",
+      "label": "Junior Independent Research Seminar (JIRS-UF)",
+      "new_documents": 15
+    },
+    {
+      "subject_key": "JOUR-UA",
+      "label": "Journalism (JOUR-UA)",
+      "new_documents": 74
+    },
+    {
+      "subject_key": "LAGC-UF",
+      "label": "Latin American Cultures- Global Cultures (LAGC-UF)",
+      "new_documents": 8
+    },
+    {
+      "subject_key": "LATC-UA",
+      "label": "Latin Amer-Caribbean Studies (LATC-UA)",
+      "new_documents": 38
+    },
+    {
+      "subject_key": "LAW-UH",
+      "label": "Legal Studies (LAW-UH)",
+      "new_documents": 47
+    },
+    {
+      "subject_key": "LING-UA",
+      "label": "Linguistics (LING-UA)",
+      "new_documents": 48
+    },
+    {
+      "subject_key": "LISCI-UF",
+      "label": "Life Science (LISCI-UF)",
+      "new_documents": 9
+    },
+    {
+      "subject_key": "LITC-UE",
+      "label": "Literacy Education (LITC-UE)",
+      "new_documents": 6
+    },
+    {
+      "subject_key": "LITCW-UH",
+      "label": "Literature & Creative Writing (LITCW-UH)",
+      "new_documents": 37
+    },
+    {
+      "subject_key": "LWSOC-UA",
+      "label": "Law and Society (LWSOC-UA)",
+      "new_documents": 2
+    },
+    {
+      "subject_key": "MAINT-UE",
+      "label": "Maintenance (MAINT-UE)",
+      "new_documents": 2
+    },
+    {
+      "subject_key": "MATH-SHU",
+      "label": "Mathematics (MATH-SHU)",
+      "new_documents": 82
+    },
+    {
+      "subject_key": "MATH-UA",
+      "label": "Math (MATH-UA)",
+      "new_documents": 540
+    },
+    {
+      "subject_key": "MATH-UH",
+      "label": "Mathematics (MATH-UH)",
+      "new_documents": 108
+    },
+    {
+      "subject_key": "MCC-UE",
+      "label": "Media, Culture & Communication (MCC-UE)",
+      "new_documents": 220
+    },
+    {
+      "subject_key": "MEDI-UA",
+      "label": "Medieval & Renaissance Studies (MEDI-UA)",
+      "new_documents": 16
+    },
+    {
+      "subject_key": "MEGC-UF",
+      "label": "Middle Eastern Cultures- Global Cultures (MEGC-UF)",
+      "new_documents": 5
+    },
+    {
+      "subject_key": "MEIS-UA",
+      "label": "Middle Eastern and Islamic Studies (MEIS-UA)",
+      "new_documents": 79
+    },
+    {
+      "subject_key": "MGMT-SHU",
+      "label": "Management (MGMT-SHU)",
+      "new_documents": 7
+    },
+    {
+      "subject_key": "MGMT-UB",
+      "label": "Management (MGMT-UB)",
+      "new_documents": 38
+    },
+    {
+      "subject_key": "MHUM-UA",
+      "label": "Minor in Medical Humanities (MHUM-UA)",
+      "new_documents": 3
+    },
+    {
+      "subject_key": "MKTG-SHU",
+      "label": "Marketing (MKTG-SHU)",
+      "new_documents": 13
+    },
+    {
+      "subject_key": "MKTG-UB",
+      "label": "Marketing (MKTG-UB)",
+      "new_documents": 118
+    },
+    {
+      "subject_key": "MLK-UZ",
+      "label": "MLK Scholars Program (MLK-UZ)",
+      "new_documents": 5
+    },
+    {
+      "subject_key": "MPABR-UE",
+      "label": "Music Instrumental: Brass (MPABR-UE)",
+      "new_documents": 28
+    },
+    {
+      "subject_key": "MPADE-UE",
+      "label": "Dance Education (MPADE-UE)",
+      "new_documents": 25
+    },
+    {
+      "subject_key": "MPAET-UE",
+      "label": "Educational Theatre (MPAET-UE)",
+      "new_documents": 28
+    },
+    {
+      "subject_key": "MPAGC-UE",
+      "label": "Departmental Courses (MPAGC-UE)",
+      "new_documents": 14
+    },
+    {
+      "subject_key": "MPAJZ-UE",
+      "label": "Music Instrumental: Jazz (MPAJZ-UE)",
+      "new_documents": 91
+    },
+    {
+      "subject_key": "MPAMB-UE",
+      "label": "Music Business (MPAMB-UE)",
+      "new_documents": 56
+    },
+    {
+      "subject_key": "MPAMT-UE",
+      "label": "Music Therapy (MPAMT-UE)",
+      "new_documents": 4
+    },
+    {
+      "subject_key": "MPAPE-UE",
+      "label": "Music Instrumental: Piano (MPAPE-UE)",
+      "new_documents": 140
+    },
+    {
+      "subject_key": "MPAPS-UE",
+      "label": "Music Instrumental: Percussion (MPAPS-UE)",
+      "new_documents": 38
+    },
+    {
+      "subject_key": "MPASS-UE",
+      "label": "Music Instrumental: Strings (MPASS-UE)",
+      "new_documents": 79
+    },
+    {
+      "subject_key": "MPATC-UE",
+      "label": "Music Theory and Composition (MPATC-UE)",
+      "new_documents": 247
+    },
+    {
+      "subject_key": "MPATE-UE",
+      "label": "Music Technology (MPATE-UE)",
+      "new_documents": 96
+    },
+    {
+      "subject_key": "MPAVP-UE",
+      "label": "Music Instrumental: Voice (MPAVP-UE)",
+      "new_documents": 122
+    },
+    {
+      "subject_key": "MPAWW-UE",
+      "label": "Music Instrumental: Woodwinds (MPAWW-UE)",
+      "new_documents": 56
+    },
+    {
+      "subject_key": "MTHED-UE",
+      "label": "Mathematics Education (MTHED-UE)",
+      "new_documents": 23
+    },
+    {
+      "subject_key": "MULT-UB",
+      "label": "Multidisciplinary (MULT-UB)",
+      "new_documents": 109
+    },
+    {
+      "subject_key": "MUS-SHU",
+      "label": "Music (MUS-SHU)",
+      "new_documents": 46
+    },
+    {
+      "subject_key": "MUSIC-UA",
+      "label": "Music (MUSIC-UA)",
+      "new_documents": 44
+    },
+    {
+      "subject_key": "MUSIC-UH",
+      "label": "Music (MUSIC-UH)",
+      "new_documents": 34
+    },
+    {
+      "subject_key": "NEUR-SHU",
+      "label": "Neural Science (NEUR-SHU)",
+      "new_documents": 18
+    },
+    {
+      "subject_key": "NEURL-UA",
+      "label": "Neural Science (NEURL-UA)",
+      "new_documents": 24
+    },
+    {
+      "subject_key": "NODEP-UA",
+      "label": "Non-Departmental (NODEP-UA)",
+      "new_documents": 23
+    },
+    {
+      "subject_key": "NURSE-UN",
+      "label": "Nursing - Undergraduate (NURSE-UN)",
+      "new_documents": 18
+    },
+    {
+      "subject_key": "NUTR-UE",
+      "label": "Nutrition & Dietetics (NUTR-UE)",
+      "new_documents": 60
+    },
+    {
+      "subject_key": "OPMG-UB",
+      "label": "Operations Management (OPMG-UB)",
+      "new_documents": 19
+    },
+    {
+      "subject_key": "OPSC-UZ",
+      "label": "Opportunity Programs Support Course (OPSC-UZ)",
+      "new_documents": 89
+    },
+    {
+      "subject_key": "OT-UE",
+      "label": "Occupational Therapy (OT-UE)",
+      "new_documents": 9
+    },
+    {
+      "subject_key": "PCIX-SHU",
+      "label": "Creativity and Innovation (PCIX-SHU)",
+      "new_documents": 18
+    },
+    {
+      "subject_key": "PHED-UE",
+      "label": "Philosophy of Education (PHED-UE)",
+      "new_documents": 6
+    },
+    {
+      "subject_key": "PHIL-SHU",
+      "label": "Philosophy (PHIL-SHU)",
+      "new_documents": 17
+    },
+    {
+      "subject_key": "PHIL-UA",
+      "label": "Philosophy (PHIL-UA)",
+      "new_documents": 84
+    },
+    {
+      "subject_key": "PHIL-UH",
+      "label": "Philosophy (PHIL-UH)",
+      "new_documents": 26
+    },
+    {
+      "subject_key": "PHYED-UH",
+      "label": "Physical Education (PHYED-UH)",
+      "new_documents": 99
+    },
+    {
+      "subject_key": "PHYS-SHU",
+      "label": "Physics (PHYS-SHU)",
+      "new_documents": 23
+    },
+    {
+      "subject_key": "PHYS-UA",
+      "label": "Physics (PHYS-UA)",
+      "new_documents": 135
+    },
+    {
+      "subject_key": "PHYS-UH",
+      "label": "Physics (PHYS-UH)",
+      "new_documents": 26
+    },
+    {
+      "subject_key": "POL-UA",
+      "label": "Politics (POL-UA)",
+      "new_documents": 209
+    },
+    {
+      "subject_key": "POLSC-UH",
+      "label": "Political Science (POLSC-UH)",
+      "new_documents": 28
+    },
+    {
+      "subject_key": "PORT-UA",
+      "label": "Portuguese (PORT-UA)",
+      "new_documents": 20
+    },
+    {
+      "subject_key": "PRACT-UG",
+      "label": "Practicum (PRACT-UG)",
+      "new_documents": 17
+    },
+    {
+      "subject_key": "PRECL-DN",
+      "label": "Intro to Clinics (PRECL-DN)",
+      "new_documents": 39
+    },
+    {
+      "subject_key": "PSYC-SHU",
+      "label": "Psychology (PSYC-SHU)",
+      "new_documents": 20
+    },
+    {
+      "subject_key": "PSYCH-UA",
+      "label": "Psychology (PSYCH-UA)",
+      "new_documents": 202
+    },
+    {
+      "subject_key": "PSYCH-UH",
+      "label": "Psychology (PSYCH-UH)",
+      "new_documents": 55
+    },
+    {
+      "subject_key": "PUBPL-UA",
+      "label": "Public Policy (PUBPL-UA)",
+      "new_documents": 5
+    },
+    {
+      "subject_key": "RELST-UA",
+      "label": "Religious Studies (RELST-UA)",
+      "new_documents": 37
+    },
+    {
+      "subject_key": "RSRCH-UG",
+      "label": "Research Workshops (RSRCH-UG)",
+      "new_documents": 9
+    },
+    {
+      "subject_key": "RUSSN-UA",
+      "label": "Russian & Slavic Studies (RUSSN-UA)",
+      "new_documents": 67
+    },
+    {
+      "subject_key": "SAGC-UF",
+      "label": "South Asian Cultures- Global Cultures (SAGC-UF)",
+      "new_documents": 3
+    },
+    {
+      "subject_key": "SAHS-UE",
+      "label": "Student Affairs Honors & Seminars (SAHS-UE)",
+      "new_documents": 34
+    },
+    {
+      "subject_key": "SCA-UA",
+      "label": "Social and Cultural Analysis (SCA-UA)",
+      "new_documents": 9
+    },
+    {
+      "subject_key": "SCAI-UF",
+      "label": "Senior Capstone I (SCAI-UF)",
+      "new_documents": 6
+    },
+    {
+      "subject_key": "SCHOL-UA",
+      "label": "CAS Scholars Program (SCHOL-UA)",
+      "new_documents": 21
+    },
+    {
+      "subject_key": "SCIED-UE",
+      "label": "Science Education (SCIED-UE)",
+      "new_documents": 16
+    },
+    {
+      "subject_key": "SCIEN-UH",
+      "label": "Science (SCIEN-UH)",
+      "new_documents": 65
+    },
+    {
+      "subject_key": "SCOI-UF",
+      "label": "Senior Colloquium I (SCOI-UF)",
+      "new_documents": 12
+    },
+    {
+      "subject_key": "SCTEC-UF",
+      "label": "Science of Technology (SCTEC-UF)",
+      "new_documents": 2
+    },
+    {
+      "subject_key": "SOC-UA",
+      "label": "Sociology (SOC-UA)",
+      "new_documents": 88
+    },
+    {
+      "subject_key": "SOCED-UE",
+      "label": "Social Studies Education (SOCED-UE)",
+      "new_documents": 8
+    },
+    {
+      "subject_key": "SOCS-SHU",
+      "label": "Social Science (SOCS-SHU)",
+      "new_documents": 89
+    },
+    {
+      "subject_key": "SOCSC-UH",
+      "label": "Social Sciences (SOCSC-UH)",
+      "new_documents": 75
+    },
+    {
+      "subject_key": "SOED-UE",
+      "label": "Sociology of Education (SOED-UE)",
+      "new_documents": 3
+    },
+    {
+      "subject_key": "SOIM-SHU",
+      "label": "Social Impact (SOIM-SHU)",
+      "new_documents": 6
+    },
+    {
+      "subject_key": "SOIM-UB",
+      "label": "Social Impact (SOIM-UB)",
+      "new_documents": 103
+    },
+    {
+      "subject_key": "SPAN-UA",
+      "label": "Spanish (SPAN-UA)",
+      "new_documents": 250
+    },
+    {
+      "subject_key": "SPANL-UH",
+      "label": "Spanish Language (SPANL-UH)",
+      "new_documents": 3
+    },
+    {
+      "subject_key": "SPCED-UE",
+      "label": "Special Education (SPCED-UE)",
+      "new_documents": 10
+    },
+    {
+      "subject_key": "SRPP-UH",
+      "label": "Social Research & Public Policy (SRPP-UH)",
+      "new_documents": 44
+    },
+    {
+      "subject_key": "STAT-UB",
+      "label": "Statistics & Operations Research (STAT-UB)",
+      "new_documents": 16
+    },
+    {
+      "subject_key": "TCHL-UE",
+      "label": "Teaching & Learning (TCHL-UE)",
+      "new_documents": 17
+    },
+    {
+      "subject_key": "TECH-UB",
+      "label": "Computing and Data Science (TECH-UB)",
+      "new_documents": 56
+    },
+    {
+      "subject_key": "THEAT-UH",
+      "label": "Theater (THEAT-UH)",
+      "new_documents": 29
+    },
+    {
+      "subject_key": "UGPH-GU",
+      "label": "Undergraduate Global Public Health (UGPH-GU)",
+      "new_documents": 80
+    },
+    {
+      "subject_key": "UNDSW-US",
+      "label": "Undergrad Social Work (UNDSW-US)",
+      "new_documents": 76
+    },
+    {
+      "subject_key": "UPADM-GP",
+      "label": "UG Public and Nonprofit Management and Policy (UPADM-GP)",
+      "new_documents": 75
+    },
+    {
+      "subject_key": "URBS-UA",
+      "label": "Urban Studies (URBS-UA)",
+      "new_documents": 9
+    },
+    {
+      "subject_key": "VISAR-UH",
+      "label": "Visual Arts (VISAR-UH)",
+      "new_documents": 3
+    },
+    {
+      "subject_key": "WLGED-UE",
+      "label": "Teaching World Languages (WLGED-UE)",
+      "new_documents": 4
+    },
+    {
+      "subject_key": "WRCI-UF",
+      "label": "Writing as Critical Inquiry (WRCI-UF)",
+      "new_documents": 4
+    },
+    {
+      "subject_key": "WREX-UF",
+      "label": "Writing as Exploration (WREX-UF)",
+      "new_documents": 51
+    },
+    {
+      "subject_key": "WRIT-SHU",
+      "label": "Writing (WRIT-SHU)",
+      "new_documents": 48
+    },
+    {
+      "subject_key": "WRIT-UH",
+      "label": "Writing (WRIT-UH)",
+      "new_documents": 62
+    },
+    {
+      "subject_key": "WRTNG-UG",
+      "label": "Advanced Writing Courses (WRTNG-UG)",
+      "new_documents": 55
+    }
+  ],
+  "failed_subjects": [],
+  "missing_subjects": [
+    {
+      "subject_key": "ACC-UF",
+      "label": "Art and Cultures towards the Crossroads (ACC-UF)"
+    },
+    {
+      "subject_key": "ACCT-GB",
+      "label": "Accounting (ACCT-GB)"
+    },
+    {
+      "subject_key": "ACTG-GT",
+      "label": "Graduate Acting (ACTG-GT)"
+    },
+    {
+      "subject_key": "AFRS-GA",
+      "label": "Africana Studies (AFRS-GA)"
+    },
+    {
+      "subject_key": "AMLT-GE",
+      "label": "Administration, Leadership & Technology (AMLT-GE)"
+    },
+    {
+      "subject_key": "AMST-GA",
+      "label": "American Studies (AMST-GA)"
+    },
+    {
+      "subject_key": "ANES-ML",
+      "label": "Anesthesiology (ANES-ML)"
+    },
+    {
+      "subject_key": "ANST-GA",
+      "label": "Animal Studies (ANST-GA)"
+    },
+    {
+      "subject_key": "ANTH-GA",
+      "label": "Anthropology (ANTH-GA)"
+    },
+    {
+      "subject_key": "ANTH-UH",
+      "label": "Anthropology (ANTH-UH)"
+    },
+    {
+      "subject_key": "APHY-GH",
+      "label": "Astrophysics & Space Systems (APHY-GH)"
+    },
+    {
+      "subject_key": "APR-UF",
+      "label": "Approaches: Sophomore Seminar (APR-UF)"
+    },
+    {
+      "subject_key": "APSTA-GE",
+      "label": "Applied Statistics (APSTA-GE)"
+    },
+    {
+      "subject_key": "APSTA-NE",
+      "label": "PRIISM MathStats Bootcamp (APSTA-NE)"
+    },
+    {
+      "subject_key": "APSY-GE",
+      "label": "Applied Psychology (APSY-GE)"
+    },
+    {
+      "subject_key": "ARBC-SHU",
+      "label": "Arabic Language (ARBC-SHU)"
+    },
+    {
+      "subject_key": "ARCS-GE",
+      "label": "Costume Studies (ARCS-GE)"
+    },
+    {
+      "subject_key": "ART-GE",
+      "label": "Studio Art (ART-GE)"
+    },
+    {
+      "subject_key": "ARTCR-GE",
+      "label": "Art Theory & Critical Studies (ARTCR-GE)"
+    },
+    {
+      "subject_key": "ARTED-GE",
+      "label": "Art Education (ARTED-GE)"
+    },
+    {
+      "subject_key": "ARTH-GA",
+      "label": "Art and Architecture (ARTH-GA)"
+    },
+    {
+      "subject_key": "ARTMD-GH",
+      "label": "Art and Media GH (ARTMD-GH)"
+    },
+    {
+      "subject_key": "ARTP-GE",
+      "label": "Art & Art Professions (ARTP-GE)"
+    },
+    {
+      "subject_key": "ARTP-UE",
+      "label": "Art & Art Professions (ARTP-UE)"
+    },
+    {
+      "subject_key": "ARTT-GE",
+      "label": "Art Therapy (ARTT-GE)"
+    },
+    {
+      "subject_key": "ARTT-UE",
+      "label": "Art Therapy (ARTT-UE)"
+    },
+    {
+      "subject_key": "ARVA-GE",
+      "label": "Visual Arts Administration (ARVA-GE)"
+    },
+    {
+      "subject_key": "ASH-GE",
+      "label": "Applied Statistics, Social Science, and Humanities (ASH-GE)"
+    },
+    {
+      "subject_key": "ASPP-GT",
+      "label": "Ctr for Art, Society & Pub Pol (ASPP-GT)"
+    },
+    {
+      "subject_key": "ASPP-UT",
+      "label": "Ctr for Art, Society & Pub Pol (ASPP-UT)"
+    },
+    {
+      "subject_key": "BE-GY",
+      "label": "BioEngineering (BE-GY)"
+    },
+    {
+      "subject_key": "BE-UY",
+      "label": "BioEngineering (BE-UY)"
+    },
+    {
+      "subject_key": "BI-GY",
+      "label": "Bioinformatics (BI-GY)"
+    },
+    {
+      "subject_key": "BILED-GE",
+      "label": "Bilingual Education (BILED-GE)"
+    },
+    {
+      "subject_key": "BILED-UE",
+      "label": "Bilingual Education (BILED-UE)"
+    },
+    {
+      "subject_key": "BIOE-GA",
+      "label": "Bioethics (BIOE-GA)"
+    },
+    {
+      "subject_key": "BIOL-GA",
+      "label": "Biology (BIOL-GA)"
+    },
+    {
+      "subject_key": "BMIN-GA",
+      "label": "Biomedical Informatics (BMIN-GA)"
+    },
+    {
+      "subject_key": "BMSC-GA",
+      "label": "Basic Medical Science (BMSC-GA)"
+    },
+    {
+      "subject_key": "BPEP-SHU",
+      "label": "Business & Political Economy Program (BPEP-SHU)"
+    },
+    {
+      "subject_key": "BSPA-GB",
+      "label": "Business & Society (BSPA-GB)"
+    },
+    {
+      "subject_key": "BT-GY",
+      "label": "Biotechnology (BT-GY)"
+    },
+    {
+      "subject_key": "BTE-GY",
+      "label": "Biotechnology & Entrepreneurship (BTE-GY)"
+    },
+    {
+      "subject_key": "CAP-GP",
+      "label": "Capstone course (CAP-GP)"
+    },
+    {
+      "subject_key": "CBE-GY",
+      "label": "Chemical & Biomolecular Engineering (CBE-GY)"
+    },
+    {
+      "subject_key": "CCCF-SHU",
+      "label": "Cultural Foundations (CCCF-SHU)"
+    },
+    {
+      "subject_key": "CE-GY",
+      "label": "Civil & Urban Engineering (CE-GY)"
+    },
+    {
+      "subject_key": "CEH-GA",
+      "label": "Center for Experimental Humanities (CEH-GA)"
+    },
+    {
+      "subject_key": "CEL-SHU",
+      "label": "Community-Engaged Learning (CEL-SHU)"
+    },
+    {
+      "subject_key": "CHDED-GE",
+      "label": "Childhood Education (CHDED-GE)"
+    },
+    {
+      "subject_key": "CHEM-GA",
+      "label": "Chemistry (CHEM-GA)"
+    },
+    {
+      "subject_key": "CINE-GT",
+      "label": "Cinema Studies (CINE-GT)"
+    },
+    {
+      "subject_key": "CINE-UT",
+      "label": "Cinema Studies (CINE-UT)"
+    },
+    {
+      "subject_key": "CLAB-NZ",
+      "label": "NYU College and Career Lab (CLAB-NZ)"
+    },
+    {
+      "subject_key": "CLASS-GA",
+      "label": "Classics (CLASS-GA)"
+    },
+    {
+      "subject_key": "CM-GY",
+      "label": "Chemistry (CM-GY)"
+    },
+    {
+      "subject_key": "COART-UT",
+      "label": "Collaborative Arts (COART-UT)"
+    },
+    {
+      "subject_key": "COLIT-GA",
+      "label": "Comparative Literature (COLIT-GA)"
+    },
+    {
+      "subject_key": "CONS-GB",
+      "label": "Consortium Courses (CONS-GB)"
+    },
+    {
+      "subject_key": "CORE-GP",
+      "label": "School-wide core course (CORE-GP)"
+    },
+    {
+      "subject_key": "CP-GY",
+      "label": "Co-op Education Program (CP-GY)"
+    },
+    {
+      "subject_key": "CRWR-SHU",
+      "label": "Creative Writing (CRWR-SHU)"
+    },
+    {
+      "subject_key": "CRWRI-GA",
+      "label": "Creative Writing (CRWRI-GA)"
+    },
+    {
+      "subject_key": "CS-GY",
+      "label": "Computer Science (CS-GY)"
+    },
+    {
+      "subject_key": "CSCD-GE",
+      "label": "Communicative Sciences & Disorders (CSCD-GE)"
+    },
+    {
+      "subject_key": "CSCI-GA",
+      "label": "Computer Science (CSCI-GA)"
+    },
+    {
+      "subject_key": "CUSP-GX",
+      "label": "Ctr for Urban Sci and Progress (CUSP-GX)"
+    },
+    {
+      "subject_key": "CVSUR-ML",
+      "label": "Cardiothoracic Surgery (CVSUR-ML)"
+    },
+    {
+      "subject_key": "DAAH-UH",
+      "label": "Digital Art and Humanities (DAAH-UH)"
+    },
+    {
+      "subject_key": "DANC-GT",
+      "label": "Dance (DANC-GT)"
+    },
+    {
+      "subject_key": "DANC-UT",
+      "label": "Dance (DANC-UT)"
+    },
+    {
+      "subject_key": "DBIN-GB",
+      "label": "Global Trip (DBIN-GB)"
+    },
+    {
+      "subject_key": "DESG-GT",
+      "label": "Design (DESG-GT)"
+    },
+    {
+      "subject_key": "DHSS-GA",
+      "label": "Digital Humanities and Social Science (DHSS-GA)"
+    },
+    {
+      "subject_key": "DISS-GB",
+      "label": "Dissertation Seminar (DISS-GB)"
+    },
+    {
+      "subject_key": "DM-GY",
+      "label": "Integrated Design and Media (DM-GY)"
+    },
+    {
+      "subject_key": "DS-GA",
+      "label": "Data Science (DS-GA)"
+    },
+    {
+      "subject_key": "DSWSW-GS",
+      "label": "Doctor of Social Welfare (DSWSW-GS)"
+    },
+    {
+      "subject_key": "DWPG-GT",
+      "label": "Dramatic Writing (DWPG-GT)"
+    },
+    {
+      "subject_key": "DWPG-UT",
+      "label": "Dramatic Writing (DWPG-UT)"
+    },
+    {
+      "subject_key": "EAST-GA",
+      "label": "East Asian Studies (EAST-GA)"
+    },
+    {
+      "subject_key": "ECE-GY",
+      "label": "Elect. Engineering - ECE GRAD (ECE-GY)"
+    },
+    {
+      "subject_key": "ECED-GE",
+      "label": "Early Childhood (ECED-GE)"
+    },
+    {
+      "subject_key": "ECON-GA",
+      "label": "Economics (ECON-GA)"
+    },
+    {
+      "subject_key": "ECON-GB",
+      "label": "Economics (ECON-GB)"
+    },
+    {
+      "subject_key": "ECON-GH",
+      "label": "Economics GH (ECON-GH)"
+    },
+    {
+      "subject_key": "EDCT-GE",
+      "label": "Educational Communications & Technology (EDCT-GE)"
+    },
+    {
+      "subject_key": "EDLED-GE",
+      "label": "Educational Administration Educational Leadership (EDLED-GE)"
+    },
+    {
+      "subject_key": "EDPLY-GE",
+      "label": "Educational Policy (EDPLY-GE)"
+    },
+    {
+      "subject_key": "EENG-SHU",
+      "label": "Electrical Engineering (EENG-SHU)"
+    },
+    {
+      "subject_key": "EHSC-GA",
+      "label": "Environmental Health Science (EHSC-GA)"
+    },
+    {
+      "subject_key": "EJST-GE",
+      "label": "Education & Jewish Studies (EJST-GE)"
+    },
+    {
+      "subject_key": "EMAT-GE",
+      "label": "Social Studies Education - Distance Format (EMAT-GE)"
+    },
+    {
+      "subject_key": "EN-UY",
+      "label": "English (EN-UY)"
+    },
+    {
+      "subject_key": "ENGED-GE",
+      "label": "English Education (ENGED-GE)"
+    },
+    {
+      "subject_key": "ENGL-GA",
+      "label": "English (ENGL-GA)"
+    },
+    {
+      "subject_key": "ENGR-GH",
+      "label": "Engineering (ENGR-GH)"
+    },
+    {
+      "subject_key": "ENVR-UH",
+      "label": "Environmental Studies (ENVR-UH)"
+    },
+    {
+      "subject_key": "ENVST-GA",
+      "label": "Environmental Studies (ENVST-GA)"
+    },
+    {
+      "subject_key": "ENYC-GE",
+      "label": "Environmental Conservation Education (ENYC-GE)"
+    },
+    {
+      "subject_key": "ERMED-ML",
+      "label": "Emergency Medicine (ERMED-ML)"
+    },
+    {
+      "subject_key": "ESL-NI",
+      "label": "English as a Second Language (ESL-NI)"
+    },
+    {
+      "subject_key": "EURO-GA",
+      "label": "European and Mediterranean Studies (EURO-GA)"
+    },
+    {
+      "subject_key": "EXEC-GP",
+      "label": "Executive MPA course (EXEC-GP)"
+    },
+    {
+      "subject_key": "EXL-UF",
+      "label": "Experiential Learning (EXL-UF)"
+    },
+    {
+      "subject_key": "EXPOS-GA",
+      "label": "Expository Writing (EXPOS-GA)"
+    },
+    {
+      "subject_key": "FDNMD-ML",
+      "label": "Foundations of Medicine (FDNMD-ML)"
+    },
+    {
+      "subject_key": "FINC-GB",
+      "label": "Finance (FINC-GB)"
+    },
+    {
+      "subject_key": "FINH-GA",
+      "label": "Fine Arts (FINH-GA)"
+    },
+    {
+      "subject_key": "FMMED-ML",
+      "label": "Family Medicine (FMMED-ML)"
+    },
+    {
+      "subject_key": "FMTV-GT",
+      "label": "Graduate Film & TV (FMTV-GT)"
+    },
+    {
+      "subject_key": "FMTV-NT",
+      "label": "Future Filmmakers Workshop (FMTV-NT)"
+    },
+    {
+      "subject_key": "FMTV-UT",
+      "label": "Undergrad Film & TV (FMTV-UT)"
+    },
+    {
+      "subject_key": "FOOD-GE",
+      "label": "Food Studies (FOOD-GE)"
+    },
+    {
+      "subject_key": "FRE-GY",
+      "label": "Finance and Risk Engineering (FRE-GY)"
+    },
+    {
+      "subject_key": "FREN-GA",
+      "label": "French (FREN-GA)"
+    },
+    {
+      "subject_key": "FRENL-UH",
+      "label": "French Language (FRENL-UH)"
+    },
+    {
+      "subject_key": "FYS-UF",
+      "label": "First Year Seminar (FYS-UF)"
+    },
+    {
+      "subject_key": "GA-GY",
+      "label": "Graduate Academics (GA-GY)"
+    },
+    {
+      "subject_key": "GAMES-GT",
+      "label": "Game Design (GAMES-GT)"
+    },
+    {
+      "subject_key": "GAMES-UT",
+      "label": "Game Design (GAMES-UT)"
+    },
+    {
+      "subject_key": "GEN-UH",
+      "label": "Gender Studies (GEN-UH)"
+    },
+    {
+      "subject_key": "GERM-GA",
+      "label": "German (GERM-GA)"
+    },
+    {
+      "subject_key": "GFMTV-GT",
+      "label": "Graduate Film & TV (GFMTV-GT)"
+    },
+    {
+      "subject_key": "GLBL-SHU",
+      "label": "Global Programs (GLBL-SHU)"
+    },
+    {
+      "subject_key": "GMTW-GT",
+      "label": "Musical Theatre (GMTW-GT)"
+    },
+    {
+      "subject_key": "GMTW-UT",
+      "label": "Musical Theatre (GMTW-UT)"
+    },
+    {
+      "subject_key": "GPH-GU",
+      "label": "Global Public Health (GPH-GU)"
+    },
+    {
+      "subject_key": "GS-UY",
+      "label": "General Studies (GS-UY)"
+    },
+    {
+      "subject_key": "GSAS-GA",
+      "label": "Grad School of Arts & Science (GSAS-GA)"
+    },
+    {
+      "subject_key": "GWC-UF",
+      "label": "Global Works and Society in a Changing World (GWC-UF)"
+    },
+    {
+      "subject_key": "HBRJD-GA",
+      "label": "Hebrew and Judaic Studies (HBRJD-GA)"
+    },
+    {
+      "subject_key": "HEL-GA",
+      "label": "Hellenic Studies (HEL-GA)"
+    },
+    {
+      "subject_key": "HERST-UH",
+      "label": "Heritage Studies (HERST-UH)"
+    },
+    {
+      "subject_key": "HI-UY",
+      "label": "History (HI-UY)"
+    },
+    {
+      "subject_key": "HIST-GA",
+      "label": "History (HIST-GA)"
+    },
+    {
+      "subject_key": "HONR-UB",
+      "label": "Honors Seminar (HONR-UB)"
+    },
+    {
+      "subject_key": "HPAM-GP",
+      "label": "Health policy and management course (HPAM-GP)"
+    },
+    {
+      "subject_key": "HPSE-GE",
+      "label": "Higher & Post-Secondary Education (HPSE-GE)"
+    },
+    {
+      "subject_key": "HPSE-UE",
+      "label": "Higher & Post-Secondary Educ (HPSE-UE)"
+    },
+    {
+      "subject_key": "HSAD-NI",
+      "label": "High School Academy (HSAD-NI)"
+    },
+    {
+      "subject_key": "HSED-GE",
+      "label": "History of Education (HSED-GE)"
+    },
+    {
+      "subject_key": "HUCC-GE",
+      "label": "Hebrew Union College Consortium (HUCC-GE)"
+    },
+    {
+      "subject_key": "ICINE-UT",
+      "label": "Int`l Pgms, Cinema Studies (ICINE-UT)"
+    },
+    {
+      "subject_key": "IDANC-UT",
+      "label": "Int`l Pgms, Dance (IDANC-UT)"
+    },
+    {
+      "subject_key": "IDIS-SHU",
+      "label": "Interdisciplinary Studies (IDIS-SHU)"
+    },
+    {
+      "subject_key": "IDSC-GH",
+      "label": "Interdisciplinary Data Science & AI (IDSC-GH)"
+    },
+    {
+      "subject_key": "IDWPG-UT",
+      "label": "Int`l Pgms, Dramatic Writing (IDWPG-UT)"
+    },
+    {
+      "subject_key": "IE-GY",
+      "label": "Industrial Engineering (IE-GY)"
+    },
+    {
+      "subject_key": "IFMTV-UT",
+      "label": "Int`l Pgms, Film & Television (IFMTV-UT)"
+    },
+    {
+      "subject_key": "IFST-GA",
+      "label": "Institute of French Studies (IFST-GA)"
+    },
+    {
+      "subject_key": "IMALR-GT",
+      "label": "Interactive Media Arts Low Residency (IMALR-GT)"
+    },
+    {
+      "subject_key": "IMNY-UT",
+      "label": "Interactive Media Arts (IMNY-UT)"
+    },
+    {
+      "subject_key": "IMPG-GB",
+      "label": "International Management Pgrm (IMPG-GB)"
+    },
+    {
+      "subject_key": "INDEP-GP",
+      "label": "Independent reading course (INDEP-GP)"
+    },
+    {
+      "subject_key": "INGC-UF",
+      "label": "Indigenous Cultures (INGC-UF)"
+    },
+    {
+      "subject_key": "INTA-GB",
+      "label": "Interarea (INTA-GB)"
+    },
+    {
+      "subject_key": "INTE-GE",
+      "label": "International Education (INTE-GE)"
+    },
+    {
+      "subject_key": "INTER-MD",
+      "label": "Interdepartmental (INTER-MD)"
+    },
+    {
+      "subject_key": "INTER-ML",
+      "label": "Interdepartmental (INTER-ML)"
+    },
+    {
+      "subject_key": "INTRL-GA",
+      "label": "International Relations (INTRL-GA)"
+    },
+    {
+      "subject_key": "IPHTI-UT",
+      "label": "Int`l Pgms, Photography (IPHTI-UT)"
+    },
+    {
+      "subject_key": "IRISH-GA",
+      "label": "Irish Studies (IRISH-GA)"
+    },
+    {
+      "subject_key": "ISAW-GA",
+      "label": "Inst Study of the Ancient Wrld (ISAW-GA)"
+    },
+    {
+      "subject_key": "ISPEC-GT",
+      "label": "Int'l Pgms TSOA Special Programs (ISPEC-GT)"
+    },
+    {
+      "subject_key": "ISPEC-UT",
+      "label": "Int'l Pgms TSOA Special Pgms (ISPEC-UT)"
+    },
+    {
+      "subject_key": "ITAL-GA",
+      "label": "Italian (ITAL-GA)"
+    },
+    {
+      "subject_key": "ITHEA-UT",
+      "label": "Int`l Pgms, Drama (ITHEA-UT)"
+    },
+    {
+      "subject_key": "ITPG-GT",
+      "label": "Interactive Telecommunications (ITPG-GT)"
+    },
+    {
+      "subject_key": "IUCD-GE",
+      "label": "Inter-University Doctoral Consortium (IUCD-GE)"
+    },
+    {
+      "subject_key": "JOUR-GA",
+      "label": "Journalism (JOUR-GA)"
+    },
+    {
+      "subject_key": "JOUR-SHU",
+      "label": "Journalism (JOUR-SHU)"
+    },
+    {
+      "subject_key": "KORE-SHU",
+      "label": "Korean Language (KORE-SHU)"
+    },
+    {
+      "subject_key": "LANED-GE",
+      "label": "Language Education (LANED-GE)"
+    },
+    {
+      "subject_key": "LATC-GA",
+      "label": "Latin Amer-Caribbean Studies (LATC-GA)"
+    },
+    {
+      "subject_key": "LAW-LW",
+      "label": "Law Courses (LAW-LW)"
+    },
+    {
+      "subject_key": "LAWH-LW",
+      "label": "Law/Wagner MS in Health Law and Strategy (LAWH-LW)"
+    },
+    {
+      "subject_key": "LAWT-LW",
+      "label": "Law/Tandon (LAWT-LW)"
+    },
+    {
+      "subject_key": "LING-GA",
+      "label": "Linguistics (LING-GA)"
+    },
+    {
+      "subject_key": "LIT-SHU",
+      "label": "Literature (LIT-SHU)"
+    },
+    {
+      "subject_key": "LITC-GE",
+      "label": "Literacy Education (LITC-GE)"
+    },
+    {
+      "subject_key": "MA-GY",
+      "label": "Mathematics (MA-GY)"
+    },
+    {
+      "subject_key": "MA-UY",
+      "label": "Mathematics (MA-UY)"
+    },
+    {
+      "subject_key": "MAINT-GA",
+      "label": "Maintenance (MAINT-GA)"
+    },
+    {
+      "subject_key": "MAINT-GE",
+      "label": "Maintenance (MAINT-GE)"
+    },
+    {
+      "subject_key": "MAINT-GS",
+      "label": "Maintenance (MAINT-GS)"
+    },
+    {
+      "subject_key": "MAINT-GT",
+      "label": "Maintenance (MAINT-GT)"
+    },
+    {
+      "subject_key": "MAINT-GU",
+      "label": "Maintenance (MAINT-GU)"
+    },
+    {
+      "subject_key": "MAINT-UF",
+      "label": "Maintenance (MAINT-UF)"
+    },
+    {
+      "subject_key": "MAINT-UN",
+      "label": "Maintenance (MAINT-UN)"
+    },
+    {
+      "subject_key": "MATH-GA",
+      "label": "Mathematics (MATH-GA)"
+    },
+    {
+      "subject_key": "MCC-GE",
+      "label": "Media, Culture & Communication (MCC-GE)"
+    },
+    {
+      "subject_key": "MCOM-GB",
+      "label": "Management Communication (MCOM-GB)"
+    },
+    {
+      "subject_key": "MD-UY",
+      "label": "Media Studies (MD-UY)"
+    },
+    {
+      "subject_key": "ME-GY",
+      "label": "Mechanical Engineering (ME-GY)"
+    },
+    {
+      "subject_key": "ME-UY",
+      "label": "Mechanical Engineering (ME-UY)"
+    },
+    {
+      "subject_key": "MED-MD",
+      "label": "Medicine (MED-MD)"
+    },
+    {
+      "subject_key": "MED-ML",
+      "label": "Medicine (MED-ML)"
+    },
+    {
+      "subject_key": "MEDI-GA",
+      "label": "Medieval & Renaissance Studies (MEDI-GA)"
+    },
+    {
+      "subject_key": "MEIS-GA",
+      "label": "Middle Eastern Studies (MEIS-GA)"
+    },
+    {
+      "subject_key": "MG-GY",
+      "label": "Management (MG-GY)"
+    },
+    {
+      "subject_key": "MG-UY",
+      "label": "Management (MG-UY)"
+    },
+    {
+      "subject_key": "MGMT-GB",
+      "label": "Management (MGMT-GB)"
+    },
+    {
+      "subject_key": "MHA-GP",
+      "label": "Health Administration (MHA-GP)"
+    },
+    {
+      "subject_key": "MKTG-GB",
+      "label": "Marketing (MKTG-GB)"
+    },
+    {
+      "subject_key": "MN-GY",
+      "label": "Manufacturing Engineering (MN-GY)"
+    },
+    {
+      "subject_key": "MPABR-GE",
+      "label": "Music Instrumental: Brass (MPABR-GE)"
+    },
+    {
+      "subject_key": "MPADE-GE",
+      "label": "Dance Education (MPADE-GE)"
+    },
+    {
+      "subject_key": "MPADT-GE",
+      "label": "Drama Therapy (MPADT-GE)"
+    },
+    {
+      "subject_key": "MPADT-UE",
+      "label": "Drama Therapy (MPADT-UE)"
+    },
+    {
+      "subject_key": "MPAET-GE",
+      "label": "Educational Theatre (MPAET-GE)"
+    },
+    {
+      "subject_key": "MPAGC-GE",
+      "label": "Departmental Courses (MPAGC-GE)"
+    },
+    {
+      "subject_key": "MPAIA-GE",
+      "label": "Interactive Music Courses (MPAIA-GE)"
+    },
+    {
+      "subject_key": "MPAIA-UE",
+      "label": "Interactive Music Courses (MPAIA-UE)"
+    },
+    {
+      "subject_key": "MPAJZ-GE",
+      "label": "Music Instrumental: Jazz (MPAJZ-GE)"
+    },
+    {
+      "subject_key": "MPAMB-GE",
+      "label": "Music Business (MPAMB-GE)"
+    },
+    {
+      "subject_key": "MPAME-GE",
+      "label": "Music Education (MPAME-GE)"
+    },
+    {
+      "subject_key": "MPAME-UE",
+      "label": "Music Education (MPAME-UE)"
+    },
+    {
+      "subject_key": "MPAMT-GE",
+      "label": "Music Therapy (MPAMT-GE)"
+    },
+    {
+      "subject_key": "MPAPA-GE",
+      "label": "Performing Arts Administration (MPAPA-GE)"
+    },
+    {
+      "subject_key": "MPAPA-UE",
+      "label": "Performing Arts Administration (MPAPA-UE)"
+    },
+    {
+      "subject_key": "MPAPE-GE",
+      "label": "Music Instrumental: Piano (MPAPE-GE)"
+    },
+    {
+      "subject_key": "MPAPS-GE",
+      "label": "Music Instrumental: Percussion (MPAPS-GE)"
+    },
+    {
+      "subject_key": "MPASS-GE",
+      "label": "Music Instrumental: Strings (MPASS-GE)"
+    },
+    {
+      "subject_key": "MPATC-GE",
+      "label": "Music Theory and Composition (MPATC-GE)"
+    },
+    {
+      "subject_key": "MPATE-GE",
+      "label": "Music Technology (MPATE-GE)"
+    },
+    {
+      "subject_key": "MPAVP-GE",
+      "label": "Music Instrumental: Voice (MPAVP-GE)"
+    },
+    {
+      "subject_key": "MPAWW-GE",
+      "label": "Music Instrumental: Woodwinds (MPAWW-GE)"
+    },
+    {
+      "subject_key": "MSMS-GA",
+      "label": "Museum Studies (MSMS-GA)"
+    },
+    {
+      "subject_key": "MSPP-GP",
+      "label": "Master of Science in Public Policy Courses (MSPP-GP)"
+    },
+    {
+      "subject_key": "MSWAC-GS",
+      "label": "Advanced Concentration Courses (MSWAC-GS)"
+    },
+    {
+      "subject_key": "MSWEL-GS",
+      "label": "Electives (MSWEL-GS)"
+    },
+    {
+      "subject_key": "MSWFD-GS",
+      "label": "Practicum Education (MSWFD-GS)"
+    },
+    {
+      "subject_key": "MSWPF-GS",
+      "label": "Professional Foundation Courses (MSWPF-GS)"
+    },
+    {
+      "subject_key": "MTHED-GE",
+      "label": "Mathematics Education (MTHED-GE)"
+    },
+    {
+      "subject_key": "MU-UY",
+      "label": "Music (MU-UY)"
+    },
+    {
+      "subject_key": "MUSIC-GA",
+      "label": "Music (MUSIC-GA)"
+    },
+    {
+      "subject_key": "NCRD-UT",
+      "label": "Non-Credit TSOA Courses (NCRD-UT)"
+    },
+    {
+      "subject_key": "NEST-GA",
+      "label": "Near Eastern Studies (NEST-GA)"
+    },
+    {
+      "subject_key": "NEURL-GA",
+      "label": "Neural Science (NEURL-GA)"
+    },
+    {
+      "subject_key": "NEURO-ML",
+      "label": "Neurology (NEURO-ML)"
+    },
+    {
+      "subject_key": "NOCR-GB",
+      "label": "Non-Credit (NOCR-GB)"
+    },
+    {
+      "subject_key": "NONCR-GP",
+      "label": "Noncredit course (NONCR-GP)"
+    },
+    {
+      "subject_key": "NURSE-GN",
+      "label": "Nursing - Graduate (NURSE-GN)"
+    },
+    {
+      "subject_key": "NUTR-GE",
+      "label": "Nutrition & Dietetics (NUTR-GE)"
+    },
+    {
+      "subject_key": "NYU-SHU",
+      "label": "NYU Shanghai (NYU-SHU)"
+    },
+    {
+      "subject_key": "OART-GT",
+      "label": "Open Arts Curriculum (OART-GT)"
+    },
+    {
+      "subject_key": "OART-UT",
+      "label": "Open Arts Curriculum (OART-UT)"
+    },
+    {
+      "subject_key": "OBGYN-ML",
+      "label": "Obstetrics & Gynecology (OBGYN-ML)"
+    },
+    {
+      "subject_key": "OPHTH-MD",
+      "label": "Ophthalmology (OPHTH-MD)"
+    },
+    {
+      "subject_key": "OPMG-GB",
+      "label": "Operations Management (OPMG-GB)"
+    },
+    {
+      "subject_key": "ORTHO-ML",
+      "label": "Orthopedic Surgery (ORTHO-ML)"
+    },
+    {
+      "subject_key": "OT-GE",
+      "label": "Occupational Therapy (OT-GE)"
+    },
+    {
+      "subject_key": "OTOL-ML",
+      "label": "Otolaryngology (OTOL-ML)"
+    },
+    {
+      "subject_key": "PADM-GP",
+      "label": "Public and Nonprofit Management and Policy (PADM-GP)"
+    },
+    {
+      "subject_key": "PATH-MD",
+      "label": "Pathology (PATH-MD)"
+    },
+    {
+      "subject_key": "PATH-ML",
+      "label": "Pathology (PATH-ML)"
+    },
+    {
+      "subject_key": "PDPSA-GA",
+      "label": "Psychotherapy & Psychoanalysis (PDPSA-GA)"
+    },
+    {
+      "subject_key": "PEACE-UH",
+      "label": "Peace Studies (PEACE-UH)"
+    },
+    {
+      "subject_key": "PEDS-ML",
+      "label": "Pediatrics (PEDS-ML)"
+    },
+    {
+      "subject_key": "PERF-GT",
+      "label": "Performance Studies (PERF-GT)"
+    },
+    {
+      "subject_key": "PERF-UT",
+      "label": "Performance Studies (PERF-UT)"
+    },
+    {
+      "subject_key": "PH-GY",
+      "label": "Physics (PH-GY)"
+    },
+    {
+      "subject_key": "PH-UY",
+      "label": "Physics (PH-UY)"
+    },
+    {
+      "subject_key": "PHD-GP",
+      "label": "Doctoral course (PHD-GP)"
+    },
+    {
+      "subject_key": "PHDC-GB",
+      "label": "PHD Consortium (PHDC-GB)"
+    },
+    {
+      "subject_key": "PHDSW-GS",
+      "label": "Doctoral (PHDSW-GS)"
+    },
+    {
+      "subject_key": "PHED-GE",
+      "label": "Philosophy of Education (PHED-GE)"
+    },
+    {
+      "subject_key": "PHIL-GA",
+      "label": "Philosophy (PHIL-GA)"
+    },
+    {
+      "subject_key": "PHP-UY",
+      "label": "Prehealth Prep (PHP-UY)"
+    },
+    {
+      "subject_key": "PHTI-GT",
+      "label": "Photography and Imaging (PHTI-GT)"
+    },
+    {
+      "subject_key": "PHTI-UT",
+      "label": "Photography and Imaging (PHTI-UT)"
+    },
+    {
+      "subject_key": "PHYS-GA",
+      "label": "Physics (PHYS-GA)"
+    },
+    {
+      "subject_key": "PHYS-GH",
+      "label": "Physics (PHYS-GH)"
+    },
+    {
+      "subject_key": "PMC-NS",
+      "label": "Post Master's Certificate (PMC-NS)"
+    },
+    {
+      "subject_key": "POET-GA",
+      "label": "Poetics and Theory (POET-GA)"
+    },
+    {
+      "subject_key": "POL-GA",
+      "label": "Politics (POL-GA)"
+    },
+    {
+      "subject_key": "PORT-GA",
+      "label": "Portuguese (PORT-GA)"
+    },
+    {
+      "subject_key": "PRCAR-ML",
+      "label": "Primary Care (PRCAR-ML)"
+    },
+    {
+      "subject_key": "PRHS-NZ",
+      "label": "Summer Program For HS Students (PRHS-NZ)"
+    },
+    {
+      "subject_key": "PROD-GT",
+      "label": "Media Producing (PROD-GT)"
+    },
+    {
+      "subject_key": "PS-UY",
+      "label": "Psychology (PS-UY)"
+    },
+    {
+      "subject_key": "PSYCH-GA",
+      "label": "Psychology (PSYCH-GA)"
+    },
+    {
+      "subject_key": "PSYCH-ML",
+      "label": "Psychiatry (PSYCH-ML)"
+    },
+    {
+      "subject_key": "PSYCN-UH",
+      "label": "Psychology – Non-Majors (PSYCN-UH)"
+    },
+    {
+      "subject_key": "PT-GE",
+      "label": "Physical Therapy (PT-GE)"
+    },
+    {
+      "subject_key": "PUBHM-GA",
+      "label": "Public Humanities (PUBHM-GA)"
+    },
+    {
+      "subject_key": "RADON-ML",
+      "label": "Radiation Oncology (RADON-ML)"
+    },
+    {
+      "subject_key": "RADS-ML",
+      "label": "Radiology (RADS-ML)"
+    },
+    {
+      "subject_key": "REHAB-GE",
+      "label": "Rehabilitation Sciences (REHAB-GE)"
+    },
+    {
+      "subject_key": "REHAB-ML",
+      "label": "Rehabilitation Medicine (REHAB-ML)"
+    },
+    {
+      "subject_key": "RELST-GA",
+      "label": "Religious Studies (RELST-GA)"
+    },
+    {
+      "subject_key": "REMU-UT",
+      "label": "Recorded Music (REMU-UT)"
+    },
+    {
+      "subject_key": "RESCH-GE",
+      "label": "Interdepartmental Research Studies (RESCH-GE)"
+    },
+    {
+      "subject_key": "ROB-GY",
+      "label": "Robotics (ROB-GY)"
+    },
+    {
+      "subject_key": "ROB-UY",
+      "label": "Robotics (ROB-UY)"
+    },
+    {
+      "subject_key": "RUSSN-GA",
+      "label": "Russian & Slavic Studies (RUSSN-GA)"
+    },
+    {
+      "subject_key": "SAHS-GE",
+      "label": "Student Affairs Honors & Seminars (SAHS-GE)"
+    },
+    {
+      "subject_key": "SCIED-GE",
+      "label": "Science Education (SCIED-GE)"
+    },
+    {
+      "subject_key": "SCMTH-GE",
+      "label": "Science & Mathematics Education (SCMTH-GE)"
+    },
+    {
+      "subject_key": "SEG-UY",
+      "label": "Society, Environment, & Globalization (SEG-UY)"
+    },
+    {
+      "subject_key": "SFMTV-UT",
+      "label": "Spr Sem at Tisch - Film & TV (SFMTV-UT)"
+    },
+    {
+      "subject_key": "SHBI-GB",
+      "label": "Graduate Stern/NYU Shanghai Degree (SHBI-GB)"
+    },
+    {
+      "subject_key": "SHNG-NI",
+      "label": "Non-Credit NYUSH Courses (SHNG-NI)"
+    },
+    {
+      "subject_key": "SL-UY",
+      "label": "Student Life (SL-UY)"
+    },
+    {
+      "subject_key": "SMSP-UH",
+      "label": "Sheik Mohamed bin Zayed Scholars Program (SMSP-UH)"
+    },
+    {
+      "subject_key": "SOC-GA",
+      "label": "Sociology (SOC-GA)"
+    },
+    {
+      "subject_key": "SOCED-GE",
+      "label": "Social Studies Education (SOCED-GE)"
+    },
+    {
+      "subject_key": "SOED-GE",
+      "label": "Sociology of Education (SOED-GE)"
+    },
+    {
+      "subject_key": "SPAN-GA",
+      "label": "Spanish (SPAN-GA)"
+    },
+    {
+      "subject_key": "SPAN-SHU",
+      "label": "Spanish Language (SPAN-SHU)"
+    },
+    {
+      "subject_key": "SPCED-GE",
+      "label": "Special Education (SPCED-GE)"
+    },
+    {
+      "subject_key": "SPEC-NT",
+      "label": "Special Professional Programs (SPEC-NT)"
+    },
+    {
+      "subject_key": "SPEC-UT",
+      "label": "TSOA Special Programs (SPEC-UT)"
+    },
+    {
+      "subject_key": "SRTH-UF",
+      "label": "Senior Thesis (SRTH-UF)"
+    },
+    {
+      "subject_key": "STAT-GB",
+      "label": "Statistics & Operations Rsrch (STAT-GB)"
+    },
+    {
+      "subject_key": "STS-UY",
+      "label": "Science and Technology (STS-UY)"
+    },
+    {
+      "subject_key": "SURG-MD",
+      "label": "Surgery (SURG-MD)"
+    },
+    {
+      "subject_key": "SURG-ML",
+      "label": "Surgery (SURG-ML)"
+    },
+    {
+      "subject_key": "SUSCI-UF",
+      "label": "Sustainability Science (SUSCI-UF)"
+    },
+    {
+      "subject_key": "TCHL-GE",
+      "label": "Teaching & Learning (TCHL-GE)"
+    },
+    {
+      "subject_key": "TCS-UY",
+      "label": "Technology, Culture and Society (TCS-UY)"
+    },
+    {
+      "subject_key": "TECH-GB",
+      "label": "Technology (TECH-GB)"
+    },
+    {
+      "subject_key": "TESOL-GE",
+      "label": "Teaching English as a Second Language (TESOL-GE)"
+    },
+    {
+      "subject_key": "TESOL-UE",
+      "label": "Teaching English as a Second Language (TESOL-UE)"
+    },
+    {
+      "subject_key": "THEA-UT",
+      "label": "Drama (THEA-UT)"
+    },
+    {
+      "subject_key": "TR-GY",
+      "label": "Transportation (TR-GY)"
+    },
+    {
+      "subject_key": "TRAVL-UG",
+      "label": "Travel Courses (TRAVL-UG)"
+    },
+    {
+      "subject_key": "UGA-UY",
+      "label": "Undergraduate Academics (UGA-UY)"
+    },
+    {
+      "subject_key": "UNIST-GH",
+      "label": "University Studies (UNIST-GH)"
+    },
+    {
+      "subject_key": "UNIST-NH",
+      "label": "University Studies (UNIST-NH)"
+    },
+    {
+      "subject_key": "UNIST-UH",
+      "label": "University Studies (UNIST-UH)"
+    },
+    {
+      "subject_key": "URB-UY",
+      "label": "Urban Studies (URB-UY)"
+    },
+    {
+      "subject_key": "URO-ML",
+      "label": "Urology (URO-ML)"
+    },
+    {
+      "subject_key": "URPL-GP",
+      "label": "Urban planning course (URPL-GP)"
+    },
+    {
+      "subject_key": "VIP-GY",
+      "label": "Vertically Integrated Projects (VIP-GY)"
+    },
+    {
+      "subject_key": "VIP-UY",
+      "label": "Vertically Integrated Projects (VIP-UY)"
+    },
+    {
+      "subject_key": "VRTP-GT",
+      "label": "Production (VRTP-GT)"
+    },
+    {
+      "subject_key": "WLGED-GE",
+      "label": "Teaching World Languages (WLGED-GE)"
+    }
+  ]
+}
