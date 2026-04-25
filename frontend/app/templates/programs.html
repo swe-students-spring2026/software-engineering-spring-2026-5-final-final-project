@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Programs — NYU Course Planner</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #f4f4f4; color: #333; }
+    header { background: #57068c; color: white; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; }
+    header h1 { font-size: 1.3rem; }
+    header a { color: white; background: rgba(255,255,255,0.15); padding: 6px 14px; border-radius: 4px; text-decoration: none; font-size: 0.9rem; }
+
+    .container { display: grid; grid-template-columns: 340px 1fr; gap: 16px; padding: 16px; height: calc(100vh - 56px); }
+    .list-panel, .detail-panel { background: white; border-radius: 6px; padding: 16px; overflow-y: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.07); }
+
+    .list-panel h2 { font-size: 0.95rem; color: #57068c; margin-bottom: 10px; }
+    .search { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.85rem; margin-bottom: 10px; }
+    .program-item { padding: 8px 10px; border-radius: 4px; cursor: pointer; font-size: 0.82rem; margin-bottom: 2px; }
+    .program-item:hover { background: #f5eeff; }
+    .program-item.active { background: #f0e6f7; color: #57068c; font-weight: bold; }
+    .program-school { color: #999; font-size: 0.72rem; margin-top: 2px; }
+
+    .detail-panel h2 { font-size: 1.1rem; color: #57068c; margin-bottom: 4px; }
+    .detail-meta { font-size: 0.82rem; color: #888; margin-bottom: 14px; }
+    .detail-section { margin-top: 16px; }
+    .detail-section h3 { font-size: 0.9rem; color: #57068c; border-bottom: 2px solid #eee; padding-bottom: 4px; margin-bottom: 10px; }
+    .desc { font-size: 0.85rem; line-height: 1.5; color: #444; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-bottom: 12px; }
+    th { background: #f5eeff; padding: 6px 10px; text-align: left; color: #57068c; border-bottom: 2px solid #c9a7e0; }
+    td { padding: 6px 10px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
+    tr.section-row td { background: #faf5ff; font-weight: bold; color: #57068c; padding-top: 10px; padding-bottom: 6px; border-top: 1px solid #e0cef5; }
+    tr.alt-row td { color: #777; padding-left: 24px; font-style: italic; }
+    tr.alt-row td:first-child::before { content: "↳ "; color: #aaa; font-style: normal; }
+    tr.summary-row td { background: #fafafa; font-style: italic; color: #666; }
+    tr.total-row td { font-weight: bold; background: #f0e6f7; border-top: 2px solid #c9a7e0; }
+    .course-code { font-family: monospace; color: #57068c; font-weight: bold; }
+    tr.alt-row .course-code { color: #999; font-weight: normal; }
+    .placeholder { color: #bbb; padding: 40px 0; text-align: center; font-size: 0.9rem; }
+    .loading { color: #999; font-size: 0.85rem; padding: 20px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Programs</h1>
+    <a href="/">← Course Search</a>
+  </header>
+
+  <div class="container">
+    <div class="list-panel">
+      <h2>Undergraduate Programs</h2>
+      <input type="text" class="search" id="search" placeholder="Filter programs…">
+      <div id="program-list"></div>
+    </div>
+    <div class="detail-panel" id="detail">
+      <div class="placeholder">Select a program to see its requirements</div>
+    </div>
+  </div>
+
+  <script>
+    let allPrograms = [];
+    let activeUrl = null;
+
+    async function loadPrograms() {
+      const list = document.getElementById("program-list");
+      list.innerHTML = '<div class="loading">Loading…</div>';
+      try {
+        const res = await fetch("/api/programs");
+        allPrograms = await res.json();
+        renderList("");
+      } catch (e) {
+        list.innerHTML = `<div class="loading">Error: ${e.message}</div>`;
+      }
+    }
+
+    function renderList(filter) {
+      const list = document.getElementById("program-list");
+      const f = filter.toLowerCase();
+      const filtered = allPrograms.filter(p =>
+        !f || (p.title || "").toLowerCase().includes(f) || (p.school || "").toLowerCase().includes(f)
+      );
+      if (filtered.length === 0) {
+        list.innerHTML = '<div class="loading">No programs match.</div>';
+        return;
+      }
+      list.innerHTML = filtered.map(p => `
+        <div class="program-item ${p.url === activeUrl ? "active" : ""}" data-url="${encodeURIComponent(p.url)}">
+          <div>${p.title || "(untitled)"}</div>
+          ${p.school ? `<div class="program-school">${p.school}</div>` : ""}
+        </div>`).join("");
+      list.querySelectorAll(".program-item").forEach(el => {
+        el.addEventListener("click", () => loadDetail(decodeURIComponent(el.dataset.url)));
+      });
+    }
+
+    function looksLikeCourseCode(s) {
+      return /^(or\s+)?[A-Z]{2,5}[-][A-Z]{2,3}\s+\d+/.test(s || "");
+    }
+
+    function renderTable(table) {
+      if (!table || !table.length) return "";
+      const [header, ...rows] = table;
+      let html = `<table><thead><tr><th>Course</th><th>Title</th><th>Credits</th></tr></thead><tbody>`;
+
+      rows.forEach(row => {
+        const cells = row || [];
+        const first = (cells[0] || "").trim();
+        const lastCol = cells[cells.length - 1] || "";
+        const firstIsCourse = looksLikeCourseCode(first);
+        const isAlt = first.toLowerCase().startsWith("or ");
+        const isTotal = /total\s+credits/i.test(first);
+
+        if (isTotal) {
+          html += `<tr class="total-row"><td colspan="2">${first}</td><td>${cells[1] || ""}</td></tr>`;
+        } else if (!firstIsCourse && cells.length <= 2) {
+          // Section headers like "Minor Requirements", "Select one of the following: 3-4"
+          const rightCol = cells[1] || "";
+          const cls = rightCol ? "summary-row" : "section-row";
+          html += `<tr class="${cls}"><td colspan="2">${first}</td><td>${rightCol}</td></tr>`;
+        } else {
+          // Normal 2- or 3-col course row
+          const code = first;
+          const title = cells[1] || "";
+          const credits = cells.length >= 3 ? cells[2] : "";
+          const cls = isAlt ? "alt-row" : "";
+          html += `<tr class="${cls}"><td><span class="course-code">${code}</span></td><td>${title}</td><td>${credits}</td></tr>`;
+        }
+      });
+
+      html += `</tbody></table>`;
+      return html;
+    }
+
+    async function loadDetail(url) {
+      activeUrl = url;
+      renderList(document.getElementById("search").value);
+      const detail = document.getElementById("detail");
+      detail.innerHTML = '<div class="loading">Loading requirements…</div>';
+      try {
+        const res = await fetch(`/api/program-requirements?url=${encodeURIComponent(url)}`);
+        const p = await res.json();
+        if (!res.ok) throw new Error(p.error || "Failed to load");
+
+        let html = `
+          <h2>${p.title || ""}</h2>
+          <div class="detail-meta">${p.school || ""} ${p.award ? "· " + p.award : ""}</div>
+        `;
+        if (p.program_description) {
+          html += `<div class="detail-section"><h3>About</h3><div class="desc">${p.program_description}</div></div>`;
+        }
+        if (p.tables && p.tables.length) {
+          html += `<div class="detail-section"><h3>Course Requirements</h3>`;
+          p.tables.forEach(table => { html += renderTable(table); });
+          html += `</div>`;
+        }
+        if (p.policies) {
+          html += `<div class="detail-section"><h3>Policies</h3><div class="desc">${p.policies}</div></div>`;
+        }
+        detail.innerHTML = html;
+      } catch (e) {
+        detail.innerHTML = `<div class="loading">Error: ${e.message}</div>`;
+      }
+    }
+
+    document.getElementById("search").addEventListener("input", e => renderList(e.target.value));
+    loadPrograms();
+  </script>
+</body>
+</html>

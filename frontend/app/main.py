@@ -18,6 +18,23 @@ def schedule():
     return render_template("schedule.html")
 
 
+@app.get("/programs")
+def programs_page():
+    return render_template("programs.html")
+
+
+@app.get("/api/programs")
+def programs():
+    resp = requests.get(f"{API_URL}/programs")
+    return jsonify(resp.json()), resp.status_code
+
+
+@app.get("/api/program-requirements")
+def program_requirements():
+    resp = requests.get(f"{API_URL}/program-requirements", params=dict(request.args))
+    return jsonify(resp.json()), resp.status_code
+
+
 @app.get("/api/classes")
 def classes():
     resp = requests.get(f"{API_URL}/classes", params=dict(request.args))
