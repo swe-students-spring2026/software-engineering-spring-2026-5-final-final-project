@@ -17,18 +17,18 @@
         <span class="logo"><img src="../icons/fm copy.svg" alt="fm"></span>
         <h1>FlakeMate</h1>
     </section>
-    <section class="nav-up-past">
+    <section class="nav-up-upcoming">
         <a href="home-past.html" class="nav-button-past">past</a>
         <a href="home-upcoming.html" class="nav-button-upcoming">upcoming</a>
     </section>
     <section class="content">
         <div class="content-header">
-            <h2>past events info</h2>
+            <h2>upcoming events info</h2>
             <button class="filter"><img src="../icons/arrow.up.arrow.down.circle.purple.svg" alt="filter"></button>
         </div>
-        <ul class="past-events">
-            {% for event in past_events %}
-            <li class="past-event">
+        <ul class="upcoming-events">
+            {% for event in upcoming_events %}
+            <li class="upcoming-event">
                 <h3>{{ event.name }}</h3>
                 <p>{{ event.location }} @ {{ event.date }}</p>
                 <p>{{ event.details }}</p>
@@ -39,8 +39,8 @@
     <section class="nav-bottom">
         <a href="home-upcoming.html"><img src="../icons/calendar (3) 1 copy.svg" alt="calendar"></a>
         <a href="invites.html"><img src="../icons/tray.svg" alt="inbox" /></a>
-        <a href="host-events.html"><img src="../icons/plus.app.svg" alt="create" /></a>
-        <a href="/user"><img src="../icons/person.svg" alt="user" /></a>
+        <a href="/host-events.html"><img src="../icons/plus.app.svg" alt="create" /></a>
+        <a href="/user.html"><img src="../icons/person.svg" alt="user" /></a>
     </section>
 </body>
 

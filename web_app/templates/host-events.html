@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Afacad:ital,wght@0,400..700;1,400..700&display=swap"
         rel="stylesheet">
-    <title>Home</title>
+    <title>Host View</title>
 </head>
 
 <body>
@@ -17,21 +17,33 @@
         <span class="logo"><img src="../icons/fm copy.svg" alt="fm"></span>
         <h1>FlakeMate</h1>
     </section>
-    <section class="nav-up-past">
-        <a href="home-past.html" class="nav-button-past">past</a>
-        <a href="home-upcoming.html" class="nav-button-upcoming">upcoming</a>
-    </section>
     <section class="content">
         <div class="content-header">
-            <h2>past events info</h2>
+            <h2>hosting</h2>
             <button class="filter"><img src="../icons/arrow.up.arrow.down.circle.purple.svg" alt="filter"></button>
         </div>
-        <ul class="past-events">
-            {% for event in past_events %}
-            <li class="past-event">
-                <h3>{{ event.name }}</h3>
-                <p>{{ event.location }} @ {{ event.date }}</p>
-                <p>{{ event.details }}</p>
+        <ul class="hosting-events">
+            {% for event in hosting_events %}
+            <li class="hosting-event">
+                <div class="content">
+                    <h3>{{ event.name }}</h3>
+                    <p>{{ event.location }} @ {{ event.date }}</p>
+                    <p>{{ event.details }}</p>
+                    <p>
+                        <strong>Invitees:</strong>
+                    </p>
+                    <ul class="invitees">
+                        {% for invitee in event.invitees_list %}
+                        <li> 
+                            <p>{{ invitee.name }} @ {{ invitee.time }}</p>
+                        </li>
+
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="actions">
+                    <button class="edit-button">edit</button>
+                </div>
             </li>
             {% endfor %}
         </ul>
@@ -39,8 +51,8 @@
     <section class="nav-bottom">
         <a href="home-upcoming.html"><img src="../icons/calendar (3) 1 copy.svg" alt="calendar"></a>
         <a href="invites.html"><img src="../icons/tray.svg" alt="inbox" /></a>
-        <a href="host-events.html"><img src="../icons/plus.app.svg" alt="create" /></a>
-        <a href="/user"><img src="../icons/person.svg" alt="user" /></a>
+        <a href="/host-events.html"><img src="../icons/plus.app.svg" alt="create" /></a>
+        <a href="/user.html"><img src="../icons/person.svg" alt="user" /></a>
     </section>
 </body>
 
