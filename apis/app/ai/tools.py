@@ -58,8 +58,10 @@ GEMINI_TOOL = types.Tool(
         types.FunctionDeclaration(
             name="get_course_sections",
             description=(
-                "Get all available sections for a specific course code, "
-                "including meeting times, instructor, location, and enrollment status."
+                "Get all available sections for a course by its code or name, "
+                "including meeting times, instructor, location, and enrollment status. "
+                "Accepts a course code like 'CSCI-UA 101' OR a course name/title "
+                "like 'Data Structures' or 'Calculus'."
             ),
             parameters=types.Schema(
                 type=types.Type.OBJECT,
@@ -67,7 +69,8 @@ GEMINI_TOOL = types.Tool(
                     "course_code": types.Schema(
                         type=types.Type.STRING,
                         description=(
-                            "The course code to look up, e.g. 'CSCI-UA 101'."
+                            "Course code (e.g. 'CSCI-UA 101') OR course name/title "
+                            "(e.g. 'Data Structures', 'Linear Algebra')."
                         ),
                     ),
                     "term": types.Schema(
@@ -161,13 +164,18 @@ def search_courses(
 
 
 def get_course_sections(course_code: str, term: str = "") -> dict[str, Any]:
-    """Get all sections for a specific course code from MongoDB."""
+    """Get all sections matching a course code or title from MongoDB."""
     if _db is None:
         return {"error": "Database not initialized"}
 
-    query: dict = {"code": {"$regex": course_code, "$options": "i"}}
+    or_clause = {"$or": [
+        {"code": {"$regex": course_code, "$options": "i"}},
+        {"title": {"$regex": course_code, "$options": "i"}},
+    ]}
     if term:
-        query["term.code"] = term
+        query: dict = {"$and": [or_clause, {"term.code": term}]}
+    else:
+        query = or_clause
 
     sections = list(_db.classes.find(
         query,
