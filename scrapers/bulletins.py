@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -63,10 +64,19 @@ class NYUBulletinScraper:
         self.session = requests.Session()
         self.session.headers.update({"User-Agent": USER_AGENT})
 
-    def get_soup(self, url: str) -> BeautifulSoup:
-        response = self.session.get(url, timeout=self.timeout)
-        response.raise_for_status()
-        return BeautifulSoup(response.text, "html.parser")
+    def get_soup(self, url: str, retries: int = 3, backoff: float = 2.0) -> BeautifulSoup:
+        for attempt in range(retries):
+            try:
+                response = self.session.get(url, timeout=self.timeout)
+                response.raise_for_status()
+                return BeautifulSoup(response.text, "html.parser")
+            except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
+                if attempt == retries - 1:
+                    raise
+                wait = backoff * (2 ** attempt)
+                print(f"  [retry {attempt + 1}/{retries - 1}] {url} — {exc} — waiting {wait:.0f}s")
+                time.sleep(wait)
+        raise RuntimeError("unreachable")
 
     def collect_undergraduate_program_links(self) -> list[BulletinProgram]:
         soup = self.get_soup(PROGRAM_FINDER_URL)
@@ -136,11 +146,17 @@ class NYUBulletinScraper:
             "scraped_at": datetime.now(timezone.utc),
         }
 
-    def scrape_all_programs(self, *, limit: int = 0) -> list[dict[str, Any]]:
+    def scrape_all_programs(self, *, limit: int = 0, delay: float = 0.1) -> list[dict[str, Any]]:
         programs = self.collect_undergraduate_program_links()
         if limit > 0:
             programs = programs[:limit]
-        return [self.scrape_program(program.url) for program in programs]
+        docs: list[dict[str, Any]] = []
+        for i, program in enumerate(programs):
+            print(f"[{i + 1}/{len(programs)}] {program.title}")
+            docs.append(self.scrape_program(program.url))
+            if i < len(programs) - 1:
+                time.sleep(delay)
+        return docs
 
     def _extract_section_text(self, soup: BeautifulSoup, titles: set[str]) -> str:
         for heading in soup.select("h2, h3, h4"):
@@ -160,17 +176,34 @@ class NYUBulletinScraper:
 
         return ""
 
-    def _extract_tables(self, soup: BeautifulSoup) -> list[list[list[str]]]:
-        tables: list[list[list[str]]] = []
+    def _extract_tables(self, soup: BeautifulSoup) -> list[dict[str, Any]]:
+        tables: list[dict[str, Any]] = []
         for table in soup.select("table"):
             rows: list[list[str]] = []
             for row in table.select("tr"):
                 cells = [self._clean_text(cell.get_text(" ", strip=True)) for cell in row.select("th, td")]
                 if any(cells):
                     rows.append(cells)
-            if rows:
-                tables.append(rows)
+            if not rows:
+                continue
+            label = self._find_preceding_heading(table)
+            tables.append({"label": label, "rows": rows})
         return tables
+
+    def _find_preceding_heading(self, element: Tag) -> str:
+        """Return the text of the nearest h2/h3/h4 that precedes this element."""
+        node = element.find_previous_sibling()
+        while node is not None:
+            if isinstance(node, Tag) and node.name in {"h2", "h3", "h4"}:
+                return self._clean_text(node.get_text(" ", strip=True))
+            node = node.find_previous_sibling()
+        # Fall back to the section heading in the parent
+        parent = element.parent
+        if parent is not None:
+            heading = parent.find_previous_sibling(["h2", "h3", "h4"])
+            if heading and isinstance(heading, Tag):
+                return self._clean_text(heading.get_text(" ", strip=True))
+        return ""
 
     def _extract_award_from_title(self, title: str) -> str | None:
         if "(" not in title or ")" not in title:

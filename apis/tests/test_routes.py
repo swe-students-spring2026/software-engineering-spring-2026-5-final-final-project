@@ -50,6 +50,75 @@ class TestClassesRoute:
         assert "term.code" in query
         assert "$or" in query
 
+    def test_get_classes_with_school_filter(self, client, mock_db):
+        mock_db.classes.find.return_value = []
+        res = client.get("/classes?school=CAS")
+        assert res.status_code == 200
+        query = mock_db.classes.find.call_args[0][0]
+        assert query.get("school") == "CAS"
+
+    def test_get_classes_with_campus_filter(self, client, mock_db):
+        mock_db.classes.find.return_value = []
+        res = client.get("/classes?campus=Brooklyn")
+        assert res.status_code == 200
+        query = mock_db.classes.find.call_args[0][0]
+        assert query.get("campus_location") == "Brooklyn"
+
+    def test_get_classes_with_component_filter(self, client, mock_db):
+        mock_db.classes.find.return_value = []
+        res = client.get("/classes?component=Lecture")
+        assert res.status_code == 200
+        query = mock_db.classes.find.call_args[0][0]
+        assert "component" in query
+
+    def test_get_classes_with_mode_filter(self, client, mock_db):
+        mock_db.classes.find.return_value = []
+        res = client.get("/classes?mode=In-Person")
+        assert res.status_code == 200
+        query = mock_db.classes.find.call_args[0][0]
+        assert "instructional_method" in query
+
+
+class TestSchoolsRoute:
+    def test_get_schools_returns_200(self, client, mock_db):
+        mock_db.classes.distinct.return_value = ["CAS", "Tandon", "Stern"]
+        res = client.get("/schools")
+        assert res.status_code == 200
+
+    def test_get_schools_returns_sorted_list(self, client, mock_db):
+        mock_db.classes.distinct.return_value = ["Tandon", "CAS", "Stern"]
+        res = client.get("/schools")
+        data = res.get_json()
+        assert isinstance(data, list)
+        assert data == sorted(data)
+
+    def test_get_schools_filters_empty_values(self, client, mock_db):
+        mock_db.classes.distinct.return_value = ["CAS", None, "", "Tandon"]
+        res = client.get("/schools")
+        data = res.get_json()
+        assert None not in data
+        assert "" not in data
+
+
+class TestCampusesRoute:
+    def test_get_campuses_returns_200(self, client, mock_db):
+        mock_db.classes.distinct.return_value = ["Brooklyn", "Manhattan"]
+        res = client.get("/campuses")
+        assert res.status_code == 200
+
+    def test_get_campuses_returns_sorted_list(self, client, mock_db):
+        mock_db.classes.distinct.return_value = ["Manhattan", "Brooklyn"]
+        res = client.get("/campuses")
+        data = res.get_json()
+        assert isinstance(data, list)
+        assert data == sorted(data)
+
+    def test_get_campuses_filters_empty_values(self, client, mock_db):
+        mock_db.classes.distinct.return_value = ["Brooklyn", None, "Manhattan"]
+        res = client.get("/campuses")
+        data = res.get_json()
+        assert None not in data
+
 
 class TestRefreshRoute:
     def test_refresh_returns_503_when_scraper_unavailable(self, client):

@@ -9,12 +9,14 @@ chat_bp = Blueprint("chat", __name__)
 def chat_endpoint() -> tuple[Response, int] | Response:
     data: dict = request.get_json(silent=True) or {}
     message: str = data.get("message", "").strip()
+    completed_courses: list[str] = data.get("completed_courses") or []
+    major: str = data.get("major", "").strip()
 
     if not message:
         return jsonify({"error": "message is required"}), 400
 
     try:
-        reply = chat(message)
+        reply = chat(message, completed_courses=completed_courses, major=major)
         return jsonify({"reply": reply})
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500

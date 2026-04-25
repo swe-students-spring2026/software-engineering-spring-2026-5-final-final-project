@@ -42,7 +42,8 @@
     .mode-tag { font-size: 0.72rem; color: #777; }
     .add-btn { padding: 4px 10px; background: #57068c; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.75rem; white-space: nowrap; }
     .add-btn:hover { background: #7a0fa8; }
-    .add-btn.added { background: #28a745; cursor: default; }
+    .add-btn.added { background: #28a745; cursor: pointer; }
+    .add-btn.added:hover { background: #c0392b; }
     .loading { text-align: center; padding: 40px; color: #888; }
     .error { background: #f8d7da; color: #721c24; padding: 12px; border-radius: 6px; }
 
@@ -85,6 +86,13 @@
     #chat-panel-header { background: #57068c; color: white; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
     #chat-panel-header span { font-size: 0.9rem; font-weight: bold; }
     #chat-close-btn { background: none; border: none; color: white; font-size: 1.1rem; cursor: pointer; line-height: 1; padding: 0 2px; }
+    #chat-context { border-bottom: 1px solid #eee; flex-shrink: 0; }
+    #chat-context-toggle { width: 100%; background: #f9f4ff; border: none; border-bottom: 1px solid #eee; padding: 6px 12px; text-align: left; font-size: 0.75rem; color: #57068c; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+    #chat-context-toggle:hover { background: #f0e6f7; }
+    #chat-context-fields { padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; background: #faf7ff; }
+    #chat-context-fields input, #chat-context-fields textarea { width: 100%; padding: 5px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.78rem; font-family: inherit; resize: none; }
+    #chat-context-fields input:focus, #chat-context-fields textarea:focus { border-color: #57068c; outline: none; }
+    #chat-context-fields label { font-size: 0.72rem; color: #888; margin-bottom: 1px; }
     #chat-messages { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
     .chat-msg { max-width: 85%; padding: 8px 11px; border-radius: 10px; font-size: 0.82rem; line-height: 1.45; word-wrap: break-word; }
     .chat-msg.user { background: #57068c; color: white; align-self: flex-end; border-bottom-right-radius: 3px; }
@@ -191,6 +199,17 @@
       <span>AI Course Assistant</span>
       <button id="chat-close-btn" onclick="toggleChat()">✕</button>
     </div>
+    <div id="chat-context">
+      <button id="chat-context-toggle" onclick="toggleContext()">
+        <span id="chat-context-arrow">▸</span> Student context (optional)
+      </button>
+      <div id="chat-context-fields" style="display:none">
+        <label for="chat-major">Intended major</label>
+        <input id="chat-major" type="text" placeholder="e.g. Computer Science" />
+        <label for="chat-courses">Completed courses (comma-separated)</label>
+        <textarea id="chat-courses" rows="2" placeholder="e.g. CSCI-UA 101, MATH-UA 120"></textarea>
+      </div>
+    </div>
     <div id="chat-messages">
       <div class="chat-msg ai">Hi! I can help you find courses and plan your schedule. Ask me anything!</div>
     </div>
@@ -286,11 +305,20 @@
       return schedule.some(e => e.lecture.crn === crn || (e.recitation && e.recitation.crn === crn));
     }
 
+    function handleRemoveByCrn(crn) {
+      const idx = schedule.findIndex(e =>
+        e.lecture.crn === crn || (e.recitation && e.recitation.crn === crn)
+      );
+      if (idx !== -1) removeEntry(idx);
+    }
+
     function renderSection(c, isRct) {
       const mode = c.instructional_method || "";
       const modeBadge = mode.includes("Online") ? "🌐 Online" : mode.includes("Blended") ? "⚡ Blended" : "";
       const added = isSectionAdded(c.crn);
-      const btn = `<button class="add-btn${added ? " added" : ""}" onclick="handleAdd('${c.crn}')" ${added ? "disabled" : ""}>${added ? "✓ Added" : "Add"}</button>`;
+      const btn = added
+        ? `<button class="add-btn added" onclick="handleRemoveByCrn('${c.crn}')">✕ Remove</button>`
+        : `<button class="add-btn" onclick="handleAdd('${c.crn}')">Add</button>`;
       return `
         <div class="section-row${isRct ? " rct-row" : ""}" data-crn="${c.crn}">
           <div class="section-left">
@@ -551,11 +579,18 @@
 
     // ── AI Chat ──
     let chatOpen = false;
+    let contextOpen = false;
 
     function toggleChat() {
       chatOpen = !chatOpen;
       document.getElementById("chat-panel").classList.toggle("open", chatOpen);
       if (chatOpen) document.getElementById("chat-input").focus();
+    }
+
+    function toggleContext() {
+      contextOpen = !contextOpen;
+      document.getElementById("chat-context-fields").style.display = contextOpen ? "flex" : "none";
+      document.getElementById("chat-context-arrow").textContent = contextOpen ? "▾" : "▸";
     }
 
     function appendMsg(text, role) {
@@ -580,10 +615,15 @@
       const typing = appendMsg("Thinking…", "ai typing");
 
       try {
+        const major = document.getElementById("chat-major").value.trim();
+        const coursesRaw = document.getElementById("chat-courses").value.trim();
+        const completed_courses = coursesRaw
+          ? coursesRaw.split(",").map(s => s.trim()).filter(Boolean)
+          : [];
         const res  = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: msg }),
+          body: JSON.stringify({ message: msg, major, completed_courses }),
         });
         const data = await res.json();
         typing.textContent = data.reply || data.error || "Something went wrong.";

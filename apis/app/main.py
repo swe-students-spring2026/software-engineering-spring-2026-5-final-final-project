@@ -35,6 +35,9 @@ client = MongoClient(mongo_uri)
 db = client[mongo_db_name]
 requirements_service = RequirementsService(db)
 
+from app.ai.tools import init_tools  # noqa: E402
+init_tools(db)
+
 
 @app.get("/health")
 def health():
