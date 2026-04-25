@@ -44,13 +44,13 @@ def proxy_classes():
 
 @app.get("/api/schools")
 def proxy_schools():
-    resp = requests.get(f"{API_URL}/schools")
+    resp = requests.get(f"{API_URL}/classes/schools")
     return jsonify(resp.json()), resp.status_code
 
 
 @app.get("/api/campuses")
 def proxy_campuses():
-    resp = requests.get(f"{API_URL}/campuses")
+    resp = requests.get(f"{API_URL}/classes/campuses")
     return jsonify(resp.json()), resp.status_code
 
 
