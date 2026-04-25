@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup, Tag
@@ -17,6 +17,34 @@ BASE_URL = "https://bulletins.nyu.edu"
 PROGRAM_FINDER_URL = f"{BASE_URL}/programs/"
 USER_AGENT = "ai-course-selection-assistant/0.1"
 COLLECTION_NAME = "program_requirements"
+SCHOOL_URL_SEGMENTS = {
+    "arts-science": "Arts & Science",
+    "arts-and-science": "Arts & Science",
+    "college-of-arts-and-science": "Arts & Science",
+    "arts": "Tisch",
+    "tandon": "Tandon",
+    "engineering": "Tandon",
+    "culture-education-human-development": "Steinhardt",
+    "steinhardt": "Steinhardt",
+    "tisch": "Tisch",
+    "business": "Stern",
+    "stern": "Stern",
+    "public-service": "Wagner",
+    "wagner": "Wagner",
+    "global-public-health": "Global Public Health",
+    "liberal-studies": "Liberal Studies",
+    "individualized-study": "Gallatin",
+    "sps": "SPS",
+    "school-of-professional-studies": "SPS",
+    "professional-studies": "SPS",
+    "abu-dhabi": "Abu Dhabi",
+    "shanghai": "Shanghai",
+    "nursing": "Rory Meyers",
+    "gallatin": "Gallatin",
+    "social-work": "Silver",
+    "silver": "Silver",
+    "dentistry": "Dentistry",
+}
 
 
 @dataclass(frozen=True)
@@ -58,7 +86,10 @@ class NYUBulletinScraper:
             if award is None:
                 continue
 
-            school = self._extract_school_from_anchor_text(title)
+            school = self._resolve_school(
+                url=full_url,
+                text_school=self._extract_school_from_anchor_text(title),
+            )
             programs[full_url] = BulletinProgram(
                 title=title,
                 url=full_url,
@@ -73,12 +104,16 @@ class NYUBulletinScraper:
         title_node = soup.select_one("h1")
         title = self._clean_text(title_node.get_text(" ", strip=True)) if title_node else ""
         award = self._extract_award_from_title(title)
+        school = self._resolve_school(
+            url=url,
+            text_school=self._extract_school_from_page(soup),
+        )
 
         return {
             "_id": url,
             "url": url,
             "title": title,
-            "school": self._extract_school_from_page(soup),
+            "school": school,
             "award": award,
             "program_description": self._extract_section_text(
                 soup,
@@ -172,6 +207,23 @@ class NYUBulletinScraper:
             if school:
                 return school
         return None
+
+    def _extract_school_from_url(self, url: str) -> str | None:
+        path_parts = [part for part in urlparse(url).path.strip("/").split("/") if part]
+        if len(path_parts) < 2:
+            return None
+
+        for segment in path_parts:
+            school = SCHOOL_URL_SEGMENTS.get(segment.lower())
+            if school:
+                return school
+        return None
+
+    def _resolve_school(self, *, url: str, text_school: str | None) -> str | None:
+        url_school = self._extract_school_from_url(url)
+        if url_school is not None:
+            return url_school
+        return text_school
 
     def _extract_bulletin_year(self, soup: BeautifulSoup) -> str | None:
         page_text = self._clean_text(soup.get_text(" ", strip=True))

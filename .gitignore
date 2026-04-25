@@ -152,6 +152,11 @@ cython_debug/
 scrapers/fix_meeting_times.py
 
 # classes example
-scrapers/classes_example.json
+# scrapers/classes_example.json
+
+# local authenticated browser sessions
+.secrets/
+*storage-state*.json
+*albert-state*.json
 
 
