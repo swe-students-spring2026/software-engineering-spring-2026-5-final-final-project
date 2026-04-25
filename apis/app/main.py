@@ -8,7 +8,7 @@ from pymongo import MongoClient
 try:
     from apis.app.services.requirements_service import RequirementsService
 except ModuleNotFoundError:
-    from services.requirements_service import RequirementsService
+    from app.services.requirements_service import RequirementsService
 
 try:
     from scrapers.scraper import refresh_course_document
@@ -35,6 +35,9 @@ client = MongoClient(mongo_uri)
 db = client[mongo_db_name]
 requirements_service = RequirementsService(db)
 
+from app.ai.tools import init_tools  # noqa: E402
+init_tools(db)
+
 
 @app.get("/health")
 def health():
@@ -43,14 +46,25 @@ def health():
 
 @app.get("/classes")
 def get_classes():
-    term = request.args.get("term")
-    q = request.args.get("q")
+    term      = request.args.get("term")
+    q         = request.args.get("q")
+    school    = request.args.get("school")
+    campus    = request.args.get("campus")
+    component = request.args.get("component")
+    mode      = request.args.get("mode")
 
     query = {}
 
     if term:
         query["term.code"] = term
-
+    if school:
+        query["school"] = school
+    if campus:
+        query["campus_location"] = campus
+    if component:
+        query["component"] = {"$regex": component, "$options": "i"}
+    if mode:
+        query["instructional_method"] = {"$regex": mode, "$options": "i"}
     if q:
         query["$or"] = [
             {"title": {"$regex": q, "$options": "i"}},
@@ -61,6 +75,18 @@ def get_classes():
 
     classes = list(db.classes.find(query))
     return jsonify(classes)
+
+
+@app.get("/schools")
+def get_schools():
+    schools = sorted([s for s in db.classes.distinct("school") if s])
+    return jsonify(schools)
+
+
+@app.get("/campuses")
+def get_campuses():
+    campuses = sorted([c for c in db.classes.distinct("campus_location") if c])
+    return jsonify(campuses)
 
 
 @app.post("/classes/refresh")
