@@ -7,7 +7,7 @@ import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from bs4 import BeautifulSoup
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
@@ -21,7 +21,6 @@ except ModuleNotFoundError:
 
 ALBERT_CLASS_SEARCH_URL = "https://sis.nyu.edu/psc/csprod/EMPLOYEE/SA/c/NYU_SR.NYU_CLS_SRCH.GBL"
 DEFAULT_OUTPUT = Path(__file__).with_name("classes_example.json")
-DEFAULT_BRAVE_USER_DATA_DIR = r"%LOCALAPPDATA%\BraveSoftware\Brave-Browser\User Data"
 
 
 HEADER_ALIASES = {
@@ -65,7 +64,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
             "Scrape visible class-search results from an authenticated NYU Albert session. "
-            "Use --interactive-login the first time, then reuse --storage-state, --user-data-dir, or --cdp-url."
+            "Use --interactive-login the first time, then reuse --storage-state, "
+            "--browser-profile, or --cdp-url."
         )
     )
     parser.add_argument("--url", default=ALBERT_CLASS_SEARCH_URL)
@@ -78,25 +78,20 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--text-file", help="Parse copied Albert results page text instead of opening a browser.")
     parser.add_argument(
         "--cdp-url",
-        help=(
-            "Attach to an already-running Chromium or Brave browser via Chrome DevTools Protocol, "
-            "for example http://127.0.0.1:9222."
-        ),
+        help="Attach to an already-running Chromium-based browser via Chrome DevTools Protocol, for example http://127.0.0.1:9222.",
     )
     parser.add_argument("--storage-state", help="Playwright storage_state JSON from a logged-in Albert session.")
     parser.add_argument("--save-storage", help="Write the logged-in browser storage_state JSON here.")
     parser.add_argument(
-        "--user-data-dir",
+        "--browser-profile",
         help=(
-            "Launch a persistent Chromium/Chrome/Edge/Brave profile directory. "
-            "Useful when Albert blocks fresh automation sessions."
+            "Launch a persistent Chromium-based browser profile directory. "
+            "Useful when Albert blocks fresh automation sessions or when you want to reuse an existing logged-in profile."
         ),
     )
     parser.add_argument(
-        "--channel",
-        choices=("chrome", "msedge", "brave", "chromium"),
-        default="chromium",
-        help="Browser to use with --user-data-dir. Brave uses its installed executable path.",
+        "--browser-executable",
+        help="Path to a Chromium-based browser executable to use with --browser-profile.",
     )
     parser.add_argument("--term", default="", help="Optional term label/code to store on each result.")
     parser.add_argument("--headless", action="store_true", help="Run without a visible browser window.")
@@ -146,25 +141,19 @@ def main() -> int:
                 "Chrome/120.0.0.0 Safari/537.36"
             ),
         }
-        user_data_dir = args.user_data_dir
-        if args.channel == "brave" and not user_data_dir:
-            user_data_dir = DEFAULT_BRAVE_USER_DATA_DIR
-
         if args.cdp_url:
             attached_browser = playwright.chromium.connect_over_cdp(args.cdp_url)
             context = ensure_attached_context(attached_browser)
             page = get_or_wait_for_albert_page(context, args.url, args.wait_ms)
-        elif user_data_dir:
+        elif args.browser_profile:
             launch_kwargs: dict[str, Any] = {
                 "headless": args.headless and not args.interactive_login,
             }
-            if args.channel == "brave":
-                launch_kwargs["executable_path"] = find_brave_executable()
-            elif args.channel != "chromium":
-                launch_kwargs["channel"] = args.channel
+            if args.browser_executable:
+                launch_kwargs["executable_path"] = expand_path(args.browser_executable)
 
             context = playwright.chromium.launch_persistent_context(
-                user_data_dir=expand_path(user_data_dir),
+                user_data_dir=expand_path(args.browser_profile),
                 **launch_kwargs,
                 **context_kwargs,
             )
@@ -200,7 +189,17 @@ def main() -> int:
             )
             return 1
 
-        docs, report = scrape_subject_pages(page, term_code=args.term, wait_ms=args.wait_ms, limit=args.limit)
+        def save_progress(docs_snapshot: list[dict[str, Any]], report_snapshot: dict[str, Any]) -> None:
+            write_docs(output_path, docs_snapshot)
+            write_report(report_path, report_snapshot)
+
+        docs, report = scrape_subject_pages(
+            page,
+            term_code=args.term,
+            wait_ms=args.wait_ms,
+            limit=args.limit,
+            save_progress=save_progress,
+        )
         if not docs:
             write_debug_dump(page, output_path)
         write_docs(output_path, docs)
@@ -292,20 +291,32 @@ def merge_docs_by_id(existing_docs: list[dict[str, Any]], new_docs: list[dict[st
     return merged
 
 
-def scrape_subject_pages(page: Any, *, term_code: str, wait_ms: int, limit: int) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+def scrape_subject_pages(
+    page: Any,
+    *,
+    term_code: str,
+    wait_ms: int,
+    limit: int,
+    save_progress: Callable[[list[dict[str, Any]], dict[str, Any]], None] | None = None,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     all_docs: list[dict[str, Any]] = []
     seen_ids: set[str] = set()
     visited_subjects: set[str] = set()
     discovered_subjects: dict[str, str] = {}
+    discovered_order: list[str] = []
     attempted_subjects: list[str] = []
     successful_subjects: dict[str, int] = {}
     failed_subjects: list[str] = []
+    filter_state = extract_filter_state(page)
 
     for _ in range(500):
         if is_browse_subject_page(page):
             candidates = get_subject_candidates(page)
             for candidate in candidates:
-                discovered_subjects.setdefault(normalize_subject_key(candidate), candidate)
+                key = normalize_subject_key(candidate)
+                if key not in discovered_subjects:
+                    discovered_subjects[key] = candidate
+                    discovered_order.append(key)
         else:
             wait_for_probable_results(page, wait_ms)
             rows = extract_visible_rows(page)
@@ -320,6 +331,20 @@ def scrape_subject_pages(page: Any, *, term_code: str, wait_ms: int, limit: int)
                 if len(all_docs) > before_count:
                     successful_subjects[current_subject_key] = len(all_docs) - before_count
 
+            if save_progress is not None:
+                save_progress(
+                    list(all_docs),
+                    build_report(
+                        discovered_subjects,
+                        visited_subjects,
+                        attempted_subjects,
+                        successful_subjects,
+                        failed_subjects,
+                        list(all_docs),
+                        filter_state,
+                    ),
+                )
+
             if limit > 0 and len(all_docs) >= limit:
                 return all_docs[:limit], build_report(
                     discovered_subjects,
@@ -328,6 +353,7 @@ def scrape_subject_pages(page: Any, *, term_code: str, wait_ms: int, limit: int)
                     successful_subjects,
                     failed_subjects,
                     all_docs[:limit],
+                    filter_state,
                     limited=True,
                 )
 
@@ -340,16 +366,18 @@ def scrape_subject_pages(page: Any, *, term_code: str, wait_ms: int, limit: int)
                     successful_subjects,
                     failed_subjects,
                     final_docs,
+                    filter_state,
                 )
 
             candidates = get_subject_candidates(page)
             for candidate in candidates:
-                discovered_subjects.setdefault(normalize_subject_key(candidate), candidate)
+                key = normalize_subject_key(candidate)
+                if key not in discovered_subjects:
+                    discovered_subjects[key] = candidate
+                    discovered_order.append(key)
 
-        next_subject = next(
-            (candidate for candidate in candidates if normalize_subject_key(candidate) not in visited_subjects),
-            None,
-        )
+        next_subject_key = next((key for key in discovered_order if key not in visited_subjects), None)
+        next_subject = discovered_subjects.get(next_subject_key, "") if next_subject_key else None
         if not next_subject:
             final_docs = all_docs[:limit] if limit > 0 else all_docs
             return final_docs, build_report(
@@ -359,6 +387,7 @@ def scrape_subject_pages(page: Any, *, term_code: str, wait_ms: int, limit: int)
                 successful_subjects,
                 failed_subjects,
                 final_docs,
+                filter_state,
             )
 
         print(f"Scraping subject: {next_subject}", flush=True)
@@ -366,6 +395,19 @@ def scrape_subject_pages(page: Any, *, term_code: str, wait_ms: int, limit: int)
         if not click_subject_candidate(page, next_subject, wait_ms):
             visited_subjects.add(normalize_subject_key(next_subject))
             failed_subjects.append(next_subject)
+            if save_progress is not None:
+                save_progress(
+                    list(all_docs),
+                    build_report(
+                        discovered_subjects,
+                        visited_subjects,
+                        attempted_subjects,
+                        successful_subjects,
+                        failed_subjects,
+                        list(all_docs),
+                        filter_state,
+                    ),
+                )
             continue
 
         visited_subjects.add(normalize_subject_key(next_subject))
@@ -378,6 +420,7 @@ def scrape_subject_pages(page: Any, *, term_code: str, wait_ms: int, limit: int)
         successful_subjects,
         failed_subjects,
         final_docs,
+        filter_state,
     )
 
 
@@ -388,6 +431,7 @@ def build_report(
     successful_subjects: dict[str, int],
     failed_subjects: list[str],
     docs: list[dict[str, Any]],
+    filter_state: dict[str, Any],
     *,
     limited: bool = False,
 ) -> dict[str, Any]:
@@ -402,6 +446,7 @@ def build_report(
         "successful_subject_count": len(successful_subjects),
         "failed_subject_count": len(failed_subjects),
         "document_count": len(docs),
+        "filter_state": filter_state,
         "attempted_subjects": attempted_subjects,
         "successful_subjects": [
             {"subject_key": key, "label": discovered_subjects.get(key, key), "new_documents": successful_subjects[key]}
@@ -413,6 +458,68 @@ def build_report(
             for key in missing_keys
         ],
     }
+
+
+def extract_filter_state(page: Any) -> dict[str, Any]:
+    for frame in iter_accessible_frames(page):
+        try:
+            state = frame.evaluate(
+                """
+                () => {
+                  const clean = (text) => (text || '').replace(/\\s+/g, ' ').trim();
+                  const labelFor = (el) => {
+                    if (!el) return '';
+                    if (el.labels && el.labels.length) {
+                      return clean(Array.from(el.labels).map(label => label.innerText || label.textContent).join(' '));
+                    }
+                    const aria = el.getAttribute('aria-label') || el.getAttribute('title') || el.getAttribute('placeholder');
+                    if (aria) return clean(aria);
+                    const prev = el.previousElementSibling;
+                    if (prev) return clean(prev.innerText || prev.textContent);
+                    return clean(el.name || el.id || el.type || 'control');
+                  };
+
+                  const checkedInputs = Array.from(document.querySelectorAll('input[type=checkbox]:checked, input[type=radio]:checked'))
+                    .map(el => ({
+                      label: labelFor(el),
+                      value: clean(el.value || el.getAttribute('data-label') || 'selected'),
+                      name: clean(el.name || ''),
+                    }))
+                    .filter(item => item.label || item.value);
+
+                  const selectedOptions = Array.from(document.querySelectorAll('select'))
+                    .map(el => ({
+                      label: labelFor(el),
+                      value: clean(el.options[el.selectedIndex]?.text || ''),
+                      name: clean(el.name || ''),
+                    }))
+                    .filter(item => item.value && item.value.toLowerCase() !== ' ');
+
+                  const textInputs = Array.from(document.querySelectorAll('input[type=text], input:not([type]), textarea'))
+                    .map(el => ({
+                      label: labelFor(el),
+                      value: clean(el.value || ''),
+                      name: clean(el.name || ''),
+                    }))
+                    .filter(item => item.value);
+
+                  const bodyText = clean(document.body?.innerText || '');
+                  return {
+                    page_url: window.location.href,
+                    page_title: clean(document.title || ''),
+                    checked_inputs: checkedInputs,
+                    selected_options: selectedOptions,
+                    text_inputs: textInputs,
+                    body_preview: bodyText.slice(0, 2000),
+                  };
+                }
+                """
+            )
+            if state:
+                return state
+        except Exception:
+            continue
+    return {}
 
 
 def merge_unique_docs(existing_docs: list[dict[str, Any]], new_docs: list[dict[str, Any]], seen_ids: set[str]) -> list[dict[str, Any]]:
@@ -667,19 +774,6 @@ def find_albert_page(context: Any, url: str) -> Any | None:
 
 def expand_path(path: str) -> str:
     return str(Path(os.path.expandvars(os.path.expanduser(path))).resolve())
-
-
-def find_brave_executable() -> str:
-    candidates = [
-        r"%PROGRAMFILES%\BraveSoftware\Brave-Browser\Application\brave.exe",
-        r"%PROGRAMFILES(X86)%\BraveSoftware\Brave-Browser\Application\brave.exe",
-        r"%LOCALAPPDATA%\BraveSoftware\Brave-Browser\Application\brave.exe",
-    ]
-    for candidate in candidates:
-        path = Path(os.path.expandvars(candidate))
-        if path.exists():
-            return str(path)
-    raise RuntimeError("Could not find Brave. Pass --channel chrome/msedge, or install Brave in the default location.")
 
 
 def is_albert_page(page: Any, url: str) -> bool:

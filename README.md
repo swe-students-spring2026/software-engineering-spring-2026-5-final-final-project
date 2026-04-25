@@ -120,7 +120,13 @@ Start any Chromium-based browser with remote debugging enabled. Replace `<browse
 Then log in to Albert in that browser window, pass reCAPTCHA, and open the Browse by Subject page. After that, run:
 
 ```bash
-python3 scrapers/albert_scraper.py --cdp-url http://127.0.0.1:9222 --term 1268
+python3 scrapers/albert_scraper.py --cdp-url http://127.0.0.1:9222
+```
+
+If you prefer to let the scraper launch a local Chromium-based browser profile itself, you can also use:
+
+```bash
+python3 scrapers/albert_scraper.py --browser-profile /tmp/albert-cdp-profile --browser-executable "<browser-exe>"
 ```
 
 This writes scraped classes to `scrapers/classes_example.json` and a coverage summary to `scrapers/classes_example_report.json` so you can verify how many subjects were discovered and visited.
