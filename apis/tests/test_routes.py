@@ -29,54 +29,62 @@ class TestClassesRoute:
         assert isinstance(data, list)
 
     def test_get_classes_with_term_filter(self, client, mock_db):
-        mock_db.classes.aggregate.return_value = []
+        mock_db.classes.find.return_value = []
         res = client.get("/classes?term=1268")
         assert res.status_code == 200
-        match = mock_db.classes.aggregate.call_args[0][0][0]["$match"]
-        assert match.get("term.code") == "1268"
+        query = mock_db.classes.find.call_args[0][0]
+        assert query.get("term") == "Fall 2026"
 
     def test_get_classes_with_query_filter(self, client, mock_db):
-        mock_db.classes.aggregate.return_value = []
+        mock_db.classes.find.return_value = []
         res = client.get("/classes?q=algorithms")
         assert res.status_code == 200
-        match = mock_db.classes.aggregate.call_args[0][0][0]["$match"]
-        assert "$or" in match
+        query = mock_db.classes.find.call_args[0][0]
+        assert "$or" in query
 
     def test_get_classes_with_term_and_query(self, client, mock_db):
-        mock_db.classes.aggregate.return_value = []
+        mock_db.classes.find.return_value = []
         res = client.get("/classes?term=1268&q=CS")
         assert res.status_code == 200
-        match = mock_db.classes.aggregate.call_args[0][0][0]["$match"]
-        assert "term.code" in match
-        assert "$or" in match
+        query = mock_db.classes.find.call_args[0][0]
+        assert query.get("term") == "Fall 2026"
+        assert "$or" in query
 
     def test_get_classes_with_school_filter(self, client, mock_db):
-        mock_db.classes.aggregate.return_value = []
+        mock_db.classes.find.return_value = []
         res = client.get("/classes?school=CAS")
         assert res.status_code == 200
-        match = mock_db.classes.aggregate.call_args[0][0][0]["$match"]
-        assert "school" in match
-
-    def test_get_classes_with_campus_filter(self, client, mock_db):
-        mock_db.classes.aggregate.return_value = []
-        res = client.get("/classes?campus=Brooklyn")
-        assert res.status_code == 200
-        match = mock_db.classes.aggregate.call_args[0][0][0]["$match"]
-        assert "_details_raw.campus_location" in match
+        query = mock_db.classes.find.call_args[0][0]
+        assert "school" in query
 
     def test_get_classes_with_component_filter(self, client, mock_db):
-        mock_db.classes.aggregate.return_value = []
+        mock_db.classes.find.return_value = []
         res = client.get("/classes?component=Lecture")
         assert res.status_code == 200
-        match = mock_db.classes.aggregate.call_args[0][0][0]["$match"]
-        assert "component" in match
+        query = mock_db.classes.find.call_args[0][0]
+        assert "component" in query
 
-    def test_get_classes_with_mode_filter(self, client, mock_db):
-        mock_db.classes.aggregate.return_value = []
-        res = client.get("/classes?mode=In-Person")
+    def test_get_classes_with_status_open_filter(self, client, mock_db):
+        mock_db.classes.find.return_value = []
+        res = client.get("/classes?status=open")
         assert res.status_code == 200
-        match = mock_db.classes.aggregate.call_args[0][0][0]["$match"]
-        assert "_details_raw.instructional_method" in match
+        query = mock_db.classes.find.call_args[0][0]
+        assert "status" in query
+
+    def test_get_classes_with_status_waitlist_filter(self, client, mock_db):
+        mock_db.classes.find.return_value = []
+        res = client.get("/classes?status=waitlist")
+        assert res.status_code == 200
+        query = mock_db.classes.find.call_args[0][0]
+        assert query["status"]["$regex"].startswith("^wait")
+
+    def test_get_classes_instructor_flexible_match(self, client, mock_db):
+        mock_db.classes.find.return_value = []
+        res = client.get("/classes?q=Spathis+Promethee")
+        assert res.status_code == 200
+        query = mock_db.classes.find.call_args[0][0]
+        instructor_regex = next(c["instructor"]["$regex"] for c in query["$or"] if "instructor" in c)
+        assert ".*" in instructor_regex
 
 
 class TestSchoolsRoute:
@@ -102,36 +110,13 @@ class TestSchoolsRoute:
 
 class TestCampusesRoute:
     def test_get_campuses_returns_200(self, client, mock_db):
-        mock_db.classes.distinct.return_value = ["Brooklyn", "Manhattan"]
         res = client.get("/classes/campuses")
         assert res.status_code == 200
 
-    def test_get_campuses_returns_sorted_list(self, client, mock_db):
-        mock_db.classes.distinct.return_value = ["Manhattan", "Brooklyn"]
+    def test_get_campuses_returns_empty_list(self, client, mock_db):
         res = client.get("/classes/campuses")
-        data = res.get_json()
-        assert isinstance(data, list)
-        assert data == sorted(data)
+        assert res.get_json() == []
 
-    def test_get_campuses_filters_empty_values(self, client, mock_db):
-        mock_db.classes.distinct.return_value = ["Brooklyn", None, "Manhattan"]
-        res = client.get("/classes/campuses")
-        data = res.get_json()
-        assert None not in data
-
-
-class TestRefreshRoute:
-    def test_refresh_returns_503_when_scraper_unavailable(self, client):
-        # refresh_course_document is None in test env (scrapers not installed)
-        from app import main as main_module
-        original = main_module.refresh_course_document
-        main_module.refresh_course_document = None
-        try:
-            res = client.post("/classes/refresh", json={})
-            assert res.status_code == 503
-            assert "error" in res.get_json()
-        finally:
-            main_module.refresh_course_document = original
 
 
 class TestProgramsRoute:

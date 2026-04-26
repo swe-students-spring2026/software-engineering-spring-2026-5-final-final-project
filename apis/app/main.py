@@ -1,5 +1,6 @@
 import io
 import os
+import re
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -11,11 +12,6 @@ try:
     from apis.app.services.requirements_service import RequirementsService
 except ModuleNotFoundError:
     from app.services.requirements_service import RequirementsService
-
-try:
-    from scrapers.scraper import refresh_course_document
-except ModuleNotFoundError:
-    refresh_course_document = None
 
 load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
@@ -46,44 +42,47 @@ def health():
     return jsonify({"status": "ok", "service": "apis"})
 
 
+TERM_CODES: dict[str, str] = {
+    "1268": "Fall 2026",
+    "1266": "Summer 2026",
+    "1264": "Spring 2026",
+}
+
+
 @app.get("/classes")
 def get_classes():
     term      = request.args.get("term")
     q         = request.args.get("q")
     school    = request.args.get("school")
     component = request.args.get("component")
-    mode      = request.args.get("mode")
-    campus    = request.args.get("campus")
+    status    = request.args.get("status")
 
-    query = {}
+    query: dict = {}
 
     if term:
-        query["term.code"] = term
+        term_name = TERM_CODES.get(term, term)
+        query["term"] = term_name
     if school:
         query["school"] = {"$regex": school, "$options": "i"}
     if component:
         query["component"] = {"$regex": component, "$options": "i"}
-    if mode:
-        query["_details_raw.instructional_method"] = {"$regex": mode, "$options": "i"}
-    if campus:
-        query["_details_raw.campus_location"] = {"$regex": campus, "$options": "i"}
+    if status == "open":
+        query["status"] = {"$regex": r"^open$", "$options": "i"}
+    elif status == "closed":
+        query["status"] = {"$regex": r"^closed$", "$options": "i"}
+    elif status == "waitlist":
+        query["status"] = {"$regex": r"^wait", "$options": "i"}
     if q:
+        # For instructor, join tokens with .* so "First Last" matches "Last, First"
+        instructor_pattern = ".*".join(re.escape(t) for t in q.split())
         query["$or"] = [
-            {"title":        {"$regex": q, "$options": "i"}},
-            {"code":         {"$regex": q, "$options": "i"}},
-            {"subject_code": {"$regex": q, "$options": "i"}},
-            {"instructor":   {"$regex": q, "$options": "i"}},
+            {"title":        {"$regex": re.escape(q), "$options": "i"}},
+            {"code":         {"$regex": re.escape(q), "$options": "i"}},
+            {"subject_code": {"$regex": re.escape(q), "$options": "i"}},
+            {"instructor":   {"$regex": instructor_pattern, "$options": "i"}},
         ]
 
-    classes = list(db.classes.aggregate([
-        {"$match": query},
-        {"$set": {
-            "clssnotes":            "$_details_raw.clssnotes",
-            "instructional_method": "$_details_raw.instructional_method",
-            "campus_location":      "$_details_raw.campus_location",
-        }},
-        {"$unset": ["_id", "_details_raw"]},
-    ]))
+    classes = list(db.classes.find(query, {"_id": 0, "source": 0}))
     return jsonify(classes)
 
 
@@ -95,47 +94,8 @@ def get_schools():
 
 @app.get("/classes/campuses")
 def get_campuses():
-    campuses = db.classes.distinct("_details_raw.campus_location")
-    return jsonify(sorted(c for c in campuses if c))
+    return jsonify([])
 
-
-@app.post("/classes/refresh")
-def refresh_class():
-    if refresh_course_document is None:
-        return jsonify({"error": "course refresh is not available in this runtime"}), 503
-
-    payload = request.get_json(silent=True) or {}
-    term = payload.get("term") or request.args.get("term")
-    class_id = payload.get("_id") or request.args.get("_id")
-    code = payload.get("code") or request.args.get("code")
-    crn = payload.get("crn") or request.args.get("crn")
-    section = payload.get("section") or request.args.get("section")
-
-    existing = None
-    if class_id:
-        existing = db.classes.find_one({"_id": class_id})
-    elif term and crn:
-        existing = db.classes.find_one({"term.code": term, "crn": str(crn)})
-
-    if existing:
-        term = term or existing.get("term", {}).get("code")
-        code = code or existing.get("code")
-        crn = crn or existing.get("crn")
-        section = section or existing.get("section")
-
-    if not term or not code:
-        return jsonify({"error": "provide term and either _id or code (optionally crn/section)"}), 400
-
-    refreshed = refresh_course_document(term, code=code, crn=crn, section=section)
-
-    if not refreshed:
-        return jsonify({"error": "course could not be refreshed"}), 404
-
-    db.classes.update_one({"_id": refreshed["_id"]}, {"$set": refreshed}, upsert=True)
-
-    return jsonify(
-        {key: value for key, value in refreshed.items() if key != "_details_raw"}
-    )
 
 
 @app.post("/auth/register")
