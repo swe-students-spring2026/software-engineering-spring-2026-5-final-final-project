@@ -7,7 +7,7 @@ name = "pypi"
 dotenv = "*"
 flask-login = "*"
 pymongo = "*"
-spotify = "*"
+spotipy = "*"
 
 [dev-packages]
 
