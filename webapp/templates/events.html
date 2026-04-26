@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Events — DinnerMeet{% endblock %}
+
+{% block content %}
+<div class="events-container">
+    <h1>Upcoming Events</h1>
+    <a href="/events/create" class="btn">+ Host an Event</a>
+
+    {% if events %}
+        <ul class="event-list">
+        {% for event in events %}
+            <li class="event-card">
+                <h3>{{ event.title }}</h3>
+                <p><strong>Date:</strong> {{ event.date }} at {{ event.time }}</p>
+                <p><strong>Capacity:</strong> {{ event.capacity }} guests</p>
+                {% if event.description %}
+                    <p>{{ event.description }}</p>
+                {% endif %}
+                <a href="/events/{{ event._id }}">View Details</a>
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No events yet. Be the first to host one!</p>
+    {% endif %}
+</div>
+{% endblock %}

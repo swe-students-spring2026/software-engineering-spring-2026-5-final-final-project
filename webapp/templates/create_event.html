@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Create Event — DinnerMeet{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h1>Create Event</h1>
+
+    {% if error %}
+        <div class="flash error">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST" action="/events/create">
+        <label for="title">Title:</label>
+        <input type="text" id="title" name="title" required />
+
+        <label for="date">Date:</label>
+        <input type="date" id="date" name="date" required />
+
+        <label for="time">Time:</label>
+        <input type="time" id="time" name="time" required />
+
+        <label for="capacity">Hosting Capacity:</label>
+        <input type="number" id="capacity" name="capacity" min="2" placeholder="Max num of people you want to host (Min 2)" required />
+
+        <label for="description">Short Description:</label>
+        <input type="text" id="description" name="description" />
+
+        <button type="submit">Create Event</button>
+    </form>
+</div>
+{% endblock %}

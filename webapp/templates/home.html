@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Home — DinnerMeet{% endblock %}
+
+{% block content %}
+<div class="home-container">
+    <h1>Welcome, {{ session.get('first_name', 'there') }}!</h1>
+    <p>Find dinner events and make new friends in NYC.</p>
+
+    <div class="home-links">
+        <a href="/events" class="btn">Browse Events</a>
+        <a href="/events/create" class="btn">Host an Event</a>
+    </div>
+</div>
+{% endblock %}
