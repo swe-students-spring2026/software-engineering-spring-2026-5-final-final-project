@@ -6,11 +6,10 @@ import re
 import pymongo
 from bson.objectid import ObjectId
 from dotenv import load_dotenv
-from flask import Flask, flash, redirect, render_template, request, url_for, session
+from flask import Flask, redirect, render_template, request, url_for, session
 from datetime import timedelta
-from flask import Flask, render_template, request
-import spotify
-from spotify.oauth2 import SpotifyOAuth
+import spotipy
+from spotipy.oauth2 import SpotifyOAuth
 
 # create the Flask app
 app = Flask(__name__)
@@ -86,4 +85,19 @@ def logout():
     session.clear()
     return redirect(url_for("index"))
 
+@app.route("/recommend", methods=["POST"])
+def recommend():
+    sp = get_spotify_client()
+    if not sp:
+        return redirect(url_for("login"))
+    # TODO: call ml-client
+    return render_template("index.html", username=session.get("user_id"), tracks=[])
 
+@app.route("/save_playlist", methods=["POST"])
+def save_playlist():
+    # TODO: save to Spotify
+    flash("Playlist saved!", "success")
+    return redirect(url_for("index"))
+
+if __name__ == "__main__":
+    app.run(debug=True, port=5000)
