@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 from app.ai.tools import (
     search_courses,
     get_course_sections,
+    get_professor_profile,
     list_programs,
     get_program_requirements,
     TOOL_HANDLERS,
@@ -93,6 +94,27 @@ class TestGetCourseSections:
         assert result["count"] == 0
 
 
+class TestGetProfessorProfile:
+    def test_returns_professor_profile(self, mock_db):
+        mock_db.classes.find.return_value = [
+            {"instructor": "Joanna Klukowska", "code": "CSCI-UA 102", "section": "001"}
+        ]
+        with pytest.MonkeyPatch.context() as mp:
+            mp.setattr("app.ai.tools.build_professor_profile", lambda db, name, term="": {
+                "name": "Joanna Klukowska",
+                "courses": [{"code": "CSCI-UA 102"}],
+                "course_count": 1,
+            })
+            result = get_professor_profile("Joanna Klukowska")
+        assert result["name"] == "Joanna Klukowska"
+
+    def test_not_found_returns_error(self, mock_db):
+        with pytest.MonkeyPatch.context() as mp:
+            mp.setattr("app.ai.tools.build_professor_profile", lambda db, name, term="": None)
+            result = get_professor_profile("Nobody")
+        assert "error" in result
+
+
 class TestListPrograms:
     def test_returns_programs(self, mock_db):
         mock_db.program_requirements.find.return_value\
@@ -143,6 +165,7 @@ class TestToolHandlers:
         assert "get_course_sections" in TOOL_HANDLERS
         assert "list_programs" in TOOL_HANDLERS
         assert "get_program_requirements" in TOOL_HANDLERS
+        assert "get_professor_profile" in TOOL_HANDLERS
 
     def test_handlers_are_callable(self):
         for handler in TOOL_HANDLERS.values():
@@ -154,6 +177,6 @@ class TestToolHandlers:
     def test_handlers_cover_expected_tools(self):
         expected = {
             "search_courses", "get_course_sections",
-            "list_programs", "get_program_requirements",
+            "list_programs", "get_program_requirements", "get_professor_profile",
         }
         assert set(TOOL_HANDLERS.keys()) == expected

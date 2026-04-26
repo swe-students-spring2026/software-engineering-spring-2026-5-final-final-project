@@ -9,6 +9,7 @@ Call init_tools(db) once at startup to wire in the database.
 from typing import Any
 
 from google.genai import types
+from app.services.professor_ratings import build_professor_profile, enrich_classes_with_professor_ratings
 
 _db = None
 
@@ -108,6 +109,28 @@ GEMINI_TOOL = types.Tool(
                 required=["url"],
             ),
         ),
+        types.FunctionDeclaration(
+            name="get_professor_profile",
+            description=(
+                "Get a professor's profile including their current course sections and "
+                "their Rate My Professors rating when available. Use this when comparing "
+                "instructors or optimizing a schedule for better professor ratings."
+            ),
+            parameters=types.Schema(
+                type=types.Type.OBJECT,
+                properties={
+                    "name": types.Schema(
+                        type=types.Type.STRING,
+                        description="Professor name, in either 'First Last' or 'Last, First' format.",
+                    ),
+                    "term": types.Schema(
+                        type=types.Type.STRING,
+                        description="Optional term code to restrict the taught-course list.",
+                    ),
+                },
+                required=["name"],
+            ),
+        ),
     ]
 )
 
@@ -160,6 +183,7 @@ def search_courses(
         },
     ).limit(limit))
 
+    courses = enrich_classes_with_professor_ratings(courses)
     return {"courses": courses, "count": len(courses)}
 
 
@@ -187,6 +211,7 @@ def get_course_sections(course_code: str, term: str = "") -> dict[str, Any]:
         },
     ))
 
+    sections = enrich_classes_with_professor_ratings(sections)
     return {"course_code": course_code, "sections": sections, "count": len(sections)}
 
 
@@ -214,6 +239,16 @@ def get_program_requirements(url: str) -> dict[str, Any]:
     return program
 
 
+def get_professor_profile(name: str, term: str = "") -> dict[str, Any]:
+    if _db is None:
+        return {"error": "Database not initialized"}
+
+    profile = build_professor_profile(_db, name, term)
+    if not profile:
+        return {"error": f"Professor not found: {name}"}
+    return profile
+
+
 # ── Dispatch table ────────────────────────────────────────────────────────────
 
 TOOL_HANDLERS: dict[str, Any] = {
@@ -221,4 +256,5 @@ TOOL_HANDLERS: dict[str, Any] = {
     "get_course_sections": get_course_sections,
     "list_programs": list_programs,
     "get_program_requirements": get_program_requirements,
+    "get_professor_profile": get_professor_profile,
 }

@@ -10,8 +10,18 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 try:
     from apis.app.services.requirements_service import RequirementsService
+    from apis.app.services.professor_ratings import (
+        build_professor_profile,
+        enrich_classes_with_professor_ratings,
+        search_professors,
+    )
 except ModuleNotFoundError:
     from app.services.requirements_service import RequirementsService
+    from app.services.professor_ratings import (
+        build_professor_profile,
+        enrich_classes_with_professor_ratings,
+        search_professors,
+    )
 
 load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
@@ -83,6 +93,7 @@ def get_classes():
         ]
 
     classes = list(db.classes.find(query, {"_id": 0, "source": 0}))
+    classes = enrich_classes_with_professor_ratings(classes)
     return jsonify(classes)
 
 
@@ -90,6 +101,27 @@ def get_classes():
 def get_schools():
     schools = db.classes.distinct("school")
     return jsonify(sorted(s for s in schools if s))
+
+
+@app.get("/professors")
+def get_professors():
+    q = request.args.get("q", "").strip()
+    term = request.args.get("term", "").strip()
+    limit = request.args.get("limit", default=20, type=int)
+    return jsonify(search_professors(db, query=q, term=term, limit=max(1, min(limit, 100))))
+
+
+@app.get("/professors/profile")
+def get_professor_profile():
+    name = request.args.get("name", "").strip()
+    term = request.args.get("term", "").strip()
+    if not name:
+        return jsonify({"error": "name is required"}), 400
+
+    profile = build_professor_profile(db, name, term)
+    if not profile:
+        return jsonify({"error": "professor not found"}), 404
+    return jsonify(profile)
 
 
 @app.get("/classes/campuses")
