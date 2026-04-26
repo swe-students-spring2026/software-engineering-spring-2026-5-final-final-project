@@ -5,13 +5,6 @@ from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
-
-@app.get("/health")
-def health():
-    """Liveness endpoint."""
-    return jsonify({"status": "ok"})
-
-
 @app.post("/match")
 def match():
     """Placeholder matching endpoint."""
