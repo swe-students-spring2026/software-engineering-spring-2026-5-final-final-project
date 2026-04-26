@@ -17,6 +17,10 @@ def validate_signup(data, users_collection):
         "neighborhood",
     ]
 
+    for field in required_fields:
+        if not data.get(field):
+            return "Please fill out all required fields."
+
     if data["password"] != data["confirm_password"]:
         return "Passwords do not match."
 
@@ -28,9 +32,5 @@ def validate_signup(data, users_collection):
 
     if users_collection.find_one({"email": data["email"]}):
         return "An account with this email already exists."
-    
-    for field in required_fields:
-        if not data.get(field):
-            return "Please fill out all required fields."
 
     return None
