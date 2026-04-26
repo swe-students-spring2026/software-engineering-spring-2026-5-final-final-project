@@ -56,6 +56,12 @@
     .add-btn.added:hover { background: #c0392b; color: white; }
     .loading { text-align: center; padding: 40px; color: #888; }
     .error { background: #f8d7da; color: #721c24; padding: 12px; border-radius: 6px; }
+    .pagination { display: flex; gap: 4px; padding: 8px 16px; background: white; border-bottom: 1px solid #eee; flex-wrap: wrap; align-items: center; }
+    .pagination button { padding: 4px 10px; border: 1px solid #ccc; border-radius: 4px; background: white; cursor: pointer; font-size: 0.8rem; color: #555; }
+    .pagination button:hover:not(:disabled) { background: #f0e6f7; border-color: #57068c; color: #57068c; }
+    .pagination button.active { background: #57068c; color: white; border-color: #57068c; cursor: default; }
+    .pagination button:disabled { cursor: default; opacity: 0.4; }
+    .pagination-info { font-size: 0.8rem; color: #888; margin-left: 6px; }
 
     /* ── Calendar panel ── */
     .calendar-panel { width: 45%; display: flex; flex-direction: column; overflow: hidden; background: white; flex-shrink: 0; }
@@ -157,7 +163,7 @@
           <option value="1268">Fall 2026</option>
           <option value="1266">Summer 2026</option>
         </select>
-        <input type="text" id="query" placeholder="Title, subject code, instructor…" />
+        <input type="text" id="query" placeholder="Search by name, subject code, instructor…" />
         <select id="school"><option value="">Any School</option></select>
         <select id="component">
           <option value="">Any Type</option>
@@ -174,9 +180,10 @@
           <option value="waitlist">Wait List</option>
           <option value="closed">Closed</option>
         </select>
-        <button onclick="search()">Search</button>
+        <button id="search-btn">Search</button>
       </div>
       <div id="results-count" class="results-count"></div>
+      <div id="pagination" class="pagination" style="display:none"></div>
       <div id="results" class="results"></div>
     </div>
 
@@ -407,7 +414,34 @@
         </div>`;
     }
 
-    async function search() {
+    let currentPage = 1;
+
+    function renderPagination(page, totalPages, totalCourses) {
+      const div = document.getElementById("pagination");
+      if (totalPages <= 1) { div.style.display = "none"; return; }
+      div.style.display = "flex";
+
+      const range = [];
+      for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= page - 2 && i <= page + 2)) {
+          range.push(i);
+        } else if (range[range.length - 1] !== "…") {
+          range.push("…");
+        }
+      }
+
+      let html = `<button onclick="search(${page - 1})" ${page === 1 ? "disabled" : ""}>← Prev</button>`;
+      range.forEach(p => {
+        if (p === "…") html += `<button disabled>…</button>`;
+        else html += `<button class="${p === page ? "active" : ""}" onclick="search(${p})">${p}</button>`;
+      });
+      html += `<button onclick="search(${page + 1})" ${page === totalPages ? "disabled" : ""}>Next →</button>`;
+      html += `<span class="pagination-info">${totalCourses} course${totalCourses !== 1 ? "s" : ""} · page ${page} of ${totalPages}</span>`;
+      div.innerHTML = html;
+    }
+
+    async function search(page = 1) {
+      currentPage = page;
       const term      = document.getElementById("term").value;
       const q         = document.getElementById("query").value.trim();
       const school    = document.getElementById("school").value;
@@ -418,20 +452,29 @@
 
       resultsDiv.innerHTML = '<div class="loading">Searching…</div>';
       countDiv.textContent = "";
+      document.getElementById("pagination").style.display = "none";
 
       try {
-        const params = new URLSearchParams({ term });
+        const params = new URLSearchParams({ term, page });
         if (q)         params.append("q", q);
         if (school)    params.append("school", school);
         if (component) params.append("component", component);
         if (status)    params.append("status", status);
 
+        const urlState = new URLSearchParams({ term, page });
+        if (q)         urlState.append("q", q);
+        if (school)    urlState.append("school", school);
+        if (component) urlState.append("component", component);
+        if (status)    urlState.append("status", status);
+        history.replaceState({}, "", "?" + urlState);
+
         const res  = await fetch(`/api/classes?${params}`);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Request failed");
 
+        const classes = data.classes || [];
         const groups = new Map();
-        data.forEach(c => {
+        classes.forEach(c => {
           if (!groups.has(c.code)) groups.set(c.code, { title: c.title, description: c.description, school: c.school, sections: [] });
           groups.get(c.code).sections.push(c);
         });
@@ -441,8 +484,10 @@
           html += renderCourseGroup(code, title, description, school, sections);
         });
 
-        countDiv.textContent = `${groups.size} course${groups.size !== 1 ? "s" : ""}, ${data.length} sections`;
+        countDiv.textContent = `Showing ${groups.size} course${groups.size !== 1 ? "s" : ""} (${classes.length} sections)`;
         resultsDiv.innerHTML = groups.size ? html : '<div class="course-card">No courses found.</div>';
+        renderPagination(data.page, data.total_pages, data.total_courses);
+        resultsDiv.scrollTop = 0;
       } catch (e) {
         resultsDiv.innerHTML = `<div class="error">Error: ${e.message}</div>`;
       }
@@ -601,7 +646,7 @@
       saveSchedule();
       renderCalendar();
       renderSelectedList();
-      search();
+      search(currentPage);
     }
 
     function clearSchedule() {
@@ -609,16 +654,39 @@
       saveSchedule();
       renderCalendar();
       renderSelectedList();
-      search();
+      search(currentPage);
     }
 
-    document.getElementById("query").addEventListener("keydown", e => { if (e.key === "Enter") search(); });
     document.getElementById("modal").addEventListener("click", e => { if (e.target === e.currentTarget) closeModal(); });
 
-    loadDropdown("/api/schools", "school");
-    renderCalendar();
-    renderSelectedList();
-    search();
+    async function init() {
+      renderCalendar();
+      renderSelectedList();
+
+      await loadDropdown("/api/schools", "school");
+
+      // Wire filter dropdowns to auto-search
+      ["term", "school", "component", "status"].forEach(id => {
+        document.getElementById(id).addEventListener("change", () => search(1));
+      });
+      document.getElementById("query").addEventListener("keydown", e => { if (e.key === "Enter") search(1); });
+      document.getElementById("search-btn").addEventListener("click", () => search(1));
+
+      // Restore state from URL if navigating back
+      const urlp = new URLSearchParams(window.location.search);
+      if (urlp.has("q") || urlp.has("school") || urlp.has("component") || urlp.has("status") || urlp.has("term")) {
+        if (urlp.get("term"))      document.getElementById("term").value = urlp.get("term");
+        if (urlp.get("q"))         document.getElementById("query").value = urlp.get("q");
+        if (urlp.get("school"))    document.getElementById("school").value = urlp.get("school");
+        if (urlp.get("component")) document.getElementById("component").value = urlp.get("component");
+        if (urlp.get("status"))    document.getElementById("status").value = urlp.get("status");
+        search(parseInt(urlp.get("page") || "1"));
+      } else {
+        document.getElementById("results").innerHTML = '<div class="loading" style="color:#aaa">Enter a search term or filter to find courses.</div>';
+      }
+    }
+
+    init();
 
     // ── AI Chat ──
     let chatOpen = false;
