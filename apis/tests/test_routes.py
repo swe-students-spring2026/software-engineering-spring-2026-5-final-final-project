@@ -28,6 +28,19 @@ class TestClassesRoute:
         data = res.get_json()
         assert isinstance(data, list)
 
+    def test_get_classes_enriches_professor_ratings(self, client, mock_db):
+        mock_db.classes.find.return_value = [{"title": "Algorithms", "instructor": "Joanna Klukowska"}]
+        with patch("app.main.enrich_classes_with_professor_ratings", return_value=[
+            {
+                "title": "Algorithms",
+                "instructor": "Joanna Klukowska",
+                "professor_rating": {"rating": 3.3},
+            }
+        ]):
+            res = client.get("/classes")
+        data = res.get_json()
+        assert data[0]["professor_rating"]["rating"] == 3.3
+
     def test_get_classes_with_term_filter(self, client, mock_db):
         mock_db.classes.find.return_value = []
         res = client.get("/classes?term=1268")
@@ -116,6 +129,34 @@ class TestCampusesRoute:
     def test_get_campuses_returns_empty_list(self, client, mock_db):
         res = client.get("/classes/campuses")
         assert res.get_json() == []
+
+
+class TestProfessorsRoute:
+    def test_get_professors_returns_200(self, client, mock_db):
+        mock_db.classes.aggregate.return_value = []
+        res = client.get("/professors")
+        assert res.status_code == 200
+
+    def test_get_professor_profile_requires_name(self, client):
+        res = client.get("/professors/profile")
+        assert res.status_code == 400
+
+    def test_get_professor_profile_returns_404_when_missing(self, client, mock_db):
+        mock_db.classes.find.return_value = []
+        res = client.get("/professors/profile?name=Nobody")
+        assert res.status_code == 404
+
+    def test_get_professor_profile_returns_data(self, client, mock_db):
+        with patch("app.main.build_professor_profile", return_value={
+            "name": "Joanna Klukowska",
+            "courses": [{"code": "CSCI-UA 102"}],
+            "course_count": 1,
+            "course_codes": ["CSCI-UA 102"],
+            "professor_rating": {"rating": 3.3},
+        }):
+            res = client.get("/professors/profile?name=Joanna+Klukowska")
+        assert res.status_code == 200
+        assert res.get_json()["name"] == "Joanna Klukowska"
 
 
 

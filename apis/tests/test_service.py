@@ -25,6 +25,15 @@ class TestExecuteTool:
         result = _execute_tool("get_course_sections", {"course_code": "CSCI-UA 101"})
         assert "sections" in result
 
+    def test_known_tool_get_professor_profile(self):
+        db = MagicMock()
+        db.classes.find.return_value = []
+        tools_module._db = db
+        from app.ai.service import _execute_tool
+        with patch("app.ai.tools.build_professor_profile", return_value={"name": "Joanna Klukowska", "courses": []}):
+            result = _execute_tool("get_professor_profile", {"name": "Joanna Klukowska"})
+        assert result["name"] == "Joanna Klukowska"
+
     def test_bad_args_returns_error(self):
         db = MagicMock()
         db.classes.find.return_value = []

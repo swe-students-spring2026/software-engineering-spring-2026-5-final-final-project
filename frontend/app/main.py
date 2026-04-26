@@ -163,6 +163,12 @@ def profile_page():
     return render_template("profile.html", user=session["user"], profile=profile)
 
 
+@app.get("/professor")
+@login_required
+def professor_page():
+    return render_template("professor.html", user=session["user"], professor_name=request.args.get("name", "").strip())
+
+
 # ── API proxy routes ──────────────────────────────────────────────────────────
 
 @app.get("/api/programs")
@@ -198,6 +204,20 @@ def proxy_schools():
 @login_required
 def proxy_campuses():
     resp = requests.get(f"{API_URL}/classes/campuses")
+    return jsonify(resp.json()), resp.status_code
+
+
+@app.get("/api/professors")
+@login_required
+def proxy_professors():
+    resp = requests.get(f"{API_URL}/professors", params=dict(request.args))
+    return jsonify(resp.json()), resp.status_code
+
+
+@app.get("/api/professors/profile")
+@login_required
+def proxy_professor_profile():
+    resp = requests.get(f"{API_URL}/professors/profile", params=dict(request.args))
     return jsonify(resp.json()), resp.status_code
 
 

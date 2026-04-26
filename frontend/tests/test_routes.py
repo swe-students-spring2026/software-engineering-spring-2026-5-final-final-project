@@ -110,6 +110,10 @@ class TestPageRoutes:
             res = client.get("/profile")
         assert res.status_code == 200
 
+    def test_professor_page_returns_200(self, client):
+        res = client.get("/professor?name=Joanna+Klukowska")
+        assert res.status_code == 200
+
 
 class TestClassesProxy:
     def test_proxies_to_backend(self, client):
@@ -150,6 +154,22 @@ class TestCampusesProxy:
         with patch("app.main.requests.get", return_value=_mock_response(["Washington Sq", "Brooklyn"])):
             res = client.get("/api/campuses")
         assert res.status_code == 200
+
+
+class TestProfessorsProxy:
+    def test_proxies_professors(self, client):
+        payload = {"professors": [{"name": "Joanna Klukowska"}], "count": 1}
+        with patch("app.main.requests.get", return_value=_mock_response(payload)):
+            res = client.get("/api/professors?q=Joanna")
+        assert res.status_code == 200
+        assert res.get_json()["count"] == 1
+
+    def test_proxies_professor_profile(self, client):
+        payload = {"name": "Joanna Klukowska", "courses": [], "course_count": 0}
+        with patch("app.main.requests.get", return_value=_mock_response(payload)):
+            res = client.get("/api/professors/profile?name=Joanna+Klukowska")
+        assert res.status_code == 200
+        assert res.get_json()["name"] == "Joanna Klukowska"
 
 
 class TestProgramsProxy:

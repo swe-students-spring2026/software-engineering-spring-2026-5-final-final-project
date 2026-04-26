@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Professor Profile</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #f4f4f4; color: #333; min-height: 100vh; }
+    header { background: #57068c; color: white; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
+    header h1 { font-size: 1.2rem; }
+    header a { color: white; text-decoration: none; font-size: 0.9rem; background: rgba(255,255,255,0.15); padding: 6px 14px; border-radius: 4px; }
+    .page { max-width: 1080px; margin: 0 auto; padding: 24px 16px 40px; }
+    .searchbar, .hero, .courses { background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+    .searchbar { padding: 14px; display: flex; gap: 10px; margin-bottom: 18px; }
+    .searchbar input, .searchbar select { padding: 10px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; }
+    .searchbar input { flex: 1; }
+    .searchbar button { padding: 10px 18px; border: none; border-radius: 6px; background: #57068c; color: white; cursor: pointer; }
+    .hero { padding: 22px; margin-bottom: 18px; }
+    .hero-top { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+    .hero h2 { font-size: 1.5rem; color: #57068c; margin-bottom: 6px; }
+    .muted { color: #777; font-size: 0.88rem; }
+    .rating-box { min-width: 240px; background: linear-gradient(135deg, #f8f3ff, #efe2fb); border-radius: 10px; padding: 16px; }
+    .rating-score { font-size: 2rem; font-weight: bold; color: #57068c; }
+    .rating-meta { color: #666; font-size: 0.85rem; margin-top: 6px; line-height: 1.5; }
+    .rating-link { display: inline-block; margin-top: 10px; color: #57068c; text-decoration: none; font-weight: bold; }
+    .rating-link:hover { text-decoration: underline; }
+    .courses { padding: 18px; }
+    .courses h3 { color: #57068c; margin-bottom: 12px; }
+    .course-item { border-top: 1px solid #f0f0f0; padding: 12px 0; display: grid; grid-template-columns: 180px 1fr; gap: 10px; }
+    .course-item:first-of-type { border-top: none; }
+    .course-code { font-weight: bold; color: #57068c; }
+    .course-sub { color: #666; font-size: 0.84rem; margin-top: 3px; }
+    .empty, .error, .loading { padding: 24px; text-align: center; color: #777; }
+    .error { color: #a61b1b; }
+    .search-results { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+    .search-chip { border: 1px solid #d7c0ea; background: #faf5ff; color: #57068c; border-radius: 999px; padding: 8px 12px; cursor: pointer; }
+    @media (max-width: 700px) {
+      .searchbar { flex-direction: column; }
+      .course-item { grid-template-columns: 1fr; }
+      .rating-box { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Professor Profile</h1>
+    <a href="/">Back to Search</a>
+  </header>
+
+  <div class="page">
+    <div class="searchbar">
+      <input id="name" type="text" placeholder="Search professor name" value="{{ professor_name }}">
+      <select id="term">
+        <option value="">Any Term</option>
+        <option value="1268">Fall 2026</option>
+        <option value="1266">Summer 2026</option>
+        <option value="1264">Spring 2026</option>
+      </select>
+      <button onclick="loadProfessor()">Search</button>
+    </div>
+
+    <div id="search-results" class="search-results"></div>
+    <div id="content" class="hero">
+      <div class="empty">Search for a professor to see their Rate My Professors link and current courses.</div>
+    </div>
+  </div>
+
+  <script>
+    async function fetchProfessorSuggestions() {
+      const q = document.getElementById("name").value.trim();
+      const term = document.getElementById("term").value;
+      const holder = document.getElementById("search-results");
+      holder.innerHTML = "";
+      if (!q) return;
+
+      const params = new URLSearchParams({ q, limit: "8" });
+      if (term) params.set("term", term);
+      const res = await fetch(`/api/professors?${params}`);
+      const data = await res.json();
+      holder.innerHTML = (data.professors || []).map(p =>
+        `<button class="search-chip" data-name="${encodeURIComponent(p.name)}">${p.name}</button>`
+      ).join("");
+      holder.querySelectorAll(".search-chip").forEach(btn => {
+        btn.addEventListener("click", () => selectProfessor(decodeURIComponent(btn.dataset.name)));
+      });
+    }
+
+    function selectProfessor(name) {
+      document.getElementById("name").value = name;
+      loadProfessor();
+    }
+
+    function renderRating(rating) {
+      if (!rating) {
+        return `
+          <div class="rating-box">
+            <div class="rating-score">N/A</div>
+            <div class="rating-meta">No Rate My Professors result was matched for this instructor yet.</div>
+          </div>`;
+      }
+      return `
+        <div class="rating-box">
+          <div class="rating-score">${rating.rating.toFixed(1)}/5</div>
+          <div class="rating-meta">
+            ${rating.rating_count} ratings<br>
+            ${rating.would_take_again_percent ?? "N/A"}% would take again<br>
+            Difficulty ${rating.difficulty ?? "N/A"}
+          </div>
+          <a class="rating-link" href="${rating.url}" target="_blank" rel="noopener noreferrer">Open on Rate My Professors</a>
+        </div>`;
+    }
+
+    function renderCourses(courses) {
+      if (!courses.length) return '<div class="empty">No current courses found for this professor.</div>';
+      return `
+        <div class="courses">
+          <h3>Courses They Are Teaching</h3>
+          ${courses.map(c => `
+            <div class="course-item">
+              <div>
+                <div class="course-code">${c.code}</div>
+                <div class="course-sub">${c.component || ""} · Sec ${c.section || ""}</div>
+              </div>
+              <div>
+                <div><strong>${c.title || ""}</strong></div>
+                <div class="course-sub">${c.meets_human || "Meeting time TBA"}${c.status ? " · " + c.status : ""}</div>
+              </div>
+            </div>
+          `).join("")}
+        </div>`;
+    }
+
+    async function loadProfessor() {
+      const name = document.getElementById("name").value.trim();
+      const term = document.getElementById("term").value;
+      const content = document.getElementById("content");
+      if (!name) {
+        content.innerHTML = '<div class="empty">Enter a professor name first.</div>';
+        return;
+      }
+
+      history.replaceState({}, "", `/professor?name=${encodeURIComponent(name)}${term ? `&term=${encodeURIComponent(term)}` : ""}`);
+      content.innerHTML = '<div class="loading">Loading professor profile...</div>';
+      await fetchProfessorSuggestions();
+
+      const params = new URLSearchParams({ name });
+      if (term) params.set("term", term);
+
+      const res = await fetch(`/api/professors/profile?${params}`);
+      const data = await res.json();
+      if (!res.ok) {
+        content.innerHTML = `<div class="error">${data.error || "Professor not found."}</div>`;
+        return;
+      }
+
+      content.innerHTML = `
+        <div class="hero-top">
+          <div>
+            <h2>${data.name}</h2>
+            <div class="muted">${data.course_codes.length} distinct course${data.course_codes.length === 1 ? "" : "s"} · ${data.course_count} section${data.course_count === 1 ? "" : "s"}</div>
+          </div>
+          ${renderRating(data.professor_rating)}
+        </div>
+        <div style="margin-top:18px">${renderCourses(data.courses)}</div>
+      `;
+    }
+
+    document.getElementById("name").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") loadProfessor();
+    });
+    document.getElementById("name").addEventListener("input", () => {
+      fetchProfessorSuggestions();
+    });
+
+    if (document.getElementById("name").value.trim()) {
+      loadProfessor();
+    }
+  </script>
+</body>
+</html>

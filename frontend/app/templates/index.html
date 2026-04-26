@@ -38,6 +38,11 @@
     .section-num { color: #444; font-size: 0.78rem; }
     .section-loc { color: #aaa; font-size: 0.72rem; }
     .section-mid { display: flex; flex-direction: column; gap: 1px; color: #555; font-size: 0.78rem; }
+    .section-rating { margin-top: 2px; }
+    .section-rating a { color: #57068c; font-size: 0.72rem; text-decoration: none; }
+    .section-rating a:hover { text-decoration: underline; }
+    .instructor-link { color: inherit; text-decoration: none; }
+    .instructor-link:hover { color: #57068c; text-decoration: underline; }
     .section-notes { grid-column: 1 / -1; font-size: 0.72rem; color: #888; font-style: italic; }
     .mode-tag { font-size: 0.72rem; color: #777; }
     .status-badge { display: inline-block; font-size: 0.68rem; font-weight: bold; padding: 1px 6px; border-radius: 10px; white-space: nowrap; }
@@ -347,6 +352,14 @@
               onmouseenter="this.textContent='✕ Remove'"
               onmouseleave="this.textContent='✓ Added'">✓ Added</button>`
         : `<button class="add-btn" onclick="handleAdd('${c.crn}')">Add</button>`;
+      const rating = c.professor_rating;
+      const ratingParts = [];
+      if (rating && typeof rating.rating === "number") ratingParts.push(`RMP ${rating.rating.toFixed(1)}/5`);
+      if (rating && typeof rating.rating_count === "number") ratingParts.push(`${rating.rating_count} ratings`);
+      if (rating && typeof rating.would_take_again_percent === "number") ratingParts.push(`${rating.would_take_again_percent}% again`);
+      const ratingHtml = rating && rating.url && ratingParts.length
+        ? `<div class="section-rating"><a href="${rating.url}" target="_blank" rel="noopener noreferrer">${ratingParts.join(" · ")}</a></div>`
+        : "";
       return `
         <div class="section-row${isRct ? " rct-row" : ""}" data-crn="${c.crn}">
           <div class="section-left">
@@ -355,7 +368,8 @@
             ${c.location ? `<span class="section-loc">${c.location}</span>` : ""}
           </div>
           <div class="section-mid">
-            ${c.instructor ? `<span><strong>${c.instructor}</strong></span>` : ""}
+            ${c.instructor ? `<span><strong><a class="instructor-link" href="/professor?name=${encodeURIComponent(c.instructor)}">${c.instructor}</a></strong></span>` : ""}
+            ${ratingHtml}
             ${c.meets_human ? `<span>${c.meets_human}</span>` : ""}
             ${statusBadge(c.status)}
           </div>
