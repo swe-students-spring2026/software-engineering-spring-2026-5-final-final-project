@@ -106,3 +106,51 @@ class TestChat:
         from_text_calls = service.types.Part.from_text.call_args_list
         text = from_text_calls[0].kwargs.get("text") or from_text_calls[0].args[0]
         assert text == "just a question"
+
+
+class TestMongoEncoder:
+    def test_encodes_datetime(self):
+        import json
+        from datetime import datetime
+        from app.ai.service import _MongoEncoder
+        dt = datetime(2024, 1, 15, 10, 30, 0)
+        result = json.dumps({"ts": dt}, cls=_MongoEncoder)
+        assert "2024-01-15" in result
+
+    def test_encodes_unknown_as_str(self):
+        import json
+        from app.ai.service import _MongoEncoder
+
+        class _Fake:
+            def __str__(self):
+                return "fake-id-value"
+
+        result = json.dumps({"id": _Fake()}, cls=_MongoEncoder)
+        assert "fake-id-value" in result
+
+
+class TestParseTranscript:
+    def test_returns_list_of_course_codes(self):
+        from app.ai import service
+        mock_resp = MagicMock()
+        mock_resp.text = '["CSCI-UA 101", "MATH-UA 123"]'
+        with patch.object(service._client.models, "generate_content", return_value=mock_resp):
+            result = service.parse_transcript("sample transcript text")
+        assert "CSCI-UA 101" in result
+        assert "MATH-UA 123" in result
+
+    def test_returns_empty_list_on_bad_response(self):
+        from app.ai import service
+        mock_resp = MagicMock()
+        mock_resp.text = "Sorry, I cannot parse this."
+        with patch.object(service._client.models, "generate_content", return_value=mock_resp):
+            result = service.parse_transcript("gibberish")
+        assert result == []
+
+    def test_returns_empty_list_on_empty_response(self):
+        from app.ai import service
+        mock_resp = MagicMock()
+        mock_resp.text = ""
+        with patch.object(service._client.models, "generate_content", return_value=mock_resp):
+            result = service.parse_transcript("")
+        assert result == []
