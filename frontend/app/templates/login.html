@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In — NYU Course Planner</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #3d0066 0%, #57068c 50%, #7a1db5 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      width: 100%;
+      max-width: 420px;
+      overflow: hidden;
+    }
+
+    .card-header {
+      background: #57068c;
+      padding: 28px 32px 24px;
+      text-align: center;
+    }
+    .card-header .logo {
+      font-size: 2rem;
+      font-weight: 900;
+      color: white;
+      letter-spacing: -1px;
+    }
+    .card-header .logo span { color: #c9a7e0; }
+    .card-header p {
+      color: rgba(255,255,255,0.75);
+      font-size: 0.82rem;
+      margin-top: 6px;
+    }
+
+    .tabs {
+      display: flex;
+      border-bottom: 2px solid #f0f0f0;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 13px;
+      border: none;
+      background: none;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #999;
+      cursor: pointer;
+      transition: color 0.2s, border-bottom 0.2s;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+    }
+    .tab-btn.active {
+      color: #57068c;
+      border-bottom: 2px solid #57068c;
+    }
+    .tab-btn:hover:not(.active) { color: #57068c; background: #faf5ff; }
+
+    .card-body { padding: 28px 32px 32px; }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .error-box {
+      background: #fff0f0;
+      border: 1px solid #ffc0c0;
+      color: #c00;
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 0.82rem;
+      margin-bottom: 18px;
+    }
+
+    .form-group { margin-bottom: 16px; }
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 5px;
+    }
+    input[type="text"],
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid #ddd;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+    input:focus { border-color: #57068c; }
+
+    .hint { font-size: 0.72rem; color: #aaa; margin-top: 4px; }
+
+    .btn-primary {
+      width: 100%;
+      padding: 11px;
+      background: #57068c;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 4px;
+    }
+    .btn-primary:hover { background: #3d0066; }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 20px 0;
+      color: #bbb;
+      font-size: 0.78rem;
+    }
+    .divider::before, .divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: #eee;
+    }
+
+    .btn-google {
+      width: 100%;
+      padding: 10px;
+      border: 1.5px solid #ddd;
+      border-radius: 6px;
+      background: white;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #333;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: background 0.2s, border-color 0.2s;
+      text-decoration: none;
+    }
+    .btn-google:hover { background: #f8f8f8; border-color: #bbb; }
+    .btn-google svg { flex-shrink: 0; }
+
+    .nyu-note {
+      text-align: center;
+      font-size: 0.72rem;
+      color: #aaa;
+      margin-top: 20px;
+    }
+    .nyu-note strong { color: #57068c; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="card-header">
+      <div class="logo">NYU <span>Course Planner</span></div>
+      <p>Plan your semester with AI-powered scheduling</p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn {% if tab == 'register' %}{% else %}active{% endif %}" onclick="switchTab('login', this)">Sign In</button>
+      <button class="tab-btn {% if tab == 'register' %}active{% endif %}" onclick="switchTab('register', this)">Create Account</button>
+    </div>
+
+    <div class="card-body">
+      {% if error %}
+      <div class="error-box">{{ error }}</div>
+      {% endif %}
+
+      <!-- Sign In -->
+      <div class="tab-panel {% if tab == 'register' %}{% else %}active{% endif %}" id="panel-login">
+        <form method="POST" action="/login">
+          <div class="form-group">
+            <label for="login-email">NYU Email</label>
+            <input id="login-email" name="email" type="email" placeholder="netid@nyu.edu" required autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label for="login-password">Password</label>
+            <input id="login-password" name="password" type="password" placeholder="••••••••" required autocomplete="current-password">
+          </div>
+          <button type="submit" class="btn-primary">Sign In</button>
+        </form>
+
+        <div class="divider">or</div>
+
+        <a href="/auth/google" class="btn-google">
+          <svg width="18" height="18" viewBox="0 0 18 18">
+            <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
+            <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
+            <path fill="#FBBC05" d="M3.964 10.707A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z"/>
+            <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z"/>
+          </svg>
+          Continue with Google
+        </a>
+      </div>
+
+      <!-- Create Account -->
+      <div class="tab-panel {% if tab == 'register' %}active{% endif %}" id="panel-register">
+        <form method="POST" action="/register">
+          <div class="form-group">
+            <label for="reg-name">Full Name</label>
+            <input id="reg-name" name="name" type="text" placeholder="First Last" autocomplete="name">
+          </div>
+          <div class="form-group">
+            <label for="reg-email">NYU Email</label>
+            <input id="reg-email" name="email" type="email" placeholder="netid@nyu.edu" required autocomplete="email">
+            <div class="hint">Must be an @nyu.edu address</div>
+          </div>
+          <div class="form-group">
+            <label for="reg-password">Password</label>
+            <input id="reg-password" name="password" type="password" placeholder="Min. 8 characters" required autocomplete="new-password" minlength="8">
+          </div>
+          <button type="submit" class="btn-primary">Create Account</button>
+        </form>
+
+        <div class="divider">or</div>
+
+        <a href="/auth/google" class="btn-google">
+          <svg width="18" height="18" viewBox="0 0 18 18">
+            <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
+            <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
+            <path fill="#FBBC05" d="M3.964 10.707A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z"/>
+            <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z"/>
+          </svg>
+          Continue with Google
+        </a>
+      </div>
+
+      <div class="nyu-note">Access restricted to <strong>@nyu.edu</strong> accounts only</div>
+    </div>
+  </div>
+
+  <script>
+    function switchTab(name, btn) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('panel-' + name).classList.add('active');
+    }
+  </script>
+</body>
+</html>

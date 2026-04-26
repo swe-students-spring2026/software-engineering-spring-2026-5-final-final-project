@@ -4,6 +4,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 from pymongo import MongoClient
+from werkzeug.security import check_password_hash, generate_password_hash
 
 try:
     from apis.app.services.requirements_service import RequirementsService
@@ -134,6 +135,54 @@ def refresh_class():
     return jsonify(
         {key: value for key, value in refreshed.items() if key != "_details_raw"}
     )
+
+
+@app.post("/auth/register")
+def auth_register():
+    data = request.get_json(silent=True) or {}
+    email = data.get("email", "").strip().lower()
+    password = data.get("password", "")
+    name = data.get("name", "").strip()
+
+    if not email.endswith("@nyu.edu"):
+        return jsonify({"error": "Only @nyu.edu email addresses are allowed."}), 400
+    if len(password) < 8:
+        return jsonify({"error": "Password must be at least 8 characters."}), 400
+    if db.users.find_one({"email": email}):
+        return jsonify({"error": "An account with this email already exists."}), 409
+
+    db.users.insert_one({"email": email, "name": name, "password": generate_password_hash(password)})
+    return jsonify({"message": "Account created successfully."}), 201
+
+
+@app.post("/auth/login")
+def auth_login():
+    data = request.get_json(silent=True) or {}
+    email = data.get("email", "").strip().lower()
+    password = data.get("password", "")
+
+    user = db.users.find_one({"email": email})
+    if not user or not user.get("password") or not check_password_hash(user["password"], password):
+        return jsonify({"error": "Invalid email or password."}), 401
+
+    return jsonify({"name": user.get("name", email)}), 200
+
+
+@app.post("/auth/google")
+def auth_google_upsert():
+    data = request.get_json(silent=True) or {}
+    email = data.get("email", "").strip().lower()
+    name = data.get("name", "").strip()
+
+    if not email.endswith("@nyu.edu"):
+        return jsonify({"error": "Only @nyu.edu Google accounts are allowed."}), 400
+
+    db.users.update_one(
+        {"email": email},
+        {"$set": {"email": email, "name": name, "google_auth": True}},
+        upsert=True,
+    )
+    return jsonify({"message": "ok"}), 200
 
 
 @app.get("/programs")
