@@ -40,10 +40,15 @@
     .section-mid { display: flex; flex-direction: column; gap: 1px; color: #555; font-size: 0.78rem; }
     .section-notes { grid-column: 1 / -1; font-size: 0.72rem; color: #888; font-style: italic; }
     .mode-tag { font-size: 0.72rem; color: #777; }
+    .status-badge { display: inline-block; font-size: 0.68rem; font-weight: bold; padding: 1px 6px; border-radius: 10px; white-space: nowrap; }
+    .status-open { background: #d4edda; color: #155724; }
+    .status-closed { background: #f8d7da; color: #721c24; }
+    .status-waitlist { background: #fff3cd; color: #856404; }
+    .status-cancelled { background: #e2e3e5; color: #383d41; }
     .add-btn { padding: 4px 10px; background: #57068c; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.75rem; white-space: nowrap; }
     .add-btn:hover { background: #7a0fa8; }
     .add-btn.added { background: #28a745; cursor: pointer; }
-    .add-btn.added:hover { background: #c0392b; }
+    .add-btn.added:hover { background: #c0392b; color: white; }
     .loading { text-align: center; padding: 40px; color: #888; }
     .error { background: #f8d7da; color: #721c24; padding: 12px; border-radius: 6px; }
 
@@ -149,19 +154,20 @@
         </select>
         <input type="text" id="query" placeholder="Title, subject code, instructor…" />
         <select id="school"><option value="">Any School</option></select>
-        <select id="campus"><option value="">Any Campus</option></select>
         <select id="component">
           <option value="">Any Type</option>
           <option value="Lecture">Lecture</option>
           <option value="Recitation">Recitation</option>
           <option value="Seminar">Seminar</option>
-          <option value="Lab">Lab</option>
+          <option value="Laboratory">Laboratory</option>
+          <option value="Studio">Studio</option>
+          <option value="Workshop">Workshop</option>
         </select>
-        <select id="mode">
-          <option value="">Any Mode</option>
-          <option value="In-Person">In-Person</option>
-          <option value="Online">Online</option>
-          <option value="Blended">Blended</option>
+        <select id="status">
+          <option value="">Any Status</option>
+          <option value="open">Open</option>
+          <option value="waitlist">Wait List</option>
+          <option value="closed">Closed</option>
         </select>
         <button onclick="search()">Search</button>
       </div>
@@ -322,27 +328,38 @@
       if (idx !== -1) removeEntry(idx);
     }
 
+    function statusBadge(raw) {
+      const s = (raw || "").trim();
+      const lower = s.toLowerCase();
+      if (!s) return "";
+      let cls = "status-open";
+      if (lower === "closed") cls = "status-closed";
+      else if (lower.startsWith("wait list") || lower.startsWith("waitlist")) cls = "status-waitlist";
+      else if (lower === "cancelled") cls = "status-cancelled";
+      return `<span class="status-badge ${cls}">${s}</span>`;
+    }
+
     function renderSection(c, isRct) {
-      const mode = c.instructional_method || "";
-      const modeBadge = mode.includes("Online") ? "🌐 Online" : mode.includes("Blended") ? "⚡ Blended" : "";
       const added = isSectionAdded(c.crn);
       const btn = added
-        ? `<button class="add-btn added" onclick="handleRemoveByCrn('${c.crn}')">✕ Remove</button>`
+        ? `<button class="add-btn added"
+              onclick="handleRemoveByCrn('${c.crn}')"
+              onmouseenter="this.textContent='✕ Remove'"
+              onmouseleave="this.textContent='✓ Added'">✓ Added</button>`
         : `<button class="add-btn" onclick="handleAdd('${c.crn}')">Add</button>`;
       return `
         <div class="section-row${isRct ? " rct-row" : ""}" data-crn="${c.crn}">
           <div class="section-left">
             <span class="section-type">${c.component || ""}</span>
             <span class="section-num">Sec ${c.section} · Class# ${c.crn}</span>
-            ${c.campus_location ? `<span class="section-loc">${c.campus_location}</span>` : ""}
+            ${c.location ? `<span class="section-loc">${c.location}</span>` : ""}
           </div>
           <div class="section-mid">
             ${c.instructor ? `<span><strong>${c.instructor}</strong></span>` : ""}
             ${c.meets_human ? `<span>${c.meets_human}</span>` : ""}
-            ${modeBadge ? `<span class="mode-tag">${modeBadge}</span>` : ""}
+            ${statusBadge(c.status)}
           </div>
           <div>${isRct ? "" : btn}</div>
-          ${c.clssnotes ? `<div class="section-notes">${c.clssnotes}</div>` : ""}
         </div>`;
     }
 
@@ -380,9 +397,8 @@
       const term      = document.getElementById("term").value;
       const q         = document.getElementById("query").value.trim();
       const school    = document.getElementById("school").value;
-      const campus    = document.getElementById("campus").value;
       const component = document.getElementById("component").value;
-      const mode      = document.getElementById("mode").value;
+      const status    = document.getElementById("status").value;
       const resultsDiv = document.getElementById("results");
       const countDiv   = document.getElementById("results-count");
 
@@ -393,9 +409,8 @@
         const params = new URLSearchParams({ term });
         if (q)         params.append("q", q);
         if (school)    params.append("school", school);
-        if (campus)    params.append("campus", campus);
         if (component) params.append("component", component);
-        if (mode)      params.append("mode", mode);
+        if (status)    params.append("status", status);
 
         const res  = await fetch(`/api/classes?${params}`);
         const data = await res.json();
@@ -451,7 +466,12 @@
       renderCalendar();
       renderSelectedList();
       document.querySelectorAll(`.section-row[data-crn="${lecture.crn}"] .add-btn`).forEach(b => {
-        b.textContent = "✓ Added"; b.classList.add("added"); b.disabled = true;
+        b.textContent = "✓ Added";
+        b.classList.add("added");
+        b.disabled = false;
+        b.onclick = () => handleRemoveByCrn(lecture.crn);
+        b.onmouseenter = () => { b.textContent = "✕ Remove"; };
+        b.onmouseleave = () => { b.textContent = "✓ Added"; };
       });
     }
 
@@ -582,7 +602,6 @@
     document.getElementById("modal").addEventListener("click", e => { if (e.target === e.currentTarget) closeModal(); });
 
     loadDropdown("/api/schools", "school");
-    loadDropdown("/api/campuses", "campus");
     renderCalendar();
     renderSelectedList();
     search();

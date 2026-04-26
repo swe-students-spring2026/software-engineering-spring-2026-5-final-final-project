@@ -189,11 +189,21 @@ def main() -> int:
             )
             return 1
 
+        existing_docs = load_existing_docs(output_path)
+        already_scraped = {
+            normalize_subject_key(doc.get("subject_code", ""))
+            for doc in existing_docs
+            if doc.get("subject_code")
+        }
+        if already_scraped:
+            print(f"Skipping {len(already_scraped)} already-scraped subject(s).", flush=True)
+
         docs, report = scrape_subject_pages(
             page,
             term_code=args.term,
             wait_ms=args.wait_ms,
             limit=args.limit,
+            already_scraped_subject_keys=already_scraped,
         )
         if not docs:
             write_debug_dump(page, output_path)
@@ -292,10 +302,11 @@ def scrape_subject_pages(
     term_code: str,
     wait_ms: int,
     limit: int,
+    already_scraped_subject_keys: set[str] | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     all_docs: list[dict[str, Any]] = []
     seen_ids: set[str] = set()
-    visited_subjects: set[str] = set()
+    visited_subjects: set[str] = set(already_scraped_subject_keys or [])
     discovered_subjects: dict[str, str] = {}
     discovered_order: list[str] = []
     attempted_subjects: list[str] = []
@@ -960,6 +971,10 @@ def normalize_table_row(row: dict[str, Any]) -> dict[str, Any] | None:
 
 def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url: str) -> list[dict[str, Any]]:
     docs: list[dict[str, Any]] = []
+    # Tracks the last primary (lecture) record's title/term so secondary sections
+    # (recitations, discussions) can inherit them when Albert omits the course header.
+    last_primary: dict[str, str] = {"subject_code": "", "catalog_number": "", "title": "", "term": ""}
+
     for index, row in enumerate(rows, start=1):
         code = sanitize_albert_text(row.get("code", ""))
         subject_code, catalog_number = split_code(code) if code else ("", "")
@@ -974,6 +989,26 @@ def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url:
         meeting_details = extract_meeting_details(row)
         term = extract_term_label(row, fallback=term_code)
         course_text = extract_course_text(row, code)
+        title = course_text["title"] or sanitize_albert_text(row.get("title", ""))
+
+        # Inherit title/term from the preceding lecture section when this is a
+        # secondary section (recitation/discussion) that Albert omits the header for.
+        same_course = (subject_code == last_primary["subject_code"] and
+                       catalog_number == last_primary["catalog_number"])
+        if same_course:
+            if not title:
+                title = last_primary["title"]
+            if not term:
+                term = last_primary["term"]
+
+        if title and term:
+            last_primary = {
+                "subject_code": subject_code,
+                "catalog_number": catalog_number,
+                "title": title,
+                "term": term,
+            }
+
         doc_id = make_albert_id(term_code, subject_code or "unknown", catalog_number or str(index), section or str(index))
 
         docs.append(
@@ -984,11 +1019,12 @@ def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url:
                 "subject_code": subject_code,
                 "catalog_number": catalog_number,
                 "code": code,
-                "title": course_text["title"] or sanitize_albert_text(row.get("title", "")),
+                "title": title,
+                "description": course_text["description"],
                 "section": section,
                 "crn": sanitize_albert_text(row.get("crn", "")),
                 "status": sanitize_albert_text(row.get("status", "")),
-                "component": course_text["description"] or sanitize_albert_text(row.get("component", "")),
+                "component": extract_component_type(row),
                 "instructor": sanitize_albert_text(row.get("instructor", "")) or meeting_details["instructor"],
                 "meets_human": sanitize_albert_text(row.get("meets_human", "")) or meeting_details["meets_human"],
                 "location": meeting_details["location"] or sanitize_albert_text(row.get("location", "")),
@@ -1009,6 +1045,16 @@ def make_albert_id(term_code: str, subject: str, catalog: str, section: str) -> 
     parts = [clean(part) for part in (term_code, subject, catalog, section)]
     parts = [part for part in parts if part]
     return "_".join(parts)
+
+
+def extract_component_type(row: dict[str, Any]) -> str:
+    source_row = row.get("source_row", [])
+    if isinstance(source_row, list):
+        for line in source_row:
+            comp = find_first(r"^component:\s*(.+)$", clean_text(line), flags=re.I)
+            if comp:
+                return sanitize_albert_text(comp)
+    return sanitize_albert_text(row.get("component", ""))
 
 
 def sanitize_albert_text(value: object) -> str:
@@ -1117,6 +1163,21 @@ def extract_meeting_details(row: dict[str, Any]) -> dict[str, str]:
         details["meets_human"] = after_dates
         break
 
+    # Fall back to the Notes line: "Notes: Fall 2026 Instructor: NAME Fall 2026 ..."
+    if not details["instructor"]:
+        for line in source_row:
+            text = clean_text(line)
+            if not text.lower().startswith("notes:"):
+                continue
+            instr = find_first(
+                r"instructor:\s+(.+?)\s+(?:fall|spring|summer|winter)\s+\d{4}",
+                text,
+                flags=re.I,
+            )
+            if instr:
+                details["instructor"] = instr
+            break
+
     return details
 
 
@@ -1151,8 +1212,9 @@ def extract_rows_from_text(text: str) -> list[dict[str, Any]]:
             {
                 "code": code,
                 "crn": find_first(r"class#:\s*(\d{4,6})", window, flags=re.I),
-                "section": find_first(r"\b(?:Section|Sec)\s*([A-Z0-9]+)\b", window),
-                "status": find_first(r"\b(Open|Closed|Waitlist|Cancelled)\b", window, flags=re.I),
+                "section": find_first(r"\b(?:Section|Sec)[:\s]+([A-Z0-9]+)\b", window, flags=re.I),
+                "status": (find_first(r"class status:\s*(.+?)(?=\s+\w+:|$)", window, flags=re.I)
+                           or find_first(r"\b(Open|Closed|Wait List|Waitlist|Cancelled)\b", window, flags=re.I)),
                 "title": clean_text(line.replace(code, "")),
                 "source_row": block_lines,
             }
