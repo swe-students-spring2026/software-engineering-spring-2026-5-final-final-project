@@ -8,6 +8,78 @@ def _mock_response(json_data, status_code=200):
     return mock
 
 
+class TestLoginRoute:
+    def test_login_page_returns_200_when_unauthenticated(self, anon_client):
+        res = anon_client.get("/login")
+        assert res.status_code == 200
+        assert b"Sign In" in res.data or b"login" in res.data.lower()
+
+    def test_login_page_redirects_when_authenticated(self, client):
+        res = client.get("/login")
+        assert res.status_code == 302
+
+    def test_login_post_rejects_non_nyu_email(self, anon_client):
+        res = anon_client.post("/login", data={"email": "user@gmail.com", "password": "password123"})
+        assert res.status_code == 200
+        assert b"nyu.edu" in res.data
+
+    def test_login_post_invalid_credentials_shows_error(self, anon_client):
+        with patch("app.main.requests.post", return_value=_mock_response({"error": "Invalid email or password."}, 401)):
+            res = anon_client.post("/login", data={"email": "test@nyu.edu", "password": "wrongpass"})
+        assert res.status_code == 200
+        assert b"Invalid" in res.data
+
+    def test_login_post_valid_credentials_redirects(self, anon_client):
+        with patch("app.main.requests.post", return_value=_mock_response({"name": "Test User"}, 200)):
+            res = anon_client.post("/login", data={"email": "test@nyu.edu", "password": "correctpass"})
+        assert res.status_code == 302
+
+    def test_login_post_server_error_shows_message(self, anon_client):
+        with patch("app.main.requests.post", side_effect=Exception("connection error")):
+            res = anon_client.post("/login", data={"email": "test@nyu.edu", "password": "pass12345"})
+        assert res.status_code == 200
+
+
+class TestRegisterRoute:
+    def test_register_rejects_non_nyu_email(self, anon_client):
+        res = anon_client.post("/register", data={"email": "user@gmail.com", "password": "password123", "name": "Test"})
+        assert res.status_code == 200
+        assert b"nyu.edu" in res.data
+
+    def test_register_valid_redirects(self, anon_client):
+        with patch("app.main.requests.post", return_value=_mock_response({"message": "created"}, 201)):
+            res = anon_client.post("/register", data={"email": "new@nyu.edu", "password": "password123", "name": "Test"})
+        assert res.status_code == 302
+
+    def test_register_conflict_shows_error(self, anon_client):
+        with patch("app.main.requests.post", return_value=_mock_response({"error": "Account already exists."}, 409)):
+            res = anon_client.post("/register", data={"email": "existing@nyu.edu", "password": "password123", "name": "Test"})
+        assert res.status_code == 200
+
+    def test_register_server_error_shows_message(self, anon_client):
+        with patch("app.main.requests.post", side_effect=Exception("connection error")):
+            res = anon_client.post("/register", data={"email": "test@nyu.edu", "password": "pass12345", "name": "Test"})
+        assert res.status_code == 200
+
+
+class TestLogout:
+    def test_logout_redirects_to_login(self, client):
+        res = client.get("/logout")
+        assert res.status_code == 302
+        assert "/login" in res.headers["Location"]
+
+
+class TestLoginRequired:
+    def test_index_redirects_when_not_logged_in(self, anon_client):
+        res = anon_client.get("/")
+        assert res.status_code == 302
+        assert "/login" in res.headers["Location"]
+
+    def test_api_classes_redirects_when_not_logged_in(self, anon_client):
+        res = anon_client.get("/api/classes")
+        assert res.status_code == 302
+
+
 class TestIndexRoute:
     def test_index_returns_200(self, client):
         res = client.get("/")

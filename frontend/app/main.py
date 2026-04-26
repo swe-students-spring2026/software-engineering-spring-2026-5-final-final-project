@@ -1,41 +1,168 @@
 import os
+import secrets
+from functools import wraps
 
 import requests
-from flask import Flask, jsonify, render_template, request
+from authlib.integrations.flask_client import OAuth
+from flask import (
+    Flask,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("FLASK_SECRET_KEY") or secrets.token_hex(32)
 
 API_URL = os.environ.get("API_URL", "http://backend:8000")
 
+oauth = OAuth(app)
+google = oauth.register(
+    name="google",
+    client_id=os.environ.get("GOOGLE_CLIENT_ID"),
+    client_secret=os.environ.get("GOOGLE_CLIENT_SECRET"),
+    server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+    client_kwargs={"scope": "openid email profile"},
+)
+
+
+def login_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get("user"):
+            return redirect(url_for("login"))
+        return f(*args, **kwargs)
+    return decorated
+
+
+# ── Auth routes ───────────────────────────────────────────────────────────────
+
+@app.get("/login")
+def login():
+    if session.get("user"):
+        return redirect(url_for("index"))
+    return render_template("login.html")
+
+
+@app.post("/login")
+def login_post():
+    email = request.form.get("email", "").strip().lower()
+    password = request.form.get("password", "")
+
+    if not email.endswith("@nyu.edu"):
+        return render_template("login.html", error="Only @nyu.edu email addresses are allowed.")
+
+    try:
+        resp = requests.post(f"{API_URL}/auth/login", json={"email": email, "password": password}, timeout=10)
+        if resp.status_code == 200:
+            data = resp.json()
+            session["user"] = {"email": email, "name": data.get("name", email)}
+            return redirect(url_for("index"))
+        error = resp.json().get("error", "Invalid email or password.")
+    except Exception:
+        error = "Could not reach the server. Please try again."
+
+    return render_template("login.html", error=error)
+
+
+@app.post("/register")
+def register_post():
+    email = request.form.get("email", "").strip().lower()
+    password = request.form.get("password", "")
+    name = request.form.get("name", "").strip()
+
+    if not email.endswith("@nyu.edu"):
+        return render_template("login.html", tab="register", error="Only @nyu.edu email addresses are allowed.")
+
+    try:
+        resp = requests.post(
+            f"{API_URL}/auth/register",
+            json={"email": email, "password": password, "name": name},
+            timeout=10,
+        )
+        if resp.status_code == 201:
+            session["user"] = {"email": email, "name": name or email}
+            return redirect(url_for("index"))
+        error = resp.json().get("error", "Registration failed.")
+    except Exception:
+        error = "Could not reach the server. Please try again."
+
+    return render_template("login.html", tab="register", error=error)
+
+
+@app.get("/auth/google")
+def auth_google():
+    redirect_uri = url_for("auth_google_callback", _external=True)
+    return google.authorize_redirect(redirect_uri)
+
+
+@app.get("/auth/google/callback")
+def auth_google_callback():
+    try:
+        token = google.authorize_access_token()
+        userinfo = token.get("userinfo") or {}
+        email = userinfo.get("email", "").lower()
+
+        if not email.endswith("@nyu.edu"):
+            return render_template("login.html", error="Only @nyu.edu Google accounts are allowed.")
+
+        name = userinfo.get("name", email)
+        session["user"] = {"email": email, "name": name}
+
+        requests.post(f"{API_URL}/auth/google", json={"email": email, "name": name}, timeout=10)
+    except Exception as exc:
+        return render_template("login.html", error=f"Google sign-in failed: {exc}")
+
+    return redirect(url_for("index"))
+
+
+@app.get("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
+
+
+# ── Page routes (protected) ───────────────────────────────────────────────────
 
 @app.get("/")
+@login_required
 def index():
-    return render_template("index.html")
+    return render_template("index.html", user=session["user"])
 
 
 @app.get("/schedule")
+@login_required
 def schedule():
-    return render_template("schedule.html")
+    return render_template("schedule.html", user=session["user"])
 
 
 @app.get("/programs")
+@login_required
 def programs_page():
-    return render_template("programs.html")
+    return render_template("programs.html", user=session["user"])
 
+
+# ── API proxy routes ──────────────────────────────────────────────────────────
 
 @app.get("/api/programs")
+@login_required
 def programs():
     resp = requests.get(f"{API_URL}/programs")
     return jsonify(resp.json()), resp.status_code
 
 
 @app.get("/api/program-requirements")
+@login_required
 def program_requirements():
     resp = requests.get(f"{API_URL}/program-requirements", params=dict(request.args))
     return jsonify(resp.json()), resp.status_code
 
 
 @app.get("/api/classes")
+@login_required
 def proxy_classes():
     params = dict(request.args)
     resp = requests.get(f"{API_URL}/classes", params=params)
@@ -43,18 +170,21 @@ def proxy_classes():
 
 
 @app.get("/api/schools")
+@login_required
 def proxy_schools():
     resp = requests.get(f"{API_URL}/classes/schools")
     return jsonify(resp.json()), resp.status_code
 
 
 @app.get("/api/campuses")
+@login_required
 def proxy_campuses():
     resp = requests.get(f"{API_URL}/classes/campuses")
     return jsonify(resp.json()), resp.status_code
 
 
 @app.post("/api/chat")
+@login_required
 def proxy_chat():
     payload = request.get_json(silent=True) or {}
     resp = requests.post(f"{API_URL}/chat", json=payload)

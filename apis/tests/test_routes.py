@@ -165,3 +165,69 @@ class TestProgramRequirementsRoute:
         mock_db["program_requirements"].find_one.return_value = None
         res = client.get("/program-requirements?url=/nonexistent")
         assert res.status_code == 404
+
+
+class TestAuthRegisterRoute:
+    def test_register_rejects_non_nyu_email(self, client):
+        res = client.post("/auth/register", json={"email": "user@gmail.com", "password": "password123"})
+        assert res.status_code == 400
+        assert "nyu.edu" in res.get_json()["error"]
+
+    def test_register_rejects_short_password(self, client):
+        res = client.post("/auth/register", json={"email": "user@nyu.edu", "password": "short"})
+        assert res.status_code == 400
+        assert "8" in res.get_json()["error"]
+
+    def test_register_rejects_duplicate_email(self, client, mock_db):
+        mock_db.users.find_one.return_value = {"email": "user@nyu.edu"}
+        res = client.post("/auth/register", json={"email": "user@nyu.edu", "password": "password123"})
+        assert res.status_code == 409
+        assert "error" in res.get_json()
+
+    def test_register_creates_new_user(self, client, mock_db):
+        mock_db.users.find_one.return_value = None
+        mock_db.users.insert_one.return_value = None
+        res = client.post("/auth/register", json={"email": "new@nyu.edu", "password": "password123", "name": "Test"})
+        assert res.status_code == 201
+        mock_db.users.insert_one.assert_called_once()
+
+
+class TestAuthLoginRoute:
+    def test_login_returns_401_for_unknown_user(self, client, mock_db):
+        mock_db.users.find_one.return_value = None
+        res = client.post("/auth/login", json={"email": "ghost@nyu.edu", "password": "password123"})
+        assert res.status_code == 401
+
+    def test_login_returns_401_for_wrong_password(self, client, mock_db):
+        from werkzeug.security import generate_password_hash
+        mock_db.users.find_one.return_value = {
+            "email": "user@nyu.edu",
+            "name": "User",
+            "password": generate_password_hash("correctpassword"),
+        }
+        res = client.post("/auth/login", json={"email": "user@nyu.edu", "password": "wrongpassword"})
+        assert res.status_code == 401
+
+    def test_login_returns_200_for_correct_credentials(self, client, mock_db):
+        from werkzeug.security import generate_password_hash
+        mock_db.users.find_one.return_value = {
+            "email": "user@nyu.edu",
+            "name": "Test User",
+            "password": generate_password_hash("correctpassword"),
+        }
+        res = client.post("/auth/login", json={"email": "user@nyu.edu", "password": "correctpassword"})
+        assert res.status_code == 200
+        assert res.get_json()["name"] == "Test User"
+
+
+class TestAuthGoogleRoute:
+    def test_google_rejects_non_nyu_email(self, client):
+        res = client.post("/auth/google", json={"email": "user@gmail.com", "name": "Test"})
+        assert res.status_code == 400
+
+    def test_google_upserts_nyu_user(self, client, mock_db):
+        mock_db.users.update_one.return_value = None
+        res = client.post("/auth/google", json={"email": "user@nyu.edu", "name": "Test User"})
+        assert res.status_code == 200
+        assert res.get_json()["message"] == "ok"
+        mock_db.users.update_one.assert_called_once()
