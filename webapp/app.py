@@ -7,7 +7,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from dotenv import load_dotenv
 from models.user import create_user
-from utils.validation import validate_signup
+from utils.validation import validate_signup, validate_login
 
 load_dotenv()
 
@@ -46,7 +46,20 @@ def login():
     """Render login page."""
     if request.method == "GET":
         return render_template("login.html")
-    return render_template("login.html", error="Login not yet implemented.")
+    
+    data = request.form
+    users_collection = None  # Replace with actual database collection
+    
+    error, user_data = validate_login(data, users_collection)
+
+    if error:
+        return render_template("login.html", error=error)
+    
+    user = User(user_data)
+    login_user(user)
+
+    flash("Logged in successfully.", "success")
+    return redirect(url_for("index"))
 
 
 @app.route("/signup", methods=["GET", "POST"])

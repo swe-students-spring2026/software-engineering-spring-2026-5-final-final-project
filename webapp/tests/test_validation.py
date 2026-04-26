@@ -1,4 +1,5 @@
-from utils.validation import validate_signup
+from utils.validation import validate_signup, validate_login
+from werkzeug.security import generate_password_hash
 
 
 class FakeUsersCollection:
@@ -75,3 +76,68 @@ def test_validate_signup_existing_user():
     users_collection = FakeUsersCollection(existing_user={"email": "test@example.com"})
 
     assert validate_signup(data, users_collection) == "An account with this email already exists."
+
+def test_validate_login_success():
+    data = {
+        "email": "test@example.com",
+        "password": "password123",
+    }
+
+    stored_user = {
+        "email": "test@example.com",
+        "password_hash": generate_password_hash("password123"),
+    }
+
+    users_collection = FakeUsersCollection(existing_user=stored_user)
+
+    error, user = validate_login(data, users_collection)
+
+    assert error is None
+    assert user == stored_user
+
+
+def test_validate_login_missing_email_or_password():
+    data = {
+        "email": "",
+        "password": "password123",
+    }
+
+    users_collection = FakeUsersCollection()
+
+    error, user = validate_login(data, users_collection)
+
+    assert error == "Please enter email and password."
+    assert user is None
+
+
+def test_validate_login_user_not_found():
+    data = {
+        "email": "missing@example.com",
+        "password": "password123",
+    }
+
+    users_collection = FakeUsersCollection()
+
+    error, user = validate_login(data, users_collection)
+
+    assert error == "No account found with that email."
+    assert user is None
+
+
+def test_validate_login_wrong_password():
+    data = {
+        "email": "test@example.com",
+        "password": "wrongpassword",
+    }
+
+    stored_user = {
+        "email": "test@example.com",
+        "password_hash": generate_password_hash("password123"),
+    }
+
+    users_collection = FakeUsersCollection(existing_user=stored_user)
+
+    error, user = validate_login(data, users_collection)
+
+    assert error == "Incorrect password."
+    assert user is None

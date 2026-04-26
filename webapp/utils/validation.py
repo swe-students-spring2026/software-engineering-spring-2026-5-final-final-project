@@ -1,3 +1,5 @@
+from werkzeug.security import check_password_hash
+
 def validate_signup(data, users_collection):
     """
     This function validates the signup form data. It checks for:
@@ -34,3 +36,24 @@ def validate_signup(data, users_collection):
         return "An account with this email already exists."
 
     return None
+
+def validate_login(data, users_collection):
+    """
+    Validate login form data.
+    Returns: (error, user_data)
+    """
+
+    # Required fields
+    if not data.get("email") or not data.get("password"):
+        return "Please enter email and password.", None
+
+    # Check user exists
+    user = users_collection.find_one({"email": data["email"]})
+    if not user:
+        return "No account found with that email.", None
+
+    # Check password
+    if not check_password_hash(user["password_hash"], data["password"]):
+        return "Incorrect password.", None
+
+    return None, user
