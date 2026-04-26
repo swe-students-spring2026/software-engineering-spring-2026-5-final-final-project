@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile — NYU Course Planner</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #f4f4f4; color: #333; min-height: 100vh; display: flex; flex-direction: column; }
+
+    header { background: #57068c; color: white; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    header h1 { font-size: 1.3rem; }
+    .header-nav { display: flex; gap: 8px; align-items: center; }
+    .header-nav a { color: white; text-decoration: none; font-size: 0.85rem; background: rgba(255,255,255,0.15); padding: 6px 14px; border-radius: 4px; }
+    .header-nav a:hover { background: rgba(255,255,255,0.25); }
+    .header-nav a.active { background: rgba(255,255,255,0.30); font-weight: bold; }
+
+    .page { display: flex; flex: 1; max-width: 1100px; margin: 0 auto; width: 100%; padding: 32px 20px; gap: 24px; align-items: flex-start; }
+
+    /* ── Sidebar ── */
+    .sidebar { width: 240px; flex-shrink: 0; }
+    .profile-card { background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); padding: 24px 20px; text-align: center; margin-bottom: 16px; }
+    .avatar { width: 72px; height: 72px; border-radius: 50%; background: #57068c; color: white; font-size: 2rem; font-weight: 700; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; }
+    .profile-card h2 { font-size: 1rem; font-weight: 700; margin-bottom: 4px; word-break: break-word; }
+    .profile-card .email { font-size: 0.75rem; color: #888; margin-bottom: 12px; word-break: break-all; }
+    .profile-card .badge { display: inline-block; background: #f0e6f7; color: #57068c; font-size: 0.72rem; font-weight: 600; padding: 3px 10px; border-radius: 20px; margin-bottom: 4px; }
+    .profile-card .stat { font-size: 0.78rem; color: #666; margin-top: 8px; }
+    .profile-card .stat strong { color: #57068c; }
+
+    .side-nav { background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); overflow: hidden; }
+    .side-nav a { display: flex; align-items: center; gap: 10px; padding: 13px 18px; font-size: 0.88rem; color: #555; text-decoration: none; border-left: 3px solid transparent; transition: background 0.15s; }
+    .side-nav a:hover { background: #faf5ff; color: #57068c; }
+    .side-nav a.active { border-left-color: #57068c; color: #57068c; font-weight: 600; background: #faf5ff; }
+    .side-nav a .icon { font-size: 1rem; width: 20px; text-align: center; }
+
+    /* ── Main content ── */
+    .main { flex: 1; min-width: 0; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .card { background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); padding: 28px 32px; margin-bottom: 20px; }
+    .card h3 { font-size: 1rem; color: #57068c; margin-bottom: 18px; padding-bottom: 10px; border-bottom: 1px solid #f0f0f0; }
+
+    .toast { padding: 10px 16px; border-radius: 6px; font-size: 0.83rem; margin-bottom: 18px; display: none; }
+    .toast.success { background: #f0fdf4; border: 1px solid #86efac; color: #166534; }
+    .toast.error   { background: #fff0f0; border: 1px solid #ffc0c0; color: #c00; }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .form-row.full { grid-template-columns: 1fr; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    label { font-size: 0.8rem; font-weight: 600; color: #555; }
+    input[type="text"], input[type="email"], select {
+      padding: 9px 12px; border: 1.5px solid #ddd; border-radius: 6px; font-size: 0.88rem;
+      transition: border-color 0.2s; outline: none;
+    }
+    input:focus, select:focus { border-color: #57068c; }
+    input[disabled] { background: #f8f8f8; color: #999; cursor: not-allowed; }
+
+    .btn { padding: 9px 22px; border: none; border-radius: 6px; font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    .btn-primary { background: #57068c; color: white; }
+    .btn-primary:hover { background: #3d0066; }
+    .btn-danger { background: #fee2e2; color: #c00; }
+    .btn-danger:hover { background: #fecaca; }
+    .btn-sm { padding: 5px 12px; font-size: 0.78rem; }
+
+    /* ── Course list ── */
+    .course-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .course-tag { background: #f0e6f7; color: #57068c; font-size: 0.78rem; font-weight: 600; padding: 4px 12px; border-radius: 20px; display: flex; align-items: center; gap: 6px; }
+    .course-tag button { background: none; border: none; color: #a060c8; cursor: pointer; font-size: 0.85rem; line-height: 1; padding: 0; }
+    .course-tag button:hover { color: #c00; }
+    .empty-state { color: #bbb; font-size: 0.85rem; padding: 12px 0; }
+
+    /* ── Transcript upload ── */
+    .upload-zone {
+      border: 2px dashed #c9a7e0; border-radius: 10px; padding: 40px 20px;
+      text-align: center; cursor: pointer; transition: all 0.2s; background: #fdf8ff;
+    }
+    .upload-zone:hover, .upload-zone.dragover { border-color: #57068c; background: #f5eeff; }
+    .upload-zone .upload-icon { font-size: 2.5rem; margin-bottom: 10px; }
+    .upload-zone p { font-size: 0.88rem; color: #666; margin-bottom: 4px; }
+    .upload-zone .hint { font-size: 0.75rem; color: #aaa; }
+    #file-input { display: none; }
+
+    .progress-bar { height: 6px; background: #f0f0f0; border-radius: 3px; overflow: hidden; margin-top: 12px; display: none; }
+    .progress-fill { height: 100%; background: #57068c; width: 0%; transition: width 0.3s; border-radius: 3px; }
+
+    .parsed-results { margin-top: 20px; }
+    .parsed-results h4 { font-size: 0.88rem; font-weight: 600; color: #555; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>NYU Course Planner</h1>
+    <div class="header-nav">
+      <a href="/">Search</a>
+      <a href="/schedule">Schedule</a>
+      <a href="/programs">Programs</a>
+      <a href="/profile" class="active">Profile</a>
+      <a href="/logout">Sign Out</a>
+    </div>
+  </header>
+
+  <div class="page">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="profile-card">
+        <div class="avatar" id="avatar-letter">{{ (profile.name or user.name or user.email)[0] | upper }}</div>
+        <h2 id="sidebar-name">{{ profile.name or user.name or "Student" }}</h2>
+        <div class="email">{{ user.email }}</div>
+        {% if profile.major %}
+        <div class="badge" id="sidebar-major">{{ profile.major }}</div>
+        {% else %}
+        <div class="badge" id="sidebar-major" style="display:none"></div>
+        {% endif %}
+        {% if profile.graduation_year %}
+        <div class="stat">Class of <strong id="sidebar-year">{{ profile.graduation_year }}</strong></div>
+        {% endif %}
+        <div class="stat"><strong id="sidebar-course-count">{{ (profile.completed_courses or []) | length }}</strong> courses completed</div>
+      </div>
+
+      <nav class="side-nav">
+        <a href="#" class="active" onclick="switchPanel('overview', this)" id="nav-overview">
+          <span class="icon">👤</span> Overview
+        </a>
+        <a href="#" onclick="switchPanel('settings', this)" id="nav-settings">
+          <span class="icon">⚙️</span> Edit Settings
+        </a>
+        <a href="#" onclick="switchPanel('transcript', this)" id="nav-transcript">
+          <span class="icon">📄</span> Transcript
+        </a>
+      </nav>
+    </div>
+
+    <!-- Main content -->
+    <div class="main">
+
+      <!-- Overview Panel -->
+      <div class="panel active" id="panel-overview">
+        <div class="card">
+          <h3>Profile Information</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Full Name</label>
+              <input type="text" value="{{ profile.name or user.name or '' }}" disabled>
+            </div>
+            <div class="form-group">
+              <label>NYU Email</label>
+              <input type="email" value="{{ user.email }}" disabled>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Major</label>
+              <input type="text" value="{{ profile.major or 'Not set' }}" disabled>
+            </div>
+            <div class="form-group">
+              <label>Graduation Year</label>
+              <input type="text" value="{{ profile.graduation_year or 'Not set' }}" disabled>
+            </div>
+          </div>
+          <div style="margin-top:8px">
+            <button class="btn btn-primary" onclick="switchPanel('settings', document.getElementById('nav-settings'))">Edit Profile</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Completed Courses <span style="font-size:0.78rem;font-weight:400;color:#aaa;margin-left:6px">used by AI for recommendations</span></h3>
+          <div class="course-tags" id="overview-courses">
+            {% for course in (profile.completed_courses or []) %}
+            <div class="course-tag">{{ course }}</div>
+            {% else %}
+            <div class="empty-state">No courses recorded yet. Upload your transcript to get started.</div>
+            {% endfor %}
+          </div>
+          {% if not (profile.completed_courses or []) %}
+          <div style="margin-top:14px">
+            <button class="btn btn-primary btn-sm" onclick="switchPanel('transcript', document.getElementById('nav-transcript'))">Upload Transcript →</button>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Settings Panel -->
+      <div class="panel" id="panel-settings">
+        <div class="card">
+          <h3>Edit Profile</h3>
+          <div id="settings-toast" class="toast"></div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="s-name">Full Name</label>
+              <input id="s-name" type="text" value="{{ profile.name or user.name or '' }}" placeholder="First Last">
+            </div>
+            <div class="form-group">
+              <label>NYU Email</label>
+              <input type="email" value="{{ user.email }}" disabled>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="s-major">Major</label>
+              <input id="s-major" type="text" value="{{ profile.major or '' }}" placeholder="e.g. Computer Science">
+            </div>
+            <div class="form-group">
+              <label for="s-year">Graduation Year</label>
+              <select id="s-year">
+                <option value="">Select year</option>
+                {% for y in ['2025','2026','2027','2028','2029'] %}
+                <option value="{{ y }}" {% if profile.graduation_year == y %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="s-studentid">Student ID (optional)</label>
+              <input id="s-studentid" type="text" value="{{ profile.student_id or '' }}" placeholder="N12345678">
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="saveSettings()">Save Changes</button>
+        </div>
+
+        <div class="card">
+          <h3>Manage Completed Courses</h3>
+          <p style="font-size:0.82rem;color:#666;margin-bottom:14px">Manually add or remove courses. These are shared with the AI assistant.</p>
+          <div style="display:flex;gap:8px;margin-bottom:14px">
+            <input id="add-course-input" type="text" placeholder="e.g. CSCI-UA 101" style="flex:1">
+            <button class="btn btn-primary btn-sm" onclick="addCourseManually()">Add</button>
+          </div>
+          <div class="course-tags" id="settings-courses">
+            {% for course in (profile.completed_courses or []) %}
+            <div class="course-tag">{{ course }}<button onclick="removeCourse(this, '{{ course }}')">✕</button></div>
+            {% else %}
+            <div class="empty-state" id="no-courses-msg">No courses added yet.</div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Transcript Panel -->
+      <div class="panel" id="panel-transcript">
+        <div class="card">
+          <h3>Upload Transcript</h3>
+          <p style="font-size:0.82rem;color:#666;margin-bottom:18px">
+            Upload your NYU unofficial transcript PDF. The AI will automatically extract your completed courses and use them for personalized recommendations.
+          </p>
+
+          <div id="toast-transcript" class="toast"></div>
+
+          <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()"
+               ondragover="event.preventDefault();this.classList.add('dragover')"
+               ondragleave="this.classList.remove('dragover')"
+               ondrop="handleDrop(event)">
+            <div class="upload-icon">📂</div>
+            <p><strong>Click to upload</strong> or drag and drop</p>
+            <p class="hint">PDF only · Max 10MB</p>
+          </div>
+          <input type="file" id="file-input" accept=".pdf" onchange="handleFileSelect(this.files[0])">
+
+          <div class="progress-bar" id="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+          </div>
+
+          <div class="parsed-results" id="parsed-results" style="display:none">
+            <h4 id="parsed-heading"></h4>
+            <div class="course-tags" id="parsed-courses"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Current Completed Courses</h3>
+          <div class="course-tags" id="transcript-courses">
+            {% for course in (profile.completed_courses or []) %}
+            <div class="course-tag">{{ course }}</div>
+            {% else %}
+            <div class="empty-state">No courses recorded yet.</div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /.main -->
+  </div><!-- /.page -->
+
+  <script>
+    // ── Panel switching ────────────────────────────────────────────────────────
+    function switchPanel(name, navEl) {
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.side-nav a').forEach(a => a.classList.remove('active'));
+      document.getElementById('panel-' + name).classList.add('active');
+      navEl.classList.add('active');
+      return false;
+    }
+
+    // ── Toast helper ───────────────────────────────────────────────────────────
+    function showToast(id, msg, type) {
+      const el = document.getElementById(id);
+      el.className = 'toast ' + type;
+      el.textContent = msg;
+      el.style.display = 'block';
+      setTimeout(() => { el.style.display = 'none'; }, 4000);
+    }
+
+    // ── Save settings ──────────────────────────────────────────────────────────
+    async function saveSettings() {
+      const body = {
+        name: document.getElementById('s-name').value.trim(),
+        major: document.getElementById('s-major').value.trim(),
+        graduation_year: document.getElementById('s-year').value,
+        student_id: document.getElementById('s-studentid').value.trim(),
+      };
+
+      try {
+        const res = await fetch('/api/profile', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (res.ok) {
+          showToast('settings-toast', '✓ Profile updated successfully.', 'success');
+          // Update sidebar live
+          if (body.name) {
+            document.getElementById('sidebar-name').textContent = body.name;
+            document.getElementById('avatar-letter').textContent = body.name[0].toUpperCase();
+          }
+          if (body.major) {
+            const badge = document.getElementById('sidebar-major');
+            badge.textContent = body.major;
+            badge.style.display = '';
+          }
+          if (body.graduation_year) {
+            let el = document.getElementById('sidebar-year');
+            if (el) el.textContent = body.graduation_year;
+          }
+        } else {
+          const d = await res.json();
+          showToast('settings-toast', d.error || 'Failed to save.', 'error');
+        }
+      } catch {
+        showToast('settings-toast', 'Network error. Please try again.', 'error');
+      }
+    }
+
+    // ── Manual course management ───────────────────────────────────────────────
+    let _courses = {{ (profile.completed_courses or []) | tojson }};
+
+    function refreshCourseTags(containerId) {
+      const container = document.getElementById(containerId);
+      if (_courses.length === 0) {
+        container.innerHTML = '<div class="empty-state" id="no-courses-msg">No courses added yet.</div>';
+      } else {
+        container.innerHTML = _courses.map(c =>
+          `<div class="course-tag">${c}<button onclick="removeCourse(this,'${c}')">✕</button></div>`
+        ).join('');
+      }
+      document.getElementById('sidebar-course-count').textContent = _courses.length;
+    }
+
+    async function saveCourses() {
+      await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ completed_courses: _courses }),
+      });
+    }
+
+    function addCourseManually() {
+      const input = document.getElementById('add-course-input');
+      const val = input.value.trim().toUpperCase();
+      if (!val) return;
+      if (_courses.includes(val)) { input.value = ''; return; }
+      _courses.push(val);
+      input.value = '';
+      refreshCourseTags('settings-courses');
+      refreshCourseTags('overview-courses');
+      refreshCourseTags('transcript-courses');
+      saveCourses();
+    }
+
+    document.getElementById('add-course-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') addCourseManually();
+    });
+
+    function removeCourse(btn, course) {
+      _courses = _courses.filter(c => c !== course);
+      refreshCourseTags('settings-courses');
+      refreshCourseTags('overview-courses');
+      refreshCourseTags('transcript-courses');
+      saveCourses();
+    }
+
+    // ── Transcript upload ──────────────────────────────────────────────────────
+    function handleDrop(e) {
+      e.preventDefault();
+      document.getElementById('upload-zone').classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file) handleFileSelect(file);
+    }
+
+    async function handleFileSelect(file) {
+      if (!file) return;
+      if (!file.name.toLowerCase().endsWith('.pdf')) {
+        showToast('toast-transcript', 'Only PDF files are supported.', 'error');
+        return;
+      }
+
+      const bar = document.getElementById('progress-bar');
+      const fill = document.getElementById('progress-fill');
+      bar.style.display = 'block';
+      fill.style.width = '30%';
+
+      const formData = new FormData();
+      formData.append('transcript', file);
+
+      try {
+        fill.style.width = '60%';
+        const res = await fetch('/api/transcript', { method: 'POST', body: formData });
+        fill.style.width = '100%';
+
+        const data = await res.json();
+        if (res.ok) {
+          _courses = data.courses || [];
+          showToast('toast-transcript', `✓ Parsed ${_courses.length} completed courses from your transcript.`, 'success');
+
+          const parsed = document.getElementById('parsed-results');
+          const heading = document.getElementById('parsed-heading');
+          const tags = document.getElementById('parsed-courses');
+          heading.textContent = `${_courses.length} courses found`;
+          tags.innerHTML = _courses.map(c => `<div class="course-tag">${c}</div>`).join('');
+          parsed.style.display = 'block';
+
+          refreshCourseTags('settings-courses');
+          refreshCourseTags('overview-courses');
+          refreshCourseTags('transcript-courses');
+        } else {
+          showToast('toast-transcript', data.error || 'Upload failed.', 'error');
+        }
+      } catch {
+        showToast('toast-transcript', 'Network error. Please try again.', 'error');
+      }
+
+      setTimeout(() => { bar.style.display = 'none'; fill.style.width = '0%'; }, 1200);
+    }
+  </script>
+</body>
+</html>

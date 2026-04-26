@@ -38,6 +38,16 @@ def login_required(f):
     return decorated
 
 
+def _get_user_profile(email: str) -> dict:
+    try:
+        resp = requests.get(f"{API_URL}/user/profile", params={"email": email}, timeout=5)
+        if resp.status_code == 200:
+            return resp.json()
+    except Exception:
+        pass
+    return {}
+
+
 # ── Auth routes ───────────────────────────────────────────────────────────────
 
 @app.get("/login")
@@ -145,6 +155,14 @@ def programs_page():
     return render_template("programs.html", user=session["user"])
 
 
+@app.get("/profile")
+@login_required
+def profile_page():
+    email = session["user"]["email"]
+    profile = _get_user_profile(email)
+    return render_template("profile.html", user=session["user"], profile=profile)
+
+
 # ── API proxy routes ──────────────────────────────────────────────────────────
 
 @app.get("/api/programs")
@@ -183,10 +201,52 @@ def proxy_campuses():
     return jsonify(resp.json()), resp.status_code
 
 
+@app.get("/api/profile")
+@login_required
+def proxy_get_profile():
+    email = session["user"]["email"]
+    resp = requests.get(f"{API_URL}/user/profile", params={"email": email})
+    return jsonify(resp.json()), resp.status_code
+
+
+@app.put("/api/profile")
+@login_required
+def proxy_update_profile():
+    data = request.get_json(silent=True) or {}
+    data["email"] = session["user"]["email"]
+    resp = requests.put(f"{API_URL}/user/profile", json=data)
+    if resp.status_code == 200:
+        # Keep session name in sync
+        if "name" in data:
+            session["user"] = {**session["user"], "name": data["name"]}
+    return jsonify(resp.json()), resp.status_code
+
+
+@app.post("/api/transcript")
+@login_required
+def proxy_transcript():
+    file = request.files.get("transcript")
+    if not file:
+        return jsonify({"error": "no file uploaded"}), 400
+    email = session["user"]["email"]
+    resp = requests.post(
+        f"{API_URL}/user/transcript",
+        data={"email": email},
+        files={"transcript": (file.filename, file.stream, file.mimetype)},
+        timeout=60,
+    )
+    return jsonify(resp.json()), resp.status_code
+
+
 @app.post("/api/chat")
 @login_required
 def proxy_chat():
     payload = request.get_json(silent=True) or {}
+    # Auto-inject profile context so AI knows the student's courses and major
+    if "completed_courses" not in payload or "major" not in payload:
+        profile = _get_user_profile(session["user"]["email"])
+        payload.setdefault("completed_courses", profile.get("completed_courses", []))
+        payload.setdefault("major", profile.get("major", ""))
     resp = requests.post(f"{API_URL}/chat", json=payload)
     return jsonify(resp.json()), resp.status_code
 
