@@ -1,3 +1,4 @@
+import io
 import os
 from pathlib import Path
 
@@ -183,6 +184,66 @@ def auth_google_upsert():
         upsert=True,
     )
     return jsonify({"message": "ok"}), 200
+
+
+@app.get("/user/profile")
+def get_profile():
+    email = request.args.get("email", "").strip().lower()
+    if not email:
+        return jsonify({"error": "email required"}), 400
+    user = db.users.find_one({"email": email}, {"_id": 0, "password": 0})
+    if not user:
+        return jsonify({"error": "user not found"}), 404
+    return jsonify(user)
+
+
+@app.put("/user/profile")
+def update_profile():
+    data = request.get_json(silent=True) or {}
+    email = data.get("email", "").strip().lower()
+    if not email:
+        return jsonify({"error": "email required"}), 400
+
+    allowed = {"name", "major", "graduation_year", "student_id", "completed_courses"}
+    updates = {k: v for k, v in data.items() if k in allowed}
+    if not updates:
+        return jsonify({"error": "no valid fields to update"}), 400
+
+    db.users.update_one({"email": email}, {"$set": updates}, upsert=True)
+    return jsonify({"message": "profile updated"}), 200
+
+
+@app.post("/user/transcript")
+def upload_transcript():
+    email = request.form.get("email", "").strip().lower()
+    file = request.files.get("transcript")
+
+    if not email:
+        return jsonify({"error": "email required"}), 400
+    if not file or not file.filename:
+        return jsonify({"error": "no file uploaded"}), 400
+    if not file.filename.lower().endswith(".pdf"):
+        return jsonify({"error": "only PDF files are supported"}), 400
+
+    try:
+        import pypdf
+        reader = pypdf.PdfReader(io.BytesIO(file.read()))
+        text = "\n".join(page.extract_text() or "" for page in reader.pages)
+    except Exception as exc:
+        return jsonify({"error": f"could not read PDF: {exc}"}), 422
+
+    if not text.strip():
+        return jsonify({"error": "PDF appears to be empty or image-only"}), 422
+
+    from app.ai.service import parse_transcript
+    courses = parse_transcript(text)
+
+    db.users.update_one(
+        {"email": email},
+        {"$set": {"completed_courses": courses}},
+        upsert=True,
+    )
+    return jsonify({"courses": courses, "count": len(courses)}), 200
 
 
 @app.get("/programs")

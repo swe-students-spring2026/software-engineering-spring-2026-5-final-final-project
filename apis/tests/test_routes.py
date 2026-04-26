@@ -231,3 +231,81 @@ class TestAuthGoogleRoute:
         assert res.status_code == 200
         assert res.get_json()["message"] == "ok"
         mock_db.users.update_one.assert_called_once()
+
+
+class TestUserProfileRoute:
+    def test_get_profile_missing_email_returns_400(self, client):
+        res = client.get("/user/profile")
+        assert res.status_code == 400
+        assert "error" in res.get_json()
+
+    def test_get_profile_not_found_returns_404(self, client, mock_db):
+        mock_db.users.find_one.return_value = None
+        res = client.get("/user/profile?email=ghost@nyu.edu")
+        assert res.status_code == 404
+
+    def test_get_profile_found_returns_200(self, client, mock_db):
+        mock_db.users.find_one.return_value = {"email": "user@nyu.edu", "name": "Test", "major": "CS"}
+        res = client.get("/user/profile?email=user@nyu.edu")
+        assert res.status_code == 200
+        assert res.get_json()["major"] == "CS"
+
+
+class TestUpdateProfileRoute:
+    def test_update_missing_email_returns_400(self, client):
+        res = client.put("/user/profile", json={"major": "CS"})
+        assert res.status_code == 400
+
+    def test_update_no_valid_fields_returns_400(self, client):
+        res = client.put("/user/profile", json={"email": "user@nyu.edu", "unknown_field": "x"})
+        assert res.status_code == 400
+
+    def test_update_valid_fields_returns_200(self, client, mock_db):
+        mock_db.users.update_one.return_value = None
+        res = client.put("/user/profile", json={"email": "user@nyu.edu", "major": "CS", "graduation_year": "2026"})
+        assert res.status_code == 200
+        assert res.get_json()["message"] == "profile updated"
+        mock_db.users.update_one.assert_called()
+
+
+class TestUploadTranscriptRoute:
+    def test_missing_email_returns_400(self, client):
+        from io import BytesIO
+        res = client.post(
+            "/user/transcript",
+            data={"transcript": (BytesIO(b"%PDF-1.4"), "t.pdf", "application/pdf")},
+            content_type="multipart/form-data",
+        )
+        assert res.status_code == 400
+
+    def test_missing_file_returns_400(self, client):
+        res = client.post("/user/transcript", data={"email": "user@nyu.edu"}, content_type="multipart/form-data")
+        assert res.status_code == 400
+
+    def test_non_pdf_returns_400(self, client):
+        from io import BytesIO
+        res = client.post(
+            "/user/transcript",
+            data={"email": "user@nyu.edu", "transcript": (BytesIO(b"text"), "file.txt", "text/plain")},
+            content_type="multipart/form-data",
+        )
+        assert res.status_code == 400
+
+    def test_valid_pdf_parses_and_saves_courses(self, client, mock_db):
+        from io import BytesIO
+        from unittest.mock import patch, MagicMock
+        mock_db.users.update_one.return_value = None
+        fake_page = MagicMock()
+        fake_page.extract_text.return_value = "CSCI-UA 101 Intro to CS A\nMATH-UA 123 Calculus B"
+        fake_reader = MagicMock()
+        fake_reader.pages = [fake_page]
+        with patch("pypdf.PdfReader", return_value=fake_reader):
+            with patch("app.ai.service.parse_transcript", return_value=["CSCI-UA 101", "MATH-UA 123"]):
+                res = client.post(
+                    "/user/transcript",
+                    data={"email": "user@nyu.edu", "transcript": (BytesIO(b"%PDF-1.4"), "t.pdf", "application/pdf")},
+                    content_type="multipart/form-data",
+                )
+        assert res.status_code == 200
+        data = res.get_json()
+        assert data["count"] == 2

@@ -145,3 +145,31 @@ def chat(
         )
 
     return response.text or ""
+
+
+def parse_transcript(text: str) -> list[str]:
+    """
+    Send raw transcript text to Gemini and return a list of completed course codes.
+    """
+    prompt = (
+        "You are parsing an NYU student transcript. "
+        "Extract every course the student has COMPLETED (has a letter grade A–D or P). "
+        "Exclude withdrawn (W), in-progress (IP/TR), or transfer courses. "
+        "Return ONLY a valid JSON array of course code strings, e.g.: "
+        '["CSCI-UA 101", "MATH-UA 123", "CORE-UA 400"]. '
+        "No explanation, no markdown — raw JSON array only.\n\n"
+        f"Transcript text:\n{text[:12000]}"
+    )
+    response = _client.models.generate_content(
+        model=GEMINI_MODEL,
+        contents=prompt,
+    )
+    raw = (response.text or "").strip()
+    import re
+    match = re.search(r"\[.*?\]", raw, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group())
+        except json.JSONDecodeError:
+            pass
+    return []
