@@ -7,7 +7,7 @@ import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from bs4 import BeautifulSoup
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
@@ -189,16 +189,11 @@ def main() -> int:
             )
             return 1
 
-        def save_progress(docs_snapshot: list[dict[str, Any]], report_snapshot: dict[str, Any]) -> None:
-            write_docs(output_path, docs_snapshot)
-            write_report(report_path, report_snapshot)
-
         docs, report = scrape_subject_pages(
             page,
             term_code=args.term,
             wait_ms=args.wait_ms,
             limit=args.limit,
-            save_progress=save_progress,
         )
         if not docs:
             write_debug_dump(page, output_path)
@@ -297,7 +292,6 @@ def scrape_subject_pages(
     term_code: str,
     wait_ms: int,
     limit: int,
-    save_progress: Callable[[list[dict[str, Any]], dict[str, Any]], None] | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     all_docs: list[dict[str, Any]] = []
     seen_ids: set[str] = set()
@@ -330,20 +324,6 @@ def scrape_subject_pages(
                 visited_subjects.add(current_subject_key)
                 if len(all_docs) > before_count:
                     successful_subjects[current_subject_key] = len(all_docs) - before_count
-
-            if save_progress is not None:
-                save_progress(
-                    list(all_docs),
-                    build_report(
-                        discovered_subjects,
-                        visited_subjects,
-                        attempted_subjects,
-                        successful_subjects,
-                        failed_subjects,
-                        list(all_docs),
-                        filter_state,
-                    ),
-                )
 
             if limit > 0 and len(all_docs) >= limit:
                 return all_docs[:limit], build_report(
@@ -395,19 +375,6 @@ def scrape_subject_pages(
         if not click_subject_candidate(page, next_subject, wait_ms):
             visited_subjects.add(normalize_subject_key(next_subject))
             failed_subjects.append(next_subject)
-            if save_progress is not None:
-                save_progress(
-                    list(all_docs),
-                    build_report(
-                        discovered_subjects,
-                        visited_subjects,
-                        attempted_subjects,
-                        successful_subjects,
-                        failed_subjects,
-                        list(all_docs),
-                        filter_state,
-                    ),
-                )
             continue
 
         visited_subjects.add(normalize_subject_key(next_subject))
@@ -818,7 +785,59 @@ def wait_for_probable_results(page: Any, timeout_ms: int) -> None:
             continue
 
 
+def expand_description_dropdowns(page: Any) -> None:
+    expanded_any = False
+    for frame in iter_accessible_frames(page):
+        try:
+            expanded = frame.evaluate(
+                """
+                () => {
+                  const clean = (text) => (text || "").replace(/\\s+/g, " ").trim();
+                  const visible = (el) => {
+                    if (!el) return false;
+                    const style = window.getComputedStyle(el);
+                    const box = el.getBoundingClientRect();
+                    return style.visibility !== "hidden" && style.display !== "none" && box.width > 0 && box.height > 0;
+                  };
+                  const expanders = [];
+                  const seen = new Set();
+                  const controls = document.querySelectorAll('a, button, summary, [role="button"], [aria-expanded], [aria-controls]');
+                  for (const el of Array.from(controls)) {
+                    if (!visible(el)) continue;
+                    if (seen.has(el)) continue;
+                    const text = clean(el.innerText || el.textContent || el.getAttribute("aria-label") || "");
+                    const ariaExpanded = (el.getAttribute("aria-expanded") || "").toLowerCase();
+                    const classText = clean(el.className || "");
+                    const looksLikeDescriptionToggle =
+                      /more description|show more|expand|view more/i.test(text)
+                      || (/description/i.test(text) && /more|show|expand|view/i.test(text))
+                      || (/description/i.test(classText) && ariaExpanded !== "true");
+                    if (!looksLikeDescriptionToggle) continue;
+                    if (ariaExpanded === "true") continue;
+                    seen.add(el);
+                    expanders.push(el);
+                  }
+
+                  for (const el of expanders) {
+                    el.scrollIntoView({ block: "center" });
+                    el.click();
+                  }
+
+                  return expanders.length;
+                }
+                """
+            )
+            if expanded:
+                expanded_any = True
+        except Exception:
+            continue
+
+    if expanded_any:
+        page.wait_for_timeout(500)
+
+
 def extract_visible_rows(page: Any) -> list[dict[str, Any]]:
+    expand_description_dropdowns(page)
     best_rows: list[dict[str, Any]] = []
     best_score = -1
 
@@ -942,35 +961,38 @@ def normalize_table_row(row: dict[str, Any]) -> dict[str, Any] | None:
 def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url: str) -> list[dict[str, Any]]:
     docs: list[dict[str, Any]] = []
     for index, row in enumerate(rows, start=1):
-        code = clean_text(row.get("code", ""))
+        code = sanitize_albert_text(row.get("code", ""))
         subject_code, catalog_number = split_code(code) if code else ("", "")
         if not subject_code and row.get("subject_code"):
-            subject_code = clean_text(row.get("subject_code", ""))
+            subject_code = sanitize_albert_text(row.get("subject_code", ""))
         if not catalog_number and row.get("catalog_number"):
-            catalog_number = clean_text(row.get("catalog_number", ""))
+            catalog_number = sanitize_albert_text(row.get("catalog_number", ""))
         if subject_code and catalog_number and not code:
             code = f"{subject_code} {catalog_number}"
 
-        section = clean_text(row.get("section", ""))
-        doc_id = make_id(term_code or "albert", subject_code or "unknown", catalog_number or str(index), section or str(index))
+        section = sanitize_albert_text(row.get("section", ""))
+        meeting_details = extract_meeting_details(row)
+        term = extract_term_label(row, fallback=term_code)
+        course_text = extract_course_text(row, code)
+        doc_id = make_albert_id(term_code, subject_code or "unknown", catalog_number or str(index), section or str(index))
 
         docs.append(
             {
                 "_id": doc_id,
-                "term": {"code": term_code},
+                "term": term,
                 "school": school_for_subject(subject_code),
                 "subject_code": subject_code,
                 "catalog_number": catalog_number,
                 "code": code,
-                "title": clean_text(row.get("title", "")),
+                "title": course_text["title"] or sanitize_albert_text(row.get("title", "")),
                 "section": section,
-                "crn": clean_text(row.get("crn", "")),
-                "status": clean_text(row.get("status", "")),
-                "component": clean_text(row.get("component", "")),
-                "instructor": clean_text(row.get("instructor", "")),
-                "meets_human": clean_text(row.get("meets_human", "")),
-                "location": clean_text(row.get("location", "")),
-                "dates": clean_text(row.get("dates", "")),
+                "crn": sanitize_albert_text(row.get("crn", "")),
+                "status": sanitize_albert_text(row.get("status", "")),
+                "component": course_text["description"] or sanitize_albert_text(row.get("component", "")),
+                "instructor": sanitize_albert_text(row.get("instructor", "")) or meeting_details["instructor"],
+                "meets_human": sanitize_albert_text(row.get("meets_human", "")) or meeting_details["meets_human"],
+                "location": meeting_details["location"] or sanitize_albert_text(row.get("location", "")),
+                "dates": sanitize_albert_text(row.get("dates", "")) or meeting_details["dates"],
                 "source": {
                     "system": "nyu_albert",
                     "url": source_url,
@@ -982,6 +1004,122 @@ def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url:
     return docs
 
 
+def make_albert_id(term_code: str, subject: str, catalog: str, section: str) -> str:
+    clean = lambda value: re.sub(r"[^A-Za-z0-9_-]", "", str(value or ""))
+    parts = [clean(part) for part in (term_code, subject, catalog, section)]
+    parts = [part for part in parts if part]
+    return "_".join(parts)
+
+
+def sanitize_albert_text(value: object) -> str:
+    text = clean_text(value)
+    text = re.sub(r"\b(?:more|less)\s+description\s+for\s+.*$", "", text, flags=re.I)
+    return clean_text(text)
+
+
+def extract_term_label(row: dict[str, Any], *, fallback: str = "") -> str:
+    source_row = row.get("source_row", [])
+    if isinstance(source_row, list):
+        for line in source_row:
+            text = clean_text(line)
+            term = find_first(r"\bterm:\s*(.+)$", text, flags=re.I)
+            if term:
+                return sanitize_albert_text(term)
+    return sanitize_albert_text(fallback)
+
+
+def extract_course_text(row: dict[str, Any], code: str) -> dict[str, str]:
+    details = {
+        "title": "",
+        "description": "",
+    }
+    source_row = row.get("source_row", [])
+    if not isinstance(source_row, list) or not code:
+        return details
+
+    header_index = -1
+    for index, line in enumerate(source_row):
+        text = sanitize_albert_text(line)
+        if not text.startswith(code):
+            continue
+        remainder = sanitize_albert_text(text[len(code) :])
+        if not remainder or re.match(r"^\|\s*[\d.-]+\s+units?$", remainder, re.I):
+            continue
+        details["title"] = remainder
+        header_index = index
+        break
+
+    if header_index >= 0:
+        description_lines: list[str] = []
+        stop_markers = (
+            "school:",
+            "term:",
+            "class#:",
+            "section:",
+            "class status:",
+            "grading:",
+            "instruction mode:",
+            "course location:",
+            "session:",
+            "component:",
+            "notes:",
+            "visit the bookstore",
+        )
+        for line in source_row[header_index + 1 :]:
+            text = sanitize_albert_text(line)
+            lower = text.lower()
+            if not text:
+                continue
+            if text.startswith(code):
+                break
+            if any(lower.startswith(marker) for marker in stop_markers):
+                break
+            description_lines.append(text)
+        details["description"] = sanitize_albert_text(" ".join(description_lines))
+
+    return details
+
+
+def extract_meeting_details(row: dict[str, Any]) -> dict[str, str]:
+    details = {
+        "dates": "",
+        "meets_human": "",
+        "location": "",
+        "instructor": "",
+    }
+    source_row = row.get("source_row", [])
+    if not isinstance(source_row, list):
+        return details
+
+    for line in source_row:
+        text = clean_text(line)
+        if not text:
+            continue
+        if not re.match(r"^\d{1,2}/\d{1,2}/\d{4}\s*-\s*\d{1,2}/\d{1,2}/\d{4}\b", text):
+            continue
+
+        details["dates"] = find_first(
+            r"^(\d{1,2}/\d{1,2}/\d{4}\s*-\s*\d{1,2}/\d{1,2}/\d{4})",
+            text,
+        )
+
+        after_dates = text[len(details["dates"]) :].strip() if details["dates"] else text
+        instructor = find_first(r"\bwith\s+(.+)$", after_dates, flags=re.I)
+        if instructor:
+            details["instructor"] = instructor
+            after_dates = re.sub(r"\bwith\s+.+$", "", after_dates, flags=re.I).strip()
+
+        location = find_first(r"\bat\s+(.+)$", after_dates, flags=re.I)
+        if location:
+            details["location"] = location
+            after_dates = re.sub(r"\bat\s+.+$", "", after_dates, flags=re.I).strip()
+
+        details["meets_human"] = after_dates
+        break
+
+    return details
+
+
 def extract_rows_from_text(text: str) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     lines = [clean_text(line) for line in text.splitlines()]
@@ -991,21 +1129,48 @@ def extract_rows_from_text(text: str) -> list[dict[str, Any]]:
         code = find_course_code(line)
         if not code:
             continue
+        if not re.match(rf"^{re.escape(code)}(?:\s+\||\s+|$)", line):
+            continue
 
-        window = " ".join(lines[index : index + 8])
+        block_lines = [line]
+        for next_line in lines[index + 1 :]:
+            next_code = find_course_code(next_line)
+            if next_code and re.match(rf"^{re.escape(next_code)}(?:\s+\||\s+|$)", next_line):
+                break
+            block_lines.append(next_line)
+
+        if re.match(rf"^{re.escape(code)}\s+\|", line):
+            header_start = find_prior_course_header(lines, index, code)
+            if header_start >= 0:
+                block_lines = lines[header_start:index] + block_lines
+
+        window = " ".join(block_lines)
         if not re.search(r"(class#:\s*\d+|section:\s*[A-Z0-9]+|class status:\s*(open|closed|wait))", window, re.I):
             continue
         rows.append(
             {
                 "code": code,
-                "crn": find_first(r"\b\d{4,6}\b", window),
+                "crn": find_first(r"class#:\s*(\d{4,6})", window, flags=re.I),
                 "section": find_first(r"\b(?:Section|Sec)\s*([A-Z0-9]+)\b", window),
                 "status": find_first(r"\b(Open|Closed|Waitlist|Cancelled)\b", window, flags=re.I),
                 "title": clean_text(line.replace(code, "")),
-                "source_row": lines[index : index + 8],
+                "source_row": block_lines,
             }
         )
     return rows
+
+
+def find_prior_course_header(lines: list[str], start_index: int, code: str) -> int:
+    for index in range(start_index - 1, -1, -1):
+        line = lines[index]
+        if re.match(rf"^{re.escape(code)}\s+\|", line):
+            continue
+        if re.match(rf"^{re.escape(code)}(?:\s+|$)", line):
+            return index
+        other_code = find_course_code(line)
+        if other_code and re.match(rf"^{re.escape(other_code)}(?:\s+\||\s+|$)", line):
+            break
+    return -1
 
 
 def dedupe_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
