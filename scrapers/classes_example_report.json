@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-04-25T18:07:55.722879+00:00",
+  "generated_at": "2026-04-26T00:52:19.812555+00:00",
   "limited_run": false,
   "discovered_subject_count": 288,
   "visited_subject_count": 288,
   "attempted_subject_count": 287,
   "successful_subject_count": 280,
   "failed_subject_count": 0,
-  "document_count": 16158,
+  "document_count": 16138,
   "filter_state": {
     "page_url": "https://sis.nyu.edu/psc/csprod/EMPLOYEE/SA/c/NYU_SR.NYU_CLS_SRCH.GBL",
     "page_title": "Class Search",
@@ -59,7 +59,7 @@
       }
     ],
     "text_inputs": [],
-    "body_preview": "Skip to Main Content Course Search Academic Year 2024-2025 Academic Year 2025-2026 Academic Year 2026-2027 Search through: Subject, Catalog Number,Title & Instructor Names Search Course Description (may take a while to process) Search Hide Filters Filters Selecting more than one unit/class time/day filter will show results that correspond to at least one of the multiple filter criteria. Clear Filters Academic Career: College of Dentistry College of Dentistry - Cont Ed Continuing Ed./Non-Credit Graduate School of Medicine Stern Schl Business-Grad Div Undergraduate School: College of Arts and Science College of Dentistry Gallatin School of Individualized Study Leonard N. Stern School of Business Liberal Studies NYU Abu Dhabi NYU Shanghai Opportunity Programs Robert F. Wagner Graduate School of Public Service Rory Meyers College of Nursing School of Global Public Health School of Professional Studies Silver School of Social Work Steinhardt School of Culture, Education, and Human Development - Undergraduate Tandon School of Engineering Tisch School of the Arts Academic Threads: Inequality, Equity, & Justice Native American / Indigenous Studies Sustainability / Climate Urban Do not specify 'Yes' to display all terms Fall 2026 No Yes Session: Abu Dhabi 7 Week 1 Abu Dhabi 7 Week 2 GB Day Full Term GB Evening Full Term NYU Accra NYU Berlin NYU Buenos Aires NYU Florence NYU London NYU Los Angeles NYU Madrid NYU Paris NYU Prague NYU Sydney NYU Tel Aviv NYU Tulsa NYU Washington, DC Other Regular Academic Session Seven Week - First Seven Week - Second Shanghai Shanghai Seven Week - First Shanghai Seven Week - Second Show only classes with 0 to 1 Unit? No Yes Show only classes with 2 Units? No Yes Show only classes with 3 Units? No Yes Show only classes with 4 Units? No Yes Show only classes with 5 Units? No Yes Show only classes with >5 Units? No Yes Component: Clinic Clinic Seminar Clinical Preceptorship Colloquium Distance Learning Hybrid Field Instruction/Field Superv Grp In"
+    "body_preview": "Skip to Main Content Processing Please wait Course Search Academic Year 2024-2025 Academic Year 2025-2026 Academic Year 2026-2027 Search through: Subject, Catalog Number,Title & Instructor Names Search Course Description (may take a while to process) Search Hide Filters Filters Selecting more than one unit/class time/day filter will show results that correspond to at least one of the multiple filter criteria. Clear Filters Academic Career: College of Dentistry College of Dentistry - Cont Ed Continuing Ed./Non-Credit Graduate School of Medicine Stern Schl Business-Grad Div Undergraduate School: College of Arts and Science College of Dentistry Gallatin School of Individualized Study Leonard N. Stern School of Business Liberal Studies NYU Abu Dhabi NYU Shanghai Opportunity Programs Robert F. Wagner Graduate School of Public Service Rory Meyers College of Nursing School of Global Public Health School of Professional Studies Silver School of Social Work Steinhardt School of Culture, Education, and Human Development - Undergraduate Tandon School of Engineering Tisch School of the Arts Academic Threads: Inequality, Equity, & Justice Native American / Indigenous Studies Sustainability / Climate Urban Do not specify 'Yes' to display all terms Fall 2026 No Yes Session: Abu Dhabi 7 Week 1 Abu Dhabi 7 Week 2 GB Day Full Term GB Evening Full Term NYU Accra NYU Berlin NYU Buenos Aires NYU Florence NYU London NYU Los Angeles NYU Madrid NYU Paris NYU Prague NYU Sydney NYU Tel Aviv NYU Tulsa NYU Washington, DC Other Regular Academic Session Seven Week - First Seven Week - Second Shanghai Shanghai Seven Week - First Shanghai Seven Week - Second Show only classes with 0 to 1 Unit? No Yes Show only classes with 2 Units? No Yes Show only classes with 3 Units? No Yes Show only classes with 4 Units? No Yes Show only classes with 5 Units? No Yes Show only classes with >5 Units? No Yes Component: Clinic Clinic Seminar Clinical Preceptorship Colloquium Distance Learning Hybrid Field Instruct"
   },
   "attempted_subjects": [
     "Africana Studies - Social and Cultural Analysis (SCA-UA_1)",
@@ -359,7 +359,7 @@
     {
       "subject_key": "ACCT-UB",
       "label": "Accounting (ACCT-UB)",
-      "new_documents": 39
+      "new_documents": 40
     },
     {
       "subject_key": "ACE-UE",
@@ -549,7 +549,7 @@
     {
       "subject_key": "CAMS-UA",
       "label": "Child/Adoles Mental Hlth Stds (CAMS-UA)",
-      "new_documents": 190
+      "new_documents": 189
     },
     {
       "subject_key": "CAT-UF",
@@ -569,7 +569,7 @@
     {
       "subject_key": "CCEX-SHU",
       "label": "Exper Discovery in Nat World (CCEX-SHU)",
-      "new_documents": 8
+      "new_documents": 7
     },
     {
       "subject_key": "CCOL-UH",
@@ -579,7 +579,7 @@
     {
       "subject_key": "CCSF-SHU",
       "label": "Social Foundations (CCSF-SHU)",
-      "new_documents": 39
+      "new_documents": 38
     },
     {
       "subject_key": "CDAD-UH",
@@ -609,7 +609,7 @@
     {
       "subject_key": "CHEM-UA",
       "label": "Chemistry (CHEM-UA)",
-      "new_documents": 299
+      "new_documents": 300
     },
     {
       "subject_key": "CHEM-UH",
@@ -644,7 +644,7 @@
     {
       "subject_key": "COART-UT",
       "label": "Collaborative Arts (COART-UT)",
-      "new_documents": 131
+      "new_documents": 130
     },
     {
       "subject_key": "COHRT-UA",
@@ -684,7 +684,7 @@
     {
       "subject_key": "CS-UY",
       "label": "Computer Science (CS-UY)",
-      "new_documents": 172
+      "new_documents": 176
     },
     {
       "subject_key": "CSCD-UE",
@@ -699,7 +699,7 @@
     {
       "subject_key": "CSCI-UA",
       "label": "Computer Science (CSCI-UA)",
-      "new_documents": 220
+      "new_documents": 217
     },
     {
       "subject_key": "CSTS-UH",
@@ -734,7 +734,7 @@
     {
       "subject_key": "DM-UY",
       "label": "Integrated Design and Media (DM-UY)",
-      "new_documents": 63
+      "new_documents": 65
     },
     {
       "subject_key": "DRLIT-UA",
@@ -749,7 +749,7 @@
     {
       "subject_key": "DWPG-UT",
       "label": "Dramatic Writing (DWPG-UT)",
-      "new_documents": 99
+      "new_documents": 100
     },
     {
       "subject_key": "EAGC-UF",
@@ -794,12 +794,12 @@
     {
       "subject_key": "ECON-UA",
       "label": "Economics (ECON-UA)",
-      "new_documents": 275
+      "new_documents": 269
     },
     {
       "subject_key": "ECON-UB",
       "label": "Economics (ECON-UB)",
-      "new_documents": 68
+      "new_documents": 69
     },
     {
       "subject_key": "ECON-UH",
@@ -809,7 +809,7 @@
     {
       "subject_key": "EDCT-UE",
       "label": "Educational Communication and Technology (EDCT-UE)",
-      "new_documents": 8
+      "new_documents": 7
     },
     {
       "subject_key": "EDLED-UE",
@@ -894,7 +894,7 @@
     {
       "subject_key": "FINC-UB",
       "label": "Finance (FINC-UB)",
-      "new_documents": 99
+      "new_documents": 100
     },
     {
       "subject_key": "FIRST-UG",
@@ -909,7 +909,7 @@
     {
       "subject_key": "FOOD-UE",
       "label": "Food Studies (FOOD-UE)",
-      "new_documents": 51
+      "new_documents": 52
     },
     {
       "subject_key": "FRE-UY",
@@ -939,12 +939,12 @@
     {
       "subject_key": "GAMES-UT",
       "label": "Game Design (GAMES-UT)",
-      "new_documents": 106
+      "new_documents": 108
     },
     {
       "subject_key": "GCHN-SHU",
       "label": "Global China Studies (GCHN-SHU)",
-      "new_documents": 45
+      "new_documents": 44
     },
     {
       "subject_key": "GERM-UA",
@@ -1164,7 +1164,7 @@
     {
       "subject_key": "LING-UA",
       "label": "Linguistics (LING-UA)",
-      "new_documents": 48
+      "new_documents": 47
     },
     {
       "subject_key": "LISCI-UF",
@@ -1189,7 +1189,7 @@
     {
       "subject_key": "MA-UY",
       "label": "Mathematics (MA-UY)",
-      "new_documents": 237
+      "new_documents": 240
     },
     {
       "subject_key": "MAINT-UE",
@@ -1199,12 +1199,12 @@
     {
       "subject_key": "MATH-SHU",
       "label": "Mathematics (MATH-SHU)",
-      "new_documents": 82
+      "new_documents": 81
     },
     {
       "subject_key": "MATH-UA",
       "label": "Math (MATH-UA)",
-      "new_documents": 540
+      "new_documents": 521
     },
     {
       "subject_key": "MATH-UH",
@@ -1219,7 +1219,7 @@
     {
       "subject_key": "MD-UY",
       "label": "Media Studies (MD-UY)",
-      "new_documents": 9
+      "new_documents": 11
     },
     {
       "subject_key": "ME-UY",
@@ -1244,7 +1244,7 @@
     {
       "subject_key": "MG-UY",
       "label": "Management (MG-UY)",
-      "new_documents": 85
+      "new_documents": 84
     },
     {
       "subject_key": "MGMT-SHU",
@@ -1269,7 +1269,7 @@
     {
       "subject_key": "MKTG-UB",
       "label": "Marketing (MKTG-UB)",
-      "new_documents": 118
+      "new_documents": 117
     },
     {
       "subject_key": "MLK-UZ",
@@ -1444,7 +1444,7 @@
     {
       "subject_key": "PHIL-UA",
       "label": "Philosophy (PHIL-UA)",
-      "new_documents": 84
+      "new_documents": 85
     },
     {
       "subject_key": "PHIL-UH",
@@ -1469,7 +1469,7 @@
     {
       "subject_key": "PHYS-SHU",
       "label": "Physics (PHYS-SHU)",
-      "new_documents": 23
+      "new_documents": 22
     },
     {
       "subject_key": "PHYS-UA",
@@ -1484,7 +1484,7 @@
     {
       "subject_key": "POL-UA",
       "label": "Politics (POL-UA)",
-      "new_documents": 209
+      "new_documents": 210
     },
     {
       "subject_key": "POLSC-UH",
@@ -1509,7 +1509,7 @@
     {
       "subject_key": "PSYCH-UA",
       "label": "Psychology (PSYCH-UA)",
-      "new_documents": 202
+      "new_documents": 203
     },
     {
       "subject_key": "PSYCH-UH",
@@ -1659,7 +1659,7 @@
     {
       "subject_key": "STS-UY",
       "label": "Science and Technology (STS-UY)",
-      "new_documents": 52
+      "new_documents": 51
     },
     {
       "subject_key": "TCHL-UE",
@@ -1699,7 +1699,7 @@
     {
       "subject_key": "UPADM-GP",
       "label": "UG Public and Nonprofit Management and Policy (UPADM-GP)",
-      "new_documents": 75
+      "new_documents": 71
     },
     {
       "subject_key": "URB-UY",
