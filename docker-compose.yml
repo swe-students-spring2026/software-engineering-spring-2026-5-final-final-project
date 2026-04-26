@@ -1,0 +1,36 @@
+services:
+  webapp:
+    build: ./webapp
+    container_name: webapp
+    ports:
+      - "3000:5000"
+    environment:
+      PORT: "5000"
+      SECRET_KEY: ${SECRET_KEY:-dev}
+      MATCHING_SERVICE_URL: http://matching-service:5001
+      MONGO_URI: ${MONGO_URI:-mongodb+srv://dinnermeet_admin:<db_password>@dinnermeet.vy62fon.mongodb.net/?appName=DinnerMeet}
+    depends_on:
+      - matching-service
+      - mongodb
+
+  matching-service:
+    build: ./matching-service
+    container_name: matching-service
+    ports:
+      - "5001:5001"
+    environment:
+      PORT: "5001"
+      MONGO_URI: ${MONGO_URI:-mongodb+srv://dinnermeet_admin:<db_password>@dinnermeet.vy62fon.mongodb.net/?appName=DinnerMeet}
+    depends_on:
+      - mongodb
+
+  mongodb:
+    image: mongo:7
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+
+volumes:
+  mongodb_data:
