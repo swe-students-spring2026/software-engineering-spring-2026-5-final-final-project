@@ -26,7 +26,9 @@ class TestClassesRoute:
         ]
         res = client.get("/classes")
         data = res.get_json()
-        assert isinstance(data, list)
+        assert isinstance(data, dict)
+        assert "classes" in data
+        assert isinstance(data["classes"], list)
 
     def test_get_classes_enriches_professor_ratings(self, client, mock_db):
         mock_db.classes.find.return_value = [{"title": "Algorithms", "instructor": "Joanna Klukowska"}]
@@ -39,7 +41,7 @@ class TestClassesRoute:
         ]):
             res = client.get("/classes")
         data = res.get_json()
-        assert data[0]["professor_rating"]["rating"] == 3.3
+        assert data["classes"][0]["professor_rating"]["rating"] == 3.3
 
     def test_get_classes_with_term_filter(self, client, mock_db):
         mock_db.classes.find.return_value = []
