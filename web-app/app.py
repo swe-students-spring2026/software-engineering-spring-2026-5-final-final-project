@@ -87,8 +87,6 @@ def login():
         user = db.users.find_one({"email": email})
         if user and user["password"] == password:
             login_user(User(user))
-            session["user_id"] = str(user["_id"])
-            session["username"] = user["username"]
 
             return redirect(url_for("home"))
 
@@ -128,7 +126,9 @@ def home():
     """Render the home page for logged-in users."""
     return render_template("home.html")
 
-# Group routes
+# @app.route("")
+
+# ======================== Group routes ========================
 
 @app.route("/groups", methods = ["GET"])
 def groups_page():
