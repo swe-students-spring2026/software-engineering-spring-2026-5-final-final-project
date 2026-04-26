@@ -991,7 +991,7 @@ def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url:
                 "component": course_text["description"] or sanitize_albert_text(row.get("component", "")),
                 "instructor": sanitize_albert_text(row.get("instructor", "")) or meeting_details["instructor"],
                 "meets_human": sanitize_albert_text(row.get("meets_human", "")) or meeting_details["meets_human"],
-                "location": sanitize_albert_text(row.get("location", "")) or meeting_details["location"],
+                "location": meeting_details["location"] or sanitize_albert_text(row.get("location", "")),
                 "dates": sanitize_albert_text(row.get("dates", "")) or meeting_details["dates"],
                 "source": {
                     "system": "nyu_albert",
