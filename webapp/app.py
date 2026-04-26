@@ -33,6 +33,7 @@ def load_user(user_id):
 
 
 @app.route("/")
+@login_required
 def index():
     """Redirect to home or login."""
     #if session.get("user_id"):
@@ -93,20 +94,23 @@ def signup():
 
 
 @app.route("/logout")
+@login_required
 def logout():
     """Clear session and redirect to login."""
-    session.clear()
+    logout_user()
     flash("You have been logged out.", "success")
     return redirect(url_for("login"))
 
 
 @app.route("/events")
+@login_required
 def events():
     """Show all events."""
     return render_template("events.html", events=[])
 
 
 @app.route("/events/create", methods=["GET", "POST"])
+@login_required
 def create_event():
     """Create a new event."""
     if request.method == "GET":
@@ -115,6 +119,7 @@ def create_event():
 
 
 @app.route("/profile")
+@login_required
 def profile():
     """Show user profile."""
     return render_template("home.html")
