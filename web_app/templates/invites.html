@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="../static/style.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Afacad:ital,wght@0,400..700;1,400..700&display=swap"
@@ -14,13 +14,13 @@
 
 <body>
     <section class="header">
-        <span class="logo"><img src="../icons/fm copy.svg" alt="fm"></span>
+        <span class="logo"><img src="{{ url_for('static', filename='icons/fm copy.svg') }}" alt="fm"></span>
         <h1>FlakeMate</h1>
     </section>
     <section class="content">
         <div class="content-header">
             <h2>invites info</h2>
-            <a href="/home/past"><img src="../icons/arrow.up.arrow.down.circle.purple.svg" alt="filter"></a>
+            <a href="{{ url_for('home_past') }}"><img src="{{ url_for('static', filename='icons/arrow.up.arrow.down.circle.purple.svg') }}" alt="filter"></a>
         </div>
         <ul class="invites">
             {% for event in invites %}
@@ -37,10 +37,11 @@
         </ul>
     </section>
     <section class="nav-bottom">
-         <a href="home-upcoming.html"><img src="../icons/calendar (3) 1 copy.svg" alt="calendar"></a>
-        <a href="invites.html"><img src="../icons/tray.svg" alt="inbox" /></a>
-        <a href="/create"><img src="../icons/plus.app.svg" alt="create" /></a>
-        <a href="/user"><img src="../icons/person.svg" alt="user" /></a>
+         <a href="{{ url_for('home_upcoming') }}"><img src="{{ url_for('static', filename='icons/calendar (3) 1 copy.svg') }}" alt="calendar"></a>
+        <a href="{{ url_for('invites') }}"><img src="{{ url_for('static', filename='icons/tray.svg') }}" alt="inbox" /></a>
+        <a href="{{ url_for('host_events') }}"><img src="{{ url_for('static', filename='icons/plus.app.svg') }}" alt="create" /></a>
+        <a href="/user"><img src="{{ url_for('static', filename='icons/person.svg') }}" alt="user" /></a>
+    </section>
 </body>
 
 </html>
