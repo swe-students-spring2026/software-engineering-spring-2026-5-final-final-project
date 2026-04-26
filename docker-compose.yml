@@ -3,8 +3,8 @@ services:
     build:
       context: ./web-app
     volumes:
-      - ./web-app:/app
-      - ./scraper:/scraper:ro
+      - ./web-app:/app          # TODO: REMOVE THIS VOLUME IN PROD
+      - ./scraper:/scraper:ro   # TODO: REMOVE THIS VOLUME IN PROD
     ports:
       - "5000:5000"
     command: bash -lc "python /scraper/scrape_prof.py || true; python app.py"
@@ -18,16 +18,18 @@ services:
       FLASK_ENV: development # auto reload and debug mode
       FLASK_DEBUG: 1
 
-  # machine-learning-client:
-  #   build:
-  #     context: ./machine-learning-client
-  #   ports:
-  #     - "5001:5001"
-  #   depends_on:
-  #     - mongodb
-  #   environment:
-  #     MONGO_URI: mongodb://admin:secret@mongodb:27017/?authSource=admin
-  #     MONGO_DBNAME: potatoes
+  machine-learning-client:
+    build:
+      context: ./machine-learning-client
+    volumes:
+      - ./machine-learning-client:/app  # TODO: REMOVE THIS VOLUME IN PROD
+    ports:
+      - "5001:5001"
+    depends_on:
+      - mongodb
+    # environment:
+      # MONGO_URI: mongodb://admin:secret@mongodb:27017/?authSource=admin
+      # MONGO_DBNAME: potatoes
 
   mongodb:
     image: mongo:latest
