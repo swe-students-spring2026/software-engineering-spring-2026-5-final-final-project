@@ -6,6 +6,7 @@ WORKDIR /app
 # install dependencies into the image - doing this first will speed up subsequent builds, as Docker will cache this step
 COPY requirements.txt ./
 RUN pip install -r requirements.txt
+RUN python -m textblob.download_corpora
 
 # the ADD command is how you add files from your local machine into a Docker image
 # Copy the current directory contents into the container at /app
