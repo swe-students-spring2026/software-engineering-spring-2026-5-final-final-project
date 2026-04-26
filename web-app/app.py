@@ -87,8 +87,6 @@ def login():
         user = db.users.find_one({"email": email})
         if user and user["password"] == password:
             login_user(User(user))
-            session["user_id"] = str(user["_id"])
-            session["username"] = user["username"]
 
             return redirect(url_for("home"))
 
@@ -126,9 +124,18 @@ def logout():
 @login_required
 def home():
     """Render the home page for logged-in users."""
-    return render_template("home.html")
+    profs = list(
+        professors.find({}, {"name": 1, "title": 1, "email": 1}) # debug
+        .sort("name", 1)
+        .limit(200)
+    )
+    for p in profs:
+        p["_id"] = str(p.get("_id", ""))
+    return render_template("home.html", professors=profs)
 
-# Group routes
+# @app.route("")
+
+# ======================== Group routes ========================
 
 @app.route("/groups", methods = ["GET"])
 def groups_page():

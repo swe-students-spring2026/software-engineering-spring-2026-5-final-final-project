@@ -175,6 +175,20 @@ button[type="submit"]:active {
   background: rgba(0, 87, 255, 0.06);
 }
 
+.nav-center {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nav-search {
+  width: 600px;
+}
+
+.nav-search-button {
+  width: 150px;
+}
+
 .nav-logout {
   display: inline-block;
   padding: 8px 12px;
