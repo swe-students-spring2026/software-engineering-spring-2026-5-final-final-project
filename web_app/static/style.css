@@ -222,3 +222,134 @@ a {
     width: 38px;
     height: 38px;
 }
+
+.auth-page {
+    width: 402px;
+    min-height: 874px;
+    box-sizing: border-box;
+    padding: 22px 20px;
+    background: #000;
+    color: #fff;
+}
+
+.auth-header {
+    display: flex;
+    align-items: center;
+    gap: 58px;
+    margin-bottom: 58px;
+}
+
+.auth-logo img {
+    width: 60px;
+    height: auto;
+}
+
+.auth-header h1 {
+    margin: 0;
+    color: #e693ff;
+    font-size: 36px;
+    font-weight: 700;
+}
+
+.auth-title {
+    margin: 0 0 34px;
+    text-align: center;
+    color: #fff;
+    font-size: 34px;
+    font-weight: 700;
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+.auth-input {
+    width: 100%;
+    height: 58px;
+    box-sizing: border-box;
+    border: none;
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.09);
+    color: #fff;
+    padding: 0 34px;
+    font-family: "Afacad", sans-serif;
+    font-size: 34px;
+    font-weight: 700;
+    outline: none;
+}
+
+.auth-input::placeholder {
+    color: #e693ff;
+    opacity: 1;
+}
+
+.auth-input:focus::placeholder {
+    opacity: 0.18;
+}
+
+.auth-button {
+    width: 100%;
+    height: 58px;
+    border: none;
+    border-radius: 14px;
+    background: rgba(184, 113, 206, 0.5);
+    color: #fff;
+    font-family: "Afacad", sans-serif;
+    font-size: 34px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.auth-switch {
+    display: block;
+    margin-top: 28px;
+    text-align: center;
+    color: #e693ff;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.auth-error {
+    margin: 0 0 18px;
+    color: #e693ff;
+    text-align: center;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.dashboard-title {
+    margin: 42px 0 32px;
+    text-align: center;
+    color: #fff;
+    font-size: 34px;
+    font-weight: 700;
+}
+
+.dashboard-form {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+.dashboard-button {
+    width: 100%;
+    height: 58px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    border: none;
+    border-radius: 14px;
+    background: rgba(184, 113, 206, 0.5);
+    color: #fff;
+    font-family: "Afacad", sans-serif;
+    font-size: 34px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.dashboard-signout {
+    margin-top: 22px;
+}
