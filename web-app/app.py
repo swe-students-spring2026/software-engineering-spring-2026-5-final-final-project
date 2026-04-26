@@ -128,32 +128,6 @@ def home():
     """Render the home page for logged-in users."""
     return render_template("home.html")
 
-# Profile routes
-@app.route("/profile", methods = ["GET"])
-def profile():
-    user_oid = ObjectId(session["user_id"])
-    user = users.find_one({"_id": user_oid}, {"email": 1, "password": 1})
-    return render_template("profile.html", user=user)
-    
-@app.route("/profile", methods = ["POST"])
-def profile_edit():
-    user_oid = ObjectId(session["user_id"])
-    email = request.form.get("email", "").strip()
-    password = request.form.get("password", "").strip()
-    if not email or not password:
-        flash("Please enter email and password.")
-        return redirect(url_for("profile"))
-
-    existing = users.find_one({"email": email, "_id": {"$ne": user_oid}})
-    if existing:
-        flash("Email already taken.")
-        return redirect(url_for("profile"))
-        
-    users.update_one({"_id": user_oid}, {"$set": {"email": email, "password": password}})
-    session["email"] = email
-    flash("Profile updated successfully.")
-    return redirect(url_for("profile"))
-
 # Group routes
 
 @app.route("/groups", methods = ["GET"])
@@ -167,41 +141,6 @@ def groups_page():
         g["is_owner"] = (g.get("owner_id") == user_id)
     return render_template("groups.html", groups=my_groups)
 
-@app.route("/groups/<group_id>", methods = ["GET"])
-def group_details(group_id):
-    """Render the group details page for a specific group by its ID."""
-
-    gid = ObjectId(group_id)
-
-    group = groups.find_one({"_id": gid})
-    if not group:
-        flash("Group not found.")
-        return redirect(url_for("groups_page"))
-    return render_template("group-detail.html", group = group)
-
-@app.route("/groups/<group_id>/leave", methods=["POST"])
-def leave_group(group_id):
-    """Handle the user leaving a group by its ID."""
-
-    user_oid = ObjectId(session["user_id"])
-    gid = ObjectId(group_id)
-
-    group = groups.find_one({"_id": gid})
-    if not group:
-        flash("Group not found.")
-        return redirect(url_for("groups_page"))
-
-    if group.get("owner_id") == user_oid:
-        flash("Group owner cannot leave the group.")
-        return redirect(url_for("group_details", group_id=group_id))
-
-    groups.update_one(
-        {"_id": gid},
-        {"$pull": {"members": user_oid}}
-    )
-
-    flash("You have left the group.")
-    return redirect(url_for("groups_page"))
 
 @app.route("/create_group", methods = ["GET"])
 def create_group():
@@ -439,6 +378,8 @@ def edit_review(review_id):
 
 @app.route("/professor/<professor_id>", methods=["GET"])
 def professor_details(professor_id):
+    """Render the professor details page for a specific professor by their ID, including all reviews for that professor with optional filtering by groups the user is a member of."""
+    
     try:
         pid = ObjectId(professor_id)
     except Exception:
