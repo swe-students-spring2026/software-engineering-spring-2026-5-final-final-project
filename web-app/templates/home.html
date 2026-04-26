@@ -10,4 +10,20 @@
     <li>Professors rated: {{ user.professor_ratings if user else 0 }}</li>
   </ul>
 
+  <h2>Professors (debug)</h2>
+  <!-- debug -->
+  {% if professors and professors|length %} 
+    <ul>
+      {% for p in professors %}
+        <li>
+          <div><strong>{{ p.name }}</strong></div>
+          {% if p.title %}<div>{{ p.title }}</div>{% endif %}
+          {% if p.email %}<div>{{ p.email }}</div>{% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No professors found in the database yet.</p>
+  {% endif %}
+
 {% endblock %}

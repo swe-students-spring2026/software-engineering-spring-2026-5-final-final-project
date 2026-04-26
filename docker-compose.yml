@@ -1,13 +1,13 @@
-version: "3.8"
-
 services:
   web-app:
     build:
       context: ./web-app
     volumes:
       - ./web-app:/app
+      - ./scraper:/scraper:ro
     ports:
       - "5000:5000"
+    command: bash -lc "python /scraper/scrape_prof.py || true; python app.py"
     depends_on:
       - mongodb
     environment:

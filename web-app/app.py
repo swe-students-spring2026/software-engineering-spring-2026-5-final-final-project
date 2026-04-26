@@ -124,7 +124,14 @@ def logout():
 @login_required
 def home():
     """Render the home page for logged-in users."""
-    return render_template("home.html")
+    profs = list(
+        professors.find({}, {"name": 1, "title": 1, "email": 1}) # debug
+        .sort("name", 1)
+        .limit(200)
+    )
+    for p in profs:
+        p["_id"] = str(p.get("_id", ""))
+    return render_template("home.html", professors=profs)
 
 # @app.route("")
 
