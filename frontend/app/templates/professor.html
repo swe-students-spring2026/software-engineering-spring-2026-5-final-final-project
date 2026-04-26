@@ -9,7 +9,8 @@
     body { font-family: Arial, sans-serif; background: #f4f4f4; color: #333; min-height: 100vh; }
     header { background: #57068c; color: white; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
     header h1 { font-size: 1.2rem; }
-    header a { color: white; text-decoration: none; font-size: 0.9rem; background: rgba(255,255,255,0.15); padding: 6px 14px; border-radius: 4px; }
+    header a, header button { color: white; text-decoration: none; font-size: 0.9rem; background: rgba(255,255,255,0.15); padding: 6px 14px; border-radius: 4px; border: none; cursor: pointer; }
+    header a:hover, header button:hover { background: rgba(255,255,255,0.25); }
     .page { max-width: 1080px; margin: 0 auto; padding: 24px 16px 40px; }
     .searchbar, .hero, .courses { background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
     .searchbar { padding: 14px; display: flex; gap: 10px; margin-bottom: 18px; }
@@ -45,7 +46,7 @@
 <body>
   <header>
     <h1>Professor Profile</h1>
-    <a href="/">Back to Search</a>
+    <button onclick="history.back()">Back to Search</button>
   </header>
 
   <div class="page">

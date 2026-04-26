@@ -1,4 +1,5 @@
 import io
+import math
 import os
 import re
 from pathlib import Path
@@ -66,6 +67,8 @@ def get_classes():
     school    = request.args.get("school")
     component = request.args.get("component")
     status    = request.args.get("status")
+    page      = max(1, request.args.get("page", default=1, type=int))
+    page_size = 20
 
     query: dict = {}
 
@@ -83,7 +86,6 @@ def get_classes():
     elif status == "waitlist":
         query["status"] = {"$regex": r"^wait", "$options": "i"}
     if q:
-        # For instructor, join tokens with .* so "First Last" matches "Last, First"
         instructor_pattern = ".*".join(re.escape(t) for t in q.split())
         query["$or"] = [
             {"title":        {"$regex": re.escape(q), "$options": "i"}},
@@ -92,9 +94,19 @@ def get_classes():
             {"instructor":   {"$regex": instructor_pattern, "$options": "i"}},
         ]
 
-    classes = list(db.classes.find(query, {"_id": 0, "source": 0}))
+    all_codes = sorted(db.classes.distinct("code", query))
+    total_courses = len(all_codes)
+    total_pages = math.ceil(total_courses / page_size) if total_courses > 0 else 1
+    page_codes = all_codes[(page - 1) * page_size : page * page_size]
+
+    classes = list(db.classes.find({**query, "code": {"$in": page_codes}}, {"_id": 0, "source": 0}))
     classes = enrich_classes_with_professor_ratings(classes)
-    return jsonify(classes)
+    return jsonify({
+        "classes": classes,
+        "total_courses": total_courses,
+        "page": page,
+        "total_pages": total_pages,
+    })
 
 
 @app.get("/classes/schools")
