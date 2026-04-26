@@ -7,7 +7,8 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from dotenv import load_dotenv
 from models.user import create_user
-from utils.validation import validate_signup, validate_login
+from models.event_model import create_event
+from utils.validation import validate_signup, validate_login, validate_event
 
 load_dotenv()
 
@@ -111,12 +112,33 @@ def events():
 
 @app.route("/events/create", methods=["GET", "POST"])
 @login_required
-def create_event():
+def create_event_route():
     """Create a new event."""
     if request.method == "GET":
         return render_template("create_event.html")
-    return render_template("create_event.html", error="Create event not yet implemented.")
+    
+    data = request.form.to_dict()
+    data["tags"] = request.form.getlist("tags")  
 
+    error = validate_event(data)
+    if error:
+        return render_template("create_event.html", error=error)
+    
+    event = create_event(data, current_user.id) 
+
+    # Replace with actual database collections
+    events_collection = None
+    users_collection = None
+
+    result = events_collection.insert_one(event)
+
+    users_collection.update_one(
+        {"_id": current_user.id},
+        {"$push": {"created_events": result.inserted_id}}
+    )
+
+    flash("Event created successfully.", "success")
+    return redirect(url_for("events"))
 
 @app.route("/profile")
 @login_required
