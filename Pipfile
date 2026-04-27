@@ -6,14 +6,17 @@ name = "pypi"
 [packages]
 flask = "*"
 pymongo = "*"
+flask-pymongo = "*"
 python-dotenv = "*"
 bcrypt = "*"
+flask-jwt-extended = "*"
 
 [dev-packages]
 black = "*"
 pylint = "*"
 pytest = "*"
 pytest-cov = "*"
+mongomock = "*"
 
 [requires]
 python_version = "3.11"
