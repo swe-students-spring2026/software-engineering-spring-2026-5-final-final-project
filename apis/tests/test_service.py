@@ -142,11 +142,11 @@ class TestParseTranscript:
     def test_returns_list_of_course_codes(self):
         from app.ai import service
         mock_resp = MagicMock()
-        mock_resp.text = '["CSCI-UA 101", "MATH-UA 123"]'
+        mock_resp.text = '{"completed": ["CSCI-UA 101", "MATH-UA 123"], "current": []}'
         with patch.object(service._client.models, "generate_content", return_value=mock_resp):
             result = service.parse_transcript("sample transcript text")
-        assert "CSCI-UA 101" in result
-        assert "MATH-UA 123" in result
+        assert "CSCI-UA 101" in result["completed"]
+        assert "MATH-UA 123" in result["completed"]
 
     def test_returns_empty_list_on_bad_response(self):
         from app.ai import service
@@ -154,7 +154,7 @@ class TestParseTranscript:
         mock_resp.text = "Sorry, I cannot parse this."
         with patch.object(service._client.models, "generate_content", return_value=mock_resp):
             result = service.parse_transcript("gibberish")
-        assert result == []
+        assert result == {"completed": [], "current": []}
 
     def test_returns_empty_list_on_empty_response(self):
         from app.ai import service
@@ -162,4 +162,4 @@ class TestParseTranscript:
         mock_resp.text = ""
         with patch.object(service._client.models, "generate_content", return_value=mock_resp):
             result = service.parse_transcript("")
-        assert result == []
+        assert result == {"completed": [], "current": []}

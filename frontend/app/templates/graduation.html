@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Graduation Progress — NYU Course Planner</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #f4f4f4; color: #333; min-height: 100vh; }
+    header { background: #57068c; color: white; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
+    header h1 { font-size: 1.3rem; }
+    .header-nav { display: flex; gap: 8px; }
+    .header-nav a { color: white; text-decoration: none; font-size: 0.85rem; background: rgba(255,255,255,0.15); padding: 6px 14px; border-radius: 4px; }
+    .header-nav a:hover { background: rgba(255,255,255,0.25); }
+
+    .page { max-width: 1100px; margin: 0 auto; padding: 28px 20px 48px; }
+
+    /* ── Summary card ── */
+    .summary-card { background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); padding: 24px 28px; margin-bottom: 24px; display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
+    .summary-info { flex: 1; min-width: 220px; }
+    .summary-info h2 { font-size: 1.2rem; color: #57068c; margin-bottom: 4px; }
+    .summary-info .sub { font-size: 0.85rem; color: #777; }
+    .progress-ring-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .progress-ring-wrap span { font-size: 0.78rem; color: #888; }
+    .progress-bar-wrap { flex: 1; min-width: 200px; }
+    .progress-bar-label { display: flex; justify-content: space-between; font-size: 0.8rem; color: #666; margin-bottom: 6px; }
+    .progress-bar-track { height: 10px; background: #f0f0f0; border-radius: 5px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; border-radius: 5px; background: linear-gradient(90deg, #57068c, #9a3dd1); transition: width 0.6s ease; }
+    .stat-pills { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+    .pill { padding: 5px 14px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; }
+    .pill-done    { background: #d4edda; color: #155724; }
+    .pill-current { background: #d1ecf1; color: #0c5460; }
+    .pill-needed  { background: #f8d7da; color: #721c24; }
+
+    /* ── Legend ── */
+    .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.78rem; color: #666; margin-bottom: 16px; }
+    .legend-item { display: flex; align-items: center; gap: 5px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── Requirement sections ── */
+    .req-section { background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); overflow: hidden; margin-bottom: 16px; }
+    .req-section-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; background: #f5eeff; border-bottom: 2px solid #c9a7e0; cursor: pointer; user-select: none; }
+    .req-section-header h3 { font-size: 0.92rem; color: #57068c; font-weight: bold; }
+    .req-section-header .sec-stats { display: flex; gap: 8px; align-items: center; font-size: 0.75rem; }
+    .req-section-body { padding: 0; }
+    .req-section.collapsed .req-section-body { display: none; }
+    .chevron { font-size: 0.7rem; color: #9a5cc6; transition: transform 0.15s; }
+    .req-section.collapsed .chevron { transform: rotate(-90deg); }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+    th { background: #faf5ff; padding: 8px 14px; text-align: left; color: #57068c; border-bottom: 2px solid #e0cef5; font-size: 0.78rem; }
+    td { padding: 8px 14px; border-bottom: 1px solid #f5f5f5; vertical-align: middle; }
+    tr.group-row td { background: #faf5ff; font-weight: bold; color: #57068c; padding-top: 10px; font-size: 0.8rem; }
+    tr.alt-row td { color: #888; padding-left: 28px; font-style: italic; font-size: 0.8rem; }
+    tr.total-row td { background: #f0e6f7; font-weight: bold; border-top: 2px solid #c9a7e0; }
+    .course-code { font-family: monospace; font-weight: bold; }
+
+    /* ── Status indicators ── */
+    .status-icon { width: 22px; text-align: center; font-size: 0.85rem; }
+    .status-done    { color: #28a745; }
+    .status-current { color: #0369a1; }
+    .status-needed  { color: #ccc; }
+    tr.row-done    td { background: #f6fff8; }
+    tr.row-current td { background: #f0f8ff; }
+
+    .no-major { background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); padding: 48px 32px; text-align: center; }
+    .no-major h2 { color: #57068c; margin-bottom: 10px; }
+    .no-major p { color: #777; font-size: 0.9rem; margin-bottom: 20px; }
+    .btn { padding: 10px 24px; border: none; border-radius: 6px; font-size: 0.9rem; font-weight: 600; cursor: pointer; background: #57068c; color: white; text-decoration: none; display: inline-block; }
+    .btn:hover { background: #3d0066; }
+    .loading { text-align: center; padding: 48px; color: #999; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Graduation Progress</h1>
+    <div class="header-nav">
+      <a href="/">Search</a>
+      <a href="/schedule">Schedule</a>
+      <a href="/programs">Programs</a>
+      <a href="/profile">Profile</a>
+      <a href="/logout">Sign Out</a>
+    </div>
+  </header>
+
+  <div class="page" id="page-root">
+    <div class="loading">Loading your graduation progress…</div>
+  </div>
+
+  <script>
+    const profile = {{ profile | tojson }};
+    const completedSet = new Set((profile.completed_courses || []).map(c => normalizeCode(c)));
+    const currentSet   = new Set((profile.current_courses   || []).map(c => normalizeCode(c)));
+
+    function normalizeCode(s) {
+      return (s || "").replace(/[-\s]+(\d{3}[-\s]\d{3}|\d{4}[-\s]\d{3})$/, "").trim().toUpperCase();
+    }
+
+    function extractCode(cellText) {
+      const cleaned = (cellText || "").replace(/^or\s+/i, "").trim();
+      const m = cleaned.match(/^([A-Z]{2,5}-[A-Z]{2,3}[\s-]\d+)/i);
+      return m ? m[1].replace(/-(\d)/, ' $1').trim().toUpperCase() : null;
+    }
+
+    function looksLikeCourseCode(s) {
+      return /^(or\s+)?[A-Z]{2,5}[-][A-Z]{2,3}[\s\/]/i.test(s || "");
+    }
+
+    function isSamplePlan(label) {
+      return /sample|plan|semester|term/i.test(label || "");
+    }
+
+    function statusOf(code) {
+      if (!code) return "none";
+      const n = normalizeCode(code);
+      if (completedSet.has(n)) return "done";
+      if (currentSet.has(n))   return "current";
+      return "needed";
+    }
+
+    function renderTable(t) {
+      const rows = t.rows || [];
+      let doneCnt = 0, currentCnt = 0, neededCnt = 0;
+      let tableHtml = `<table><thead><tr><th style="width:28px"></th><th>Course</th><th>Title</th><th>Credits</th></tr></thead><tbody>`;
+
+      rows.forEach(row => {
+        const cells = row || [];
+        const first = (cells[0] || "").trim();
+        const isCourse = looksLikeCourseCode(first);
+        const isAlt    = first.toLowerCase().startsWith("or ");
+        const isTotal  = /total\s+credits/i.test(first);
+
+        if (isTotal) {
+          tableHtml += `<tr class="total-row"><td></td><td colspan="2">${first}</td><td>${cells[1] || ""}</td></tr>`;
+          return;
+        }
+        if (!isCourse && !isAlt) {
+          const right = cells[1] || "";
+          const cls = right ? "group-row" : "group-row";
+          tableHtml += `<tr class="${cls}"><td></td><td colspan="2">${first}</td><td>${right}</td></tr>`;
+          return;
+        }
+
+        const code = extractCode(first);
+        const st = statusOf(code);
+        if      (st === "done")    doneCnt++;
+        else if (st === "current") currentCnt++;
+        else if (code)             neededCnt++;
+
+        const icon = st === "done"    ? '<span class="status-icon status-done">✓</span>'
+                   : st === "current" ? '<span class="status-icon status-current">→</span>'
+                   :                    '<span class="status-icon status-needed">○</span>';
+        const rowCls = st === "done" ? "row-done" : st === "current" ? "row-current" : "";
+        const altCls = isAlt ? " alt-row" : "";
+        const codeHtml = code ? `<span class="course-code">${first}</span>` : first;
+        tableHtml += `<tr class="${rowCls}${altCls}"><td>${icon}</td><td>${codeHtml}</td><td>${cells[1] || ""}</td><td>${cells[2] || ""}</td></tr>`;
+      });
+
+      tableHtml += `</tbody></table>`;
+      return { html: tableHtml, done: doneCnt, current: currentCnt, needed: neededCnt };
+    }
+
+    async function render() {
+      const root = document.getElementById("page-root");
+      const majorUrl = profile.major_url;
+
+      if (!majorUrl) {
+        root.innerHTML = `
+          <div class="no-major">
+            <h2>No major selected</h2>
+            <p>Go to your profile settings and select your school and major to see graduation requirements.</p>
+            <a href="/profile" class="btn">Go to Settings</a>
+          </div>`;
+        return;
+      }
+
+      let prog;
+      try {
+        const res = await fetch(`/api/program-requirements?url=${encodeURIComponent(majorUrl)}`);
+        prog = await res.json();
+        if (!res.ok) throw new Error(prog.error || "Failed to load");
+      } catch (e) {
+        root.innerHTML = `<div class="loading">Error loading requirements: ${e.message}</div>`;
+        return;
+      }
+
+      const tables = (prog.tables || []).filter(t => !isSamplePlan(t.label));
+      let totalDone = 0, totalCurrent = 0, totalNeeded = 0;
+      const renderedSections = tables.map(t => {
+        const r = renderTable(t);
+        totalDone    += r.done;
+        totalCurrent += r.current;
+        totalNeeded  += r.needed;
+        return { label: t.label || "Requirements", ...r };
+      });
+
+      const totalCourses = totalDone + totalCurrent + totalNeeded;
+      const pct = totalCourses ? Math.round((totalDone / totalCourses) * 100) : 0;
+
+      let html = `
+        <div class="summary-card">
+          <div class="summary-info">
+            <h2>${prog.title || "Graduation Progress"}</h2>
+            <div class="sub">${prog.school || ""}${profile.minor ? " · Minor: " + profile.minor : ""}</div>
+            <div class="stat-pills">
+              <span class="pill pill-done">✓ ${totalDone} completed</span>
+              ${totalCurrent ? `<span class="pill pill-current">→ ${totalCurrent} in progress</span>` : ""}
+              <span class="pill pill-needed">○ ${totalNeeded} remaining</span>
+            </div>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-label"><span>Overall completion</span><span>${pct}%</span></div>
+            <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+          </div>
+        </div>
+
+        <div class="legend">
+          <span class="legend-item"><span class="dot" style="background:#28a745"></span> Completed</span>
+          <span class="legend-item"><span class="dot" style="background:#0369a1"></span> Currently enrolled</span>
+          <span class="legend-item"><span class="dot" style="background:#ccc"></span> Not yet taken</span>
+        </div>`;
+
+      renderedSections.forEach((sec, i) => {
+        const badge = sec.done
+          ? `<span class="pill pill-done" style="font-size:0.72rem">${sec.done}/${sec.done + sec.current + sec.needed}</span>`
+          : "";
+        html += `
+          <div class="req-section" id="sec-${i}">
+            <div class="req-section-header" onclick="toggleSection('sec-${i}')">
+              <h3>${sec.label}</h3>
+              <div class="sec-stats">${badge}<span class="chevron">▾</span></div>
+            </div>
+            <div class="req-section-body">${sec.html}</div>
+          </div>`;
+      });
+
+      root.innerHTML = html;
+    }
+
+    function toggleSection(id) {
+      document.getElementById(id).classList.toggle("collapsed");
+    }
+
+    render();
+  </script>
+</body>
+</html>

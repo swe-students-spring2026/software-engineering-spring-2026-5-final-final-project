@@ -128,6 +128,9 @@
         <a href="#" onclick="switchPanel('transcript', this)" id="nav-transcript">
           <span class="icon">📄</span> Transcript
         </a>
+        <a href="/graduation">
+          <span class="icon">🎓</span> Graduation Progress
+        </a>
       </nav>
     </div>
 
@@ -197,8 +200,10 @@
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label for="s-major">Major</label>
-              <input id="s-major" type="text" value="{{ profile.major or '' }}" placeholder="e.g. Computer Science">
+              <label for="s-school">School / College</label>
+              <select id="s-school" onchange="filterMajors()">
+                <option value="">Loading…</option>
+              </select>
             </div>
             <div class="form-group">
               <label for="s-year">Graduation Year</label>
@@ -208,6 +213,19 @@
                 <option value="{{ y }}" {% if profile.graduation_year == y %}selected{% endif %}>{{ y }}</option>
                 {% endfor %}
               </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="s-major">Major</label>
+              <select id="s-major">
+                <option value="">Select school first</option>
+              </select>
+              <input type="hidden" id="s-major-url" value="{{ profile.major_url or '' }}">
+            </div>
+            <div class="form-group">
+              <label for="s-minor">Minor (optional)</label>
+              <input id="s-minor" type="text" value="{{ profile.minor or '' }}" placeholder="e.g. Mathematics">
             </div>
           </div>
           <div class="form-row">
@@ -313,13 +331,49 @@
       setTimeout(() => { el.style.display = 'none'; }, 4000);
     }
 
+    // ── Programs loader for school/major dropdowns ─────────────────────────────
+    let _allPrograms = [];
+    const _savedSchool   = {{ (profile.school   or '')|tojson }};
+    const _savedMajor    = {{ (profile.major     or '')|tojson }};
+    const _savedMajorUrl = {{ (profile.major_url or '')|tojson }};
+
+    async function loadProgramsForSettings() {
+      const res = await fetch('/api/programs');
+      _allPrograms = await res.json();
+      const schools = [...new Set(_allPrograms.map(p => p.school).filter(Boolean))].sort();
+      const schoolSel = document.getElementById('s-school');
+      schoolSel.innerHTML = '<option value="">Select school</option>' +
+        schools.map(s => `<option value="${s}" ${s === _savedSchool ? 'selected' : ''}>${s}</option>`).join('');
+      filterMajors();
+    }
+
+    function filterMajors() {
+      const school = document.getElementById('s-school').value;
+      const majorSel = document.getElementById('s-major');
+      const filtered = _allPrograms.filter(p => !school || p.school === school);
+      majorSel.innerHTML = '<option value="">Select major</option>' +
+        filtered.map(p =>
+          `<option value="${p.url}" ${p.url === _savedMajorUrl ? 'selected' : ''}>${p.title}${p.award ? ' (' + p.award + ')' : ''}</option>`
+        ).join('');
+    }
+
+    loadProgramsForSettings();
+
     // ── Save settings ──────────────────────────────────────────────────────────
     async function saveSettings() {
+      const majorSel = document.getElementById('s-major');
+      const majorUrl = majorSel.value;
+      const majorTitle = majorSel.options[majorSel.selectedIndex]?.text || '';
+      const school = document.getElementById('s-school').value;
+
       const body = {
-        name: document.getElementById('s-name').value.trim(),
-        major: document.getElementById('s-major').value.trim(),
+        name:            document.getElementById('s-name').value.trim(),
+        school,
+        major:           majorTitle,
+        major_url:       majorUrl,
+        minor:           document.getElementById('s-minor').value.trim(),
         graduation_year: document.getElementById('s-year').value,
-        student_id: document.getElementById('s-studentid').value.trim(),
+        student_id:      document.getElementById('s-studentid').value.trim(),
       };
 
       try {
@@ -330,7 +384,6 @@
         });
         if (res.ok) {
           showToast('settings-toast', '✓ Profile updated successfully.', 'success');
-          // Update sidebar live
           if (body.name) {
             document.getElementById('sidebar-name').textContent = body.name;
             document.getElementById('avatar-letter').textContent = body.name[0].toUpperCase();
@@ -341,7 +394,7 @@
             badge.style.display = '';
           }
           if (body.graduation_year) {
-            let el = document.getElementById('sidebar-year');
+            const el = document.getElementById('sidebar-year');
             if (el) el.textContent = body.graduation_year;
           }
         } else {
