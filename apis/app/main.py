@@ -239,15 +239,23 @@ def upload_transcript():
     if not text.strip():
         return jsonify({"error": "PDF appears to be empty or image-only"}), 422
 
+    db.users.update_one(
+        {"email": email},
+        {"$set": {"transcript_raw": text}},
+        upsert=True,
+    )
+
     from app.ai.service import parse_transcript
-    courses = parse_transcript(text)
+    result = parse_transcript(text)
+    completed = result.get("completed", [])
+    current = result.get("current", [])
 
     db.users.update_one(
         {"email": email},
-        {"$set": {"completed_courses": courses}},
+        {"$set": {"completed_courses": completed, "current_courses": current}},
         upsert=True,
     )
-    return jsonify({"courses": courses, "count": len(courses)}), 200
+    return jsonify({"courses": completed, "current_courses": current, "count": len(completed)}), 200
 
 
 @app.get("/programs")

@@ -263,11 +263,13 @@
           <div class="parsed-results" id="parsed-results" style="display:none">
             <h4 id="parsed-heading"></h4>
             <div class="course-tags" id="parsed-courses"></div>
+            <h4 id="parsed-current-heading" style="margin-top:14px;display:none"></h4>
+            <div class="course-tags" id="parsed-current-courses"></div>
           </div>
         </div>
 
         <div class="card">
-          <h3>Current Completed Courses</h3>
+          <h3>Completed Courses</h3>
           <div class="course-tags" id="transcript-courses">
             {% for course in (profile.completed_courses or []) %}
             <div class="course-tag">{{ course }}</div>
@@ -275,6 +277,17 @@
             <div class="empty-state">No courses recorded yet.</div>
             {% endfor %}
           </div>
+
+          {% if profile.current_courses %}
+          <h3 style="margin-top:20px;padding-top:16px;border-top:1px solid #f0f0f0">Currently Enrolled</h3>
+          <div class="course-tags" id="transcript-current-courses">
+            {% for course in profile.current_courses %}
+            <div class="course-tag" style="background:#e8f4fd;color:#0369a1">{{ course }}</div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="course-tags" id="transcript-current-courses" style="display:none"></div>
+          {% endif %}
         </div>
       </div>
 
@@ -424,8 +437,27 @@
           const parsed = document.getElementById('parsed-results');
           const heading = document.getElementById('parsed-heading');
           const tags = document.getElementById('parsed-courses');
-          heading.textContent = `${_courses.length} courses found`;
+          const currentHeading = document.getElementById('parsed-current-heading');
+          const currentTags = document.getElementById('parsed-current-courses');
+          const currentCourses = data.current_courses || [];
+
+          heading.textContent = `${_courses.length} completed courses found`;
           tags.innerHTML = _courses.map(c => `<div class="course-tag">${c}</div>`).join('');
+
+          if (currentCourses.length > 0) {
+            currentHeading.textContent = `${currentCourses.length} currently enrolled`;
+            currentHeading.style.display = '';
+            currentTags.innerHTML = currentCourses.map(c => `<div class="course-tag" style="background:#e8f4fd;color:#0369a1">${c}</div>`).join('');
+
+            // Update bottom card
+            const bottomCurrent = document.getElementById('transcript-current-courses');
+            if (bottomCurrent) {
+              bottomCurrent.style.display = 'flex';
+              bottomCurrent.innerHTML = currentCourses.map(c => `<div class="course-tag" style="background:#e8f4fd;color:#0369a1">${c}</div>`).join('');
+              const h = bottomCurrent.previousElementSibling;
+              if (h && h.tagName === 'H3') h.style.display = '';
+            }
+          }
           parsed.style.display = 'block';
 
           refreshCourseTags('settings-courses');

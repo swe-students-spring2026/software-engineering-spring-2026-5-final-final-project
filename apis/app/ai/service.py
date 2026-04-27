@@ -153,18 +153,21 @@ def chat(
     return response.text or ""
 
 
-def parse_transcript(text: str) -> list[str]:
+def parse_transcript(text: str) -> dict:
     """
-    Send raw transcript text to Gemini and return a list of completed course codes.
+    Send raw transcript text to Gemini and return completed and current courses.
     """
     prompt = (
-        "You are parsing an NYU student transcript. "
-        "Extract every course the student has COMPLETED (has a letter grade A–D or P). "
-        "Exclude withdrawn (W), in-progress (IP/TR), or transfer courses. "
-        "Return ONLY a valid JSON array of course code strings, e.g.: "
-        '["CSCI-UA 101", "MATH-UA 123", "CORE-UA 400"]. '
-        "No explanation, no markdown — raw JSON array only.\n\n"
-        f"Transcript text:\n{text[:12000]}"
+        "You are parsing an NYU student transcript. Scan the ENTIRE transcript carefully.\n\n"
+        "Return a JSON object with exactly two keys:\n"
+        "  \"completed\": courses with a real grade (A+, A, A-, B+, B, B-, C+, C, C-, D+, D, D-, P, S, SX, CR, T)\n"
+        "  \"current\": courses marked with *** (currently enrolled, grade not yet posted)\n\n"
+        "Exclude from both lists: withdrawn (W, WX, WD), incomplete (I), no grade (NG, MG), audited (AU).\n"
+        "Use NYU course code format, e.g. \"CSCI-UA 101\". No duplicates.\n"
+        "Return raw JSON only — no explanation, no markdown.\n\n"
+        "Example output:\n"
+        '{"completed": ["CSCI-UA 101", "MATH-UA 123"], "current": ["CSCI-UA 201", "MKTG-UB 1"]}\n\n'
+        f"Transcript text:\n{text}"
     )
     response = _client.models.generate_content(
         model=GEMINI_MODEL,
@@ -172,10 +175,14 @@ def parse_transcript(text: str) -> list[str]:
     )
     raw = (response.text or "").strip()
     import re
-    match = re.search(r"\[.*?\]", raw, re.DOTALL)
+    match = re.search(r"\{.*\}", raw, re.DOTALL)
     if match:
         try:
-            return json.loads(match.group())
+            parsed = json.loads(match.group())
+            return {
+                "completed": parsed.get("completed", []),
+                "current": parsed.get("current", []),
+            }
         except json.JSONDecodeError:
             pass
-    return []
+    return {"completed": [], "current": []}
