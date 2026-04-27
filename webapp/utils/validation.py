@@ -57,3 +57,26 @@ def validate_login(data, users_collection):
         return "Incorrect password.", None
 
     return None, user
+
+def validate_event(data):
+    """
+    Validate event creation form data.
+    Checks for:
+    - Required fields are filled out
+    - Capacity is a number and at least 3
+    - No more than 3 tags
+    Returns: error message or None if valid
+    """
+    required_fields = ["title", "date", "time", "capacity", "location", "description"]
+
+    for field in required_fields:
+        if not data.get(field):
+            return f"{field} is required."
+
+    if int(data["capacity"]) < 3:
+        return "Capacity must be at least 3."
+
+    if "tags" in data and len(data["tags"]) > 3:
+        return "You can select up to 3 tags only."
+
+    return None
