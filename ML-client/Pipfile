@@ -16,6 +16,8 @@ httpx = "==0.27.0"
 python-dotenv = "==1.0.1"
 
 [dev-packages]
+pytest = "*"
+pytest-asyncio = "*"
 
 [requires]
 python_version = "3.11"
