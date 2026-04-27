@@ -8,7 +8,7 @@ from schemas import (
     FeedbackResponse,
     WeatherResponse,
 )
-from mood_parser import parse_mood
+from mood_parser import parse_mood, rerank_tracks
 from recommender import get_tracks
 from weather import fetch_weather, fetch_weather_by_city
 from database import save_session, save_feedback
@@ -90,7 +90,13 @@ async def predict(req: PredictRequest):
             detail="No tracks found for this mood/weather combination. Try a different mood.",
         )
 
-    # Step 3 — persist session to MongoDB
+    # Step 3 — re-rank tracks by mood fit via Gemini
+    try:
+        tracks = await rerank_tracks(req.mood, tracks)
+    except Exception:
+        pass  # Non-fatal — keep original search order if re-ranking fails
+
+    # Step 4 — persist session to MongoDB
     session_id = None
     try:
         session_id = save_session(
