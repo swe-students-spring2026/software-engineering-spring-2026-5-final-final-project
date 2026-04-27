@@ -2,7 +2,7 @@
 import datetime
 import os
 import re
-
+import requests  
 import pymongo
 from bson.objectid import ObjectId
 from dotenv import load_dotenv
@@ -20,6 +20,7 @@ app.secret_key = os.getenv("SECRET_KEY")
 # connect to MongoDB
 client = pymongo.MongoClient(os.getenv("MONGO_URI"))
 db = client[os.getenv("MONGO_DB_NAME")]
+ML_SERVICE_URL = os.getenv("ML_SERVICE_URL", "http://ml-service:8000")
 
 # set up Spotify API credentials
 sp_oauth = SpotifyOAuth(
@@ -85,13 +86,50 @@ def logout():
     session.clear()
     return redirect(url_for("index"))
 
+
+
 @app.route("/recommend", methods=["POST"])
 def recommend():
     sp = get_spotify_client()
     if not sp:
         return redirect(url_for("login"))
-    # TODO: call ml-client
-    return render_template("index.html", username=session.get("user_id"), tracks=[])
+
+    mood = request.form.get("mood_text", "")
+    city = request.form.get("city", "New York")
+
+    # Fetch weather from the ML service
+    try:
+        weather_resp = requests.get(f"{ML_SERVICE_URL}/weather/city", params={"city": city}, timeout=10)
+        weather_resp.raise_for_status()
+        weather = weather_resp.json()
+    except requests.RequestException as e:
+        return render_template("index.html", error=f"Weather fetch failed: {e}")
+
+    # Call the ML prediction endpoint
+    try:
+        predict_resp = requests.post(
+            f"{ML_SERVICE_URL}/predict",
+            json={
+                "mood": mood,
+                "weather": weather,
+                "user_id": session.get("user_id"),
+                "limit": 10,
+            },
+            timeout=30,
+        )
+        predict_resp.raise_for_status()
+        result = predict_resp.json()
+        print("ML result:", result)  # ← add this
+        print("Tracks:", result.get("tracks"))
+    except requests.RequestException as e:
+        return render_template("index.html", error=f"ML service error: {e}")
+
+    return render_template(
+        "index.html",
+        username=session.get("user_id"),
+        tracks=result["tracks"],
+        session_id=result.get("session_id"),
+    )
 
 @app.route("/save_playlist", methods=["POST"])
 def save_playlist():

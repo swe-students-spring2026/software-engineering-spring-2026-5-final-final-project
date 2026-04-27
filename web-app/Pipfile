@@ -8,6 +8,7 @@ dotenv = "*"
 flask-login = "*"
 pymongo = "*"
 spotipy = "*"
+gunicorn = "*"
 
 [dev-packages]
 
