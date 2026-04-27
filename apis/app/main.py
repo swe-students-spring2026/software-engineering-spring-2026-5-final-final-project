@@ -208,7 +208,7 @@ def update_profile():
     if not email:
         return jsonify({"error": "email required"}), 400
 
-    allowed = {"name", "major", "graduation_year", "student_id", "completed_courses"}
+    allowed = {"name", "major", "major_url", "school", "minor", "graduation_year", "student_id", "completed_courses", "current_courses"}
     updates = {k: v for k, v in data.items() if k in allowed}
     if not updates:
         return jsonify({"error": "no valid fields to update"}), 400

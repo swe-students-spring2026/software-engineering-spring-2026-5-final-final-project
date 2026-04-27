@@ -163,6 +163,14 @@ def profile_page():
     return render_template("profile.html", user=session["user"], profile=profile)
 
 
+@app.get("/graduation")
+@login_required
+def graduation_page():
+    email = session["user"]["email"]
+    profile = _get_user_profile(email)
+    return render_template("graduation.html", user=session["user"], profile=profile)
+
+
 @app.get("/professor")
 @login_required
 def professor_page():
