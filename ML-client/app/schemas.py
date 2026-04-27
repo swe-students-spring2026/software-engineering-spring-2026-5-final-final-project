@@ -39,8 +39,7 @@ class Track(BaseModel):
     album: str
     preview_url: Optional[str]
     external_url: str
-    valence: Optional[float] = None
-    energy: Optional[float] = None
+
 
 
 class PredictResponse(BaseModel):

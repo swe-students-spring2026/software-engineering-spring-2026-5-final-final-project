@@ -3,7 +3,7 @@ from spotipy.oauth2 import SpotifyClientCredentials
 from schemas import AudioProfile, Track
 from config import settings
 
-# Client credentials flow — no user login needed for recommendations
+# Client credentials flow — no user login needed for search
 _sp = spotipy.Spotify(
     auth_manager=SpotifyClientCredentials(
         client_id=settings.spotify_client_id,
@@ -11,35 +11,40 @@ _sp = spotipy.Spotify(
     )
 )
 
-
-def _safe_genres(genres: list[str]) -> list[str]:
-    """
-    Spotify only accepts genres from its approved seed list.
-    Filter to known-good ones; fall back to ['pop'] if nothing matches.
-    """
-    available = set(_sp.recommendation_genre_seeds().get("genres", []))
-    filtered = [g for g in genres if g in available]
-    return filtered[:2] if filtered else ["pop"]
-
-
 async def get_tracks(profile: AudioProfile, limit: int = 20) -> list[Track]:
-    """Query Spotify recommendations endpoint using the audio profile."""
+    """
+    Search Spotify by genre keywords and return matched tracks.
+    """
+    SAFE_LIMIT = 10
 
-    seed_genres = _safe_genres(profile.genres)
+    raw_tracks = []
 
-    results = _sp.recommendations(
-        seed_genres=seed_genres,
-        target_valence=profile.valence,
-        target_energy=profile.energy,
-        target_danceability=profile.danceability,
-        target_tempo=(profile.tempo_min + profile.tempo_max) / 2,
-        min_tempo=profile.tempo_min,
-        max_tempo=profile.tempo_max,
-        limit=limit,
-    )
+    # Run up to 3 searches with different queries to get enough tracks
+    queries = []
+    if profile.genres:
+        queries.append(" ".join(g.replace("-", " ") for g in profile.genres[:2]))
+        queries.append(profile.genres[0].replace("-", " "))
+    queries.append("chill music")
+
+    seen_uris = set()
+    for query in queries:
+        if len(raw_tracks) >= limit:
+            break
+        try:
+            results = _sp.search(q=query, type="track", limit=SAFE_LIMIT)
+            items = results.get("tracks", {}).get("items", [])
+            for t in items:
+                if t["uri"] not in seen_uris:
+                    seen_uris.add(t["uri"])
+                    raw_tracks.append(t)
+        except Exception:
+            continue
+
+    if not raw_tracks:
+        return []
 
     tracks: list[Track] = []
-    for t in results.get("tracks", []):
+    for t in raw_tracks[:limit]:
         tracks.append(
             Track(
                 uri=t["uri"],
@@ -50,14 +55,5 @@ async def get_tracks(profile: AudioProfile, limit: int = 20) -> list[Track]:
                 external_url=t["external_urls"]["spotify"],
             )
         )
-
-    # Optionally enrich with audio features for display
-    if tracks:
-        uris = [t.uri for t in tracks]
-        features = _sp.audio_features(uris) or []
-        for track, feat in zip(tracks, features):
-            if feat:
-                track.valence = feat.get("valence")
-                track.energy = feat.get("energy")
 
     return tracks

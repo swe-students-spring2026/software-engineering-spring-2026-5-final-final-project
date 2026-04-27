@@ -9,7 +9,7 @@ RUN pip install --no-cache-dir pipenv
 COPY Pipfile .
 
 # Install dependencies system-wide inside the container (no virtualenv needed)
-RUN pipenv install --system --deploy
+RUN pipenv install --system --skip-lock
 COPY app/ .
 
 EXPOSE 8000

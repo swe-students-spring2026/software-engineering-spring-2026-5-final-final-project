@@ -7,6 +7,7 @@ name = "pypi"
 fastapi = "==0.111.0"
 uvicorn = {version = "==0.29.0", extras = ["standard"]}
 google-generativeai = "==0.7.2"
+google-genai = "*"
 spotipy = "==2.23.0"
 pymongo = "==4.7.2"
 pydantic = "==2.7.1"

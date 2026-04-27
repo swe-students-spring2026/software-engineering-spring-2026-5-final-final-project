@@ -51,7 +51,7 @@ async def run_tests():
         try:
             profile = await parse_mood(case["mood"], case["weather"])
 
-            print(f"  ✅ Claude responded successfully")
+            print(f"  ✅ Gemini responded successfully")
             print(f"     valence      : {profile.valence}")
             print(f"     energy       : {profile.energy}")
             print(f"     danceability : {profile.danceability}")
