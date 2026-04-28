@@ -19,6 +19,8 @@
     .cal-toolbar span { font-size: 0.85rem; color: #888; }
     .cal-toolbar button { padding: 5px 14px; background: #f0e6f7; color: #57068c; border: 1px solid #c9a7e0; border-radius: 4px; cursor: pointer; font-size: 0.82rem; }
     .cal-toolbar button:hover { background: #e0cef5; }
+    .cal-toolbar .export-btn { background: #eaf6ee; color: #1a6b32; border-color: #a8d5b5; }
+    .cal-toolbar .export-btn:hover { background: #d4edda; }
     .cal-scroll { flex: 1; overflow-y: auto; }
     .cal-grid { display: grid; grid-template-columns: 52px repeat(5, 1fr); }
     .cal-day-header { text-align: center; padding: 8px 0; font-size: 0.82rem; font-weight: bold; color: #57068c; border-bottom: 2px solid #eee; background: white; position: sticky; top: 0; z-index: 2; }
@@ -55,7 +57,10 @@
     <div class="cal-wrap">
       <div class="cal-toolbar">
         <span id="schedule-summary"></span>
-        <button onclick="clearAll()">Clear Schedule</button>
+        <div style="display:flex;gap:8px;">
+          <button class="export-btn" onclick="downloadCalendar()">⬇ Download Calendar</button>
+          <button onclick="clearAll()">Clear Schedule</button>
+        </div>
       </div>
       <div class="cal-scroll">
         <div class="cal-grid" id="cal-grid"></div>
@@ -174,6 +179,75 @@
       saveSchedule();
       renderCalendar();
       renderSidebar();
+    }
+
+    function downloadCalendar() {
+      if (schedule.length === 0) { alert("No courses in your schedule to export."); return; }
+
+      // Detect term from schedule data, default to Fall 2026
+      const termName = (schedule[0]?.lecture?.term || "Fall 2026").trim();
+      const SEMESTERS = {
+        "Spring 2026": { name: "Spring 2026", monday: [2026, 0, 26], until: "20260515T235959Z" },
+        "Summer 2026": { name: "Summer 2026", monday: [2026, 4, 18], until: "20260814T235959Z" },
+        "Fall 2026":   { name: "Fall 2026",   monday: [2026, 8,  7], until: "20261218T235959Z" },
+      };
+      const sem = SEMESTERS[termName] || SEMESTERS["Fall 2026"];
+      const semMonday = new Date(sem.monday[0], sem.monday[1], sem.monday[2]);
+      const DAY_CODES = ["MO", "TU", "WE", "TH", "FR"];
+
+      function pad2(n) { return String(n).padStart(2, "0"); }
+      function icsDate(d) { return `${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}`; }
+      function icsTime(hhmm) { return hhmm.replace(":", "") + "00"; }
+      function escape(s) {
+        return (s||"").replace(/\\/g,"\\\\").replace(/;/g,"\\;").replace(/,/g,"\\,").replace(/\n/g,"\\n");
+      }
+
+      const lines = [
+        "BEGIN:VCALENDAR", "VERSION:2.0",
+        "PRODID:-//NYU Course Planner//EN", "CALSCALE:GREGORIAN",
+        `X-WR-CALNAME:NYU ${sem.name} Schedule`, "X-WR-TIMEZONE:America/New_York",
+      ];
+
+      let uid = 0;
+      schedule.forEach(({ lecture, recitation }) => {
+        [lecture, recitation].filter(Boolean).forEach(sec => {
+          (sec.meeting_times || []).forEach(mt => {
+            if (!mt.start || !mt.end || typeof mt.day_num !== "number") return;
+            if (mt.day_num < 0 || mt.day_num > 4) return;
+            const firstDay = new Date(semMonday);
+            firstDay.setDate(firstDay.getDate() + mt.day_num);
+            const summary = escape(`${sec.code}${sec.title ? " – " + sec.title : ""}`);
+            const desc = [
+              sec.instructor ? `Instructor: ${sec.instructor}` : "",
+              sec.component  ? `Type: ${sec.component}` : "",
+              sec.section    ? `Section: ${sec.section}` : "",
+              sec.crn        ? `Class#: ${sec.crn}` : "",
+            ].filter(Boolean).map(escape).join("\\n");
+            lines.push(
+              "BEGIN:VEVENT",
+              `UID:nyu-${sec.crn}-${mt.day_num}-${++uid}@nyu-planner`,
+              `SUMMARY:${summary}`,
+              `DTSTART;TZID=America/New_York:${icsDate(firstDay)}T${icsTime(mt.start)}`,
+              `DTEND;TZID=America/New_York:${icsDate(firstDay)}T${icsTime(mt.end)}`,
+              `RRULE:FREQ=WEEKLY;BYDAY=${DAY_CODES[mt.day_num]};UNTIL=${sem.until}`,
+              ...(desc ? [`DESCRIPTION:${desc}`] : []),
+              ...(sec.location ? [`LOCATION:${escape(sec.location)}`] : []),
+              "END:VEVENT",
+            );
+          });
+        });
+      });
+
+      lines.push("END:VCALENDAR");
+      const blob = new Blob([lines.join("\r\n")], { type: "text/calendar;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `NYU_${sem.name.replace(" ", "_")}_Schedule.ics`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     }
 
     function clearAll() {

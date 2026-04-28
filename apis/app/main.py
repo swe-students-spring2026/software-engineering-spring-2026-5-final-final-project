@@ -265,7 +265,7 @@ def update_profile():
     if not email:
         return jsonify({"error": "email required"}), 400
 
-    allowed = {"name", "major", "major_url", "school", "minor", "graduation_year", "student_id", "completed_courses", "current_courses"}
+    allowed = {"name", "major", "major_url", "school", "minor", "graduation_year", "student_id", "completed_courses", "current_courses", "course_credits"}
     updates = {k: v for k, v in data.items() if k in allowed}
     if not updates:
         return jsonify({"error": "no valid fields to update"}), 400
@@ -306,10 +306,11 @@ def upload_transcript():
     result = parse_transcript(text)
     completed = result.get("completed", [])
     current = result.get("current", [])
+    course_credits = result.get("course_credits", {})
 
     db.users.update_one(
         {"email": email},
-        {"$set": {"completed_courses": completed, "current_courses": current}},
+        {"$set": {"completed_courses": completed, "current_courses": current, "course_credits": course_credits}},
         upsert=True,
     )
     return jsonify({"courses": completed, "current_courses": current, "count": len(completed)}), 200

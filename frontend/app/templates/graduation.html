@@ -99,6 +99,12 @@
     const completedSet = new Set((profile.completed_courses || []).map(c => normalizeCode(c)));
     const currentSet   = new Set((profile.current_courses   || []).map(c => normalizeCode(c)));
 
+    // Build a normalized code → credit hours map from the transcript
+    const transcriptCredits = {};
+    Object.entries(profile.course_credits || {}).forEach(([code, credits]) => {
+      transcriptCredits[normalizeCode(code)] = Number(credits) || 0;
+    });
+
     function normalizeCode(s) {
       return (s || "").replace(/[-\s]+(\d{3}[-\s]\d{3}|\d{4}[-\s]\d{3})$/, "").trim().toUpperCase();
     }
@@ -265,6 +271,10 @@
 
     function creditsForChoice(options, fallbackCredits) {
       const matched = matchedChoiceOption(options);
+      if (matched?.code) {
+        const tc = transcriptCredits[normalizeCode(matched.code)];
+        if (tc !== undefined) return tc;
+      }
       return parseCredits(matched?.credits || fallbackCredits);
     }
 
@@ -368,15 +378,27 @@
           return;
         }
         if (!isCourse && !isAlt) {
-          const right = cells[1] || "";
-          const cls = right ? "group-row" : "group-row";
-          tableHtml += `<tr class="${cls}"><td></td><td colspan="2">${first}</td><td>${right}</td></tr>`;
+          // "Other Elective Credits" — count unmatched completed courses toward it
+          if (/other\s+elective/i.test(first)) {
+            const unmatched = [...completedSet].filter(c => !creditedChoiceKeys.has(canonicalRequirementCode(c)));
+            const unmatchedCredits = unmatched.length * 4; // approximate; exact credits need DB lookup
+            const st = unmatched.length > 0 ? "done" : "needed";
+            const icon = st === "done" ? '<span class="status-icon status-done">✓</span>' : '<span class="status-icon status-needed">○</span>';
+            const rowCls = st === "done" ? "row-done" : "";
+            const creditDisplay = unmatched.length > 0 ? `${unmatchedCredits}+ / ${cells[1] || ""}` : (cells[1] || "");
+            tableHtml += `<tr class="${rowCls}"><td>${icon}</td><td colspan="2">${first}${unmatched.length > 0 ? ` <span style="font-size:0.75rem;color:#555;font-weight:normal">(${unmatched.length} extra courses)</span>` : ""}</td><td>${creditDisplay}</td></tr>`;
+          } else {
+            tableHtml += `<tr class="group-row"><td></td><td colspan="2">${first}</td><td>${cells[1] || ""}</td></tr>`;
+          }
           return;
         }
 
         const code = extractCode(first);
         const st = statusOf(code);
-        const credits = parseCredits(cells[2]);
+        // credits: transcript value first, then bulletin (cells[2] or cells[1] for 2-col rows)
+        const creditVal = cells[2] !== undefined ? cells[2] : (cells.length === 2 ? cells[1] : "");
+        const transcriptCredit = code ? transcriptCredits[normalizeCode(code)] : undefined;
+        const credits = transcriptCredit !== undefined ? transcriptCredit : parseCredits(creditVal);
         if      (st === "done")    doneCnt++;
         else if (st === "current") currentCnt++;
         else if (code)             neededCnt++;
@@ -392,7 +414,7 @@
         }
         const altCls = isAlt ? " alt-row" : "";
         const codeHtml = code ? `<span class="course-code">${first}</span>` : first;
-        tableHtml += `<tr class="${rowCls}${altCls}"><td>${icon}</td><td>${codeHtml}</td><td>${cells[1] || ""}</td><td>${cells[2] || ""}</td></tr>`;
+        tableHtml += `<tr class="${rowCls}${altCls}"><td>${icon}</td><td>${codeHtml}</td><td>${cells[1] || ""}</td><td>${creditVal}</td></tr>`;
       });
 
       tableHtml += `</tbody></table>`;
