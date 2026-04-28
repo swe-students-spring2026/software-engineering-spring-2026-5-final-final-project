@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section>
+    <h1>{{ professor.name }}</h1>
+    {% if professor.title %}<p>{{ professor.title }}</p>{% endif %}
+
+    <div>
+      {% if professor.email %}
+        <p><strong>Email:</strong> {{ professor.email }}</p>
+      {% else %}
+        <p><strong>Email:</strong> (not available)</p>
+      {% endif %}
+    </div>
+  </section>
+{% endblock %}
+

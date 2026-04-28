@@ -1,16 +1,17 @@
 """Web app for the project"""
 
-from curses import flash
 import os
 
-from requests import session
 from tomlkit import datetime
 from flask import (
     Flask,
+    flash,
     render_template,
     request,
+    session,
     redirect,
     url_for,
+    jsonify,
 )
 from flask_login import (
     LoginManager,
@@ -24,6 +25,8 @@ from bson.objectid import ObjectId
 from bson.errors import InvalidId
 from dotenv import load_dotenv
 from pymongo import MongoClient
+from difflib import SequenceMatcher
+import re
 
 # Load environment variables
 load_dotenv(override=True)
@@ -133,7 +136,85 @@ def home():
         p["_id"] = str(p.get("_id", ""))
     return render_template("home.html", professors=profs)
 
-# @app.route("")
+
+def _normalize_query(value: str) -> str:
+    return re.sub(r"\s+", " ", (value or "").strip().lower())
+
+
+def _name_score(query: str, name: str) -> float:
+    q = _normalize_query(query)
+    n = _normalize_query(name)
+    if not q or not n:
+        return 0.0
+    if q == n:
+        return 10.0
+    score = SequenceMatcher(None, q, n).ratio()
+    if n.startswith(q):
+        score += 1.0
+    if q in n:
+        score += 0.5
+    return score
+
+
+@app.route("/api/professors/search", methods=["GET"])
+@login_required
+def professors_search():
+    q = request.args.get("q", "")
+    qn = _normalize_query(q)
+    if not qn:
+        return jsonify({"results": []})
+
+    regex = re.compile(re.escape(qn), re.IGNORECASE)
+    candidates = list(
+        professors.find(
+            {"name": {"$regex": regex}},
+            {"name": 1, "title": 1, "email": 1},
+        ).limit(200)
+    )
+
+    if len(candidates) < 5:
+        # Fallback to a broader pool for "closest match" ranking.
+        candidates = list(
+            professors.find({}, {"name": 1, "title": 1, "email": 1})
+            .limit(400)
+        )
+
+    ranked = sorted(
+        candidates,
+        key=lambda p: _name_score(qn, p.get("name", "")),
+        reverse=True,
+    )
+
+    results = []
+    for p in ranked[:10]:
+        results.append(
+            {
+                "id": str(p.get("_id", "")),
+                "name": p.get("name", ""),
+                "title": p.get("title", ""),
+                "email": p.get("email", ""),
+            }
+        )
+    return jsonify({"results": results})
+
+
+@app.route("/professors/<professor_id>", methods=["GET"])
+@login_required
+def professor_page(professor_id):
+    try:
+        pid = ObjectId(professor_id)
+    except (InvalidId, ValueError):
+        flash("Invalid professor id.")
+        return redirect(url_for("home"))
+
+    prof = professors.find_one({"_id": pid}, {"name": 1, "title": 1, "email": 1})
+    if not prof:
+        flash("Professor not found.")
+        return redirect(url_for("home"))
+
+    prof["_id"] = str(prof["_id"])
+    return render_template("professor.html", professor=prof)
+
 
 # ======================== Group routes ========================
 
