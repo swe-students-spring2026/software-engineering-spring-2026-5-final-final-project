@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     spotify_client_id: str
     spotify_client_secret: str
     openweather_api_key: str
-    mongo_uri: str = "mongodb://localhost:27017/moodmusic"
+    mongo_uri: str = "mongodb://mongo:27017/moodmusic"
 
     class Config:
         env_file = ".env"
