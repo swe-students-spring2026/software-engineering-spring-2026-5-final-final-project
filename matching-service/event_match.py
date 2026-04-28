@@ -49,15 +49,9 @@ def compute_match_score(user, event) -> float:
         0.5 * age_comp
     )
 
-    # Size Score
-
-    ranges = user.get("preferred_group_ranges", [(3, 10)])
-    event_size = len(event["members"]) + 1
-    size_score1 = size_score(event_size, ranges)
-
     # Final Score
 
-    final_score = 0.3 * event_score + 0.5 * group_score + 0.3 * size_score1
+    final_score = 0.3 * event_score + 0.5 * group_score
 
     return final_score
 
@@ -99,14 +93,6 @@ def distance_to_range(n: int, r_min: int, r_max: int) -> int:
     if r_min <= n <= r_max:
         return 0
     return min(abs(n - r_min), abs(n - r_max))
-
-
-def size_score(n: int, ranges: List[Tuple[int, int]]) -> float:
-    if not ranges:
-        return 0.5
-
-    best_distance = min(distance_to_range(n, r[0], r[1]) for r in ranges)
-    return math.exp(-best_distance / 3)
 
 
 def age_score(user_age: int, group_ages: List[int]) -> float:
