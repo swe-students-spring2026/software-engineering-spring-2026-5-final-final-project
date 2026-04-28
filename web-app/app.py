@@ -51,7 +51,6 @@ client = MongoClient(
 db = client[mongo_dbname]
 users = db["users"]
 groups = db["groups"]
-reviews = db["reviews"]
 professors = db["professors"]
 posts = db["posts"]
 
@@ -175,6 +174,7 @@ def home():
         pname = p.get("professor_name") or "Unknown"
         grouped.setdefault(pname, []).append(
             {
+                "_id": str(p.get("_id")),
                 "text": p.get("text", ""),
                 "created_at": p.get("created_at"),
                 "professor_id": str(p.get("professor_id", "")) if p.get("professor_id") else "",
@@ -299,7 +299,7 @@ def new_post_form(professor_id):
         professor_id=str(pid),
         professor_name=prof.get("name", ""),
         post_text="",
-        form_action=url_for("new_post_submit", professor_id=str(pid)),
+        form_action=url_for("new_post_submit", professor_id=str(pid), mode="create"),
     )
 
 def _get_sentiment(text: str) -> dict | None:
@@ -405,6 +405,103 @@ def new_post_submit(professor_id):
 
     flash("Post created.")
     return redirect(url_for("professor_page", professor_id=str(pid)))
+
+@app.route("/posts/<post_id>/delete", methods=["POST"])
+@login_required
+def delete_post(post_id):
+    try:
+        pid = ObjectId(post_id)
+    except Exception:
+        flash("Invalid post id.")
+        return redirect(url_for("home"))
+
+    result = posts.delete_one({"_id": pid, "author_email": getattr(current_user, "email", "")})
+
+    flash("Post deleted successfully.")
+    return redirect(url_for("home"))
+
+
+@app.route("/posts/<post_id>", methods=["GET"])
+@login_required
+def view_post(post_id):
+        try:
+            pid = ObjectId(post_id)
+        except Exception:
+            flash("Invalid post id.")
+            return redirect(url_for("home"))
+
+        post = posts.find_one({"_id": pid})
+        if not post:
+            flash("Post not found.")
+            return redirect(url_for("home"))
+        
+        is_owner = post.get("author_email") == getattr(current_user, "email", "")
+
+        return render_template("post-detail.html", post=post, is_owner=is_owner)
+    
+@app.route("/posts/<post_id>/edit", methods=["GET"])
+@login_required
+def edit_post_form(post_id):
+    try:
+        pid = ObjectId(post_id)
+    except Exception:
+        flash("Invalid post id.")
+        return redirect(url_for("home"))
+
+    post = posts.find_one({"_id": pid})
+    if not post:
+        flash("Post not found.")
+        return redirect(url_for("home"))
+    if post.get("author_email") != getattr(current_user, "email", ""):
+        flash("You can only edit your own posts.")
+        return redirect(url_for("home"))
+    
+    prof = professors.find_one({"_id": post["professor_id"]}, {"name": 1}) if post.get("professor_id") else None
+
+    return render_template(
+        "post-edit.html",
+        professor_id=str(pid),
+        professor_name=prof.get("name", ""),
+        post_text=post.get("text", ""),
+        form_action=url_for("edit_post", post_id=str(pid)), mode="edit"
+    )
+
+@app.route("/posts/<post_id>/edit", methods=["POST"])
+@login_required
+def edit_post(post_id):
+    try:
+        pid = ObjectId(post_id)
+    except Exception:
+        flash("Invalid post id.")
+        return redirect(url_for("home"))
+
+    existing = posts.find_one({"_id": pid, "author_email": getattr(current_user, "email", "")})
+    if not existing:
+        flash("Post not found or you can only edit your own posts.")
+        return redirect(url_for("home"))
+
+    text = request.form.get("text", "").strip()
+    if not text:
+        flash("Post text cannot be empty.")
+        return redirect(url_for("edit_post_form", post_id=post_id))
+
+    try:
+        sentiment = _get_sentiment(text)
+    except Exception:
+        flash("Failed to analyze sentiment. Please try again later.")
+        return redirect(url_for("edit_post_form", post_id=post_id))
+
+    posts.update_one(
+        {"_id": pid},
+        {"$set": {
+            "text": text,
+            "updated_at": datetime.datetime.utcnow(),
+            "sentiment": sentiment
+        }}
+    )
+
+    flash("Post updated successfully.")
+    return redirect(url_for("home"))
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000, host="0.0.0.0")

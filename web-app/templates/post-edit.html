@@ -2,7 +2,7 @@
 
 {% block content %}
   <section>
-    <h1>Create Post</h1>
+    <h1>{% if mode == "edit" %}Edit Post{% else %}Create Post{% endif %}</h1>
     <p>About: <strong>{{ professor_name }}</strong></p>
 
     <form method="post" action="{{ form_action }}">

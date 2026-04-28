@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section>
+    <div class="prof-header">
+      <h1>{{ post.professor_name }}</h1>
+
+      {% if post.sentiment %}
+        <span class="score-badge {{ post.sentiment.overall.label | lower | replace(' ', '-') }}">
+          {{ post.sentiment.overall.score }}/100
+        </span>
+      {% endif %}
+    </div>
+
+    <div class="post-item">
+      <div class="post-header">
+        <div class="post-author">{{ post.author_email }}</div>
+
+        {% if post.sentiment %}
+          <span class="score-badge {{ post.sentiment.overall.label | lower | replace(' ', '-') }}">
+            {{ post.sentiment.overall.label }}
+          </span>
+        {% endif %}
+      </div>
+
+      <div class="post-text">{{ post.text }}</div>
+
+      {% if post.sentiment and post.sentiment.themes %}
+        <div class="sentiment-row">
+          {% for t in post.sentiment.themes %}
+            <span class="theme-tag {{ t.label | lower | replace(' ', '-') }}">
+              {{ t.theme }}: {{ t.score }}
+            </span>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% if post.created_at %}
+        <div class="post-meta">
+          <small>{{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+        </div>
+      {% endif %}
+    </div>
+
+    {% if is_owner %}
+      <div class="post-actions">
+        <a href="{{ url_for('edit_post_form', post_id=post._id) }}">
+          <button type="button">Edit</button>
+        </a>
+
+        <form action="{{ url_for('delete_post', post_id=post._id) }}" method="POST" style="display:inline;">
+          <button type="submit">Delete</button>
+        </form>
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}
