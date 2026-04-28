@@ -182,14 +182,17 @@ def parse_transcript(text: str) -> dict:
     """
     prompt = (
         "You are parsing an NYU student transcript. Scan the ENTIRE transcript carefully.\n\n"
-        "Return a JSON object with exactly two keys:\n"
-        "  \"completed\": courses with a real grade (A+, A, A-, B+, B, B-, C+, C, C-, D+, D, D-, P, S, SX, CR, T)\n"
-        "  \"current\": courses marked with *** (currently enrolled, grade not yet posted)\n\n"
-        "Exclude from both lists: withdrawn (W, WX, WD), incomplete (I), no grade (NG, MG), audited (AU).\n"
+        "Return a JSON object with exactly three keys:\n"
+        "  \"completed\": list of course codes with a real grade (A+, A, A-, B+, B, B-, C+, C, C-, D+, D, D-, P, S, SX, CR, T)\n"
+        "  \"current\": list of course codes marked with *** (currently enrolled, grade not yet posted)\n"
+        "  \"course_credits\": object mapping each course code (from both completed and current) to its credit hours as a number\n\n"
+        "Exclude from completed and current: withdrawn (W, WX, WD), incomplete (I), no grade (NG, MG), audited (AU), "
+        "and ALL test/AP/IB credits (any entry under 'Test Credits' sections, or codes like ADV_PL, AP, IB, CLEP).\n"
         "Use NYU course code format, e.g. \"CSCI-UA 101\". No duplicates.\n"
         "Return raw JSON only — no explanation, no markdown.\n\n"
         "Example output:\n"
-        '{"completed": ["CSCI-UA 101", "MATH-UA 123"], "current": ["CSCI-UA 201", "MKTG-UB 1"]}\n\n'
+        '{"completed": ["CSCI-UA 101", "MATH-UA 123"], "current": ["CSCI-UA 201"], '
+        '"course_credits": {"CSCI-UA 101": 4, "MATH-UA 123": 4, "CSCI-UA 201": 4}}\n\n'
         f"Transcript text:\n{text}"
     )
     response = _client.models.generate_content(
@@ -205,7 +208,8 @@ def parse_transcript(text: str) -> dict:
             return {
                 "completed": parsed.get("completed", []),
                 "current": parsed.get("current", []),
+                "course_credits": parsed.get("course_credits", {}),
             }
         except json.JSONDecodeError:
             pass
-    return {"completed": [], "current": []}
+    return {"completed": [], "current": [], "course_credits": {}}

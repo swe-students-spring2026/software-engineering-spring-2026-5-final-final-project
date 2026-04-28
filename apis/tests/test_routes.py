@@ -372,7 +372,7 @@ class TestUploadTranscriptRoute:
         fake_reader = MagicMock()
         fake_reader.pages = [fake_page]
         with patch("pypdf.PdfReader", return_value=fake_reader):
-            with patch("app.ai.service.parse_transcript", return_value={"completed": ["CSCI-UA 101", "MATH-UA 123"], "current": []}):
+            with patch("app.ai.service.parse_transcript", return_value={"completed": ["CSCI-UA 101", "MATH-UA 123"], "current": [], "course_credits": {"CSCI-UA 101": 4, "MATH-UA 123": 4}}):
                 res = client.post(
                     "/user/transcript",
                     data={"email": "user@nyu.edu", "transcript": (BytesIO(b"%PDF-1.4"), "t.pdf", "application/pdf")},

@@ -18,7 +18,7 @@
     .filters { padding: 12px 16px; background: white; border-bottom: 1px solid #eee; display: flex; gap: 8px; flex-wrap: wrap; }
     .filters input, .filters select { padding: 7px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.85rem; }
     .filters input { flex: 1; min-width: 180px; }
-    .filters button { padding: 7px 16px; background: #57068c; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; }
+    .filters button { padding: 7px 16px; background: #57068c; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; display: none; }
     .filters button:hover { background: #7a0fa8; }
     .results-count { padding: 8px 16px; font-size: 0.8rem; color: #888; background: white; border-bottom: 1px solid #eee; }
     .results { flex: 1; overflow-y: auto; padding: 12px 16px; }
@@ -78,6 +78,8 @@
     .cal-header-btns { display: flex; gap: 6px; flex-shrink: 0; }
     .cal-header-btns button { padding: 4px 10px; background: #f0e6f7; color: #57068c; border: 1px solid #c9a7e0; border-radius: 4px; cursor: pointer; font-size: 0.78rem; white-space: nowrap; }
     .cal-header-btns button:hover { background: #e0cef5; }
+    .cal-header-btns .export-btn { background: #eaf6ee; color: #1a6b32; border-color: #a8d5b5; }
+    .cal-header-btns .export-btn:hover { background: #d4edda; }
     .cal-collapse-btn { padding: 4px 8px !important; }
     .cal-body { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
     .calendar-panel.collapsed .cal-body { display: none; }
@@ -85,6 +87,7 @@
     .calendar-panel.collapsed .cal-header h2 { display: none; }
     .calendar-panel.collapsed .cal-header-btns .clear-btn { display: none; }
     .calendar-panel.collapsed .cal-header-btns .schedule-btn { display: none; }
+    .calendar-panel.collapsed .cal-header-btns .export-btn { display: none; }
     .search-panel { width: 55%; display: flex; flex-direction: column; border-right: 1px solid #ddd; overflow: hidden; flex: 1; }
     .cal-grid-wrap { flex: 1; overflow-y: auto; }
     .cal-grid { display: grid; grid-template-columns: 44px repeat(5, 1fr); }
@@ -199,6 +202,7 @@
         <h2>My Schedule</h2>
         <div class="cal-header-btns">
           <a href="/schedule" style="padding:4px 10px;background:#f0e6f7;color:#57068c;border:1px solid #c9a7e0;border-radius:4px;font-size:0.78rem;text-decoration:none;" class="schedule-btn">Full View</a>
+          <button class="export-btn" onclick="downloadCalendar()" title="Export to Google / Apple Calendar">⬇ Download Calendar</button>
           <button class="clear-btn" onclick="clearSchedule()">Clear</button>
           <button class="cal-collapse-btn" onclick="toggleCalendar()" id="collapse-btn">▶</button>
         </div>
@@ -758,31 +762,120 @@
 
     document.getElementById("modal").addEventListener("click", e => { if (e.target === e.currentTarget) closeModal(); });
 
+    // ── Export .ics ──
+    function downloadCalendar() {
+      if (schedule.length === 0) { alert("No courses in your schedule to export."); return; }
+
+      const term = document.getElementById("term").value;
+      const SEMESTERS = {
+        "1264": { name: "Spring 2026", monday: [2026, 0, 26], until: "20260515T235959Z" },
+        "1266": { name: "Summer 2026", monday: [2026, 4, 18], until: "20260814T235959Z" },
+        "1268": { name: "Fall 2026",   monday: [2026, 8,  7], until: "20261218T235959Z" },
+      };
+      const sem = SEMESTERS[term] || SEMESTERS["1268"];
+      const semMonday = new Date(sem.monday[0], sem.monday[1], sem.monday[2]);
+      const DAY_CODES = ["MO", "TU", "WE", "TH", "FR"];
+
+      function pad2(n) { return String(n).padStart(2, "0"); }
+      function icsDate(date) {
+        return `${date.getFullYear()}${pad2(date.getMonth() + 1)}${pad2(date.getDate())}`;
+      }
+      function icsTime(hhmm) {
+        return hhmm.replace(":", "") + "00";
+      }
+      function escape(s) {
+        return (s || "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n");
+      }
+
+      const lines = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//NYU Course Planner//EN",
+        "CALSCALE:GREGORIAN",
+        `X-WR-CALNAME:NYU ${sem.name} Schedule`,
+        "X-WR-TIMEZONE:America/New_York",
+      ];
+
+      let uid = 0;
+      schedule.forEach(({ lecture, recitation }) => {
+        [lecture, recitation].filter(Boolean).forEach(sec => {
+          (sec.meeting_times || []).forEach(mt => {
+            if (!mt.start || !mt.end || typeof mt.day_num !== "number") return;
+            if (mt.day_num < 0 || mt.day_num > 4) return;
+
+            // First occurrence = semester Monday + day offset
+            const firstDay = new Date(semMonday);
+            firstDay.setDate(firstDay.getDate() + mt.day_num);
+            const dateStr = icsDate(firstDay);
+
+            const summary = escape(`${sec.code}${sec.title ? " – " + sec.title : ""}`);
+            const desc = [
+              sec.instructor ? `Instructor: ${sec.instructor}` : "",
+              sec.component  ? `Type: ${sec.component}` : "",
+              sec.section    ? `Section: ${sec.section}` : "",
+              sec.crn        ? `Class#: ${sec.crn}` : "",
+            ].filter(Boolean).map(escape).join("\\n");
+
+            lines.push(
+              "BEGIN:VEVENT",
+              `UID:nyu-${sec.crn}-${mt.day_num}-${++uid}@nyu-planner`,
+              `SUMMARY:${summary}`,
+              `DTSTART;TZID=America/New_York:${dateStr}T${icsTime(mt.start)}`,
+              `DTEND;TZID=America/New_York:${dateStr}T${icsTime(mt.end)}`,
+              `RRULE:FREQ=WEEKLY;BYDAY=${DAY_CODES[mt.day_num]};UNTIL=${sem.until}`,
+              ...(desc ? [`DESCRIPTION:${desc}`] : []),
+              ...(sec.location ? [`LOCATION:${escape(sec.location)}`] : []),
+              "END:VEVENT",
+            );
+          });
+        });
+      });
+
+      lines.push("END:VCALENDAR");
+
+      const blob = new Blob([lines.join("\r\n")], { type: "text/calendar;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `NYU_${sem.name.replace(" ", "_")}_Schedule.ics`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    let _searchDebounce = null;
+    function debounceSearch(page = 1, delay = 350) {
+      clearTimeout(_searchDebounce);
+      _searchDebounce = setTimeout(() => search(page), delay);
+    }
+
     async function init() {
       renderCalendar();
       renderSelectedList();
 
       await loadDropdown("/api/schools", "school");
 
-      // Wire filter dropdowns to auto-search
-      ["term", "school", "component", "status"].forEach(id => {
-        document.getElementById(id).addEventListener("change", () => search(1));
-      });
-      document.getElementById("query").addEventListener("keydown", e => { if (e.key === "Enter") search(1); });
-      document.getElementById("search-btn").addEventListener("click", () => search(1));
-
-      // Restore state from URL if navigating back
+      // Restore URL state first so dropdowns have the right values before first search
       const urlp = new URLSearchParams(window.location.search);
-      if (urlp.has("q") || urlp.has("school") || urlp.has("component") || urlp.has("status") || urlp.has("term")) {
-        if (urlp.get("term"))      document.getElementById("term").value = urlp.get("term");
-        if (urlp.get("q"))         document.getElementById("query").value = urlp.get("q");
-        if (urlp.get("school"))    document.getElementById("school").value = urlp.get("school");
-        if (urlp.get("component")) document.getElementById("component").value = urlp.get("component");
-        if (urlp.get("status"))    document.getElementById("status").value = urlp.get("status");
-        search(parseInt(urlp.get("page") || "1"));
-      } else {
-        document.getElementById("results").innerHTML = '<div class="loading" style="color:#aaa">Enter a search term or filter to find courses.</div>';
-      }
+      if (urlp.get("term"))      document.getElementById("term").value = urlp.get("term");
+      if (urlp.get("q"))         document.getElementById("query").value = urlp.get("q");
+      if (urlp.get("school"))    document.getElementById("school").value = urlp.get("school");
+      if (urlp.get("component")) document.getElementById("component").value = urlp.get("component");
+      if (urlp.get("status"))    document.getElementById("status").value = urlp.get("status");
+
+      // All dropdowns auto-filter immediately on change
+      ["term", "school", "component", "status"].forEach(id => {
+        document.getElementById(id).addEventListener("change", () => debounceSearch(1, 0));
+      });
+      // Text input debounces so rapid typing only fires one request
+      document.getElementById("query").addEventListener("input", () => debounceSearch(1, 350));
+      document.getElementById("query").addEventListener("keydown", e => {
+        if (e.key === "Enter") { clearTimeout(_searchDebounce); search(1); }
+      });
+
+      // Always load courses on page open
+      search(parseInt(urlp.get("page") || "1"));
     }
 
     init();
