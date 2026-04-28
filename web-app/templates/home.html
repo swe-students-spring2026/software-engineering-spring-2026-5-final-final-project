@@ -25,13 +25,17 @@
       <div class="ticker" aria-label="Rated professors">
         <div class="ticker-track">
           <div class="ticker-content">
-            {% for name in rated_professors %}
-              <span class="ticker-chip">{{ name }}</span>
+            {% for prof in rated_professors %}
+              <a href="{{ url_for('professor_page', professor_id=prof.id) }}" class="ticker-chip-link">
+                <span class="ticker-chip">{{ prof.name }}</span>
+              </a>
             {% endfor %}
           </div>
           <div class="ticker-content ticker-dup" aria-hidden="true">
-            {% for name in rated_professors %}
-              <span class="ticker-chip">{{ name }}</span>
+            {% for prof in rated_professors %}
+              <a href="{{ url_for('professor_page', professor_id=prof.id) }}" class="ticker-chip-link">
+                <span class="ticker-chip">{{ prof.name }}</span>
+              </a>
             {% endfor %}
           </div>
         </div>

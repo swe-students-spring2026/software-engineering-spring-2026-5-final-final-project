@@ -149,11 +149,17 @@ def home():
         # Keep the count in sync with posts even if the user doc was stale.
         rated_ids = _refresh_user_rated_professors(user_oid=user_oid, author_email=current_user.email)
 
-    prof_names = [
-        p.get("name", "")
-        for p in professors.find({"_id": {"$in": rated_ids}}, {"name": 1}).sort("name", 1)
-        if p.get("name")
-    ]
+    rated_professors = [
+    {
+        "name": p.get("name", ""),
+        "id": str(p.get("_id"))
+    }
+    for p in professors.find(
+        {"_id": {"$in": rated_ids}},
+        {"name": 1}
+    ).sort("name", 1)
+    if p.get("name")
+]
 
     user_stats = {
         "post_count": post_count,
@@ -189,7 +195,7 @@ def home():
     return render_template(
         "home.html",
         user=user_stats,
-        rated_professors=prof_names,
+        rated_professors=rated_professors,
         my_posts_by_prof=my_posts_by_prof,
     )
 
