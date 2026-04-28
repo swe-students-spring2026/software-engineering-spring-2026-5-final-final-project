@@ -14,9 +14,8 @@ services:
       MONGO_URI: mongodb://admin:secret@mongodb:27017/?authSource=admin
       MONGO_DBNAME: potatoes
       SECRET_KEY: dev
-      ML_SERVICE_URL: http://machine-learning-client:5001
-      FLASK_ENV: development # auto reload and debug mode
-      FLASK_DEBUG: 1
+      ML_SERVICE_URL: http://machine-learning-client:5001/analyze
+      APP_ENV: docker
 
   machine-learning-client:
     build:
