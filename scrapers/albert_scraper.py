@@ -1018,6 +1018,32 @@ def normalize_table_row(row: dict[str, Any]) -> dict[str, Any] | None:
     return data
 
 
+DAY_NUM = {"Mon": 0, "Tue": 1, "Wed": 2, "Thu": 3, "Fri": 4, "Sat": 5, "Sun": 6}
+MEETS_RE = re.compile(
+    r"^([\w,]+)\s+(\d+)\.(\d+)\s*(AM|PM)\s*-\s*(\d+)\.(\d+)\s*(AM|PM)",
+    re.IGNORECASE,
+)
+
+
+def parse_meets_human(meets: str) -> list[dict[str, Any]]:
+    if not meets:
+        return []
+    match = MEETS_RE.match(meets.strip())
+    if not match:
+        return []
+    days_str, sh, sm, sampm, eh, em, eampm = match.groups()
+    sh, sm, eh, em = int(sh), int(sm), int(eh), int(em)
+    start_h = sh % 12 + (12 if sampm.upper() == "PM" else 0)
+    end_h = eh % 12 + (12 if eampm.upper() == "PM" else 0)
+    start = f"{start_h:02d}:{sm:02d}"
+    end = f"{end_h:02d}:{em:02d}"
+    return [
+        {"day": day.strip(), "day_num": DAY_NUM[day.strip()], "start": start, "end": end}
+        for day in days_str.split(",")
+        if day.strip() in DAY_NUM
+    ]
+
+
 def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url: str) -> list[dict[str, Any]]:
     docs: list[dict[str, Any]] = []
     # Tracks the last primary (lecture) record's title/term so secondary sections
@@ -1068,6 +1094,7 @@ def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url:
             section or str(index),
         )
 
+        meets_human = sanitize_albert_text(row.get("meets_human", "")) or meeting_details["meets_human"]
         docs.append(
             {
                 "_id": doc_id,
@@ -1083,7 +1110,8 @@ def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url:
                 "status": sanitize_albert_text(row.get("status", "")),
                 "component": extract_component_type(row),
                 "instructor": sanitize_albert_text(row.get("instructor", "")) or meeting_details["instructor"],
-                "meets_human": sanitize_albert_text(row.get("meets_human", "")) or meeting_details["meets_human"],
+                "meets_human": meets_human,
+                "meeting_times": parse_meets_human(meets_human),
                 "location": meeting_details["location"] or sanitize_albert_text(row.get("location", "")),
                 "dates": sanitize_albert_text(row.get("dates", "")) or meeting_details["dates"],
                 "notes": notes,
@@ -1319,10 +1347,16 @@ def extract_title_from_header_line(line: str, code: str) -> str:
 def find_prior_course_header(lines: list[str], start_index: int, code: str) -> int:
     for index in range(start_index - 1, -1, -1):
         line = lines[index]
+        # Another "| units" line means a new lecture group started — stop here.
         if re.match(rf"^{re.escape(code)}\s+\|", line):
-            continue
+            break
         if re.match(rf"^{re.escape(code)}(?:\s+|$)", line):
-            return index
+            # Only treat as a title header if the line has actual title text after the code,
+            # not a bare section marker (which would just be "MATH-UA 140" with nothing after).
+            remainder = line[len(code):].strip()
+            if remainder:
+                return index
+            break
         other_code = find_course_code(line)
         if other_code and re.match(rf"^{re.escape(other_code)}(?:\s+\||\s+|$)", line):
             break

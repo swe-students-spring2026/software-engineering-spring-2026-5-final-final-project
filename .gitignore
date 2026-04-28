@@ -150,6 +150,10 @@ cython_debug/
 
 # one-off migration scripts
 scrapers/fix_meeting_times.py
+scrapers/backfill_meeting_times.py
+scrapers/test_sample_text.txt
+scrapers/classes_example_report.json
+check_lectures.py
 
 # classes example
 # scrapers/classes_example.json
