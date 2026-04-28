@@ -5,24 +5,24 @@ on:
     branches: [main]
     paths:
       - 'invite-adjuster/**'
-      - '.github/workflows/invite-adjuster.yml'
+      - '.github/workflows/invite_adjuster.yml'
   pull_request:
     branches: [main]
     paths:
-      - 'invite-adjuster/**'
-      - '.github/workflows/invite-adjuster.yml'
+      - 'invite_adjuster/**'
+      - '.github/workflows/invite_adjuster.yml'
 
 jobs:
   test:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: invite-adjuster
+        working-directory: invite_adjuster
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.9'
       - run: pip install pipenv
-      - run: pipenv install --dev
+      - run: pipenv install --dev pytest pytest-cov
       - run: pipenv run pytest
