@@ -1,3 +1,7 @@
+ML/data/raw/311_Service_Requests_from_2020_to_Present_20260321.csv
+ML/data/processed/cleaned_311.csv
+*.npy
+
 # mac junk
 .DS_Store
 
