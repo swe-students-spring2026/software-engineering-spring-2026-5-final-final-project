@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Home — MovieApp{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <h1>Find Your Next Watch</h1>
+  <p class="subtitle">
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+    Search by title or describe what you're in the mood for.
+  </p>
+
+  <form class="search-form" action="/search" method="get">
+    <input
+      type="text"
+      name="q"
+      class="search-input"
+      placeholder="Search for a movie or describe what you want to watch..."
+      autocomplete="off"
+    />
+    <button type="submit" class="btn-primary">Search</button>
+  </form>
+
+  <p class="search-hint">
+    Try <em>"Inception"</em> for a direct search, or
+    <em>"I want a scary movie with lots of jump scares"</em> for recommendations.
+  </p>
+</section>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ movie.title }} — MovieApp{% endblock %}
+
+{% block content %}
+<article class="movie-detail">
+  <h1>{{ movie.title }}</h1>
+
+  <div class="movie-meta">
+    <span>{{ movie.genre }}</span>
+    <span>{{ movie.year }}</span>
+    <span>&#9733; {{ movie.rating }}</span>
+    <span>Dir. {{ movie.director }}</span>
+  </div>
+
+  <p class="movie-description">{{ movie.description }}</p>
+
+  <div class="cast-block">
+    <h3>Cast</h3>
+    <ul>
+      {% for actor in movie.cast %}
+        <li>{{ actor }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <button class="btn-secondary">+ Add to Favorites</button>
+</article>
+{% endblock %}

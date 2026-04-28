@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Favorites — MovieApp{% endblock %}
+
+{% block content %}
+<section class="favorites-section">
+  <h2>Your Favorites</h2>
+
+  {% if favorites %}
+    <ul class="movie-list">
+      {% for movie in favorites %}
+        <li class="movie-card">
+          <a href="/movie/{{ movie.id }}">
+            <h3>{{ movie.title }}</h3>
+          </a>
+          <p>{{ movie.description }}</p>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="empty-state">
+      Lorem ipsum — you haven't saved any favorites yet.
+    </p>
+  {% endif %}
+</section>
+{% endblock %}

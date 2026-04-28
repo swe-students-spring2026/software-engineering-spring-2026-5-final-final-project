@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Results — MovieApp{% endblock %}
+
+{% block content %}
+<section class="results-section">
+  <h2>Results for <em>"{{ query }}"</em></h2>
+
+  {% if mode == "intent" %}
+    <p class="mode-badge intent">
+      Recommendation mode — your query was interpreted as a natural language request.
+    </p>
+  {% elif mode == "direct" %}
+    <p class="mode-badge direct">
+      Direct search mode — searching by keyword.
+    </p>
+  {% endif %}
+
+  {% if results %}
+    <ul class="movie-list">
+      {% for movie in results %}
+        <li class="movie-card">
+          <a href="/movie/{{ movie.id }}">
+            <h3>{{ movie.title }}</h3>
+          </a>
+          <p>{{ movie.description }}</p>
+          <span class="meta">{{ movie.genre }} &middot; {{ movie.year }} &middot; &#9733; {{ movie.rating }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="empty-state">No results found. Try a different search.</p>
+  {% endif %}
+</section>
+{% endblock %}
