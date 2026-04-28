@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>StudyCast Auth</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body onload="showSignin()">
+
+<div class="container">
+
+    <h1>StudyCast</h1>
+
+    <p class="subtitle">
+        Your personal academic planner to track tasks, exams, and stay organized.
+    </p>
+
+    <div id="signinForm" class="card">
+        <h2>Sign In</h2>
+        <p>Enter your credentials to access your dashboard.</p>
+
+        <form action="/auth" method="POST">
+            <input type="hidden" name="action" value="signin">
+
+            <input type="email" name="email" placeholder="Email" required>
+            <input type="password" name="password" placeholder="Password" required>
+
+            <button type="submit">Sign In</button>
+        </form>
+
+        <p>
+            Need an account?
+            <button type="button" onclick="showSignup()">Sign Up</button>
+        </p>
+    </div>
+
+    <div id="signupForm" class="card" style="display:none;">
+        <h2>Create Account</h2>
+        <p>Start organizing your study life.</p>
+
+        <form action="/auth" method="POST">
+            <input type="hidden" name="action" value="signup">
+
+            <input type="text" name="name" placeholder="Name" required>
+            <input type="email" name="email" placeholder="Email" required>
+            <input type="password" name="password" placeholder="Password" required>
+
+            <button type="submit">Create Account</button>
+        </form>
+
+        <p>
+            Already have an account?
+            <button type="button" onclick="showSignin()">Sign In</button>
+        </p>
+    </div>
+
+</div>
+
+<script>
+    function showSignin() {
+        document.getElementById("signinForm").style.display = "block";
+        document.getElementById("signupForm").style.display = "none";
+    }
+
+    function showSignup() {
+        document.getElementById("signupForm").style.display = "block";
+        document.getElementById("signinForm").style.display = "none";
+    }
+</script>
+
+</body>
+</html>

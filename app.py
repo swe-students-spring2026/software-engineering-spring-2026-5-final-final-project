@@ -1,22 +1,29 @@
-from flask import Flask, request, jsonify, render_template, redirect
+from flask import Flask, request, jsonify, render_template, redirect, session
 from pymongo import MongoClient
 from dotenv import load_dotenv
 import os
+from bson.objectid import ObjectId
+
+
+
 
 load_dotenv()
 
 app = Flask(__name__)
-
+app.secret_key = "studycast-secret-key"
 client = MongoClient(os.getenv("MONGO_URI"))
 db = client["studycast"]
 
 @app.route("/")
 def home():
-    return redirect("/dashboard")
+    return redirect("/auth")
 
 
 @app.route("/dashboard")
 def dashboard():
+    if "user_name" not in session:
+        return redirect("/auth")   # 👈 send back to login
+
     return render_template("dashboard.html")
 
 
@@ -70,6 +77,58 @@ def complete_todo(todo_id):
 def delete_todo(todo_id):
     db.todos.delete_one({"_id": ObjectId(todo_id)})
     return redirect("/todos")
+@app.route("/signup", methods=["GET"])
+def signup_page():
+    return render_template("signup.html")
+
+
+@app.route("/auth", methods=["GET", "POST"])
+def auth():
+    if request.method == "POST":
+        name = request.form.get("name")
+        email = request.form.get("email")
+        password = request.form.get("password")
+        action = request.form.get("action")  # login or signup
+
+        if action == "signup":
+            existing_user = db.users.find_one({"email": email})
+
+            if existing_user:
+                return "User already exists."
+
+            db.users.insert_one({
+                "name": name,
+                "email": email,
+                "password": password
+            })
+
+            session["user_name"] = name
+            return redirect("/dashboard")
+
+        elif action == "signin":
+            user = db.users.find_one({
+                "email": email,
+                "password": password
+            })
+
+            if user:
+                session["user_name"] = user["name"]
+                return redirect("/dashboard")
+
+            return "Invalid login."
+
+    return render_template("auth.html")
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/auth")
+
+
+
+
+
+
 
 
 if __name__ == "__main__":

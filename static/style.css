@@ -1,32 +1,127 @@
 body {
     font-family: Arial, sans-serif;
-    margin: 40px;
-    background-color: #f5f5f5;
+    background-color: #f0f2f5; 
+    margin: 0;
+    text-align: center;
+}
+
+/* Center container */
+.container {
+    max-width: 500px;
+    margin: 60px auto;
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
 }
 
 h1 {
-    color: #333;
-}
-
-h2 {
-    color: #555;
-}
-
-ul {
-    padding-left: 20px;
-}
-
-li {
+    color: #1877f2;
     margin-bottom: 10px;
 }
 
+h2 {
+    color: #333;
+}
+
+/* Lists */
+ul {
+    list-style: none;
+    padding: 0;
+}
+
+li {
+    margin: 10px 0;
+}
+
+/* Inputs */
+input, select {
+    width: 90%;
+    padding: 8px;
+    margin: 8px 0;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+/* Buttons */
 button {
-    margin-left: 5px;
-    padding: 5px 10px;
+    background-color: #1877f2; /* Meta blue */
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    margin: 5px;
+    border-radius: 5px;
     cursor: pointer;
 }
 
-input, select {
-    margin: 5px;
-    padding: 5px;
+button:hover {
+    background-color: #166fe5;
+}
+
+
+a {
+    color: #1877f2;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+.card {
+    background: white;
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 8px;
+}
+
+.card form {
+    margin-top: 10px;
+}
+
+.card input,
+.card select {
+    width: 90%;
+    display: block;
+    margin: 10px auto;
+}
+
+.inline-form {
+    display: inline;
+}
+
+.inline-form button {
+    width: auto;
+}
+button.active {
+    background-color: white;
+    color: #1877f2;
+    border: 1px solid #1877f2;
+}
+
+.form-group {
+    max-width: 400px;
+    margin: auto;
+    text-align: left;
+}
+
+.form-row {
+    display: flex;
+    align-items: center;
+    margin: 10px 0;
+}
+.form-group button {
+    display: block;
+    margin: 20px auto;
+}
+
+.form-row label {
+    width: 60px;
+    font-weight: bold;
+}
+
+
+.form-row input,
+.form-row select {
+    width: auto;
+    flex: 1;
+    margin: 8px 0;
 }
