@@ -155,7 +155,7 @@ def recommend():
                 "user_id": user_id,
                 "limit": 10,
             },
-            timeout=30,
+            timeout=100,
         )
         predict_resp.raise_for_status()
         result = predict_resp.json()
