@@ -2,6 +2,8 @@
 Tests for web-app Flask routes.
 Run: python -m pytest tests/ --cov=. --cov-report=term-missing --cov-fail-under=80
 """
+from unittest import mock
+
 import pytest
 import requests
 from unittest.mock import patch, MagicMock
@@ -45,7 +47,7 @@ def fake_spotify_user():
 
 class TestLogin:
     def test_login_renders_page(self, client):
-        with patch("app.sp_oauth") as mock_oauth:
+        with patch("app.get_sp_oauth") as mock_oauth:
             mock_oauth.get_authorize_url.return_value = "https://accounts.spotify.com/authorize?..."
             resp = client.get("/login")
         assert resp.status_code == 200
@@ -119,10 +121,10 @@ class TestCallback:
             "refresh_token": "new-refresh",
             "expires_at": 9999999999,
         }
-        with patch("app.sp_oauth") as mock_oauth, \
+        with patch("app.get_sp_oauth") as mock_oauth, \
              patch("app.spotipy.Spotify") as mock_sp_class:
-
-            mock_oauth.get_access_token.return_value = fake_token
+            
+            mock_oauth.return_value.get_access_token.return_value = fake_token
             mock_sp_instance = MagicMock()
             mock_sp_instance.current_user.return_value = fake_spotify_user()
             mock_sp_class.return_value = mock_sp_instance
@@ -133,8 +135,9 @@ class TestCallback:
         assert "/" in resp.headers["Location"]
 
     def test_callback_missing_code_handled(self, client):
-        with patch("app.sp_oauth") as mock_oauth:
-            mock_oauth.get_access_token.side_effect = Exception("No code")
+        with patch("app.get_sp_oauth") as mock_oauth:
+            mock_oauth_instance = mock_oauth.return_value
+            mock_oauth_instance.get_access_token.side_effect = Exception("No code")
             resp = client.get("/callback")
         # Should not crash with 500 — either redirect or error page
         assert resp.status_code in (302, 400, 500)
@@ -231,10 +234,10 @@ class TestGetSpotifyClient:
             with client.session_transaction() as sess:
                 sess["token_info"] = expired_token
 
-            with patch("app.sp_oauth") as mock_oauth, \
+            with patch("app.get_sp_oauth") as mock_oauth, \
                  patch("app.spotipy.Spotify") as mock_sp_class:
-                mock_oauth.is_token_expired.return_value = True
-                mock_oauth.refresh_access_token.return_value = new_token
+                mock_oauth().is_token_expired.return_value = True
+                mock_oauth().refresh_access_token.return_value = new_token
                 mock_sp_class.return_value = MagicMock()
 
                 # Need session context to test properly
@@ -243,9 +246,9 @@ class TestGetSpotifyClient:
 
     def test_returns_client_when_valid_token(self, logged_in_client):
         from app import get_spotify_client
-        with patch("app.sp_oauth") as mock_oauth, \
+        with patch("app.get_sp_oauth") as mock_oauth, \
              patch("app.spotipy.Spotify") as mock_sp_class:
-            mock_oauth.is_token_expired.return_value = False
+            mock_oauth().is_token_expired.return_value = False
             mock_sp_class.return_value = MagicMock()
 
             with app.test_request_context():
