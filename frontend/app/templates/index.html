@@ -32,6 +32,9 @@
     .reload-btn:disabled { opacity: 0.6; cursor: wait; }
     .course-school { font-size: 0.75rem; color: #999; margin-top: 2px; }
     .course-description { font-size: 0.78rem; color: #555; margin-top: 6px; line-height: 1.45; max-height: 60px; overflow: hidden; }
+    .course-description.expanded { max-height: none; }
+    .desc-toggle { margin-top: 4px; background: none; border: none; color: #57068c; cursor: pointer; font-size: 0.74rem; font-weight: bold; padding: 0; }
+    .desc-toggle:hover { text-decoration: underline; }
     .bulletin-meta { font-size: 0.72rem; color: #777; margin-top: 6px; }
     .sections-table { margin-top: 10px; border-top: 1px solid #eee; }
     .section-row { display: grid; grid-template-columns: 160px 1fr auto; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid #f0f0f0; font-size: 0.8rem; }
@@ -429,9 +432,19 @@
                     onclick="reloadCourseFromBulletin(this)">Reload</button>
           </div>
           ${school ? `<div class="course-school">${school}</div>` : ""}
-          ${description ? `<div class="course-description">${description}</div>` : ""}
+          ${description ? `
+            <div class="course-description">${description}</div>
+            <button class="desc-toggle" onclick="toggleDescription(this)">Show more</button>
+          ` : ""}
           <div class="sections-table">${sectionsHtml}</div>
         </div>`;
+    }
+
+    function toggleDescription(button) {
+      const description = button.previousElementSibling;
+      if (!description) return;
+      const expanded = description.classList.toggle("expanded");
+      button.textContent = expanded ? "Show less" : "Show more";
     }
 
     async function reloadCourseFromBulletin(button) {
@@ -563,6 +576,7 @@
 
         countDiv.textContent = `Showing ${groups.size} course${groups.size !== 1 ? "s" : ""} (${classes.length} sections)`;
         resultsDiv.innerHTML = groups.size ? html : '<div class="course-card">No courses found.</div>';
+        updateDescriptionToggles();
         renderPagination(data.page, data.total_pages, data.total_courses);
         resultsDiv.scrollTop = 0;
       } catch (e) {
@@ -571,6 +585,14 @@
     }
 
     // ── Add to schedule ──
+    function updateDescriptionToggles() {
+      document.querySelectorAll(".course-description").forEach(description => {
+        const button = description.nextElementSibling;
+        if (!button || !button.classList.contains("desc-toggle")) return;
+        button.style.display = description.scrollHeight > description.clientHeight + 2 ? "" : "none";
+      });
+    }
+
     function handleAdd(crn) {
       const sec = sectionMap[crn];
       if (!sec) return;
