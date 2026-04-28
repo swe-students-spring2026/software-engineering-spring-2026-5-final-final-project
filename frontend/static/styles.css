@@ -1,0 +1,130 @@
+/* ── Reset & base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: system-ui, sans-serif;
+  background: #0f0f0f;
+  color: #e8e8e8;
+  line-height: 1.6;
+}
+
+a { color: #a78bfa; text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Navbar ── */
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  background: #1a1a1a;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.nav-brand { font-size: 1.2rem; font-weight: 700; color: #a78bfa; }
+
+.nav-links { display: flex; gap: 1.5rem; }
+.nav-links a { color: #ccc; font-size: 0.95rem; }
+
+/* ── Container ── */
+.container { max-width: 860px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+
+/* ── Hero / Home ── */
+.hero { text-align: center; padding: 3rem 0; }
+.hero h1 { font-size: 2.2rem; margin-bottom: 0.75rem; }
+.subtitle { color: #999; margin-bottom: 1.5rem; }
+
+.search-form { display: flex; gap: 0.5rem; max-width: 600px; margin: 0 auto 1rem; }
+
+.search-input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #333;
+  background: #1e1e1e;
+  color: #e8e8e8;
+  font-size: 1rem;
+}
+.search-input:focus { outline: none; border-color: #a78bfa; }
+
+.search-hint { color: #666; font-size: 0.875rem; margin-top: 0.5rem; }
+
+/* ── Buttons ── */
+.btn-primary {
+  padding: 0.75rem 1.5rem;
+  background: #7c3aed;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+.btn-primary:hover { background: #6d28d9; }
+
+.btn-secondary {
+  padding: 0.6rem 1.2rem;
+  background: transparent;
+  color: #a78bfa;
+  border: 1px solid #a78bfa;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  margin-top: 1.25rem;
+}
+.btn-secondary:hover { background: #2d1f5e; }
+
+/* ── Mode badge ── */
+.mode-badge {
+  display: inline-block;
+  padding: 0.35rem 0.85rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  margin-bottom: 1.5rem;
+}
+.mode-badge.intent  { background: #1e1b4b; color: #a78bfa; }
+.mode-badge.direct  { background: #052e16; color: #4ade80; }
+
+/* ── Movie list ── */
+.movie-list { list-style: none; display: flex; flex-direction: column; gap: 1rem; }
+
+.movie-card {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+}
+.movie-card h3 { margin-bottom: 0.4rem; font-size: 1.1rem; }
+.movie-card p  { color: #aaa; font-size: 0.9rem; margin-bottom: 0.5rem; }
+.meta { color: #666; font-size: 0.8rem; }
+
+/* ── Movie detail ── */
+.movie-detail h1  { font-size: 2rem; margin-bottom: 0.75rem; }
+.movie-meta       { display: flex; gap: 1rem; color: #888; font-size: 0.875rem; margin-bottom: 1.25rem; }
+.movie-description { color: #ccc; margin-bottom: 1.5rem; line-height: 1.8; }
+.cast-block h3    { margin-bottom: 0.5rem; color: #999; font-size: 0.9rem; text-transform: uppercase; }
+.cast-block ul    { list-style: disc; padding-left: 1.25rem; color: #bbb; }
+.cast-block li    { margin-bottom: 0.25rem; }
+
+/* ── Auth ── */
+.auth-section { max-width: 380px; margin: 0 auto; }
+.auth-section h2 { margin-bottom: 0.5rem; }
+
+.auth-form { display: flex; flex-direction: column; gap: 0.75rem; margin: 1.5rem 0 1rem; }
+.auth-form label { font-size: 0.875rem; color: #aaa; }
+.auth-form input {
+  padding: 0.7rem 1rem;
+  background: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: #e8e8e8;
+  font-size: 1rem;
+}
+.auth-form input:focus { outline: none; border-color: #a78bfa; }
+.auth-note { color: #555; font-size: 0.8rem; }
+
+/* ── Empty state ── */
+.empty-state { color: #666; font-style: italic; margin-top: 1rem; }
+
+/* ── Section headings ── */
+.results-section h2,
+.favorites-section h2 { margin-bottom: 1rem; font-size: 1.5rem; }
