@@ -18,8 +18,8 @@ load_dotenv()
 # set the secret key for session management
 app.secret_key = os.getenv("SECRET_KEY")
 # connect to MongoDB
-client = pymongo.MongoClient(os.getenv("MONGO_URI"))
-db = client[os.getenv("MONGO_DB_NAME")]
+client = pymongo.MongoClient(os.getenv("MONGO_URI", "mongodb://localhost:27017"))
+db = client[os.getenv("MONGO_DB_NAME", "moodmusic")]
 ML_SERVICE_URL = os.getenv("ML_SERVICE_URL", "http://ml-service:8000")
 
 # set up Spotify API credentials
@@ -50,9 +50,16 @@ def index():
     
     user_info = sp.current_user()
     
+    history = []
+    user_id = session.get("user_id")
+    if user_id:
+        history_cursor = db.sessions.find({"user_id": user_id}).sort("created_at", -1).limit(5)
+        history = list(history_cursor)
+    
     return render_template("index.html", 
         username=user_info["display_name"],
-        user_image=user_info["images"][0]["url"] if user_info["images"] else None
+        user_image=user_info["images"][0]["url"] if user_info["images"] else None,
+        history=history
     )
 
 
@@ -124,16 +131,39 @@ def recommend():
     except requests.RequestException as e:
         return render_template("index.html", error=f"ML service error: {e}")
 
+    history = []
+    user_id = session.get("user_id")
+    if user_id:
+        history_cursor = db.sessions.find({"user_id": user_id}).sort("created_at", -1).limit(5)
+        history = list(history_cursor)
+
+    # Use display name if possible, fallback to user_id
+    user_info = sp.current_user()
+    username = user_info.get("display_name", user_id)
+
     return render_template(
         "index.html",
-        username=session.get("user_id"),
-        tracks=result["tracks"],
+        username=username,
+        tracks=result.get("tracks", []),
         session_id=result.get("session_id"),
+        history=history,
+        track_ids=[t.get("id") for t in result.get("tracks", []) if t.get("id")]
     )
 
 @app.route("/save_playlist", methods=["POST"])
 def save_playlist():
-    # TODO: save to Spotify
+    track_ids = request.form.get("track_ids")
+    user_id = session.get("user_id")
+    
+    if user_id and track_ids:
+        db.playlists.insert_one({
+            "user_id": user_id,
+            "tracks": track_ids.split(","),
+            "created_at": datetime.datetime.now(datetime.timezone.utc)
+        })
+
+    # TODO: save to Spotify via Spotipy API
+    from flask import flash
     flash("Playlist saved!", "success")
     return redirect(url_for("index"))
 
