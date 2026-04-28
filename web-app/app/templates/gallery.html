@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Meme Gallery</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+  </head>
+
+  <body>
+    <div class="nav">
+      <a href="{{ url_for('main.index') }}">Home</a>
+      <a href="{{ url_for('main.gallery') }}">Gallery</a>
+    </div>
+    <h1>View Memes Created by Our Community</h1>
+  </body>
+</html>
