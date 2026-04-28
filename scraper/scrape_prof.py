@@ -43,8 +43,10 @@ else:
 
 db = client[mongo_dbname]
 
-# Clear old bad scraped data before reseeding.
-db.professors.delete_many({})
+# If data already exists, stop execution
+if db.professors.count_documents({}) > 0:
+    print("Professors collection already has data. Skipping seeding.")
+    exit(0)
 
 LIST_URL = "https://cs.nyu.edu/dynamic/people/faculty/type/20/"
 
