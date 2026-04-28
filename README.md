@@ -68,7 +68,7 @@ docker run --name mongodb -p 27017:27017 -e MONGO_INITDB_ROOT_USERNAME=admin -e 
 ```bash
 docker build -t web-app ./web-app
 
-docker run -p 5000:5000 --name web-app -e MONGO_URI="mongodb://admin:secret@host.docker.internal:27017/?authSource=admin" -e MONGO_DBNAME=potatoes -e SECRET_KEY=dev -e ML_SERVICE_URL=http://host.docker.internal:5001 web-app
+docker run -p 5000:5000 --name web-app -e MONGO_URI="mongodb://admin:secret@host.docker.internal:27017/?authSource=admin" -e MONGO_DBNAME=potatoes -e SECRET_KEY=dev -e ML_SERVICE_URL=http://host.docker.internal:5001/analyze web-app
 ```
 
 ---
@@ -109,7 +109,7 @@ Set environment variables. An example file named `env.example` is given. Copy th
 MONGO_URI="mongodb://admin:secret@localhost:27017/?authSource=admin"
 MONGO_DBNAME=potatoes
 SECRET_KEY=dev
-ML_SERVICE_URL=http://machine-learning-client:5001
+ML_SERVICE_URL=http://localhost:5001/analyze
 ```
 
 Run:

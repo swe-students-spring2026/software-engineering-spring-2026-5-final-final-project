@@ -2,7 +2,15 @@
 
 {% block content %}
   <section>
-    <h1>{{ professor.name }}</h1>
+    <div class="prof-header">
+      <h1>{{ professor.name }}</h1>
+      {% if professor.sentiment_overall %}
+        <span class="score-badge {{ professor.sentiment_overall.label | lower | replace(' ', '-') }}">
+          {{ professor.sentiment_overall.score }}/100
+        </span>
+      {% endif %}
+    </div>
+
     {% if professor.title %}<p>{{ professor.title }}</p>{% endif %}
 
     <div>
@@ -13,7 +21,17 @@
       {% endif %}
     </div>
 
-    <form method="get" action="{{ url_for('new_post_form', professor_id=professor._id) }}">
+    {% if professor.sentiment_themes %}
+      <div class="sentiment-row">
+        {% for t in professor.sentiment_themes %}
+          <span class="theme-tag {{ t.label | lower | replace(' ', '-') }}">
+            {{ t.theme }}: {{ t.score }}
+          </span>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <form class="prof-sentiment-form" method="get" action="{{ url_for('new_post_form', professor_id=professor._id) }}">
       <button type="submit">Create Post</button>
     </form>
   </section>
@@ -24,8 +42,24 @@
       <ul>
         {% for post in posts %}
           <li class="post-item">
-            <div class="post-author">{{ post.author_email }}</div>
+            <div class="post-header">
+              <div class="post-author">{{ post.author_email }}</div>
+              {% if post.sentiment %}
+                <span class="score-badge {{ post.sentiment.overall.label | lower | replace(' ', '-') }}">
+                  {{ post.sentiment.overall.score }}/100
+                </span>
+              {% endif %}
+            </div>
             <div class="post-text">{{ post.text }}</div>
+            {% if post.sentiment and post.sentiment.themes %}
+              <div class="sentiment-row">
+                {% for t in post.sentiment.themes %}
+                  <span class="theme-tag {{ t.label | lower | replace(' ', '-') }}">
+                    {{ t.theme }}: {{ t.score }}
+                  </span>
+                {% endfor %}
+              </div>
+            {% endif %}
             {% if post.created_at %}
               <div class="post-meta">
                 <small>{{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
