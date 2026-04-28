@@ -102,12 +102,32 @@
         <input type="hidden" name="mood_label" id="mood-label" value="{{ mood_label | default('') }}">
       </div>
 
+      <!-- City selector -->
+      <div class="card">
+        <p class="card-title">Your city</p>
+        <p class="card-sub">Used to pull local weather for your vibe</p>
+        <div class="city-select">
+          <input
+            type="text"
+            class="city-input"
+            id="city-search"
+            placeholder="Search a city..."
+            autocomplete="off"
+            value="{{ city_name | default('New York, NY') }}"
+          >
+          <div class="city-dropdown" id="city-dropdown"></div>
+        </div>
+        <input type="hidden" name="city_lat"  id="city-lat"  value="{{ city_lat  | default('40.7128') }}">
+        <input type="hidden" name="city_lon"  id="city-lon"  value="{{ city_lon  | default('-74.0060') }}">
+        <input type="hidden" name="city_name" id="city-name-hidden" value="{{ city_name | default('New York, NY') }}">
+      </div>
+
       <!-- Weather + time context -->
       <div class="context-grid">
         <div class="context-card">
           <div class="context-card-label">Weather</div>
-          <div class="context-card-val">{{ weather_desc | default('Detecting...') }}</div>
-          <div class="context-card-sub">auto-detected · affects vibe</div>
+          <div class="context-card-val">{{ weather_desc | default('—') }}</div>
+          <div class="context-card-sub">{{ city_name | default('select a city above') }}</div>
         </div>
         <div class="context-card">
           <div class="context-card-label">Time of day</div>
@@ -238,6 +258,65 @@
       const btn = document.querySelector(`.emoji-btn[data-mood="${savedMood}"]`);
       if (btn) btn.classList.add('active');
     }
+
+    // ── City selector ──
+    const CITIES = {{ cities | tojson }};
+    const citySearch     = document.getElementById('city-search');
+    const cityDropdown   = document.getElementById('city-dropdown');
+    const cityLatInput   = document.getElementById('city-lat');
+    const cityLonInput   = document.getElementById('city-lon');
+    const cityNameHidden = document.getElementById('city-name-hidden');
+
+    let currentFiltered = [];
+    let highlightedIdx  = -1;
+
+    function renderDropdown(query) {
+      const q = query.trim().toLowerCase();
+      currentFiltered = q
+        ? CITIES.filter(c => c.name.toLowerCase().includes(q) || c.state.toLowerCase().includes(q))
+        : CITIES;
+      highlightedIdx = -1;
+      cityDropdown.innerHTML = '';
+      if (!currentFiltered.length) {
+        cityDropdown.innerHTML = '<div class="city-no-results">No cities found</div>';
+        return;
+      }
+      currentFiltered.slice(0, 50).forEach(city => {
+        const div = document.createElement('div');
+        div.className = 'city-option';
+        div.innerHTML = `<span>${city.name}</span><span class="city-opt-state">${city.state}</span>`;
+        div.addEventListener('mousedown', e => { e.preventDefault(); selectCity(city); });
+        cityDropdown.appendChild(div);
+      });
+    }
+
+    function selectCity(city) {
+      const label = `${city.name}, ${city.state}`;
+      citySearch.value      = label;
+      cityLatInput.value    = city.lat;
+      cityLonInput.value    = city.lon;
+      cityNameHidden.value  = label;
+      cityDropdown.classList.remove('open');
+    }
+
+    function updateHighlight() {
+      cityDropdown.querySelectorAll('.city-option').forEach((el, i) =>
+        el.classList.toggle('highlighted', i === highlightedIdx)
+      );
+      const hl = cityDropdown.querySelector('.city-option.highlighted');
+      if (hl) hl.scrollIntoView({ block: 'nearest' });
+    }
+
+    citySearch.addEventListener('focus', () => { renderDropdown(citySearch.value); cityDropdown.classList.add('open'); });
+    citySearch.addEventListener('input', () => { renderDropdown(citySearch.value); cityDropdown.classList.add('open'); });
+    citySearch.addEventListener('blur',  () => cityDropdown.classList.remove('open'));
+    citySearch.addEventListener('keydown', e => {
+      const opts = cityDropdown.querySelectorAll('.city-option');
+      if (e.key === 'ArrowDown')       { e.preventDefault(); highlightedIdx = Math.min(highlightedIdx + 1, opts.length - 1); updateHighlight(); }
+      else if (e.key === 'ArrowUp')    { e.preventDefault(); highlightedIdx = Math.max(highlightedIdx - 1, 0); updateHighlight(); }
+      else if (e.key === 'Enter' && highlightedIdx >= 0) { e.preventDefault(); selectCity(currentFiltered[highlightedIdx]); }
+      else if (e.key === 'Escape')     { cityDropdown.classList.remove('open'); }
+    });
 
     // ── Time of day ──
     const hour = new Date().getHours();
