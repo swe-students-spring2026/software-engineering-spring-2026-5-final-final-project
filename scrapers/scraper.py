@@ -5,7 +5,7 @@ import re
 import sys
 import time
 import urllib.parse
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -81,6 +81,44 @@ def api_post(route: str, query_params: dict, body: dict, retries: int = 3) -> di
 def get_filter_data(term_code: str = "9999") -> dict:
     """Returns the full filter schema — subjects, schools, sessions, etc."""
     return api_post("load-filter-data", {}, {"srcdb": term_code})
+
+
+def is_term_available(term_code: str) -> bool:
+    data = get_filter_data(term_code)
+    if not data or data.get("fatal"):
+        return False
+    return bool(data.get("subject") or data.get("subjects"))
+
+
+def make_term_code(year: int, semester_digit: int) -> str:
+    return f"1{year % 100:02d}{semester_digit}"
+
+
+def candidate_term_codes(today: date | None = None, *, years_ahead: int = 1) -> list[str]:
+    today = today or date.today()
+    semester_digits = (8, 6, 4, 2)
+    return [
+        make_term_code(year, digit)
+        for year in range(today.year + years_ahead, today.year - 1, -1)
+        for digit in semester_digits
+    ]
+
+
+def find_available_terms(today: date | None = None, *, count: int = 2) -> list[str]:
+    terms: list[str] = []
+    for candidate in candidate_term_codes(today):
+        if is_term_available(candidate):
+            terms.append(candidate)
+            if len(terms) >= count:
+                return terms
+    return terms
+
+
+def find_furthest_available_term(today: date | None = None) -> str:
+    terms = find_available_terms(today, count=1)
+    if terms:
+        return terms[0]
+    raise RuntimeError("No available bulletin class-search term found.")
 
 
 def search(term_code: str, criteria: list[dict]) -> list[dict]:
@@ -335,7 +373,7 @@ def save_ndjson(docs, path):
     print(f"\n💾 {len(docs)} docs → {path}")
 
 
-def save_to_mongo(docs, mongo_uri, collection="classes"):
+def save_to_mongo(docs, mongo_uri, collection="classes", db_name=None):
     try:
         from pymongo import MongoClient, UpdateOne
     except ImportError:
@@ -343,8 +381,8 @@ def save_to_mongo(docs, mongo_uri, collection="classes"):
         sys.exit(1)
 
     client = MongoClient(mongo_uri)
-    db_name = mongo_uri.rsplit("/", 1)[-1].split("?")[0] or "nyu"
-    coll = client[db_name][collection]
+    resolved_db_name = db_name or mongo_uri.rsplit("/", 1)[-1].split("?")[0] or "nyu"
+    coll = client[resolved_db_name][collection]
 
     coll.create_index("term.code")
     coll.create_index("subject_code")
