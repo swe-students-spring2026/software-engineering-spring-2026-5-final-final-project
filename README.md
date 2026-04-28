@@ -2,8 +2,20 @@
 
 <!-- Insert CI test badges here -->
 
+## Overview
 An application that analyzes student feedback for professors using sentiment analysis, allowing users to join groups and filter reviews accordingly.
 
+The system is built with a microservice-style architecture, including:
+- a Flask-based web application
+- a machine learning service for sentiment analysis
+- a MongoDB database for data storage
+
+## Features
+- 🔍 Sentiment analysis on student reviews
+- 👥 Group system for shared interests
+- 🏫 View professor ratings and reviews
+- ⭐ Filter reviews by group or user preferences
+- ✍️ Add and manage your own reviews
 ---
 
 ## 👥 Team
@@ -11,6 +23,8 @@ An application that analyzes student feedback for professors using sentiment ana
 - [Cary Ho](https://github.com/CakeOfThePans)
 - [Albert Chen](https://github.com/azc9673)
 - [Joy Song](https://github.com/pancake0003)
+- [Suri Su](https://github.com/suri-zip)
+- [Ruby Zhang](https://github.com/yz10113-tech)
 
 ---
 
