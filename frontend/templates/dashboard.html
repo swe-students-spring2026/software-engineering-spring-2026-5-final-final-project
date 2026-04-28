@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Dashboard</h1>
+</div>
+
+<section class="balance-summary">
+    <p class="balance-label">Total balance</p>
+    <p class="balance-amount">$0.00</p>
+</section>
+
+<section class="friend-list">
+    <h2 class="section-title">Friends</h2>
+
+    <div class="friend-row">
+        <div class="friend-info">
+            <div class="avatar">A</div>
+            <span class="friend-name">Alice</span>
+        </div>
+        <span class="friend-balance owes">owes you $12.50</span>
+    </div>
+
+    <div class="friend-row">
+        <div class="friend-info">
+            <div class="avatar">B</div>
+            <span class="friend-name">Bob</span>
+        </div>
+        <span class="friend-balance owed">you owe $5.00</span>
+    </div>
+
+    <div class="friend-row">
+        <div class="friend-info">
+            <div class="avatar">C</div>
+            <span class="friend-name">Carol</span>
+        </div>
+        <span class="friend-balance settled">settled up</span>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Profile</h1>
+</div>
+
+<section class="profile-section">
+    <div class="profile-avatar">U</div>
+    <p class="profile-name">Username</p>
+    <p class="profile-email">user@example.com</p>
+</section>
+
+<section class="settings-list">
+    <div class="settings-row">
+        <span>Reminder threshold</span>
+        <span class="settings-value">7 days</span>
+    </div>
+    <div class="settings-row">
+        <span>Notifications</span>
+        <span class="settings-value">On</span>
+    </div>
+    <div class="settings-row">
+        <span>Log out</span>
+    </div>
+</section>
+{% endblock %}

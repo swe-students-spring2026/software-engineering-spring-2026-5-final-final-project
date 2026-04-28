@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Friends{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Friends</h1>
+    <button class="header-action">Add</button>
+</div>
+
+<section class="friend-list">
+    <div class="friend-row">
+        <div class="friend-info">
+            <div class="avatar">A</div>
+            <span class="friend-name">Alice</span>
+        </div>
+    </div>
+
+    <div class="friend-row">
+        <div class="friend-info">
+            <div class="avatar">B</div>
+            <span class="friend-name">Bob</span>
+        </div>
+    </div>
+
+    <div class="friend-row">
+        <div class="friend-info">
+            <div class="avatar">C</div>
+            <span class="friend-name">Carol</span>
+        </div>
+    </div>
+</section>
+{% endblock %}
