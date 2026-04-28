@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>StudyCast To Do List</title>
+</head>
+<body>
+
+    <h1>StudyCast To Do List</h1>
+
+    <p><a href="/dashboard">Back to Dashboard</a></p>
+
+    <h2>Add New Task</h2>
+
+    <form action="/add-todo" method="POST">
+        <label>Task:</label>
+        <input type="text" name="task" required>
+
+        <label>Type:</label>
+        <select name="type">
+            <option value="today">Today</option>
+            <option value="long-term">Long Term</option>
+        </select>
+
+        <button type="submit">Add Task</button>
+    </form>
+
+    <hr>
+
+    <h2>Today To Do List</h2>
+
+    {% if today_todos %}
+        <ul>
+            {% for todo in today_todos %}
+                <li>
+                    {% if todo.completed %}
+                        <s>{{ todo.task }}</s>
+                    {% else %}
+                        {{ todo.task }}
+                    {% endif %}
+
+                    <form action="/complete-todo/{{ todo._id }}" method="POST" style="display:inline;">
+                        <button type="submit">Complete</button>
+                    </form>
+
+                    <form action="/delete-todo/{{ todo._id }}" method="POST" style="display:inline;">
+                        <button type="submit">Delete</button>
+                    </form>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No tasks for today.</p>
+    {% endif %}
+
+    <hr>
+
+    <h2>Long Term To Do List</h2>
+
+    {% if long_term_todos %}
+        <ul>
+            {% for todo in long_term_todos %}
+                <li>
+                    {% if todo.completed %}
+                        <s>{{ todo.task }}</s>
+                    {% else %}
+                        {{ todo.task }}
+                    {% endif %}
+
+                    <form action="/complete-todo/{{ todo._id }}" method="POST" style="display:inline;">
+                        <button type="submit">Complete</button>
+                    </form>
+
+                    <form action="/delete-todo/{{ todo._id }}" method="POST" style="display:inline;">
+                        <button type="submit">Delete</button>
+                    </form>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No long-term tasks.</p>
+    {% endif %}
+
+</body>
+</html>
