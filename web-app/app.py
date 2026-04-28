@@ -1,16 +1,17 @@
 """Web app for the project"""
 
-from curses import flash
 import os
+import datetime
 
-from requests import session
-from tomlkit import datetime
 from flask import (
     Flask,
+    flash,
     render_template,
     request,
+    session,
     redirect,
     url_for,
+    jsonify,
 )
 from flask_login import (
     LoginManager,
@@ -18,12 +19,14 @@ from flask_login import (
     login_user,
     logout_user,
     login_required,
-    # current_user,
+    current_user,
 )
 from bson.objectid import ObjectId
 from bson.errors import InvalidId
 from dotenv import load_dotenv
 from pymongo import MongoClient
+from difflib import SequenceMatcher
+import re
 
 # Load environment variables
 load_dotenv(override=True)
@@ -47,6 +50,7 @@ users = db["users"]
 groups = db["groups"]
 reviews = db["reviews"]
 professors = db["professors"]
+posts = db["posts"]
 
 # Flask login setup
 login_manager = LoginManager()
@@ -133,7 +137,149 @@ def home():
         p["_id"] = str(p.get("_id", ""))
     return render_template("home.html", professors=profs)
 
-# @app.route("")
+
+def _normalize_query(value: str) -> str:
+    return re.sub(r"\s+", " ", (value or "").strip().lower())
+
+
+def _name_score(query: str, name: str) -> float:
+    q = _normalize_query(query)
+    n = _normalize_query(name)
+    if not q or not n:
+        return 0.0
+    if q == n:
+        return 10.0
+    score = SequenceMatcher(None, q, n).ratio()
+    if n.startswith(q):
+        score += 1.0
+    if q in n:
+        score += 0.5
+    return score
+
+
+@app.route("/api/professors/search", methods=["GET"])
+@login_required
+def professors_search():
+    q = request.args.get("q", "")
+    qn = _normalize_query(q)
+    if not qn:
+        return jsonify({"results": []})
+
+    regex = re.compile(re.escape(qn), re.IGNORECASE)
+    candidates = list(
+        professors.find(
+            {"name": {"$regex": regex}},
+            {"name": 1, "title": 1, "email": 1},
+        ).limit(200)
+    )
+
+    if len(candidates) < 5:
+        # Fallback to a broader pool for "closest match" ranking.
+        candidates = list(
+            professors.find({}, {"name": 1, "title": 1, "email": 1})
+            .limit(400)
+        )
+
+    ranked = sorted(
+        candidates,
+        key=lambda p: _name_score(qn, p.get("name", "")),
+        reverse=True,
+    )
+
+    results = []
+    for p in ranked[:10]:
+        results.append(
+            {
+                "id": str(p.get("_id", "")),
+                "name": p.get("name", ""),
+                "title": p.get("title", ""),
+                "email": p.get("email", ""),
+            }
+        )
+    return jsonify({"results": results})
+
+
+@app.route("/professors/<professor_id>", methods=["GET"])
+@login_required
+def professor_page(professor_id):
+    try:
+        pid = ObjectId(professor_id)
+    except (InvalidId, ValueError):
+        flash("Invalid professor id.")
+        return redirect(url_for("home"))
+
+    prof = professors.find_one({"_id": pid}, {"name": 1, "title": 1, "email": 1})
+    if not prof:
+        flash("Professor not found.")
+        return redirect(url_for("home"))
+
+    prof["_id"] = str(prof["_id"])
+    prof_posts = list(
+        posts.find({"professor_id": pid}, {"text": 1, "author_email": 1, "created_at": 1, "updated_at": 1})
+        .sort("created_at", -1)
+        .limit(200)
+    )
+    for p in prof_posts:
+        p["_id"] = str(p.get("_id", ""))
+    return render_template("professor.html", professor=prof, posts=prof_posts)
+
+
+@app.route("/professors/<professor_id>/posts/new", methods=["GET"])
+@login_required
+def new_post_form(professor_id):
+    try:
+        pid = ObjectId(professor_id)
+    except (InvalidId, ValueError):
+        flash("Invalid professor id.")
+        return redirect(url_for("home"))
+
+    prof = professors.find_one({"_id": pid}, {"name": 1})
+    if not prof:
+        flash("Professor not found.")
+        return redirect(url_for("home"))
+
+    return render_template(
+        "post-edit.html",
+        professor_id=str(pid),
+        professor_name=prof.get("name", ""),
+        post_text="",
+        form_action=url_for("new_post_submit", professor_id=str(pid)),
+    )
+
+
+@app.route("/professors/<professor_id>/posts/new", methods=["POST"])
+@login_required
+def new_post_submit(professor_id):
+    try:
+        pid = ObjectId(professor_id)
+    except (InvalidId, ValueError):
+        flash("Invalid professor id.")
+        return redirect(url_for("home"))
+
+    prof = professors.find_one({"_id": pid}, {"name": 1})
+    if not prof:
+        flash("Professor not found.")
+        return redirect(url_for("home"))
+
+    text = request.form.get("text", "").strip()
+    if not text:
+        flash("Post text cannot be empty.")
+        return redirect(url_for("new_post_form", professor_id=str(pid)))
+
+    now = datetime.datetime.utcnow()
+    posts.insert_one(
+        {
+            "professor_id": pid,
+            "professor_name": prof.get("name", ""),
+            "author_email": getattr(current_user, "email", ""),
+            "text": text,
+            "created_at": now,
+            "updated_at": now,
+        }
+    )
+    flash("Post created.")
+    return redirect(url_for("professor_page", professor_id=str(pid)))
+
 
 # ======================== Group routes ========================
 
