@@ -23,20 +23,21 @@ db = client[os.getenv("MONGO_DB_NAME")]
 ML_SERVICE_URL = os.getenv("ML_SERVICE_URL", "http://ml-service:8000")
 
 # set up Spotify API credentials
-sp_oauth = SpotifyOAuth(
-    client_id=os.getenv("SPOTIFY_CLIENT_ID"),
-    client_secret=os.getenv("SPOTIFY_CLIENT_SECRET"),
-    redirect_uri=os.getenv("SPOTIFY_REDIRECT_URI"),
-    scope="user-read-private user-read-email playlist-modify-public playlist-modify-private",
-)
+def get_sp_oauth():
+    return SpotifyOAuth(
+        client_id=os.getenv("SPOTIFY_CLIENT_ID"),
+        client_secret=os.getenv("SPOTIFY_CLIENT_SECRET"),
+        redirect_uri=os.getenv("REDIRECT_URI"),
+        scope="user-read-private user-read-email playlist-modify-public playlist-modify-private"
+    )
 
 # helper function to get Spotify client with valid access token
 def get_spotify_client():
     token_info = session.get("token_info")
     if not token_info:
         return None
-    if sp_oauth.is_token_expired(token_info):
-        token_info = sp_oauth.refresh_access_token(token_info["refresh_token"])
+    if get_sp_oauth().is_token_expired(token_info):
+        token_info = get_sp_oauth().refresh_access_token(token_info["refresh_token"])
         session["token_info"] = token_info
     return spotipy.Spotify(auth=token_info["access_token"])
 
@@ -62,7 +63,7 @@ def login():
     if session.get("token_info"):
         return redirect(url_for("index"))
     
-    auth_url = sp_oauth.get_authorize_url()
+    auth_url = get_sp_oauth().get_authorize_url()
     return render_template("login.html", auth_url=auth_url)
 
 # callback route for Spotify authentication
@@ -70,7 +71,7 @@ def login():
 def callback():
     code = request.args.get("code")
     try:
-        token_info = sp_oauth.get_access_token(code)
+        token_info = get_sp_oauth().get_access_token(code)
     except Exception as e:
         return render_template("login.html", error=f"Spotify authentication failed: {e}"), 400
     
