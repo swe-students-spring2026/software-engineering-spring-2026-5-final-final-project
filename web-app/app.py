@@ -52,6 +52,14 @@ reviews = db["reviews"]
 professors = db["professors"]
 posts = db["posts"]
 
+def _refresh_user_rated_professors(*, user_oid: ObjectId, author_email: str) -> list[ObjectId]:
+    professor_ids = [x for x in posts.distinct("professor_id", {"author_email": author_email}) if x]
+    users.update_one(
+        {"_id": user_oid},
+        {"$set": {"rated_professor_ids": professor_ids, "professors_rated": len(professor_ids)}},
+    )
+    return professor_ids
+
 # Flask login setup
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -128,14 +136,59 @@ def logout():
 @login_required
 def home():
     """Render the home page for logged-in users."""
-    profs = list(
-        professors.find({}, {"name": 1, "title": 1, "email": 1}) # debug
-        .sort("name", 1)
-        .limit(200)
+    user_oid = ObjectId(current_user.id) if isinstance(current_user.id, str) else current_user.id
+
+    post_count = posts.count_documents({"author_email": current_user.email})
+    user_doc = users.find_one({"_id": user_oid}, {"professors_rated": 1, "rated_professor_ids": 1}) or {}
+    rated_ids = user_doc.get("rated_professor_ids")
+    if not isinstance(rated_ids, list):
+        rated_ids = _refresh_user_rated_professors(user_oid=user_oid, author_email=current_user.email)
+    else:
+        # Keep the count in sync with posts even if the user doc was stale.
+        rated_ids = _refresh_user_rated_professors(user_oid=user_oid, author_email=current_user.email)
+
+    prof_names = [
+        p.get("name", "")
+        for p in professors.find({"_id": {"$in": rated_ids}}, {"name": 1}).sort("name", 1)
+        if p.get("name")
+    ]
+
+    user_stats = {
+        "post_count": post_count,
+        "professors_rated": int(user_doc.get("professors_rated") or len(rated_ids)),
+    }
+
+    my_posts = list(
+        posts.find(
+            {"author_email": current_user.email},
+            {"professor_name": 1, "text": 1, "created_at": 1, "professor_id": 1},
+        )
+        .sort("created_at", -1)
+        .limit(300)
     )
-    for p in profs:
-        p["_id"] = str(p.get("_id", ""))
-    return render_template("home.html", professors=profs)
+
+    grouped: dict[str, list[dict]] = {}
+    for p in my_posts:
+        pname = p.get("professor_name") or "Unknown"
+        grouped.setdefault(pname, []).append(
+            {
+                "text": p.get("text", ""),
+                "created_at": p.get("created_at"),
+                "professor_id": str(p.get("professor_id", "")) if p.get("professor_id") else "",
+            }
+        )
+
+    my_posts_by_prof = [
+        {"professor_name": name, "posts": grouped[name]}
+        for name in sorted(grouped.keys())
+    ]
+
+    return render_template(
+        "home.html",
+        user=user_stats,
+        rated_professors=prof_names,
+        my_posts_by_prof=my_posts_by_prof,
+    )
 
 
 def _normalize_query(value: str) -> str:
@@ -277,6 +330,7 @@ def new_post_submit(professor_id):
             "updated_at": now,
         }
     )
+    _refresh_user_rated_professors(user_oid=ObjectId(current_user.id), author_email=current_user.email)
     flash("Post created.")
     return redirect(url_for("professor_page", professor_id=str(pid)))
 
