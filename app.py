@@ -23,7 +23,25 @@ def home():
 def dashboard():
     if "user_name" not in session:
         return redirect("/auth")   # 👈 send back to login
+    todos = list(db.todos.find())
 
+    today_todos = []
+    long_term_todos = []
+
+    for todo in todos:
+        todo["_id"] = str(todo["_id"])
+
+        if todo.get("type") == "today":
+            today_todos.append(todo)
+        else:
+            long_term_todos.append(todo)
+
+    return render_template(
+        "dashboard.html",
+        today_todos=today_todos,
+        long_term_todos=long_term_todos
+    )
+    
     return render_template("dashboard.html")
 
 

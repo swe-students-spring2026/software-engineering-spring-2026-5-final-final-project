@@ -5,20 +5,60 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+    <div class="container">
 
     <h1>StudyCast Dashboard</h1>
     {% if session.user_name %}
         <p>Welcome, {{ session.user_name }}!</p>
         <p><a href="/logout">Log Out</a></p>
     {% endif %}
-    <h2>Pages</h2>
+    <h2>Edit StudyCast</h2>
 
     <ul>
-        <li><a href="/todos">Tos Do List</a></li>
-        <li><a href="#">Calendar Coming Soon</a></li>
-        <li><a href="#">Exams Coming Soon</a></li>
-        <li><a href="#">Weather Monitor Coming Soon</a></li>
+        <li><a href="/todos">Edit To Do List</a></li>
+        <li><a href="#">Edit Calendar </a></li>
     </ul>
+        <div class="card">
+        <h2>Today To Do</h2>
+
+        {% if today_todos %}
+            <ul>
+                {% for todo in today_todos %}
+                    <li>
+                        {% if todo.completed %}
+                            <s>{{ todo.task }}</s>
+                        {% else %}
+                            {{ todo.task }}
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No tasks for today.</p>
+        {% endif %}
+
+
+    </div>
+
+    <div class="card">
+        <h2>Long Term To Do</h2>
+
+        {% if long_term_todos %}
+            <ul>
+                {% for todo in long_term_todos %}
+                    <li>
+                        {% if todo.completed %}
+                            <s>{{ todo.task }}</s>
+                        {% else %}
+                            {{ todo.task }}
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No long-term tasks.</p>
+        {% endif %}
+    </div>
 
 </body>
 </html>
