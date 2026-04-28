@@ -10,6 +10,7 @@ from spotipy.oauth2 import SpotifyOAuth
 from cities import CITIES
 
 load_dotenv()
+app = Flask(__name__)
 # set the secret key for session management
 app.secret_key = os.getenv("SECRET_KEY")
 # connect to MongoDB
