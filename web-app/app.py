@@ -69,7 +69,11 @@ def login():
 @app.route("/callback")
 def callback():
     code = request.args.get("code")
-    token_info = sp_oauth.get_access_token(code)
+    try:
+        token_info = sp_oauth.get_access_token(code)
+    except Exception as e:
+        return render_template("login.html", error=f"Spotify authentication failed: {e}"), 400
+    
     access_token = token_info["access_token"]
     sp = spotipy.Spotify(auth=access_token)
     user_info = sp.current_user()
@@ -84,7 +88,7 @@ def callback():
 @app.route("/logout")
 def logout():
     session.clear()
-    return redirect(url_for("index"))
+    return redirect(url_for("login"))
 
 
 
