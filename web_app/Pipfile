@@ -1,0 +1,20 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+gunicorn = "*"
+pytest = "*"
+pytest-flask = "*"
+pytest-cov = "*"
+pylint = "*"
+black = "*"
+flask = "*"
+pymongo = "*"
+python-dotenv = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.14"
