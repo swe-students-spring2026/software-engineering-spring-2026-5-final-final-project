@@ -25,6 +25,7 @@
             <ul>
                 {% for todo in today_todos %}
                     <li>
+                        
                         {% if todo.completed %}
                             <s>{{ todo.task }}</s>
                         {% else %}
@@ -47,6 +48,7 @@
             <ul>
                 {% for todo in long_term_todos %}
                     <li>
+                        
                         {% if todo.completed %}
                             <s>{{ todo.task }}</s>
                         {% else %}

@@ -12,7 +12,12 @@ body {
     padding: 30px;
     border-radius: 8px;
 }
-
+li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: center;
+}
 h1 {
     color: #000;
     margin-bottom: 10px;
