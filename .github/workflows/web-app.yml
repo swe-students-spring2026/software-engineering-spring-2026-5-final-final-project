@@ -42,7 +42,7 @@ jobs:
           MONGO_DB_NAME: "moodify_test"
           SPOTIFY_CLIENT_ID: "fake-client-id"
           SPOTIFY_CLIENT_SECRET: "fake-client-secret"
-          REDIRECT_URI: "http://127.0.0.1:5000/callback"
+          SPOTIFY_REDIRECT_URI: "http://127.0.0.1:5000/callback"
           ML_CLIENT_URL: "http://localhost:8000"
           WEATHER_API_KEY: "fake-weather-key"
         run: |
