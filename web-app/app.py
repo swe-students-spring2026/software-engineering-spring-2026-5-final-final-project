@@ -19,7 +19,7 @@ load_dotenv()
 # set the secret key for session management
 app.secret_key = os.getenv("SECRET_KEY")
 # connect to MongoDB
-client = pymongo.MongoClient(os.getenv("MONGO_URI", "mongodb://localhost:27017"))
+client = pymongo.MongoClient(os.getenv("MONGO_URI", "mongodb://mongo:27017"))
 db = client[os.getenv("MONGO_DB_NAME", "moodmusic")]
 ML_SERVICE_URL = os.getenv("ML_SERVICE_URL", "http://ml-service:8000")
 
