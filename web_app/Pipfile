@@ -11,8 +11,8 @@ pytest-cov = "*"
 pylint = "*"
 black = "*"
 flask = "*"
-pymongo = "*"
 python-dotenv = "*"
+pymongo = "*"
 
 [dev-packages]
 
