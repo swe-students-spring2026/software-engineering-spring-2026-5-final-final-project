@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Lacewing</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Task Tracker</h1>
+        </header>
+
+        <section class="add-task">
+            <h2>New Task</h2>
+            <form>
+                <div class="form-row">
+                    <input type="text" name="title" placeholder="Task title" required>
+                    <input type="date" name="due_date">
+                    <button type="submit">Add</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="task-list">
+            <div class="status-group status-todo">
+                <h2>To Do</h2>
+                <ul>
+                    <li class="task-item">
+                        <div class="task-info">
+                            <span class="task-title">Example task</span>
+                            <span class="task-meta">Due: 2026-05-01</span>
+                        </div>
+                        <div class="task-actions">
+                            <button type="button">Start</button>
+                            <button type="button" class="btn-delete">Delete</button>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="status-group status-in-progress">
+                <h2>In Progress</h2>
+                <ul>
+                    <li class="task-item">
+                        <div class="task-info">
+                            <span class="task-title">Another example</span>
+                            <span class="task-meta">Due: 2026-05-03</span>
+                        </div>
+                        <div class="task-actions">
+                            <button type="button">Done</button>
+                            <button type="button" class="btn-delete">Delete</button>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="status-group status-done">
+                <h2>Done</h2>
+                <ul>
+                </ul>
+            </div>
+        </section>
+    </div>
+</body>
+</html>
