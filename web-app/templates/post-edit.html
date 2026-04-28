@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section>
+    <h1>Create Post</h1>
+    <p>About: <strong>{{ professor_name }}</strong></p>
+
+    <form method="post" action="{{ form_action }}">
+      <label for="text">Post</label>
+      <textarea id="text" name="text" rows="8" placeholder="Write your post..." required>{{ post_text }}</textarea>
+      <button type="submit">Publish</button>
+    </form>
+  </section>
+{% endblock %}
+

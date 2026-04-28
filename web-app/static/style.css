@@ -72,6 +72,40 @@ section {
   margin: 0 0 18px;
 }
 
+/* Posts */
+.post-item {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 14px 14px 10px;
+  border: 1px solid rgba(154, 51, 52, 0.22);
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+  box-shadow: 0 10px 22px rgba(11, 18, 32, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.post-author {
+  font-weight: 900;
+  font-size: 16px;
+  color: var(--accent);
+}
+
+.post-text {
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.post-meta {
+  margin-top: 4px;
+  display: flex;
+  justify-content: flex-end;
+  color: var(--muted);
+}
+
 h1,
 h2,
 h3 {
@@ -95,7 +129,7 @@ form {
   flex-direction: column;
   gap: 12px;
   width: 100%;
-  max-width: 440px;
+  max-width: 100%;
 }
 
 label {
@@ -119,6 +153,26 @@ input:focus {
 }
 
 input::placeholder {
+  color: #7f7673;
+}
+
+textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+  color: var(--text);
+  font-size: 16px;
+  resize: vertical;
+}
+
+textarea:focus {
+  outline: none;
+  box-shadow: 0 0 8px var(--accent-soft);
+}
+
+textarea::placeholder {
   color: #7f7673;
 }
 

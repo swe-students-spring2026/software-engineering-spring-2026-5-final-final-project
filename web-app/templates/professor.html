@@ -12,6 +12,30 @@
         <p><strong>Email:</strong> (not available)</p>
       {% endif %}
     </div>
+
+    <form method="get" action="{{ url_for('new_post_form', professor_id=professor._id) }}">
+      <button type="submit">Create Post</button>
+    </form>
+  </section>
+
+  <section>
+    <h2>Posts</h2>
+    {% if posts and posts|length %}
+      <ul>
+        {% for post in posts %}
+          <li class="post-item">
+            <div class="post-author">{{ post.author_email }}</div>
+            <div class="post-text">{{ post.text }}</div>
+            {% if post.created_at %}
+              <div class="post-meta">
+                <small>{{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+              </div>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>No posts yet.</p>
+    {% endif %}
   </section>
 {% endblock %}
-
