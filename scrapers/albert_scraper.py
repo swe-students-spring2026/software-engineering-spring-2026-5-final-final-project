@@ -190,11 +190,8 @@ def main() -> int:
             return 1
 
         existing_docs = load_existing_docs(output_path)
-        already_scraped = {
-            normalize_subject_key(doc.get("subject_code", ""))
-            for doc in existing_docs
-            if doc.get("subject_code")
-        }
+        existing_report = load_existing_report(report_path)
+        already_scraped = build_already_scraped_subject_keys(existing_docs, existing_report)
         if already_scraped:
             print(f"Skipping {len(already_scraped)} already-scraped subject(s).", flush=True)
 
@@ -274,6 +271,45 @@ def load_existing_docs(output_path: Path) -> list[dict[str, Any]]:
     if isinstance(raw, list):
         return [doc for doc in raw if isinstance(doc, dict)]
     return []
+
+
+def load_existing_report(report_path: Path) -> dict[str, Any]:
+    if not report_path.exists():
+        return {}
+    try:
+        raw = json.loads(report_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return {}
+    return raw if isinstance(raw, dict) else {}
+
+
+def build_already_scraped_subject_keys(
+    existing_docs: list[dict[str, Any]],
+    existing_report: dict[str, Any] | None = None,
+) -> set[str]:
+    keys: set[str] = set()
+
+    for doc in existing_docs:
+        subject_code = doc.get("subject_code", "")
+        if subject_code:
+            key = normalize_subject_key(subject_code)
+            keys.add(key)
+            keys.add(normalize_subject_base_key(key))
+
+    report = existing_report or {}
+    for subject in report.get("attempted_subjects", []):
+        key = normalize_subject_key(str(subject))
+        keys.add(key)
+        keys.add(normalize_subject_base_key(key))
+    for item in report.get("successful_subjects", []):
+        if not isinstance(item, dict):
+            continue
+        key = normalize_subject_key(str(item.get("subject_key", "") or item.get("label", "")))
+        if key:
+            keys.add(key)
+            keys.add(normalize_subject_base_key(key))
+
+    return {key for key in keys if key}
 
 
 def merge_docs_by_id(existing_docs: list[dict[str, Any]], new_docs: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -367,7 +403,13 @@ def scrape_subject_pages(
                     discovered_subjects[key] = candidate
                     discovered_order.append(key)
 
-        next_subject_key = next((key for key in discovered_order if key not in visited_subjects), None)
+        next_subject_key = next(
+            (
+                key for key in discovered_order
+                if key not in visited_subjects and normalize_subject_base_key(key) not in visited_subjects
+            ),
+            None,
+        )
         next_subject = discovered_subjects.get(next_subject_key, "") if next_subject_key else None
         if not next_subject:
             final_docs = all_docs[:limit] if limit > 0 else all_docs
@@ -414,7 +456,10 @@ def build_report(
     limited: bool = False,
 ) -> dict[str, Any]:
     discovered_keys = sorted(discovered_subjects.keys())
-    missing_keys = [key for key in discovered_keys if key not in visited_subjects]
+    missing_keys = [
+        key for key in discovered_keys
+        if key not in visited_subjects and normalize_subject_base_key(key) not in visited_subjects
+    ]
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "limited_run": limited,
@@ -528,6 +573,10 @@ def normalize_subject_key(value: str) -> str:
     if code:
         return code
     return clean_text(value).lower()
+
+
+def normalize_subject_base_key(value: str) -> str:
+    return re.sub(r"_\d+$", "", normalize_subject_key(value))
 
 
 def is_browse_subject_page(page: Any) -> bool:
@@ -989,6 +1038,8 @@ def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url:
         meeting_details = extract_meeting_details(row)
         term = extract_term_label(row, fallback=term_code)
         course_text = extract_course_text(row, code)
+        notes = extract_notes(row)
+        prerequisites = extract_prerequisites(notes)
         title = course_text["title"] or sanitize_albert_text(row.get("title", ""))
 
         # Inherit title/term from the preceding lecture section when this is a
@@ -1009,7 +1060,13 @@ def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url:
                 "term": term,
             }
 
-        doc_id = make_albert_id(term_code, subject_code or "unknown", catalog_number or str(index), section or str(index))
+        crn = sanitize_albert_text(row.get("crn", ""))
+        doc_id = make_albert_id(
+            term,
+            subject_code or "unknown",
+            catalog_number or str(index),
+            section or str(index),
+        )
 
         docs.append(
             {
@@ -1022,13 +1079,15 @@ def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url:
                 "title": title,
                 "description": course_text["description"],
                 "section": section,
-                "crn": sanitize_albert_text(row.get("crn", "")),
+                "crn": crn,
                 "status": sanitize_albert_text(row.get("status", "")),
                 "component": extract_component_type(row),
                 "instructor": sanitize_albert_text(row.get("instructor", "")) or meeting_details["instructor"],
                 "meets_human": sanitize_albert_text(row.get("meets_human", "")) or meeting_details["meets_human"],
                 "location": meeting_details["location"] or sanitize_albert_text(row.get("location", "")),
                 "dates": sanitize_albert_text(row.get("dates", "")) or meeting_details["dates"],
+                "notes": notes,
+                "prerequisites": prerequisites,
                 "source": {
                     "system": "nyu_albert",
                     "url": source_url,
@@ -1057,6 +1116,34 @@ def extract_component_type(row: dict[str, Any]) -> str:
     return sanitize_albert_text(row.get("component", ""))
 
 
+def extract_notes(row: dict[str, Any]) -> str:
+    source_row = row.get("source_row", [])
+    notes: list[str] = []
+
+    if isinstance(source_row, list):
+        for line in source_row:
+            text = sanitize_albert_text(line)
+            if not text.lower().startswith("notes:"):
+                continue
+            note = sanitize_albert_text(re.sub(r"^notes:\s*", "", text, flags=re.I))
+            if note:
+                notes.append(note)
+
+    if not notes and row.get("notes"):
+        notes.append(sanitize_albert_text(row.get("notes", "")))
+
+    return sanitize_albert_text(" ".join(notes))
+
+
+def extract_prerequisites(notes: str) -> str:
+    notes = sanitize_albert_text(notes)
+    if not notes:
+        return ""
+    if not re.search(r"\b(?:pre[-\s]?requisite|prereq|prerequisites?)\b", notes, flags=re.I):
+        return ""
+    return notes
+
+
 def sanitize_albert_text(value: object) -> str:
     text = clean_text(value)
     text = re.sub(r"\b(?:more|less)\s+description\s+for\s+.*$", "", text, flags=re.I)
@@ -1068,7 +1155,7 @@ def extract_term_label(row: dict[str, Any], *, fallback: str = "") -> str:
     if isinstance(source_row, list):
         for line in source_row:
             text = clean_text(line)
-            term = find_first(r"\bterm:\s*(.+)$", text, flags=re.I)
+            term = find_first(r"^term:\s*(.+)$", text, flags=re.I)
             if term:
                 return sanitize_albert_text(term)
     return sanitize_albert_text(fallback)
@@ -1215,11 +1302,18 @@ def extract_rows_from_text(text: str) -> list[dict[str, Any]]:
                 "section": find_first(r"\b(?:Section|Sec)[:\s]+([A-Z0-9]+)\b", window, flags=re.I),
                 "status": (find_first(r"class status:\s*(.+?)(?=\s+\w+:|$)", window, flags=re.I)
                            or find_first(r"\b(Open|Closed|Wait List|Waitlist|Cancelled)\b", window, flags=re.I)),
-                "title": clean_text(line.replace(code, "")),
+                "title": extract_title_from_header_line(line, code),
                 "source_row": block_lines,
             }
         )
     return rows
+
+
+def extract_title_from_header_line(line: str, code: str) -> str:
+    title = sanitize_albert_text(line.replace(code, "", 1))
+    if re.match(r"^\|\s*[\d.-]+\s+units?$", title, re.I):
+        return ""
+    return title
 
 
 def find_prior_course_header(lines: list[str], start_index: int, code: str) -> int:
@@ -1236,15 +1330,16 @@ def find_prior_course_header(lines: list[str], start_index: int, code: str) -> i
 
 
 def dedupe_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    seen: set[tuple[str, str, str, str]] = set()
+    seen: set[tuple[str, str, str]] = set()
     deduped: list[dict[str, Any]] = []
     for row in rows:
         key = (
             clean_text(row.get("code", "")),
             clean_text(row.get("section", "")),
             clean_text(row.get("crn", "")),
-            json.dumps(row.get("source_row", ""), sort_keys=True),
         )
+        if not any(key):
+            key = (json.dumps(row.get("source_row", ""), sort_keys=True), "", "")
         if key in seen:
             continue
         seen.add(key)

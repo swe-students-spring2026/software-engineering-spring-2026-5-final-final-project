@@ -101,6 +101,50 @@ class TestClassesRoute:
         instructor_regex = next(c["instructor"]["$regex"] for c in query["$or"] if "instructor" in c)
         assert ".*" in instructor_regex
 
+    def test_get_classes_uses_bulletin_collection_when_requested(self, client):
+        mock_db = MagicMock()
+        bulletin_collection = MagicMock()
+        bulletin_collection.distinct.return_value = ["CSCI-UA 101"]
+        bulletin_collection.find.return_value = []
+        mock_db.__getitem__.return_value = bulletin_collection
+
+        with patch("app.main.db", mock_db):
+            res = client.get("/classes?source=bulletin&term=1268")
+
+        assert res.status_code == 200
+        mock_db.__getitem__.assert_called_with("bulletin_classes")
+        query = bulletin_collection.find.call_args[0][0]
+        assert query["term.code"] == "1268"
+
+    def test_get_classes_rejects_unknown_source(self, client):
+        res = client.get("/classes?source=bad")
+        assert res.status_code == 400
+
+    def test_reload_class_scrapes_and_saves_bulletin_data(self, client):
+        mock_db = MagicMock()
+        bulletin_collection = MagicMock()
+        mock_db.__getitem__.return_value = bulletin_collection
+        doc = {
+            "_id": "1268_CSCI-UA_101_001",
+            "term": {"code": "1268"},
+            "code": "CSCI-UA 101",
+            "section": "001",
+            "source": {"system": "nyu_bulletins"},
+        }
+
+        with patch("app.main.db", mock_db):
+            with patch("app.main._load_bulletin_course_refresher", return_value=MagicMock(return_value=doc)):
+                res = client.post("/classes/reload", json={"term": "1268", "code": "CSCI-UA 101", "section": "001"})
+
+        assert res.status_code == 200
+        mock_db.__getitem__.assert_called_with("bulletin_classes")
+        bulletin_collection.update_one.assert_called_once()
+        assert res.get_json()["source"] == "bulletin"
+
+    def test_reload_class_requires_term_and_code(self, client):
+        res = client.post("/classes/reload", json={"term": "1268"})
+        assert res.status_code == 400
+
 
 class TestSchoolsRoute:
     def test_get_schools_returns_200(self, client, mock_db):

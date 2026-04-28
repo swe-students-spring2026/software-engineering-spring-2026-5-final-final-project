@@ -27,8 +27,12 @@
     .course-title-row { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
     .course-code-label { font-weight: bold; color: #57068c; font-size: 0.95rem; white-space: nowrap; }
     .course-title-text { font-size: 0.95rem; font-weight: bold; }
+    .reload-btn { margin-left: auto; padding: 3px 8px; background: #f0e6f7; color: #57068c; border: 1px solid #c9a7e0; border-radius: 4px; cursor: pointer; font-size: 0.72rem; white-space: nowrap; }
+    .reload-btn:hover { background: #e0cef5; }
+    .reload-btn:disabled { opacity: 0.6; cursor: wait; }
     .course-school { font-size: 0.75rem; color: #999; margin-top: 2px; }
     .course-description { font-size: 0.78rem; color: #555; margin-top: 6px; line-height: 1.45; max-height: 60px; overflow: hidden; }
+    .bulletin-meta { font-size: 0.72rem; color: #777; margin-top: 6px; }
     .sections-table { margin-top: 10px; border-top: 1px solid #eee; }
     .section-row { display: grid; grid-template-columns: 160px 1fr auto; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid #f0f0f0; font-size: 0.8rem; }
     .section-row.rct-row { background: #fafafa; padding-left: 16px; }
@@ -359,14 +363,24 @@
               onmouseenter="this.textContent='✕ Remove'"
               onmouseleave="this.textContent='✓ Added'">✓ Added</button>`
         : `<button class="add-btn" onclick="handleAdd('${c.crn}')">Add</button>`;
-      const rating = c.professor_rating;
-      const ratingParts = [];
-      if (rating && typeof rating.rating === "number") ratingParts.push(`RMP ${rating.rating.toFixed(1)}/5`);
-      if (rating && typeof rating.rating_count === "number") ratingParts.push(`${rating.rating_count} ratings`);
-      if (rating && typeof rating.would_take_again_percent === "number") ratingParts.push(`${rating.would_take_again_percent}% again`);
-      const ratingHtml = rating && rating.url && ratingParts.length
-        ? `<div class="section-rating"><a href="${rating.url}" target="_blank" rel="noopener noreferrer">${ratingParts.join(" · ")}</a></div>`
-        : "";
+      const ratings = Array.isArray(c.professor_ratings) && c.professor_ratings.length
+        ? c.professor_ratings
+        : (c.professor_rating ? [c.professor_rating] : []);
+      const ratingHtml = ratings.map(rating => {
+        const ratingParts = [];
+        if (rating && typeof rating.rating === "number") ratingParts.push(`RMP ${rating.rating.toFixed(1)}/5`);
+        if (rating && typeof rating.rating_count === "number") ratingParts.push(`${rating.rating_count} ratings`);
+        if (rating && typeof rating.would_take_again_percent === "number") ratingParts.push(`${rating.would_take_again_percent}% again`);
+        if (!rating || !rating.url || !ratingParts.length) return "";
+        const label = rating.found_name && ratings.length > 1 ? `${rating.found_name}: ` : "";
+        return `<div class="section-rating"><a href="${rating.url}" target="_blank" rel="noopener noreferrer">${label}${ratingParts.join(" · ")}</a></div>`;
+      }).join("");
+      const instructorLinks = (c.instructor || "")
+        .split(/\s*(?:;|\/|\||&| and )\s*/i)
+        .map(name => name.trim())
+        .filter(Boolean)
+        .map(name => `<a class="instructor-link" href="/professor?name=${encodeURIComponent(name)}">${name}</a>`)
+        .join(" · ");
       return `
         <div class="section-row${isRct ? " rct-row" : ""}" data-crn="${c.crn}">
           <div class="section-left">
@@ -375,7 +389,7 @@
             ${c.location ? `<span class="section-loc">${c.location}</span>` : ""}
           </div>
           <div class="section-mid">
-            ${c.instructor ? `<span><strong><a class="instructor-link" href="/professor?name=${encodeURIComponent(c.instructor)}">${c.instructor}</a></strong></span>` : ""}
+            ${instructorLinks ? `<span><strong>${instructorLinks}</strong></span>` : ""}
             ${ratingHtml}
             ${c.meets_human ? `<span>${c.meets_human}</span>` : ""}
             ${statusBadge(c.status)}
@@ -386,6 +400,7 @@
 
     function renderCourseGroup(code, title, description, school, sections) {
       sections.forEach(s => { sectionMap[s.crn] = s; });
+      const firstSection = sections[0] || {};
       const lectures = sections.filter(c => !isRecitation(c));
       const rcts     = sections.filter(c =>  isRecitation(c));
 
@@ -407,11 +422,73 @@
           <div class="course-title-row">
             <span class="course-code-label">${code}</span>
             <span class="course-title-text">${title}</span>
+            <button class="reload-btn"
+                    data-code="${code}"
+                    data-crn="${firstSection.crn || ""}"
+                    data-section="${firstSection.section || ""}"
+                    onclick="reloadCourseFromBulletin(this)">Reload</button>
           </div>
           ${school ? `<div class="course-school">${school}</div>` : ""}
           ${description ? `<div class="course-description">${description}</div>` : ""}
           <div class="sections-table">${sectionsHtml}</div>
         </div>`;
+    }
+
+    async function reloadCourseFromBulletin(button) {
+      const card = button.closest(".course-card");
+      const term = document.getElementById("term").value;
+      const payload = {
+        term,
+        code: button.dataset.code,
+        crn: button.dataset.crn,
+        section: button.dataset.section,
+      };
+
+      button.disabled = true;
+      button.textContent = "Reloading";
+      try {
+        const res = await fetch("/api/classes/reload", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Reload failed");
+        displayBulletinCourse(card, data.course || {});
+        button.textContent = "Reloaded";
+      } catch (e) {
+        button.textContent = "Failed";
+        alert(e.message);
+      } finally {
+        setTimeout(() => {
+          button.disabled = false;
+          if (button.textContent !== "Reload") button.textContent = "Reload";
+        }, 1600);
+      }
+    }
+
+    function displayBulletinCourse(card, course) {
+      if (!card) return;
+
+      const title = card.querySelector(".course-title-text");
+      if (title && course.title) title.textContent = course.title;
+
+      let description = card.querySelector(".course-description");
+      if (!description && course.description) {
+        description = document.createElement("div");
+        description.className = "course-description";
+        card.querySelector(".sections-table")?.before(description);
+      }
+      if (description && course.description) description.textContent = course.description;
+
+      let meta = card.querySelector(".bulletin-meta");
+      if (!meta) {
+        meta = document.createElement("div");
+        meta.className = "bulletin-meta";
+        card.querySelector(".sections-table")?.before(meta);
+      }
+      const details = [course.section ? `Sec ${course.section}` : "", course.crn ? `Class# ${course.crn}` : "", course.status || "", course.scraped_at ? "bulletin reload complete" : "bulletin data"];
+      meta.textContent = details.filter(Boolean).join(" · ");
     }
 
     let currentPage = 1;

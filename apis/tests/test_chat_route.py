@@ -31,3 +31,19 @@ class TestChatRoute:
         with patch("app.routes.chat.chat", return_value="Schedule created."):
             res = client.post("/chat", json={"message": "make me a schedule with 3 CS courses"})
         assert res.status_code == 200
+
+    def test_chat_passes_student_profile_to_service(self, client):
+        with patch("app.routes.chat.chat", return_value="Profile-aware reply.") as mock_chat:
+            res = client.post(
+                "/chat",
+                json={
+                    "message": "recommend courses",
+                    "student_profile": {
+                        "major": "CS",
+                        "completed_courses": ["CSCI-UA 101"],
+                        "current_courses": ["CSCI-UA 201"],
+                    },
+                },
+            )
+        assert res.status_code == 200
+        assert mock_chat.call_args.kwargs["student_profile"]["major"] == "CS"

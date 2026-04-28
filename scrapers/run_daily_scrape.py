@@ -7,6 +7,8 @@ from datetime import datetime, timezone
 from bulletins import NYUBulletinScraper, get_mongo_settings as get_bulletin_mongo_settings, save_programs_to_mongo
 from scraper import get_mongo_settings, save_to_mongo, scrape_all_schools_for_term
 
+BULLETIN_CLASS_COLLECTION = "bulletin_classes"
+
 
 def parse_terms() -> list[str]:
     raw_terms = os.getenv("SCRAPER_TERMS", "1268,1266")
@@ -30,8 +32,8 @@ def run_once() -> None:
 
     for term in parse_terms():
         docs = scrape_all_schools_for_term(term, fetch_details=True, delay=0.1)
-        save_to_mongo(docs, mongo_uri, "classes")
-        print(f"Upserted {len(docs)} class documents for term {term}.", flush=True)
+        save_to_mongo(docs, mongo_uri, BULLETIN_CLASS_COLLECTION)
+        print(f"Upserted {len(docs)} bulletin class documents for term {term}.", flush=True)
 
     print(f"[{datetime.now(timezone.utc).isoformat()}] Daily scrape cycle completed.", flush=True)
 

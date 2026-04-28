@@ -3,6 +3,7 @@ import math
 import os
 import re
 from pathlib import Path
+from typing import Any
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
@@ -48,6 +49,10 @@ from app.ai.tools import init_tools  # noqa: E402
 init_tools(db)
 
 
+ALBERT_CLASS_COLLECTION = "classes"
+BULLETIN_CLASS_COLLECTION = "bulletin_classes"
+
+
 @app.get("/health")
 def health():
     return jsonify({"status": "ok", "service": "apis"})
@@ -60,6 +65,29 @@ TERM_CODES: dict[str, str] = {
 }
 
 
+def _class_collection(source: str):
+    if source == "bulletin":
+        return db[BULLETIN_CLASS_COLLECTION]
+    return db.classes
+
+
+def _term_filter(term: str, source: str) -> dict[str, Any]:
+    if source == "bulletin":
+        return {"term.code": term}
+    return {"term": TERM_CODES.get(term, term)}
+
+
+def _load_bulletin_course_refresher():
+    try:
+        from scrapers.scraper import refresh_course_document
+    except ModuleNotFoundError:
+        try:
+            from scraper import refresh_course_document
+        except ModuleNotFoundError:
+            return None
+    return refresh_course_document
+
+
 @app.get("/classes")
 def get_classes():
     term      = request.args.get("term")
@@ -67,14 +95,18 @@ def get_classes():
     school    = request.args.get("school")
     component = request.args.get("component")
     status    = request.args.get("status")
+    source    = request.args.get("source", "albert").strip().lower()
     page      = max(1, request.args.get("page", default=1, type=int))
     page_size = 20
 
+    if source not in {"albert", "bulletin"}:
+        return jsonify({"error": "source must be either 'albert' or 'bulletin'"}), 400
+
+    collection = _class_collection(source)
     query: dict = {}
 
     if term:
-        term_name = TERM_CODES.get(term, term)
-        query["term"] = term_name
+        query.update(_term_filter(term, source))
     if school:
         query["school"] = {"$regex": school, "$options": "i"}
     if component:
@@ -94,19 +126,44 @@ def get_classes():
             {"instructor":   {"$regex": instructor_pattern, "$options": "i"}},
         ]
 
-    all_codes = sorted(db.classes.distinct("code", query))
+    all_codes = sorted(collection.distinct("code", query))
     total_courses = len(all_codes)
     total_pages = math.ceil(total_courses / page_size) if total_courses > 0 else 1
     page_codes = all_codes[(page - 1) * page_size : page * page_size]
 
-    classes = list(db.classes.find({**query, "code": {"$in": page_codes}}, {"_id": 0, "source": 0}))
+    classes = list(collection.find({**query, "code": {"$in": page_codes}}, {"_id": 0, "source": 0}))
     classes = enrich_classes_with_professor_ratings(classes)
     return jsonify({
         "classes": classes,
         "total_courses": total_courses,
         "page": page,
         "total_pages": total_pages,
+        "source": source,
     })
+
+
+@app.post("/classes/reload")
+def reload_class_from_bulletin():
+    data = request.get_json(silent=True) or {}
+    term = str(data.get("term", "")).strip()
+    code = str(data.get("code", "")).strip()
+    crn = str(data.get("crn", "")).strip() or None
+    section = str(data.get("section", "")).strip() or None
+
+    if not term or not code:
+        return jsonify({"error": "term and code are required"}), 400
+
+    refresh_course_document = _load_bulletin_course_refresher()
+    if refresh_course_document is None:
+        return jsonify({"error": "bulletin scraper is unavailable"}), 503
+
+    doc = refresh_course_document(term, code=code, crn=crn, section=section)
+    if not doc:
+        return jsonify({"error": "course not found in bulletin data"}), 404
+
+    db[BULLETIN_CLASS_COLLECTION].update_one({"_id": doc["_id"]}, {"$set": doc}, upsert=True)
+    doc = {key: value for key, value in doc.items() if key not in {"_id", "source"}}
+    return jsonify({"course": doc, "source": "bulletin"}), 200
 
 
 @app.get("/classes/schools")
