@@ -23,6 +23,7 @@ services:
       args:
         PYTHON_IMAGE_TAG: ${PYTHON_IMAGE_TAG}
     container_name: crawlers
+    command: ["python", "run_daily_scrape.py"]
     environment:
       MONGO_URI: ${MONGO_URI}
       MONGO_DB_NAME: ${MONGO_DB_NAME}
@@ -40,6 +41,7 @@ services:
     restart: unless-stopped
     environment:
       FRONTEND_INTERNAL_PORT: ${FRONTEND_INTERNAL_PORT}
+      FRONTEND_PUBLIC_URL: ${FRONTEND_PUBLIC_URL}
       API_URL: http://backend:8000
       FLASK_SECRET_KEY: ${FLASK_SECRET_KEY}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}

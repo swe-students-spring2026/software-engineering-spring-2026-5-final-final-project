@@ -106,6 +106,31 @@ class TestChat:
         assert "Computer Science" in text
         assert "CSCI-UA 101" in text
 
+    def test_chat_includes_profile_and_transcript_fields_in_message(self):
+        from app.ai import service
+        service.types.Part.from_text.reset_mock()
+        mock_response = self._make_response("Here are your recommendations.")
+        with patch.object(service._client.models, "generate_content", return_value=mock_response):
+            service.chat(
+                "recommend courses",
+                student_profile={
+                    "name": "Test User",
+                    "school": "CAS",
+                    "major": "Computer Science",
+                    "minor": "Math",
+                    "graduation_year": "2026",
+                    "completed_courses": ["CSCI-UA 101"],
+                    "current_courses": ["CSCI-UA 201"],
+                },
+            )
+        last_call = service.types.Part.from_text.call_args
+        text = last_call.kwargs.get("text") or last_call.args[0]
+        assert "Test User" in text
+        assert "CAS" in text
+        assert "Math" in text
+        assert "2026" in text
+        assert "CSCI-UA 201" in text
+
     def test_chat_no_context_sends_message_as_is(self):
         from app.ai import service
         service.types.Part.from_text.reset_mock()

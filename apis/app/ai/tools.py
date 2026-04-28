@@ -164,6 +164,7 @@ def search_courses(
             {"title": {"$regex": query, "$options": "i"}},
             {"code": {"$regex": query, "$options": "i"}},
             {"description": {"$regex": query, "$options": "i"}},
+            {"prerequisites": {"$regex": query, "$options": "i"}},
         ]})
 
     if len(conditions) > 1:
@@ -207,7 +208,7 @@ def get_course_sections(course_code: str, term: str = "") -> dict[str, Any]:
             "_id": 0, "code": 1, "title": 1, "section": 1, "crn": 1,
             "instructor": 1, "meets_human": 1, "meeting_times": 1,
             "status": 1, "component": 1, "instructional_method": 1,
-            "campus_location": 1, "credits": 1,
+            "campus_location": 1, "credits": 1, "notes": 1, "prerequisites": 1,
         },
     ))
 

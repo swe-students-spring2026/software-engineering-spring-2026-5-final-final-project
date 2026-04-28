@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 
 RMP_BASE_URL = "https://www.ratemyprofessors.com"
 RMP_NYU_SCHOOL_ID = "675"
+RMP_NYU_FALLBACK_QUERY = "NYU"
 RMP_HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -30,7 +31,6 @@ def normalize_instructor_name(raw_name: str) -> str:
     if not name:
         return ""
 
-    name = re.split(r"\s*(?:;|/|\||&| and )\s*", name, maxsplit=1)[0]
     name = re.sub(r"^(dr|prof|professor)\.?\s+", "", name, flags=re.I)
     name = re.sub(r"\s*\([^)]*\)", "", name)
 
@@ -43,6 +43,22 @@ def normalize_instructor_name(raw_name: str) -> str:
     name = _collapse_spaces(name)
     lowered = name.lower()
     return "" if lowered in _SKIP_INSTRUCTORS else name
+
+
+def split_instructor_names(raw_name: str) -> list[str]:
+    parts = re.split(r"\s*(?:;|/|\||&| and )\s*", raw_name or "")
+    names: list[str] = []
+    seen: set[str] = set()
+    for part in parts:
+        normalized = normalize_instructor_name(part)
+        if not normalized:
+            continue
+        key = _normalize_compare_key(normalized)
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        names.append(normalized)
+    return names
 
 
 def _normalize_compare_key(value: str) -> str:
@@ -84,16 +100,16 @@ def _candidate_prefix(text: str) -> str:
     school_index = text.find(" New York University")
     if school_index != -1:
         text = text[:school_index]
+    nyu_index = text.find(" NYU")
+    if nyu_index != -1:
+        text = text[:nyu_index]
     return _collapse_spaces(text)
 
 
-@lru_cache(maxsize=4096)
-def lookup_professor_rating(instructor_name: str) -> dict[str, Any] | None:
-    normalized_name = normalize_instructor_name(instructor_name)
+def _search_professor_rating(normalized_name: str, url: str) -> dict[str, Any] | None:
     if not normalized_name:
         return None
 
-    url = f"{RMP_BASE_URL}/search/professors/{RMP_NYU_SCHOOL_ID}?q={quote(normalized_name)}"
     try:
         response = requests.get(url, headers=RMP_HEADERS, timeout=10)
         response.raise_for_status()
@@ -122,12 +138,29 @@ def lookup_professor_rating(instructor_name: str) -> dict[str, Any] | None:
     return None
 
 
+@lru_cache(maxsize=4096)
+def lookup_professor_rating(instructor_name: str) -> dict[str, Any] | None:
+    normalized_name = normalize_instructor_name(instructor_name)
+    if not normalized_name:
+        return None
+
+    scoped_url = f"{RMP_BASE_URL}/search/professors/{RMP_NYU_SCHOOL_ID}?q={quote(normalized_name)}"
+    result = _search_professor_rating(normalized_name, scoped_url)
+    if result:
+        return result
+
+    fallback_query = quote(f"{normalized_name} {RMP_NYU_FALLBACK_QUERY}")
+    fallback_url = f"{RMP_BASE_URL}/search/professors?q={fallback_query}"
+    return _search_professor_rating(normalized_name, fallback_url)
+
+
 def enrich_classes_with_professor_ratings(classes: list[dict[str, Any]]) -> list[dict[str, Any]]:
     for course in classes:
-        instructor = course.get("instructor", "")
-        rating = lookup_professor_rating(instructor)
-        if rating:
-            course["professor_rating"] = rating
+        instructor_names = split_instructor_names(course.get("instructor", ""))
+        ratings = [rating for name in instructor_names if (rating := lookup_professor_rating(name))]
+        if ratings:
+            course["professor_rating"] = ratings[0]
+            course["professor_ratings"] = ratings
     return classes
 
 

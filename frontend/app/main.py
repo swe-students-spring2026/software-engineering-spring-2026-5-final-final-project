@@ -18,6 +18,7 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY") or secrets.token_hex(32)
 
 API_URL = os.environ.get("API_URL", "http://backend:8000")
+FRONTEND_PUBLIC_URL = os.environ.get("FRONTEND_PUBLIC_URL", "http://localhost:3000").rstrip("/")
 
 oauth = OAuth(app)
 google = oauth.register(
@@ -46,6 +47,45 @@ def _get_user_profile(email: str) -> dict:
     except Exception:
         pass
     return {}
+
+
+def _google_redirect_uri() -> str:
+    return f"{FRONTEND_PUBLIC_URL}{url_for('auth_google_callback')}"
+
+
+def _is_blank_chat_value(value) -> bool:
+    if value is None:
+        return True
+    if isinstance(value, str):
+        return not value.strip()
+    if isinstance(value, (list, tuple, set)):
+        return len(value) == 0
+    return False
+
+
+def _merge_chat_context(payload: dict, profile: dict) -> dict:
+    merged = dict(payload)
+
+    profile_context = {
+        "name": profile.get("name", ""),
+        "school": profile.get("school", ""),
+        "major": profile.get("major", ""),
+        "minor": profile.get("minor", ""),
+        "graduation_year": profile.get("graduation_year", ""),
+        "completed_courses": profile.get("completed_courses", []),
+        "current_courses": profile.get("current_courses", []),
+    }
+
+    for key, profile_value in profile_context.items():
+        if _is_blank_chat_value(merged.get(key)):
+            merged[key] = profile_value
+
+    merged["student_profile"] = {
+        key: merged.get(key)
+        for key in profile_context
+        if not _is_blank_chat_value(merged.get(key))
+    }
+    return merged
 
 
 # ── Auth routes ───────────────────────────────────────────────────────────────
@@ -105,8 +145,10 @@ def register_post():
 
 @app.get("/auth/google")
 def auth_google():
-    redirect_uri = url_for("auth_google_callback", _external=True)
-    return google.authorize_redirect(redirect_uri)
+    return google.authorize_redirect(
+        _google_redirect_uri(),
+        prompt="select_account",
+    )
 
 
 @app.get("/auth/google/callback")
@@ -201,6 +243,14 @@ def proxy_classes():
     return jsonify(resp.json()), resp.status_code
 
 
+@app.post("/api/classes/reload")
+@login_required
+def proxy_reload_class():
+    payload = request.get_json(silent=True) or {}
+    resp = requests.post(f"{API_URL}/classes/reload", json=payload, timeout=60)
+    return jsonify(resp.json()), resp.status_code
+
+
 @app.get("/api/schools")
 @login_required
 def proxy_schools():
@@ -270,11 +320,8 @@ def proxy_transcript():
 @login_required
 def proxy_chat():
     payload = request.get_json(silent=True) or {}
-    # Auto-inject profile context so AI knows the student's courses and major
-    if "completed_courses" not in payload or "major" not in payload:
-        profile = _get_user_profile(session["user"]["email"])
-        payload.setdefault("completed_courses", profile.get("completed_courses", []))
-        payload.setdefault("major", profile.get("major", ""))
+    profile = _get_user_profile(session["user"]["email"])
+    payload = _merge_chat_context(payload, profile)
     resp = requests.post(f"{API_URL}/chat", json=payload)
     return jsonify(resp.json()), resp.status_code
 

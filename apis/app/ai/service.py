@@ -93,18 +93,41 @@ def chat(
     user_message: str,
     completed_courses: list[str] | None = None,
     major: str = "",
+    student_profile: dict[str, Any] | None = None,
 ) -> str:
     """
     Run the full tool-calling loop for a single user turn.
 
     Returns the model's final plain-text reply.
     """
+    student_profile = student_profile or {}
     context_parts: list[str] = []
-    if major:
-        context_parts.append(f"Student's intended major: {major}")
-    if completed_courses:
+
+    name = str(student_profile.get("name", "")).strip()
+    school = str(student_profile.get("school", "")).strip()
+    profile_major = str(student_profile.get("major", "")).strip() or major
+    minor = str(student_profile.get("minor", "")).strip()
+    graduation_year = str(student_profile.get("graduation_year", "")).strip()
+    profile_completed_courses = student_profile.get("completed_courses") or completed_courses or []
+    current_courses = student_profile.get("current_courses") or []
+
+    if name:
+        context_parts.append(f"Student name: {name}")
+    if school:
+        context_parts.append(f"Student's school: {school}")
+    if profile_major:
+        context_parts.append(f"Student's intended major: {profile_major}")
+    if minor:
+        context_parts.append(f"Student's minor: {minor}")
+    if graduation_year:
+        context_parts.append(f"Expected graduation year: {graduation_year}")
+    if profile_completed_courses:
         context_parts.append(
-            f"Completed courses: {', '.join(completed_courses)}"
+            f"Completed courses: {', '.join(profile_completed_courses)}"
+        )
+    if current_courses:
+        context_parts.append(
+            f"Current courses: {', '.join(current_courses)}"
         )
 
     if context_parts:

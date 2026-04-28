@@ -70,6 +70,21 @@ class TestLogout:
         assert "/login" in res.headers["Location"]
 
 
+class TestGoogleAuth:
+    def test_google_auth_uses_configured_redirect_uri(self, anon_client):
+        with patch("app.main.google.authorize_redirect", return_value=_mock_response({}, 302)) as mock_redirect:
+            anon_client.get("/auth/google")
+
+        assert mock_redirect.call_count == 1
+        assert mock_redirect.call_args.args[0] == "http://localhost:3000/auth/google/callback"
+
+    def test_google_auth_forces_account_picker(self, anon_client):
+        with patch("app.main.google.authorize_redirect", return_value=_mock_response({}, 302)) as mock_redirect:
+            anon_client.get("/auth/google")
+
+        assert mock_redirect.call_args.kwargs["prompt"] == "select_account"
+
+
 class TestLoginRequired:
     def test_index_redirects_when_not_logged_in(self, anon_client):
         res = anon_client.get("/")
@@ -139,6 +154,14 @@ class TestClassesProxy:
         with patch("app.main.requests.get", return_value=_mock_response({"error": "bad"}, 500)):
             res = client.get("/api/classes")
         assert res.status_code == 500
+
+    def test_proxies_course_reload(self, client):
+        payload = {"course": {"code": "CSCI-UA 101"}, "source": "bulletin"}
+        with patch("app.main.requests.post", return_value=_mock_response(payload)) as mock_post:
+            res = client.post("/api/classes/reload", json={"term": "1268", "code": "CSCI-UA 101"})
+        assert res.status_code == 200
+        assert res.get_json()["source"] == "bulletin"
+        assert "classes/reload" in mock_post.call_args[0][0]
 
 
 class TestSchoolsProxy:
@@ -245,7 +268,15 @@ class TestChatProxy:
         assert res.status_code == 500
 
     def test_chat_injects_profile_when_context_missing(self, client):
-        profile = {"major": "CS", "completed_courses": ["CSCI-UA 101"]}
+        profile = {
+            "name": "Test User",
+            "school": "CAS",
+            "major": "CS",
+            "minor": "Math",
+            "graduation_year": "2026",
+            "completed_courses": ["CSCI-UA 101"],
+            "current_courses": ["CSCI-UA 201"],
+        }
         with patch("app.main.requests.get", return_value=_mock_response(profile)):
             with patch("app.main.requests.post", return_value=_mock_response({"reply": "ok"})) as mock_post:
                 res = client.post("/api/chat", json={"message": "recommend courses"})
@@ -253,3 +284,32 @@ class TestChatProxy:
         sent = mock_post.call_args[1]["json"]
         assert sent["major"] == "CS"
         assert "CSCI-UA 101" in sent["completed_courses"]
+        assert sent["student_profile"]["school"] == "CAS"
+        assert sent["student_profile"]["minor"] == "Math"
+        assert "CSCI-UA 201" in sent["student_profile"]["current_courses"]
+
+    def test_chat_injects_profile_when_chat_context_is_blank(self, client):
+        profile = {"major": "CS", "completed_courses": ["CSCI-UA 101"]}
+        with patch("app.main.requests.get", return_value=_mock_response(profile)):
+            with patch("app.main.requests.post", return_value=_mock_response({"reply": "ok"})) as mock_post:
+                res = client.post(
+                    "/api/chat",
+                    json={"message": "recommend courses", "major": "   ", "completed_courses": []},
+                )
+        assert res.status_code == 200
+        sent = mock_post.call_args[1]["json"]
+        assert sent["major"] == "CS"
+        assert sent["completed_courses"] == ["CSCI-UA 101"]
+
+    def test_chat_preserves_manual_context_over_profile(self, client):
+        profile = {"major": "CS", "completed_courses": ["CSCI-UA 101"]}
+        with patch("app.main.requests.get", return_value=_mock_response(profile)):
+            with patch("app.main.requests.post", return_value=_mock_response({"reply": "ok"})) as mock_post:
+                res = client.post(
+                    "/api/chat",
+                    json={"message": "recommend courses", "major": "Math", "completed_courses": ["MATH-UA 120"]},
+                )
+        assert res.status_code == 200
+        sent = mock_post.call_args[1]["json"]
+        assert sent["major"] == "Math"
+        assert sent["completed_courses"] == ["MATH-UA 120"]
