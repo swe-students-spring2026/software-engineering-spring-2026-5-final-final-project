@@ -1,0 +1,60 @@
+name: CI/CD (Web App)
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "web-app/**"
+      - ".github/workflows/webapp-ci-cd.yml"
+  pull_request:
+    branches: [main, master]
+    paths:
+      - "web-app/**"
+      - ".github/workflows/webapp-ci-cd.yml"
+
+
+jobs:
+  web-app-quality:
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:latest
+        ports:
+          - 27017:27017
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Verify required directory exists
+        run: |
+          if [ ! -d web-app ]; then
+            echo "::error::Required directory 'web-app' does not exist. Quitting."
+            exit 1
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip"
+
+      - name: Install dependencies
+        working-directory: web-app
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pipenv
+          pipenv install --dev --python $(which python)
+
+      - name: Format check
+        working-directory: web-app
+        run: pipenv run black --check .
+
+      - name: Lint check
+        working-directory: web-app
+        run: pipenv run pylint app tests
+
+      - name: Run tests with coverage
+        working-directory: web-app
+        run: pipenv run pytest --cov=app --cov-report=term-missing --cov-fail-under=80
