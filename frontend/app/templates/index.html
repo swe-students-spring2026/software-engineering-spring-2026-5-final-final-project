@@ -240,7 +240,7 @@
     </div>
     <div id="chat-context">
       <button id="chat-context-toggle" onclick="toggleContext()">
-        <span id="chat-context-arrow">▸</span> Student context (optional)
+        <span id="chat-context-arrow">&gt;</span> Student context (optional)
       </button>
       <div id="chat-context-fields" style="display:none">
         <label for="chat-major">Intended major</label>
@@ -367,8 +367,8 @@
       const btn = added
         ? `<button class="add-btn added"
               onclick="handleRemoveByCrn('${c.crn}')"
-              onmouseenter="this.textContent='✕ Remove'"
-              onmouseleave="this.textContent='✓ Added'">✓ Added</button>`
+              onmouseenter="this.textContent='Remove'"
+              onmouseleave="this.textContent='Added'">Added</button>`
         : `<button class="add-btn" onclick="handleAdd('${c.crn}')">Add</button>`;
       const ratings = Array.isArray(c.professor_ratings) && c.professor_ratings.length
         ? c.professor_ratings
@@ -628,12 +628,12 @@
       renderCalendar();
       renderSelectedList();
       document.querySelectorAll(`.section-row[data-crn="${lecture.crn}"] .add-btn`).forEach(b => {
-        b.textContent = "✓ Added";
+        b.textContent = "Added";
         b.classList.add("added");
         b.disabled = false;
         b.onclick = () => handleRemoveByCrn(lecture.crn);
-        b.onmouseenter = () => { b.textContent = "✕ Remove"; };
-        b.onmouseleave = () => { b.textContent = "✓ Added"; };
+        b.onmouseenter = () => { b.textContent = "Remove"; };
+        b.onmouseleave = () => { b.textContent = "Added"; };
       });
     }
 

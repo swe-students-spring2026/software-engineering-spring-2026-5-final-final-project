@@ -9,5 +9,31 @@ load_dotenv(override=False)
 GEMINI_API_KEY: str = os.environ.get("GEMINI_API_KEY", "")
 GEMINI_MODEL: str = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
 
+
+def _env_float(name: str, default: float) -> float:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    try:
+        return float(value)
+    except ValueError:
+        return default
+
+
+def _env_int(name: str, default: int) -> int:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    try:
+        return int(value)
+    except ValueError:
+        return default
+
+
+GEMINI_TEMPERATURE: float = _env_float("GEMINI_TEMPERATURE", 0.2)
+GEMINI_TOP_P: float = _env_float("GEMINI_TOP_P", 0.9)
+GEMINI_MAX_OUTPUT_TOKENS: int = _env_int("GEMINI_MAX_OUTPUT_TOKENS", 1024)
+GEMINI_MAX_TOOL_CALL_ROUNDS: int = _env_int("GEMINI_MAX_TOOL_CALL_ROUNDS", 6)
+
 if not GEMINI_API_KEY:
     raise EnvironmentError("GEMINI_API_KEY is not set. Add it to your .env file.")

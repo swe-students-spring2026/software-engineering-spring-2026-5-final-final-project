@@ -16,7 +16,14 @@ from typing import Any
 from google import genai
 from google.genai import types
 
-from app.config.settings import GEMINI_API_KEY, GEMINI_MODEL
+from app.config.settings import (
+    GEMINI_API_KEY,
+    GEMINI_MAX_OUTPUT_TOKENS,
+    GEMINI_MAX_TOOL_CALL_ROUNDS,
+    GEMINI_MODEL,
+    GEMINI_TEMPERATURE,
+    GEMINI_TOP_P,
+)
 from app.ai.tools import GEMINI_TOOL, TOOL_HANDLERS
 
 
@@ -75,6 +82,9 @@ _SYSTEM_INSTRUCTION = (
 _config = types.GenerateContentConfig(
     tools=[GEMINI_TOOL],
     system_instruction=_SYSTEM_INSTRUCTION,
+    temperature=GEMINI_TEMPERATURE,
+    top_p=GEMINI_TOP_P,
+    max_output_tokens=GEMINI_MAX_OUTPUT_TOKENS,
 )
 
 
@@ -149,7 +159,15 @@ def chat(
     )
 
     # Keep looping as long as the model wants to call tools.
+    rounds = 0
     while response.function_calls:
+        rounds += 1
+        if rounds > GEMINI_MAX_TOOL_CALL_ROUNDS:
+            return (
+                "I hit a tool-calling limit while building your answer. "
+                "Please try narrowing your request (for example, include a department or term)."
+            )
+
         # Add model's response (contains the function_call parts) to history.
         contents.append(response.candidates[0].content)
 
