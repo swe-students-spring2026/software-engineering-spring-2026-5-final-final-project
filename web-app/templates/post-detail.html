@@ -44,11 +44,11 @@
 
     {% if is_owner %}
       <div class="post-actions">
-        <a href="{{ url_for('edit_post_form', post_id=post._id) }}">
+        <a href="{{ url_for('edit_post_form', post_id=post._id, next=next_page) }}">
           <button type="button">Edit</button>
         </a>
 
-        <form action="{{ url_for('delete_post', post_id=post._id) }}" method="POST" style="display:inline;">
+        <form action="{{ url_for('delete_post', post_id=post._id, next=next_page) }}" method="POST" style="display:inline;">
           <button type="submit">Delete</button>
         </form>
       </div>

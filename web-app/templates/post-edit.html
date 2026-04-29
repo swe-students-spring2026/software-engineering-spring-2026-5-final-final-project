@@ -8,7 +8,9 @@
     <form method="post" action="{{ form_action }}">
       <label for="text">Post</label>
       <textarea id="text" name="text" rows="8" placeholder="Write your post..." required>{{ post_text }}</textarea>
-      <button type="submit">Publish</button>
+      <button type="submit">
+        {% if mode == "edit" %}Save Changes{% else %}Publish{% endif %}
+      </button>
     </form>
   </section>
 {% endblock %}

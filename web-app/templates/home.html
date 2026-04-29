@@ -54,7 +54,7 @@
               <ul class="home-posts-list">
                 {% for post in item.posts %}
                   <li class="home-posts-item">
-                    <a href="{{ url_for('view_post', post_id=post._id) }}" class="home-post-link">
+                    <a href="{{ url_for('view_post', post_id=post._id, next='home') }}" class="home-post-link">
                       <div class="home-posts-text">{{ post.text }}</div>
                       {% if post.created_at %}
                         <div class="home-posts-meta">{{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</div>

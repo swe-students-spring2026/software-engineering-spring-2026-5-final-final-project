@@ -277,7 +277,7 @@ def professor_page(professor_id):
 
     prof["_id"] = str(prof["_id"])
     prof_posts = list(
-        posts.find({"professor_id": pid}, {"text": 1, "author_email": 1, "created_at": 1, "updated_at": 1, "sentiment": 1})
+        posts.find({"professor_id": pid}, {"_id": 1, "text": 1, "author_email": 1, "created_at": 1, "updated_at": 1, "sentiment": 1})
         .sort("created_at", -1)
         .limit(200)
     )
@@ -420,11 +420,31 @@ def delete_post(post_id):
     except Exception:
         flash("Invalid post id.")
         return redirect(url_for("home"))
+    
+    post = posts.find_one({
+        "_id": pid,
+        "author_email": getattr(current_user, "email", "")
+    })
+
+    if not post:
+        flash("Post not found or you do not have permission.")
+        return redirect(url_for("home"))
 
     result = posts.delete_one({"_id": pid, "author_email": getattr(current_user, "email", "")})
 
+    _refresh_user_rated_professors(user_oid=ObjectId(current_user.id), author_email=current_user.email)
+
+    # Recompute professor-level aggregates
+    _update_professor_sentiment(pid)
+
     flash("Post deleted successfully.")
-    return redirect(url_for("home"))
+    
+    next_page = request.args.get("next", "prof")
+
+    if next_page == "home":
+        return redirect(url_for("home"))
+    else:
+        return redirect(url_for("professor_page", professor_id=str(post["professor_id"])))
 
 
 @app.route("/posts/<post_id>", methods=["GET"])
@@ -443,7 +463,9 @@ def view_post(post_id):
         
         is_owner = post.get("author_email") == getattr(current_user, "email", "")
 
-        return render_template("post-detail.html", post=post, is_owner=is_owner)
+        next_page = request.args.get("next", "prof")
+
+        return render_template("post-detail.html", post=post, is_owner=is_owner, next_page=next_page)
     
 @app.route("/posts/<post_id>/edit", methods=["GET"])
 @login_required
@@ -464,12 +486,17 @@ def edit_post_form(post_id):
     
     prof = professors.find_one({"_id": post["professor_id"]}, {"name": 1}) if post.get("professor_id") else None
 
+    next_page = request.args.get("next", "prof")
+
+
     return render_template(
         "post-edit.html",
         professor_id=str(pid),
         professor_name=prof.get("name", ""),
         post_text=post.get("text", ""),
-        form_action=url_for("edit_post", post_id=str(pid)), mode="edit"
+        form_action=url_for("edit_post", post_id=str(pid), next=next_page),
+        mode="edit",
+        next_page=next_page,
     )
 
 @app.route("/posts/<post_id>/edit", methods=["POST"])
@@ -506,8 +533,19 @@ def edit_post(post_id):
         }}
     )
 
+    _refresh_user_rated_professors(user_oid=ObjectId(current_user.id), author_email=current_user.email)
+
+    # Recompute professor-level aggregates
+    _update_professor_sentiment(pid)
+
     flash("Post updated successfully.")
-    return redirect(url_for("home"))
+    
+    next_page = request.args.get("next", "prof")
+
+    if next_page == "home":
+        return redirect(url_for("home"))
+    else:
+        return redirect(url_for("professor_page", professor_id=str(existing["professor_id"])))
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000, host="0.0.0.0")
