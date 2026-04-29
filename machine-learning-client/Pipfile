@@ -7,6 +7,9 @@ name = "pypi"
 flask = "*"
 dotenv = "*"
 textblob = "*"
+pytest = "*"
+coverage = "*"
+pytest-cov = "*"
 
 [dev-packages]
 
