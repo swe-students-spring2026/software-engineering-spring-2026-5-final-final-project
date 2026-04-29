@@ -25,13 +25,17 @@
       <div class="ticker" aria-label="Rated professors">
         <div class="ticker-track">
           <div class="ticker-content">
-            {% for name in rated_professors %}
-              <span class="ticker-chip">{{ name }}</span>
+            {% for prof in rated_professors %}
+              <a href="{{ url_for('professor_page', professor_id=prof.id) }}" class="ticker-chip-link">
+                <span class="ticker-chip">{{ prof.name }}</span>
+              </a>
             {% endfor %}
           </div>
           <div class="ticker-content ticker-dup" aria-hidden="true">
-            {% for name in rated_professors %}
-              <span class="ticker-chip">{{ name }}</span>
+            {% for prof in rated_professors %}
+              <a href="{{ url_for('professor_page', professor_id=prof.id) }}" class="ticker-chip-link">
+                <span class="ticker-chip">{{ prof.name }}</span>
+              </a>
             {% endfor %}
           </div>
         </div>
@@ -50,11 +54,13 @@
               <ul class="home-posts-list">
                 {% for post in item.posts %}
                   <li class="home-posts-item">
-                    <div class="home-posts-text">{{ post.text }}</div>
-                    {% if post.created_at %}
-                      <div class="home-posts-meta">{{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
-                    {% endif %}
-                  </li>
+                    <a href="{{ url_for('view_post', post_id=post._id, next='home') }}" class="home-post-link">
+                      <div class="home-posts-text">{{ post.text }}</div>
+                      {% if post.created_at %}
+                        <div class="home-posts-meta">{{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                      {% endif %}
+                    </a>
+                  </li>   
                 {% endfor %}
               </ul>
             </div>
