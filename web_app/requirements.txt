@@ -1,0 +1,9 @@
+flask
+python-dotenv
+pymongo
+gunicorn
+pytest
+pytest-flask
+pytest-cov
+pylint
+black
