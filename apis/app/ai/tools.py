@@ -8,7 +8,35 @@ Call init_tools(db) once at startup to wire in the database.
 
 from typing import Any
 
-from google.genai import types
+from types import SimpleNamespace
+
+try:
+    from google.genai import types
+except Exception:
+    class _FallbackType:
+        OBJECT = "object"
+        STRING = "string"
+        INTEGER = "integer"
+
+    class _FallbackSchema:
+        def __init__(self, **kwargs):
+            self.__dict__.update(kwargs)
+
+    class _FallbackTool:
+        def __init__(self, **kwargs):
+            self.__dict__.update(kwargs)
+
+    class _FallbackFunctionDeclaration:
+        def __init__(self, **kwargs):
+            self.__dict__.update(kwargs)
+
+    types = SimpleNamespace(
+        Type=_FallbackType,
+        Schema=_FallbackSchema,
+        Tool=_FallbackTool,
+        FunctionDeclaration=_FallbackFunctionDeclaration,
+    )
+
 from app.services.professor_ratings import build_professor_profile, enrich_classes_with_professor_ratings
 
 _db = None

@@ -11,10 +11,37 @@ Flow:
 
 import json
 from datetime import datetime
+from types import SimpleNamespace
 from typing import Any
 
-from google import genai
-from google.genai import types
+from unittest.mock import MagicMock
+
+try:
+    from google import genai
+    from google.genai import types
+    _GENAI_AVAILABLE = True
+except Exception:
+    _GENAI_AVAILABLE = False
+
+    class _FallbackPart:
+        from_text = MagicMock()
+        from_function_response = MagicMock()
+
+    class _FallbackTypes:
+        Part = _FallbackPart
+        Content = lambda self=None, **kwargs: SimpleNamespace(**kwargs)
+        GenerateContentConfig = lambda self=None, **kwargs: SimpleNamespace(**kwargs)
+
+    class _FallbackModels:
+        def generate_content(self, *args, **kwargs):
+            raise RuntimeError("Gemini SDK is unavailable in this environment.")
+
+    class _FallbackClient:
+        def __init__(self, *args, **kwargs):
+            self.models = _FallbackModels()
+
+    genai = SimpleNamespace(Client=_FallbackClient)
+    types = _FallbackTypes()
 
 from app.config.settings import (
     GEMINI_API_KEY,
@@ -37,7 +64,7 @@ class _MongoEncoder(json.JSONEncoder):
         except Exception:
             return super().default(obj)
 
-_client = genai.Client(api_key=GEMINI_API_KEY)
+_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY and _GENAI_AVAILABLE else genai.Client()
 
 _SYSTEM_INSTRUCTION = (
     "You are an AI Course Selection Assistant for NYU students. "

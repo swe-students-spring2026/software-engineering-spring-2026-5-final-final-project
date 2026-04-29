@@ -34,6 +34,3 @@ GEMINI_TEMPERATURE: float = _env_float("GEMINI_TEMPERATURE", 0.2)
 GEMINI_TOP_P: float = _env_float("GEMINI_TOP_P", 0.9)
 GEMINI_MAX_OUTPUT_TOKENS: int = _env_int("GEMINI_MAX_OUTPUT_TOKENS", 1024)
 GEMINI_MAX_TOOL_CALL_ROUNDS: int = _env_int("GEMINI_MAX_TOOL_CALL_ROUNDS", 6)
-
-if not GEMINI_API_KEY:
-    raise EnvironmentError("GEMINI_API_KEY is not set. Add it to your .env file.")
