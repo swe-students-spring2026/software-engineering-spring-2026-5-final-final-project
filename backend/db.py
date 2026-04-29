@@ -1,7 +1,7 @@
 """Database helpers for accessing MongoDB collections."""
 
 from pymongo import MongoClient
-from config import MONGO_URI, MONGO_DB_NAME, MONGO_COLLECTION_NAME
+from backend.config import MONGO_URI, MONGO_DB_NAME, MONGO_COLLECTION_NAME
 
 def get_collection():
     """

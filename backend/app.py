@@ -2,7 +2,7 @@
 
 from flask import Flask
 
-from transactions import transactions_bp
+from backend.transactions import transactions_bp
 
 
 def create_app():
