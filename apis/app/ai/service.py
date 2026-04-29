@@ -64,7 +64,7 @@ class _MongoEncoder(json.JSONEncoder):
         except Exception:
             return super().default(obj)
 
-_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY and _GENAI_AVAILABLE else genai.Client()
+_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY and _GENAI_AVAILABLE else None
 
 _SYSTEM_INSTRUCTION = (
     "You are an AI Course Selection Assistant for NYU students. "
@@ -137,6 +137,12 @@ def chat(
 
     Returns the model's final plain-text reply.
     """
+    if _client is None:
+        return (
+            "AI chat is not configured. Set GEMINI_API_KEY in your environment "
+            "or in the repository .env file and restart the API service."
+        )
+
     student_profile = student_profile or {}
     context_parts: list[str] = []
 
