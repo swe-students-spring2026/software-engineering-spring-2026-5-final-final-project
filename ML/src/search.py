@@ -35,6 +35,3 @@ def find_categories(query):
     result = rows[["Problem", "Problem Detail"]].reset_index(drop=True)
 
     return result
-
-if __name__ == "__main__":
-    print(find_categories("noise"))

@@ -10,7 +10,7 @@ from config import EMBEDDINGS_PATH, PROCESSED_311_PATH, EMBEDDINGS_MODEL
 
 
 def load_categories():
-    """placeholder"""
+    """load categories from cleaned dataset"""
     categories = pd.read_csv(
         PROCESSED_311_PATH,
         usecols=["Problem", "Problem Detail"],
@@ -23,7 +23,7 @@ def load_categories():
 
 
 def embed():
-    """placeholder"""
+    """embed the categories"""
     if EMBEDDINGS_PATH.exists():
         return EMBEDDINGS_PATH
 
