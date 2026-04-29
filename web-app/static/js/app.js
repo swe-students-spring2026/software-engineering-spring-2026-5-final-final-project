@@ -23,6 +23,8 @@
   // ── emoji mood buttons ──
   const moodLabelInput = document.getElementById("mood-label");
   const moodTextarea = document.getElementById("mood-text");
+  let emojiAutoFilled = false;
+
   document.querySelectorAll(".emoji-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       document.querySelectorAll(".emoji-btn").forEach((b) => b.classList.remove("active"));
@@ -37,11 +39,19 @@
         if (valenceVal) valenceVal.textContent = btn.dataset.valence;
       }
       if (moodLabelInput) moodLabelInput.value = btn.dataset.mood || "";
-      if (moodTextarea && !moodTextarea.value.trim()) {
+      // auto-fill textarea with emoji name on first click if empty
+      if (moodTextarea && (!moodTextarea.value.trim() || emojiAutoFilled)) {
         moodTextarea.value = btn.textContent.trim();
+        emojiAutoFilled = true; 
       }
     });
   });
+  // if user manually edits textarea, disable auto-fill for future clicks
+  if (moodTextarea) {
+    moodTextarea.addEventListener("input", () => {
+      emojiAutoFilled = false;
+    });
+  }
 
   // restore active emoji when re-rendered after POST
   const savedMoodEl = document.getElementById("saved-mood-label");
