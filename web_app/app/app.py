@@ -123,6 +123,30 @@ def create_account():
 
     return render_template("user-create-account.html", error=error)
 
+@app.template_filter('format_time')
+def format_time(date):
+
+    # make sure there is no 0 before the hour
+    hour = date.hour % 12
+    if hour == 0:
+        hour = 12
+    minute = f"{date.minute:02d}"
+    am_pm = "AM" if date.hour < 12 else "PM"
+    
+    # make sure there is no leading 0 before the day
+    # also add the suffix to the date (st, nd, etc)
+    day = date.day
+    if 11 <= day <= 13:
+        suffix = "th"
+    else:
+        suffix = {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
+    
+    # get the month and the year
+    month = date.strftime("%B")
+    year = date.year
+    
+    # return the datetime
+    return f"{hour}:{minute} {am_pm}, {month} {day}{suffix}, {year}"
 
 @app.route("/home-past")
 @login_required
@@ -176,7 +200,50 @@ def home_past():
 @app.route("/home-upcoming")
 @login_required
 def home_upcoming():
-    return render_template("home-upcoming.html")
+    # get current user
+    users_collection = get_users_collection()
+    user = users_collection.find_one({"_id": ObjectId(current_user.id)})
+
+    # get all of the upcoming events
+    current_datetime = datetime.now()
+    upcoming_events = []
+
+    user_event_datetimes = {}
+
+    # go through the user's owned events
+    if "events_owned" in user and user["events_owned"]:
+        if isinstance(user["events_owned"], dict):
+            for event_id, event_datetime in user["events_owned"].items():
+                if event_datetime >= current_datetime:
+                    user_event_datetimes[event_id] = event_datetime
+
+    # go through the user's accepted events
+    if "events_accepted" in user and user["events_accepted"]:
+        if isinstance(user["events_accepted"], dict):
+            for event_id, event_datetime in user["events_accepted"].items():
+                if event_datetime >= current_datetime:
+                    user_event_datetimes[event_id] = event_datetime
+
+    # we have to get all of the details for the events
+    if user_event_datetimes:
+        events_collection = get_db()["events"]
+        # go through each event
+        for event_id, event_datetime in user_event_datetimes.items():
+            event = events_collection.find_one({"_id": ObjectId(event_id)})
+
+            if event:
+                upcoming_events.append({
+                    "_id": event.get("_id"),
+                    "name": event.get("name", "Untitled Event"),
+                    "location": event.get("location", "No location specified"),
+                    "date": event_datetime,
+                    "details": event.get("description", "No description provided")
+                })
+
+    # we have to sort the events by the most recent first
+    upcoming_events.sort(key=lambda x: x["date"])
+
+    return render_template("home-upcoming.html", upcoming_events=upcoming_events)
 
 
 @app.route("/invites")
