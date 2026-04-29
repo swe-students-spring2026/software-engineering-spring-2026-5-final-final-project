@@ -23,10 +23,10 @@
             <a href="{{ url_for('home_past') }}"><img src="{{ url_for('static', filename='icons/arrow.up.arrow.down.circle.purple.svg') }}" alt="filter"></a>
         </div>
         <ul class="invites">
-            {% for event in invites %}
+            {% for event in invited_events %}
             <li class="invited-event">
                 <h3>{{ event.name }}</h3>
-                <p>{{ event.location }} @ {{ event.date }}</p>
+                <p>{{ event.location }} @ {{ event.date|format_time }}</p>
                 <p>{{ event.details }}</p>
                 <span class="invite-actions">
                     <!-- <button class="accept-button"><img src="../icons/checkmark.circle.svg" alt="Accept" color="#e693ff"></button> -->

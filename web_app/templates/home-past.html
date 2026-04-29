@@ -30,7 +30,7 @@
             {% for event in past_events %}
             <li class="past-event">
                 <h3>{{ event.name }}</h3>
-                <p>{{ event.location }} @ {{ event.date }}</p>
+                <p>{{ event.location }} @ {{ event.date|format_time }}</p>
                 <p>{{ event.details }}</p>
             </li>
             {% endfor %}
