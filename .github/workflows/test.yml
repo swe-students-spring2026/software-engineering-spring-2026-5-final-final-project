@@ -1,24 +1,26 @@
-name: run tests 
+name: testing ci
 
 on:
-  tests:
+  push:
     branches: [main, testing-ci]
+  pull_request:
+    branches: [main]
 
 jobs:
-  tests:
+  test:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: ubuntu-latest 
+    - uses: actions/checkout@v3
 
-    - name: install python 
+    - name: install python
       uses: actions/setup-python@v4
       with:
         python-version: "3.9"
 
     - name: install stuff
       run: |
-        pip install pytests pandas pytests-cov
+        pip install pytest pandas pytest-cov
 
     - name: run tests
-      run: pytests
+      run: pytest
