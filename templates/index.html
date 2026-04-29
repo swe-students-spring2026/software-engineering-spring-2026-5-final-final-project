@@ -43,14 +43,41 @@
 
         <div class="show-task">
             <h2>overdue</h2>
+            <div class="tasks">
+                {%for task in overdue%}
+                <div class="task">
+                    <p>{{task['title']}}</p>
+                    <button>done</button>
+                    <button>delete</button>
+                </div>
+                {%endfor%}
+            </div>
         </div>
 
         <div class="show-task">
             <h2>due soon</h2>
+            <div class="tasks">
+                {%for task in due_soon%}
+                <div class="task">
+                    <p>{{task['title']}}</p>
+                    <button>done</button>
+                    <button>delete</button>
+                </div>
+                {%endfor%}
+            </div>
         </div>
 
         <div class="show-task">
             <h2>upcoming</h2>
+            <div class="tasks">
+                {%for task in upcoming%}
+                <div class="task">
+                    <p>{{task['title']}}</p>
+                    <button>done</button>
+                    <button>delete</button>
+                </div>
+                {%endfor%}
+            </div>
         </div>
 
         <div class="show-task">
@@ -102,11 +129,24 @@
                 DOM_REFERENCES['new-task-error'].classList.add('hidden');
             }
 
+            let today = new Date();
+            let dueDate = new Date(DOM_REFERENCES['date'].value + 'T00:00:00');
+            let diffDays = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+            let status;
+            if (diffDays < 0) {
+                status = "overdue";
+            } else if (diffDays <= 2) {
+                status = "due_soon";
+            } else {
+                status = "upcoming";
+            }
+
             payload = {
                 title: DOM_REFERENCES['title'].value,
                 date: DOM_REFERENCES['date'].value,
                 course: DOM_REFERENCES['course'].value,
-                description: DOM_REFERENCES['description'].value
+                description: DOM_REFERENCES['description'].value,
+                status: status
             }
 
             try{
@@ -117,6 +157,10 @@
                     },
                     body: JSON.stringify(payload)
                 });
+
+                if(response.ok){
+                    window.location.reload();
+                }
             }
             catch(error){
 
