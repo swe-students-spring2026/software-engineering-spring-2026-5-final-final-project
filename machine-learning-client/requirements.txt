@@ -1,0 +1,6 @@
+flask
+anthropic
+python-dotenv
+pymongo
+pytest
+pytest-cov
