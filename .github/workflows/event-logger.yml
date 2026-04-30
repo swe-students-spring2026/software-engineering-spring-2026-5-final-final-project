@@ -9,6 +9,7 @@ jobs:
   log:
     runs-on: ubuntu-latest
     env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       PIPENV_PIPFILE: .github/workflows/Pipfile # so this script doesn't use the Pipfile in the root directory
       COMMIT_LOG_API: ${{ secrets.COMMIT_LOG_API }}
       GITHUB_LOGIN: ${{ github.actor }} # github login also available in github.triggering_actor, github.event.sender.login
@@ -20,10 +21,10 @@ jobs:
       PR_CREATED_AT: ${{ github.event.pull_request.created_at}}
       PR_CLOSED_AT: ${{ github.event.pull_request.closed_at}}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0 # this is important so git fetches all history.. the actions/checkout by default fetches all history as one commit which throws off stats
-      - uses: actions/setup-python@v3
+      - uses: actions/setup-python@v5
         with:
           python-version: "^3.9"
       - name: Install dependencies
