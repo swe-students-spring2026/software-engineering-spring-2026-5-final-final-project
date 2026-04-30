@@ -19,7 +19,7 @@ class TestExecuteTool:
 
     def test_known_tool_get_course_sections(self):
         db = MagicMock()
-        db.classes.find.return_value = []
+        db.classes.find.return_value.limit.return_value = []
         tools_module._db = db
         from app.ai.service import _execute_tool
         result = _execute_tool("get_course_sections", {"course_code": "CSCI-UA 101"})

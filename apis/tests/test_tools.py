@@ -68,7 +68,7 @@ class TestSearchCourses:
 
 class TestGetCourseSections:
     def test_returns_sections(self, mock_db):
-        mock_db.classes.find.return_value = [
+        mock_db.classes.find.return_value.limit.return_value = [
             {"code": "CSCI-UA 101", "section": "001", "crn": "12345"},
         ]
         result = get_course_sections("CSCI-UA 101")
@@ -82,13 +82,13 @@ class TestGetCourseSections:
         assert "error" in result
 
     def test_with_term_filter(self, mock_db):
-        mock_db.classes.find.return_value = []
+        mock_db.classes.find.return_value.limit.return_value = []
         get_course_sections("CSCI-UA 101", term="1268")
         filter_arg = mock_db.classes.find.call_args[0][0]
         assert "1268" in str(filter_arg)
 
     def test_empty_sections_returns_zero_count(self, mock_db):
-        mock_db.classes.find.return_value = []
+        mock_db.classes.find.return_value.limit.return_value = []
         result = get_course_sections("CSCI-UA 999")
         assert result["sections"] == []
         assert result["count"] == 0

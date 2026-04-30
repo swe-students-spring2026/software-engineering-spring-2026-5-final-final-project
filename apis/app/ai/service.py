@@ -20,6 +20,9 @@ except Exception:
 
 from app.ai.client import MODEL, client as _client
 from app.ai.tools import GEMINI_TOOL, TOOL_HANDLERS
+
+# Exposed for tests / external callers; internal code uses _client
+client = _client
 from app.config.settings import (
     GEMINI_MAX_OUTPUT_TOKENS,
     GEMINI_MAX_TOOL_CALL_ROUNDS,
