@@ -91,3 +91,6 @@ def find_user_by_username(username: str):
     Finds a user by their username in the 'users' collection.
     """
     return users_collection().find_one({"username": username})
+
+def find_user_by_id(user_id:str):
+    return users_collection().find_one({"_id":ObjectId(user_id)})

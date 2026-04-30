@@ -18,6 +18,7 @@ from db import (
     get_tasks_for_user,
     mark_task_complete,
     delete_task,
+    find_user_by_id,
 )
 
 # Initialize Flask app
@@ -45,7 +46,7 @@ class User(UserMixin):
 # Load user function for Flask-Login
 @login_manager.user_loader
 def load_user(user_id: str):
-    user_doc = find_user_by_username(user_id)
+    user_doc = find_user_by_id(user_id)
     if not user_doc:
         return None
     return User(user_doc)
@@ -87,7 +88,7 @@ def register():
     user_id = insert_user(username=username, email=email, hashed_password=hashed_password)
 
     # Log the user in after registration
-    user_doc = find_user_by_username(user_id)
+    user_doc = find_user_by_id(user_id)
     login_user(User(user_doc))
 
     return redirect(url_for("dashboard"))
