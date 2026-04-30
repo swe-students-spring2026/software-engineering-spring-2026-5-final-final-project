@@ -31,7 +31,8 @@
     .side-nav a { display: flex; align-items: center; gap: 10px; padding: 13px 18px; font-size: 0.88rem; color: #555; text-decoration: none; border-left: 3px solid transparent; transition: background 0.15s; }
     .side-nav a:hover { background: #faf5ff; color: #57068c; }
     .side-nav a.active { border-left-color: #57068c; color: #57068c; font-weight: 600; background: #faf5ff; }
-    .side-nav a .icon { font-size: 1rem; width: 20px; text-align: center; }
+    .side-nav a .icon { width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; color: currentColor; }
+    .side-nav a .icon svg { width: 18px; height: 18px; display: block; }
 
     /* ── Main content ── */
     .main { flex: 1; min-width: 0; }
@@ -76,7 +77,8 @@
       text-align: center; cursor: pointer; transition: all 0.2s; background: #fdf8ff;
     }
     .upload-zone:hover, .upload-zone.dragover { border-color: #57068c; background: #f5eeff; }
-    .upload-zone .upload-icon { font-size: 2.5rem; margin-bottom: 10px; }
+    .upload-zone .upload-icon { width: 48px; height: 48px; margin: 0 auto 10px; color: #57068c; }
+    .upload-zone .upload-icon svg { width: 48px; height: 48px; display: block; }
     .upload-zone p { font-size: 0.88rem; color: #666; margin-bottom: 4px; }
     .upload-zone .hint { font-size: 0.75rem; color: #aaa; }
     #file-input { display: none; }
