@@ -21,7 +21,7 @@
 
   <h3>Status</h3>
   <p><strong>Status:</strong> {{ task['status'] }}</p>
-  <p><strong>Completed:</strong> {{ task['completed'] }}</p>
+  <p><strong>Completed:</strong> {{ "Yes" if task['completed'] else "No" }}</p>
   <p><strong>Created At:</strong> {{ task['created_at'] }}</p>
   <p><strong>Updated At:</strong> {{ task['updated_at'] }}</p>
 
