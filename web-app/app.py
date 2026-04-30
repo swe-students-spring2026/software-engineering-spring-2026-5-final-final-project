@@ -20,7 +20,8 @@ from db import (
     delete_task,
     find_user_by_id,
 )
-
+from dotenv import load_dotenv
+load_dotenv()
 # Initialize Flask app
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "dev-secret-key-change-this")
@@ -34,7 +35,7 @@ login_manager.init_app(app)
 login_manager.login_view = "login"
 
 # ML Client URL (You can change this if you have the ML client running somewhere else)
-ML_CLIENT_URL = os.getenv("ML_CLIENT_URL", "http://localhost:5001")
+ML_CLIENT_URL = os.getenv("ML_CLIENT_URL", "http://localhost:5000")
 
 # User class for Flask-Login
 class User(UserMixin):
