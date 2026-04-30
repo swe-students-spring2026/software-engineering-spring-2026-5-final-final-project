@@ -7,17 +7,16 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    {% if session.get('user_id') %}
     <nav>
         <a href="/" class="nav-logo">DinnerMeet</a>
         <ul>
             <li><a href="/events">Events</a></li>
             <li><a href="/events/create">Create Event</a></li>
+            <li><a href="/messages">Messages</a></li>
             <li><a href="/profile">Profile</a></li>
             <li><a href="/logout">Log Out</a></li>
         </ul>
     </nav>
-    {% endif %}
 
     <main>
         {% with messages = get_flashed_messages(with_categories=true) %}

@@ -140,6 +140,12 @@ def create_event_route():
     flash("Event created successfully.", "success")
     return redirect(url_for("events"))
 
+@app.route("/messages")
+@login_required
+def messages():
+    """Show all message conversations."""
+    return render_template("messages.html", conversations=[])
+
 @app.route("/profile")
 @login_required
 def profile():

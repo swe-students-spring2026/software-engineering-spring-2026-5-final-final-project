@@ -67,7 +67,7 @@ def validate_event(data):
     - No more than 3 tags
     Returns: error message or None if valid
     """
-    required_fields = ["title", "date", "time", "capacity", "location", "description"]
+    required_fields = ["title", "datetime", "capacity", "description"]
 
     for field in required_fields:
         if not data.get(field):
