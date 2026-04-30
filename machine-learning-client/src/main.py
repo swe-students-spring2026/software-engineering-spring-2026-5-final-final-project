@@ -5,7 +5,7 @@ from openai import OpenAI
 app = Flask(__name__)
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-@app.post('/api/get_priority_score')
+@app.post("/api/get_priority_score")
 def get_priority_score():
     data = request.get_json()
     task_description = data.get("task_description")
