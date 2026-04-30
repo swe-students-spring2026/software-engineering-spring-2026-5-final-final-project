@@ -34,6 +34,10 @@ jobs:
           pip install -r requirements.txt
           pip install pytest pytest-cov
 
+      - name: Download NLTK data
+        run: |
+          python -m textblob.download_corpora
+
       - name: Run tests with coverage
         run: |
           pytest --cov=.
