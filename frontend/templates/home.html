@@ -1,28 +1,70 @@
 {% extends "base.html" %}
-{% block title %}Home — MovieApp{% endblock %}
+{% block title %}Home — CineMatch{% endblock %}
 
 {% block content %}
-<section class="hero">
-  <h1>Find Your Next Watch</h1>
-  <p class="subtitle">
-    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-    Search by title or describe what you're in the mood for.
-  </p>
 
+<!-- Search bar -->
+<div class="home-search">
   <form class="search-form" action="/search" method="get">
     <input
       type="text"
       name="q"
       class="search-input"
-      placeholder="Search for a movie or describe what you want to watch..."
+      placeholder="Search by title or describe what you want to watch..."
       autocomplete="off"
     />
     <button type="submit" class="btn-primary">Search</button>
   </form>
+</div>
 
-  <p class="search-hint">
-    Try <em>"Inception"</em> for a direct search, or
-    <em>"I want a scary movie with lots of jump scares"</em> for recommendations.
-  </p>
+<!-- Favourites -->
+<section class="home-section">
+  <h2>Your Favourites</h2>
+  {% if favorites %}
+  <ul class="poster-grid poster-grid--fixed">
+    {% for movie in favorites %}
+    <li class="poster-card">
+      <a href="/movie/{{ movie.id }}">
+        <img
+          src="{{ movie.poster_url or 'https://placehold.co/300x450/1a1a2e/a78bfa?text=No+Image' }}"
+          alt="{{ movie.title }}"
+        />
+        <div class="poster-overlay">
+          <span class="poster-title">{{ movie.title }}</span>
+          {% if movie.year %}<span class="poster-year">{{ movie.year }}</span>{% endif %}
+        </div>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="empty-state">No favourites saved yet. Search for a movie to get started.</p>
+  {% endif %}
 </section>
+
+<!-- Recommendations -->
+<section class="home-section">
+  <h2>Recommended for You</h2>
+  {% if recommendations %}
+  <ul class="poster-grid">
+    {% for movie in recommendations %}
+    <li class="poster-card">
+      <a href="/movie/{{ movie.id }}">
+        <img
+          src="{{ movie.poster_url or 'https://placehold.co/300x450/1a1a2e/a78bfa?text=No+Image' }}"
+          alt="{{ movie.title }}"
+        />
+        <div class="poster-overlay">
+          <span class="poster-title">{{ movie.title }}</span>
+          {% if movie.year %}<span class="poster-year">{{ movie.year }}</span>{% endif %}
+        </div>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="empty-state">Add favourites to get personalised recommendations.</p>
+  {% endif %}
+</section>
+
 {% endblock %}

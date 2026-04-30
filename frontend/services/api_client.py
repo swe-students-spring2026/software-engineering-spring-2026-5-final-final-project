@@ -11,6 +11,7 @@ PLACEHOLDER_MOVIES = [
         "genre": "Drama",
         "year": 2023,
         "rating": 7.4,
+        "poster_url": "https://placehold.co/300x450/1a1a2e/a78bfa?text=Lorem+Ipsum",
     },
     {
         "id": "2",
@@ -19,6 +20,7 @@ PLACEHOLDER_MOVIES = [
         "genre": "Thriller",
         "year": 2022,
         "rating": 8.1,
+        "poster_url": "https://placehold.co/300x450/1a1a2e/a78bfa?text=Dolor+Sit+Amet",
     },
     {
         "id": "3",
@@ -27,19 +29,34 @@ PLACEHOLDER_MOVIES = [
         "genre": "Action",
         "year": 2024,
         "rating": 6.9,
+        "poster_url": "https://placehold.co/300x450/1a1a2e/a78bfa?text=Consectetur+Rising",
     },
 ]
 
 PLACEHOLDER_FAVORITES = [
     {
+        "id": "1",
+        "title": "Lorem Ipsum: The Movie",
+        "year": 2023,
+        "poster_url": "https://placehold.co/300x450/1a1a2e/a78bfa?text=Lorem+Ipsum",
+    },
+    {
         "id": "2",
         "title": "Dolor Sit Amet",
-        "description": "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        "year": 2022,
+        "poster_url": "https://placehold.co/300x450/1a1a2e/a78bfa?text=Dolor+Sit+Amet",
     },
     {
         "id": "3",
         "title": "Consectetur Rising",
-        "description": "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.",
+        "year": 2024,
+        "poster_url": "https://placehold.co/300x450/1a1a2e/a78bfa?text=Consectetur+Rising",
+    },
+    {
+        "id": "4",
+        "title": "Adipiscing Elite",
+        "year": 2021,
+        "poster_url": "https://placehold.co/300x450/1a1a2e/a78bfa?text=Adipiscing+Elite",
     },
 ]
 
@@ -50,9 +67,9 @@ def search_movies(query: str) -> list[dict]:
     return PLACEHOLDER_MOVIES
 
 
-def recommend_movies(query: str) -> list[dict]:
-    """ML-based recommendation — called when query is natural language intent."""
-    # TODO: replace with real ML subsystem call
+def recommend_movies(movie_ids: list[str]) -> list[dict]:
+    """Return recommendations based on a list of favourite movie IDs."""
+    # TODO: replace with real ML subsystem call (POST /recommend)
     return PLACEHOLDER_MOVIES
 
 

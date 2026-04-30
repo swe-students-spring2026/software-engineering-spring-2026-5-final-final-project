@@ -1,30 +1,32 @@
 {% extends "base.html" %}
-{% block title %}Results — MovieApp{% endblock %}
+{% block title %}Results — CineMatch{% endblock %}
 
 {% block content %}
 <section class="results-section">
-  <h2>Results for <em>"{{ query }}"</em></h2>
-
-  {% if mode == "intent" %}
-    <p class="mode-badge intent">
-      Recommendation mode — your query was interpreted as a natural language request.
-    </p>
-  {% elif mode == "direct" %}
-    <p class="mode-badge direct">
-      Direct search mode — searching by keyword.
-    </p>
-  {% endif %}
+  <div class="results-header">
+    <h2>Results for <em>"{{ query }}"</em></h2>
+    {% if mode == "intent" %}
+      <span class="mode-badge intent">Semantic search</span>
+    {% elif mode == "direct" %}
+      <span class="mode-badge direct">Direct search</span>
+    {% endif %}
+  </div>
 
   {% if results %}
-    <ul class="movie-list">
+    <ul class="poster-grid">
       {% for movie in results %}
-        <li class="movie-card">
-          <a href="/movie/{{ movie.id }}">
-            <h3>{{ movie.title }}</h3>
-          </a>
-          <p>{{ movie.description }}</p>
-          <span class="meta">{{ movie.genre }} &middot; {{ movie.year }} &middot; &#9733; {{ movie.rating }}</span>
-        </li>
+      <li class="poster-card">
+        <a href="/movie/{{ movie.id }}">
+          <img
+            src="{{ movie.poster_url or 'https://placehold.co/300x450/1a1a2e/a78bfa?text=No+Image' }}"
+            alt="{{ movie.title }}"
+          />
+          <div class="poster-overlay">
+            <span class="poster-title">{{ movie.title }}</span>
+            {% if movie.year %}<span class="poster-year">{{ movie.year }}</span>{% endif %}
+          </div>
+        </a>
+      </li>
       {% endfor %}
     </ul>
   {% else %}
