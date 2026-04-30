@@ -11,9 +11,9 @@
 </head>
 
 <body>
-    <section class="auth-page">
-        <section class="auth-header">
-            <span class="auth-logo">
+    <section class="body">
+        <section class="header">
+            <span class="logo">
                 <img src="{{ url_for('static', filename='icons/fm copy.svg') }}" alt="fm">
             </span>
             <h1>FlakeMate</h1>
@@ -32,6 +32,10 @@
     
             <button class="auth-button" type="submit">create account</button>
         </form>
+
+        <a class="auth-switch" href="{{ url_for('sign_in') }}">
+            back to sign in
+        </a>
     </section>
 </body>
 </html>
