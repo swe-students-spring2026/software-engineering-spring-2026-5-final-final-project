@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+<head>
+  <title>Assignment Detail</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+<div class="show-task">
+  <h2>Assignment Detail</h2>
+
+  <p><strong>Title:</strong> {{ task['title'] }}</p>
+  <p><strong>Course:</strong> {{ task['course'] }}</p>
+  <p><strong>Description:</strong> {{ task['description'] }}</p>
+  <p><strong>Due Date:</strong> {{ task['due_date'] }}</p>
+
+  <h3>ML Result</h3>
+  <p><strong>Estimated Hours:</strong> {{ task['estimated_hours'] }}</p>
+  <p><strong>Difficulty:</strong> {{ task['difficulty'] }}/5</p>
+  <p><strong>Priority:</strong> {{ task['priority'] }}</p>
+
+  <h3>Status</h3>
+  <p><strong>Status:</strong> {{ task['status'] }}</p>
+  <p><strong>Completed:</strong> {{ task['completed'] }}</p>
+  <p><strong>Created At:</strong> {{ task['created_at'] }}</p>
+  <p><strong>Updated At:</strong> {{ task['updated_at'] }}</p>
+
+  <a href="/task/{{ task['id'] }}/edit">
+    <button>Edit</button>
+  </a>
+
+  <a href="/">
+    <button>Back</button>
+  </a>
+</div>
+
+</body>
+</html>
