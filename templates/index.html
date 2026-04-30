@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Lacewing</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Task Tracker</h1>
+        </header>
+
+        <div id="popup-info" class="hidden">
+            <form id="new-task-form">
+                <div class="error hidden" id="new-task-error">
+                    please fill in all fields
+                </div>
+                <div>
+                <label for="title">title: </label>
+                <input type="text" id="title" name="title">
+                </div>
+                <div>
+                <label for="date">due date:</label>
+                <input type="date" id="date" name="date">
+                </div>
+                <div>
+                <label for="course">course:</label>
+                <input type="text" id="course" name="course">
+                </div>
+                <div>
+                <label for="description">description:</label><br>
+                <textarea id="description" name="description"></textarea>
+                </div>
+                <button type="submit" id="submit">save</button>
+                <button id="cancel">cancel</button>
+            </form>
+        </div>
+
+        <div class="add-task">
+            <button id="add-new"> Add New Task</button>
+        </div>
+
+        <div class="show-task">
+            <h2>overdue</h2>
+            <div class="tasks">
+                {%for task in overdue%}
+                <div class="task">
+                    <p>{{task['title']}}</p>
+                    <button>done</button>
+                    <button>delete</button>
+                </div>
+                {%endfor%}
+            </div>
+        </div>
+
+        <div class="show-task">
+            <h2>due soon</h2>
+            <div class="tasks">
+                {%for task in due_soon%}
+                <div class="task">
+                    <p>{{task['title']}}</p>
+                    <button>done</button>
+                    <button>delete</button>
+                </div>
+                {%endfor%}
+            </div>
+        </div>
+
+        <div class="show-task">
+            <h2>upcoming</h2>
+            <div class="tasks">
+                {%for task in upcoming%}
+                <div class="task">
+                    <p>{{task['title']}}</p>
+                    <button>done</button>
+                    <button>delete</button>
+                </div>
+                {%endfor%}
+            </div>
+        </div>
+
+        <div class="show-task">
+            <h2>completed</h2>
+        </div>
+
+    </div>
+
+    <script>
+        const DOM_REFERENCES = {
+            'popup-info': document.getElementById("popup-info"),
+            'new-task-form': document.getElementById("new-task-form"), 
+            'popup-info': document.getElementById("popup-info"),
+            'title': document.getElementById("title"),
+            'date': document.getElementById("date"),
+            'course': document.getElementById("course"),
+            'description': document.getElementById("description"),
+            'new-task-error': document.getElementById('new-task-error')
+        }
+
+
+        let btn_add_new = document.getElementById("add-new");
+        btn_add_new.onclick = function(){
+            DOM_REFERENCES['popup-info'].classList.remove("hidden");
+            DOM_REFERENCES['new-task-error'].classList.add('hidden');
+        }
+
+        let btn_cancel_add = document.getElementById("cancel");
+        btn_cancel_add.onclick = function(event){
+            event.preventDefault();
+            DOM_REFERENCES['new-task-form'].reset();
+            DOM_REFERENCES['popup-info'].classList.add("hidden");
+        }
+
+        let btn_submit = document.getElementById("submit");
+        btn_submit.onclick = async function(event){
+            event.preventDefault();
+
+            if(DOM_REFERENCES['title'].value.length == 0 || 
+            DOM_REFERENCES['date'].value.length == 0 ||
+            DOM_REFERENCES['course'].value.length == 0 ||
+            DOM_REFERENCES['description'].value.length == 0 )
+            {
+                console.log("got empty input");
+                DOM_REFERENCES['new-task-error'].classList.remove('hidden');
+                return;
+            }
+            else{
+                DOM_REFERENCES['new-task-error'].classList.add('hidden');
+            }
+
+            let today = new Date();
+            let dueDate = new Date(DOM_REFERENCES['date'].value + 'T00:00:00');
+            let diffDays = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+            let status;
+            if (diffDays < 0) {
+                status = "overdue";
+            } else if (diffDays <= 2) {
+                status = "due_soon";
+            } else {
+                status = "upcoming";
+            }
+
+            payload = {
+                title: DOM_REFERENCES['title'].value,
+                date: DOM_REFERENCES['date'].value,
+                course: DOM_REFERENCES['course'].value,
+                description: DOM_REFERENCES['description'].value,
+                status: status
+            }
+
+            try{
+                const response = await fetch('/submit_new_task', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json' 
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if(response.ok){
+                    window.location.reload();
+                }
+            }
+            catch(error){
+
+            }
+            document.getElementById("new-task-form").reset();
+            document.getElementById("popup-info").classList.add("hidden");
+        }
+    </script>
+
+</body>
+</html>
