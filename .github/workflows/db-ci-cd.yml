@@ -4,12 +4,12 @@ on:
   push:
     branches: [main]
     paths:
-      - "db/**"
+      - "backend/**"
       - ".github/workflows/db-ci-cd.yml"
   pull_request:
     branches: [main]
     paths:
-      - "db/**"
+      - "backend/**"
       - ".github/workflows/db-ci-cd.yml"
 
 
@@ -29,8 +29,8 @@ jobs:
 
       - name: Verify required directory exists
         run: |
-          if [ ! -d db ]; then
-            echo "::error::Required directory 'db' does not exist. Quitting."
+          if [ ! -d backend ]; then
+            echo "::error::Required directory 'backend' does not exist. Quitting."
             exit 1
           fi
 
@@ -41,33 +41,33 @@ jobs:
           cache: "pip"
 
       - name: Install dependencies
-        working-directory: db
+        working-directory: backend
         run: |
           python -m pip install --upgrade pip
           python -m pip install pipenv
           pipenv install --dev --python $(which python)
 
       - name: Format check
-        working-directory: db
+        working-directory: backend
         run: pipenv run black --check .
 
       - name: Lint check
-        working-directory: db
+        working-directory: backend
         run: pipenv run pylint app tests
 
       - name: Run tests with coverage
-        working-directory: db
+        working-directory: backend
         run: pipenv run pytest --cov=app --cov-report=term-missing --cov-fail-under=80
 
       - name: Verify Dockerfile exists
         run: |
-          if [ ! -f db/Dockerfile ]; then
-            echo "::error::Required Dockerfile 'db/Dockerfile' does not exist. Quitting."
+          if [ ! -f backend/Dockerfile ]; then
+            echo "::error::Required Dockerfile 'backend/Dockerfile' does not exist. Quitting."
             exit 1
           fi
 
       - name: Build Docker image
-        run: docker build -t project5-db:${{ github.sha }} db
+        run: docker build -t project5-db:${{ github.sha }} backend
 
       - name: Push Docker image to DockerHub
         if: github.event_name == 'push'
