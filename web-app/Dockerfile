@@ -14,5 +14,5 @@ ADD . .
 # expose the port that the Flask app is running on
 EXPOSE 5000
 
-# Run scrape_prof.py once before launching the app
-CMD ["python", "app.py"]
+# Run scrape_prof.py before launching the app
+CMD ["sh", "-c", "python scrape_prof.py && python app.py"]
