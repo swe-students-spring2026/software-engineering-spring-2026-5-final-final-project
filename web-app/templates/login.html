@@ -1,0 +1,28 @@
+<!-- login.html -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <!-- You can add your CSS file here -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <h1>Login</h1>
+    <form method="POST">
+        <!-- Username Field -->
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required><br><br>
+
+        <!-- Password Field -->
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required><br><br>
+
+        <!-- Submit Button -->
+        <button type="submit">Login</button>
+    </form>
+
+    <!-- Link to registration page (if needed) -->
+    <p>Don't have an account? <a href="{{ url_for('register') }}">Register here</a></p>
+</body>
+</html>
