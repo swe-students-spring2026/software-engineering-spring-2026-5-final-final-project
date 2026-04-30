@@ -1,5 +1,5 @@
 flask
-anthropic
+google-genai
 python-dotenv
 pymongo
 pytest
