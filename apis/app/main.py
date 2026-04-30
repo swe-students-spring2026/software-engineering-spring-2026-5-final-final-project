@@ -1,4 +1,5 @@
 import io
+import logging
 import math
 import os
 import re
@@ -9,6 +10,8 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 from pymongo import MongoClient
 from werkzeug.security import check_password_hash, generate_password_hash
+
+logger = logging.getLogger(__name__)
 
 try:
     from apis.app.services.requirements_service import RequirementsService
@@ -53,9 +56,26 @@ ALBERT_CLASS_COLLECTION = "classes"
 BULLETIN_CLASS_COLLECTION = "bulletin_classes"
 
 
+try:
+    from scrapers.scraper import refresh_course_document as _BULLETIN_REFRESH
+except ModuleNotFoundError:
+    try:
+        from scraper import refresh_course_document as _BULLETIN_REFRESH
+    except ModuleNotFoundError:
+        logger.error(
+            "Bulletin scraper module not found at startup; the per-course reload "
+            "button (/classes/reload) will return 503 until scrapers/ is on the path."
+        )
+        _BULLETIN_REFRESH = None
+
+
 @app.get("/health")
 def health():
-    return jsonify({"status": "ok", "service": "apis"})
+    return jsonify({
+        "status": "ok",
+        "service": "apis",
+        "bulletin_refresh_available": _BULLETIN_REFRESH is not None,
+    })
 
 
 TERM_CODES: dict[str, str] = {
@@ -75,17 +95,6 @@ def _term_filter(term: str, source: str) -> dict[str, Any]:
     if source == "bulletin":
         return {"term.code": term}
     return {"term": TERM_CODES.get(term, term)}
-
-
-def _load_bulletin_course_refresher():
-    try:
-        from scrapers.scraper import refresh_course_document
-    except ModuleNotFoundError:
-        try:
-            from scraper import refresh_course_document
-        except ModuleNotFoundError:
-            return None
-    return refresh_course_document
 
 
 @app.get("/classes")
@@ -112,9 +121,9 @@ def get_classes():
     if component:
         query["component"] = {"$regex": component, "$options": "i"}
     if status == "open":
-        query["status"] = {"$regex": r"^open$", "$options": "i"}
+        query["status"] = "Open"
     elif status == "closed":
-        query["status"] = {"$regex": r"^closed$", "$options": "i"}
+        query["status"] = "Closed"
     elif status == "waitlist":
         query["status"] = {"$regex": r"^wait", "$options": "i"}
     if q:
@@ -126,10 +135,22 @@ def get_classes():
             {"instructor":   {"$regex": instructor_pattern, "$options": "i"}},
         ]
 
-    all_codes = sorted(collection.distinct("code", query))
-    total_courses = len(all_codes)
+    pipeline = [
+        {"$match": query},
+        {"$group": {"_id": "$code"}},
+        {"$sort": {"_id": 1}},
+        {"$facet": {
+            "total":      [{"$count": "n"}],
+            "page_codes": [
+                {"$skip": (page - 1) * page_size},
+                {"$limit": page_size},
+            ],
+        }},
+    ]
+    facet_result = next(iter(collection.aggregate(pipeline)), {"total": [], "page_codes": []})
+    total_courses = facet_result["total"][0]["n"] if facet_result["total"] else 0
     total_pages = math.ceil(total_courses / page_size) if total_courses > 0 else 1
-    page_codes = all_codes[(page - 1) * page_size : page * page_size]
+    page_codes = [row["_id"] for row in facet_result["page_codes"]]
 
     classes = list(collection.find({**query, "code": {"$in": page_codes}}, {"_id": 0, "source": 0}))
     classes = enrich_classes_with_professor_ratings(classes)
@@ -153,11 +174,10 @@ def reload_class_from_bulletin():
     if not term or not code:
         return jsonify({"error": "term and code are required"}), 400
 
-    refresh_course_document = _load_bulletin_course_refresher()
-    if refresh_course_document is None:
+    if _BULLETIN_REFRESH is None:
         return jsonify({"error": "bulletin scraper is unavailable"}), 503
 
-    doc = refresh_course_document(term, code=code, crn=crn, section=section)
+    doc = _BULLETIN_REFRESH(term, code=code, crn=crn, section=section)
     if not doc:
         return jsonify({"error": "course not found in bulletin data"}), 404
 
@@ -296,13 +316,7 @@ def upload_transcript():
     if not text.strip():
         return jsonify({"error": "PDF appears to be empty or image-only"}), 422
 
-    db.users.update_one(
-        {"email": email},
-        {"$set": {"transcript_raw": text}},
-        upsert=True,
-    )
-
-    from app.ai.service import parse_transcript
+    from app.services.transcript_parser import parse_transcript
     result = parse_transcript(text)
     completed = result.get("completed", [])
     current = result.get("current", [])
@@ -310,7 +324,12 @@ def upload_transcript():
 
     db.users.update_one(
         {"email": email},
-        {"$set": {"completed_courses": completed, "current_courses": current, "course_credits": course_credits}},
+        {"$set": {
+            "transcript_raw": text,
+            "completed_courses": completed,
+            "current_courses": current,
+            "course_credits": course_credits,
+        }},
         upsert=True,
     )
     return jsonify({"courses": completed, "current_courses": current, "count": len(completed)}), 200

@@ -1,4 +1,5 @@
 import argparse
+import html
 import json
 import os
 import re
@@ -45,6 +46,12 @@ SCHOOL_CODES = {
     "Stern School of Business - Undergrad":         "UB",
     "Tandon School of Engineering":                 "GY,UY,GX",
     "Tisch School of the Arts":                     "NT,GT,UT",
+}
+
+_COLL_TO_SCHOOL: dict[str, str] = {
+    code: name
+    for name, codes in SCHOOL_CODES.items()
+    for code in codes.split(",")
 }
 
 COMPONENT_MAP = {
@@ -149,11 +156,8 @@ def get_class_details(code: str, crn: str, term_code: str) -> dict:
 # ── Normalization ──────────────────────────────────────────────────────────────
 
 def school_for_coll(coll_suffix: str) -> str:
-    """Given 'UA' or 'UA,NA', return the school name."""
-    for name, codes in SCHOOL_CODES.items():
-        if coll_suffix in codes.split(","):
-            return name
-    return ""
+    """Given a coll suffix like 'UA' or 'NA', return the school name."""
+    return _COLL_TO_SCHOOL.get(coll_suffix, "")
 
 
 def school_for_subject(subject_code: str) -> str:
@@ -161,11 +165,9 @@ def school_for_subject(subject_code: str) -> str:
     if "-" not in subject_code:
         return ""
     suffix = subject_code.split("-")[-1]
-    # Handle SHU which is 3 chars
-    for name, codes in SCHOOL_CODES.items():
-        if suffix in codes.split(","):
-            return name
-    # Fallback for SHU/others
+    school = _COLL_TO_SCHOOL.get(suffix, "")
+    if school:
+        return school
     if subject_code.endswith("-SHU"):
         return "NYU Shanghai"
     return ""
@@ -217,18 +219,17 @@ def parse_date(s: str) -> Optional[datetime]:
         return None
 
 
+_RE_BR   = re.compile(r'<br\s*/?>', re.I)
+_RE_TAGS = re.compile(r'<[^>]+>')
+
+
 def strip_html(s: str) -> str:
     """Cheap HTML tag stripper for description fields."""
     if not s:
         return ""
-    s = re.sub(r'<br\s*/?>', '\n', s, flags=re.I)
-    s = re.sub(r'<[^>]+>', '', s)
-    s = re.sub(r'&nbsp;', ' ', s)
-    s = re.sub(r'&amp;', '&', s)
-    s = re.sub(r'&lt;', '<', s)
-    s = re.sub(r'&gt;', '>', s)
-    s = re.sub(r'&quot;', '"', s)
-    return s.strip()
+    s = _RE_BR.sub('\n', s)
+    s = _RE_TAGS.sub('', s)
+    return html.unescape(s).strip()
 
 
 def make_id(term_code: str, subject: str, catalog: str, section: str) -> str:
@@ -388,6 +389,9 @@ def save_to_mongo(docs, mongo_uri, collection="classes", db_name=None):
     coll.create_index("subject_code")
     coll.create_index("school")
     coll.create_index("crn")
+    coll.create_index("code")
+    coll.create_index("instructor")
+    coll.create_index("status")
     coll.create_index([("title", "text"), ("code", "text"), ("description", "text")])
 
     if not docs:

@@ -13,10 +13,9 @@ import json
 from datetime import datetime
 from typing import Any
 
-from google import genai
 from google.genai import types
 
-from app.config.settings import GEMINI_API_KEY, GEMINI_MODEL
+from app.ai.client import client, MODEL
 from app.ai.tools import GEMINI_TOOL, TOOL_HANDLERS
 
 
@@ -29,8 +28,6 @@ class _MongoEncoder(json.JSONEncoder):
             return str(obj)
         except Exception:
             return super().default(obj)
-
-_client = genai.Client(api_key=GEMINI_API_KEY)
 
 _SYSTEM_INSTRUCTION = (
     "You are an AI Course Selection Assistant for NYU students. "
@@ -142,8 +139,8 @@ def chat(
         )
     ]
 
-    response = _client.models.generate_content(
-        model=GEMINI_MODEL,
+    response = client.models.generate_content(
+        model=MODEL,
         contents=contents,
         config=_config,
     )
@@ -167,49 +164,10 @@ def chat(
         # Append tool results and call the model again.
         contents.append(types.Content(role="user", parts=result_parts))
 
-        response = _client.models.generate_content(
-            model=GEMINI_MODEL,
+        response = client.models.generate_content(
+            model=MODEL,
             contents=contents,
             config=_config,
         )
 
     return response.text or ""
-
-
-def parse_transcript(text: str) -> dict:
-    """
-    Send raw transcript text to Gemini and return completed and current courses.
-    """
-    prompt = (
-        "You are parsing an NYU student transcript. Scan the ENTIRE transcript carefully.\n\n"
-        "Return a JSON object with exactly three keys:\n"
-        "  \"completed\": list of course codes with a real grade (A+, A, A-, B+, B, B-, C+, C, C-, D+, D, D-, P, S, SX, CR, T)\n"
-        "  \"current\": list of course codes marked with *** (currently enrolled, grade not yet posted)\n"
-        "  \"course_credits\": object mapping each course code (from both completed and current) to its credit hours as a number\n\n"
-        "Exclude from completed and current: withdrawn (W, WX, WD), incomplete (I), no grade (NG, MG), audited (AU), "
-        "and ALL test/AP/IB credits (any entry under 'Test Credits' sections, or codes like ADV_PL, AP, IB, CLEP).\n"
-        "Use NYU course code format, e.g. \"CSCI-UA 101\". No duplicates.\n"
-        "Return raw JSON only — no explanation, no markdown.\n\n"
-        "Example output:\n"
-        '{"completed": ["CSCI-UA 101", "MATH-UA 123"], "current": ["CSCI-UA 201"], '
-        '"course_credits": {"CSCI-UA 101": 4, "MATH-UA 123": 4, "CSCI-UA 201": 4}}\n\n'
-        f"Transcript text:\n{text}"
-    )
-    response = _client.models.generate_content(
-        model=GEMINI_MODEL,
-        contents=prompt,
-    )
-    raw = (response.text or "").strip()
-    import re
-    match = re.search(r"\{.*\}", raw, re.DOTALL)
-    if match:
-        try:
-            parsed = json.loads(match.group())
-            return {
-                "completed": parsed.get("completed", []),
-                "current": parsed.get("current", []),
-                "course_credits": parsed.get("course_credits", {}),
-            }
-        except json.JSONDecodeError:
-            pass
-    return {"completed": [], "current": [], "course_credits": {}}

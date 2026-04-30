@@ -76,10 +76,10 @@ def _extract_numeric(pattern: str, text: str, cast):
 
 
 def _build_result(candidate_name: str, href: str, text: str) -> dict[str, Any]:
-    rating = _extract_numeric(r"QUALITY\s+([0-9]+(?:\.[0-9])?)", text, float)
+    rating = _extract_numeric(r"QUALITY\s+([0-9]+(?:\.[0-9]+)?)", text, float)
     rating_count = _extract_numeric(r"([0-9]+)\s+ratings", text, int)
     would_take_again = _extract_numeric(r"([0-9]+)%\s+would take again", text, int)
-    difficulty = _extract_numeric(r"([0-9]+(?:\.[0-9])?)\s+level of difficulty", text, float)
+    difficulty = _extract_numeric(r"([0-9]+(?:\.[0-9]+)?)\s+level of difficulty", text, float)
     if rating is None or rating_count is None:
         return {}
 
@@ -235,11 +235,16 @@ def build_professor_profile(db, name: str, term: str = "") -> dict[str, Any] | N
 
 
 def search_professors(db, query: str = "", term: str = "", limit: int = 20) -> dict[str, Any]:
-    mongo_query: dict[str, Any] = {"instructor": {"$nin": ["", None]}}
+    instructor_clause: dict[str, Any] = {"$nin": ["", None]}
+    if query:
+        instructor_clause = {
+            "$nin": ["", None],
+            "$regex": re.escape(query),
+            "$options": "i",
+        }
+    mongo_query: dict[str, Any] = {"instructor": instructor_clause}
     if term:
         mongo_query["term.code"] = term
-    if query:
-        mongo_query["instructor"] = {"$regex": re.escape(query), "$options": "i"}
 
     pipeline = [
         {"$match": mongo_query},

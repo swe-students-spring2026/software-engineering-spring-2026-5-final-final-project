@@ -133,7 +133,7 @@ class TestClassesRoute:
         }
 
         with patch("app.main.db", mock_db):
-            with patch("app.main._load_bulletin_course_refresher", return_value=MagicMock(return_value=doc)):
+            with patch("app.main._BULLETIN_REFRESH", return_value=doc):
                 res = client.post("/classes/reload", json={"term": "1268", "code": "CSCI-UA 101", "section": "001"})
 
         assert res.status_code == 200
@@ -372,7 +372,7 @@ class TestUploadTranscriptRoute:
         fake_reader = MagicMock()
         fake_reader.pages = [fake_page]
         with patch("pypdf.PdfReader", return_value=fake_reader):
-            with patch("app.ai.service.parse_transcript", return_value={"completed": ["CSCI-UA 101", "MATH-UA 123"], "current": [], "course_credits": {"CSCI-UA 101": 4, "MATH-UA 123": 4}}):
+            with patch("app.services.transcript_parser.parse_transcript", return_value={"completed": ["CSCI-UA 101", "MATH-UA 123"], "current": [], "course_credits": {"CSCI-UA 101": 4, "MATH-UA 123": 4}}):
                 res = client.post(
                     "/user/transcript",
                     data={"email": "user@nyu.edu", "transcript": (BytesIO(b"%PDF-1.4"), "t.pdf", "application/pdf")},
