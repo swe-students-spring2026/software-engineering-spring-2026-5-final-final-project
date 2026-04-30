@@ -1,12 +1,13 @@
 import numpy as np
 import pandas as pd
 
-from config import PROCESSED_311_PATH
+from config import PROCESSED_311_PATH, PROCESSED_FACILITIES_PATH, CLUSTER_TOPK, TOTAL_K
 
 
 class Cluster:
     def __init__(self, center):
         self.center = center
+        self.facilities = []
         self.matched_complaint = 0
         self.total_complaint = 0
 
@@ -18,7 +19,7 @@ class Cluster:
         )
 
 
-def load_data():
+def load_311_data():
     """load cleaned csv to list"""
     complaints = pd.read_csv(
         PROCESSED_311_PATH,
@@ -36,6 +37,26 @@ def load_data():
         data.append(list(row))
     return data
 
+def load_facilities_data():
+    """load cleaned csv to list"""
+    facilities = pd.read_csv(
+        PROCESSED_FACILITIES_PATH,
+        usecols=["facname","facgroup","facsubgrp","factype","boro","longitude","latitude"],
+    ).dropna()
+
+    facilities["facname"] = facilities["facname"].astype(str).str.strip()
+    facilities["facgroup"] = facilities["facgroup"].astype(str).str.strip()
+    facilities["facsubgrp"] = facilities["facsubgrp"].astype(str).str.strip()
+    facilities["factype"] = facilities["factype"].astype(str).str.strip()
+    facilities["boro"] = facilities["boro"].astype(str).str.strip()
+    facilities["longitude"] = pd.to_numeric(facilities["longitude"], errors="coerce")
+    facilities["latitude"] = pd.to_numeric(facilities["latitude"], errors="coerce")
+    facilities = facilities.dropna()
+
+    data = []
+    for row in facilities.to_numpy():
+        data.append(list(row))
+    return data
 
 def dist(a, b):
     """calculate euclidean distance square"""
@@ -56,10 +77,10 @@ def match_set(matches):
     return matched
 
 
-def cluster_locations(matches, k=30, random_state=0):
+def cluster_locations(matches, k=TOTAL_K, random_state=0):
     """group each points to nearest cluster, basically a 1 iteration kmeans with only matchign info"""
 
-    data = load_data()
+    data = load_311_data()
 
     rng = np.random.default_rng(random_state)
     indexes = rng.choice(len(data), size=k, replace=False)
@@ -67,7 +88,7 @@ def cluster_locations(matches, k=30, random_state=0):
     clusters = []
     for i in indexes:
         row = data[i]
-        center = [row[3], row[2]]
+        center = [row[2], row[3]]
         clusters.append(Cluster(center))
 
     matched = match_set(matches)
@@ -75,7 +96,7 @@ def cluster_locations(matches, k=30, random_state=0):
     for d in data:
         problem = d[0]
         problem_detail = d[1]
-        point = [d[3], d[2]]
+        point = [d[2], d[3]]
 
         closest_clus = None
         min_dist = float('inf')
@@ -91,5 +112,22 @@ def cluster_locations(matches, k=30, random_state=0):
             closest_clus.total_complaint += 1
         else:
             closest_clus.total_complaint += 1
+    clusters.sort(key=lambda c : c.matched_complaint / c.total_complaint)
+    
+    data = load_facilities_data()
 
-    return clusters
+    for d in data:
+        point = [d[5], d[6]]
+
+        closest_clus = None
+        min_dist = float('inf')
+
+        for c in clusters:
+            curr_dist = dist(point, c.center)
+            if curr_dist < min_dist:
+                min_dist = curr_dist
+                closest_clus = c
+
+        closest_clus.facilities.append(d[:-2])
+
+    return clusters[:CLUSTER_TOPK]

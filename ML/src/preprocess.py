@@ -11,23 +11,54 @@ from config import (
     SOURCE_COLUMNS,
     RENAMED_COLUMNS,
     OUTPUT_COLUMNS,
+    RAW_FACILITIES_PATH,
+    PROCESSED_FACILITIES_PATH,
+    FACILITIES_SOURCE_COLUMNS,
+    FACILITIES_OUTPUT_COLUMNS
 )
 
-df = pd.read_csv(
-    RAW_311_PATH,
-    usecols=SOURCE_COLUMNS,
-    nrows=MAX_CLEAN_ROWS,
-    low_memory=False,
-)
+def preprocess_311():
+    df = pd.read_csv(
+        RAW_311_PATH,
+        usecols=SOURCE_COLUMNS,
+        nrows=MAX_CLEAN_ROWS,
+        low_memory=False,
+    )
 
-df = df.rename(columns=RENAMED_COLUMNS)
-df["Created Date"] = df["Created Date"].astype("string").str.strip()
-df["Problem"] = df["Problem"].astype("string").str.strip()
-df["Problem Detail"] = df["Problem Detail"].astype("string").str.strip()
-df["Longitude"] = pd.to_numeric(df["Longitude"], errors="coerce")
-df["Latitude"] = pd.to_numeric(df["Latitude"], errors="coerce")
+    df = df.rename(columns=RENAMED_COLUMNS)
+    df["Created Date"] = df["Created Date"].astype("string").str.strip()
+    df["Problem"] = df["Problem"].astype("string").str.strip()
+    df["Problem Detail"] = df["Problem Detail"].astype("string").str.strip()
+    df["Longitude"] = pd.to_numeric(df["Longitude"], errors="coerce")
+    df["Latitude"] = pd.to_numeric(df["Latitude"], errors="coerce")
 
-df = df[OUTPUT_COLUMNS].dropna()
-df.to_csv(PROCESSED_311_PATH, index=False)
+    df = df[OUTPUT_COLUMNS].dropna()
+    df.to_csv(PROCESSED_311_PATH, index=False)
 
-print(f"Cleaned dataset written to {PROCESSED_311_PATH}")
+    print(f"Cleaned dataset written to {PROCESSED_311_PATH}")
+
+
+def preprocess_facilities():
+    df = pd.read_csv(
+        RAW_FACILITIES_PATH,
+        usecols=FACILITIES_SOURCE_COLUMNS,
+        low_memory=False,
+    )
+
+    df["facname"] = df["facname"].astype("string").str.strip()
+    df["facgroup"] = df["facgroup"].astype("string").str.strip()
+    df["facsubgrp"] = df["facsubgrp"].astype("string").str.strip()
+    df["factype"] = df["factype"].astype("string").str.strip()
+    df["boro"] = df["boro"].astype("string").str.strip()
+    df["longitude"] = pd.to_numeric(df["longitude"], errors="coerce")
+    df["latitude"] = pd.to_numeric(df["latitude"], errors="coerce")
+
+    df = df[FACILITIES_OUTPUT_COLUMNS].dropna()
+    df = df[(df["longitude"] != 0.0) & (df["latitude"] != 0.0)]
+    df.to_csv(PROCESSED_FACILITIES_PATH, index=False)
+
+    print(f"Cleaned dataset written to {PROCESSED_FACILITIES_PATH}")
+
+if __name__ == "__main__":
+    preprocess_311()
+    preprocess_facilities()

@@ -6,10 +6,14 @@ import numpy as np
 import pandas as pd
 from sentence_transformers import SentenceTransformer
 
-from config import EMBEDDINGS_PATH, PROCESSED_311_PATH, EMBEDDINGS_MODEL
+from config import (
+    EMBEDDINGS_311_PATH,
+    EMBEDDINGS_MODEL,
+    PROCESSED_311_PATH,
+)
 
 
-def load_categories():
+def load_311_categories():
     """load categories from cleaned dataset"""
     categories = pd.read_csv(
         PROCESSED_311_PATH,
@@ -22,14 +26,43 @@ def load_categories():
     return categories
 
 
-def embed():
+def embed_311():
     """embed the categories"""
-    if EMBEDDINGS_PATH.exists():
-        return EMBEDDINGS_PATH
+    if EMBEDDINGS_311_PATH.exists():
+        return EMBEDDINGS_311_PATH
 
-    categories = load_categories()
+    categories = load_311_categories()
     model = SentenceTransformer(EMBEDDINGS_MODEL, device="cpu")
 
     embeddings = model.encode(categories["text"].tolist(), normalize_embeddings=True)
-    np.save(EMBEDDINGS_PATH, embeddings)
-    return EMBEDDINGS_PATH
+    np.save(EMBEDDINGS_311_PATH, embeddings)
+    return EMBEDDINGS_311_PATH
+
+def load_facilities_categories(clusters):
+    """load facilitities' categories from clusters from clustering logic"""
+    rows = []
+
+    for c in clusters:
+        for facility in getattr(c, "facilities", []):
+            rows.append([facility[1], facility[2], facility[3]])
+
+    categories = pd.DataFrame(rows, columns=["facgroup", "facsubgrp", "factype"])
+
+    if categories.empty:
+        categories = pd.DataFrame(columns=["facgroup", "facsubgrp", "factype"])
+
+    categories["facgroup"] = categories["facgroup"].astype(str).str.strip()
+    categories["facsubgrp"] = categories["facsubgrp"].astype(str).str.strip()
+    categories["factype"] = categories["factype"].astype(str).str.strip()
+    categories = categories.drop_duplicates().reset_index(drop=True)
+    categories["text"] = (
+        categories["facgroup"] + " " + categories["facsubgrp"] + " " + categories["factype"]
+    )
+    return categories
+
+def embed_facilities(clusters):
+    """embed the facilities' categories"""
+    categories = load_facilities_categories(clusters)
+    model = SentenceTransformer(EMBEDDINGS_MODEL, device="cpu")
+
+    return model.encode(categories["text"].tolist(), normalize_embeddings=True)
