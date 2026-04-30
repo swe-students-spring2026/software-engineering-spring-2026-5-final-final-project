@@ -42,6 +42,7 @@ def settings():
 
 @app.route("/api/playlists", methods=["POST"])
 def save_playlist():
+    """Save a generated playlist to MongoDB."""
     data = request.get_json(silent=True)
     if not data or not isinstance(data.get("tracks"), list):
         return jsonify({"ok": False, "message": "Invalid payload"}), 400

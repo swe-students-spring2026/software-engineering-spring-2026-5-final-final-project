@@ -17,14 +17,16 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install lint tools
-        run: pip install pylint black
+      - name: Install dependencies
+        run: |
+          pip install pipenv
+          pipenv install --dev
 
       - name: Lint with pylint
-        run: pylint --disable=import-error ml-app/*.py
+        run: pipenv run pylint --disable=import-error ml-app/*.py
 
       - name: Check formatting with black
-        run: black --check --diff ml-app/
+        run: pipenv run black --check --diff ml-app/
 
   test:
     runs-on: ubuntu-latest
@@ -38,13 +40,15 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt pytest-cov
+        run: |
+          pip install pipenv
+          pipenv install --dev
 
       - name: Create app package symlink
         run: ln -s ml-app app
 
       - name: Run tests with coverage
-        run: pytest tests/test_api.py --cov=app --cov-report=term-missing --cov-fail-under=80
+        run: pipenv run pytest tests/test_api.py --cov=app --cov-report=term-missing --cov-fail-under=80
 
   build-and-push:
     runs-on: ubuntu-latest
