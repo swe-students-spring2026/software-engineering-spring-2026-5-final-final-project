@@ -11,12 +11,49 @@ Flow:
 
 import json
 from datetime import datetime
+from types import SimpleNamespace
 from typing import Any
 
-from google.genai import types
+from unittest.mock import MagicMock
 
-from app.ai.client import client, MODEL
+try:
+    from google import genai
+    from google.genai import types
+    _GENAI_AVAILABLE = True
+except Exception:
+    _GENAI_AVAILABLE = False
+
+    class _FallbackPart:
+        from_text = MagicMock()
+        from_function_response = MagicMock()
+
+    class _FallbackTypes:
+        Part = _FallbackPart
+        Content = lambda self=None, **kwargs: SimpleNamespace(**kwargs)
+        GenerateContentConfig = lambda self=None, **kwargs: SimpleNamespace(**kwargs)
+
+    class _FallbackModels:
+        def generate_content(self, *args, **kwargs):
+            raise RuntimeError("Gemini SDK is unavailable in this environment.")
+
+    class _FallbackClient:
+        def __init__(self, *args, **kwargs):
+            self.models = _FallbackModels()
+
+    genai = SimpleNamespace(Client=_FallbackClient)
+    types = _FallbackTypes()
+
+from app.config.settings import (
+    GEMINI_API_KEY,
+    GEMINI_MAX_OUTPUT_TOKENS,
+    GEMINI_MAX_TOOL_CALL_ROUNDS,
+    GEMINI_MODEL,
+    GEMINI_TEMPERATURE,
+    GEMINI_TOP_P,
+)
 from app.ai.tools import GEMINI_TOOL, TOOL_HANDLERS
+
+MODEL = GEMINI_MODEL
 
 
 class _MongoEncoder(json.JSONEncoder):
@@ -28,6 +65,10 @@ class _MongoEncoder(json.JSONEncoder):
             return str(obj)
         except Exception:
             return super().default(obj)
+
+_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY and _GENAI_AVAILABLE else None
+# Backwards-compatible alias (tests and other modules may import `client`)
+client = _client
 
 _SYSTEM_INSTRUCTION = (
     "You are an AI Course Selection Assistant for NYU students. "
@@ -72,6 +113,9 @@ _SYSTEM_INSTRUCTION = (
 _config = types.GenerateContentConfig(
     tools=[GEMINI_TOOL],
     system_instruction=_SYSTEM_INSTRUCTION,
+    temperature=GEMINI_TEMPERATURE,
+    top_p=GEMINI_TOP_P,
+    max_output_tokens=GEMINI_MAX_OUTPUT_TOKENS,
 )
 
 
@@ -97,6 +141,12 @@ def chat(
 
     Returns the model's final plain-text reply.
     """
+    if _client is None:
+        return (
+            "AI chat is not configured. Set GEMINI_API_KEY in your environment "
+            "or in the repository .env file and restart the API service."
+        )
+
     student_profile = student_profile or {}
     context_parts: list[str] = []
 
@@ -139,14 +189,22 @@ def chat(
         )
     ]
 
-    response = client.models.generate_content(
+    response = _client.models.generate_content(
         model=MODEL,
         contents=contents,
         config=_config,
     )
 
     # Keep looping as long as the model wants to call tools.
+    rounds = 0
     while response.function_calls:
+        rounds += 1
+        if rounds > GEMINI_MAX_TOOL_CALL_ROUNDS:
+            return (
+                "I hit a tool-calling limit while building your answer. "
+                "Please try narrowing your request (for example, include a department or term)."
+            )
+
         # Add model's response (contains the function_call parts) to history.
         contents.append(response.candidates[0].content)
 
@@ -164,7 +222,7 @@ def chat(
         # Append tool results and call the model again.
         contents.append(types.Content(role="user", parts=result_parts))
 
-        response = client.models.generate_content(
+        response = _client.models.generate_content(
             model=MODEL,
             contents=contents,
             config=_config,

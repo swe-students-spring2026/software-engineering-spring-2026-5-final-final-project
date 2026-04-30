@@ -14,6 +14,9 @@ sys.modules.setdefault("google", MagicMock())
 sys.modules.setdefault("google.genai", _mock_genai_module)
 sys.modules.setdefault("google.genai.types", MagicMock())
 
+# Ensure the apis package is importable when running tests from repo root
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 import pytest
 
 # Shared mock database — configured once, reused across all tests
