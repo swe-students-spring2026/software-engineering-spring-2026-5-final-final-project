@@ -1,0 +1,17 @@
+.git
+.github
+.automations
+.claude
+.cursor
+.githooks
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.env
+.venv/
+venv/
+env/
+Dockerfile
+compose.yaml
+README.md
+instructions.md
