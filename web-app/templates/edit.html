@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+<head>
+  <title>Edit Assignment</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+<div class="show-task">
+    <h2>Edit Assignment</h2>
+
+  <form method="POST" action="/task/{{ task['id'] }}/edit">
+    <p>Title:</p>
+    <input type="text" name="title" value="{{ task['title'] }}" required>
+
+    <p>Course:</p>
+    <input type="text" name="course" value="{{ task['course'] }}" required>
+
+    <p>Description:</p>
+    <textarea name="description" required>{{ task['description'] }}</textarea>
+
+    <p>Due Date:</p>
+    <input type="date" name="due_date" value="{{ task['due_date'] }}" required>
+
+    <br><br>
+    <button type="submit">Save Changes</button>
+  </form>
+
+  <br>
+  <a href="/task/{{ task['id'] }}">Cancel</a>
+</div>
+
+
+</body>
+</html>
