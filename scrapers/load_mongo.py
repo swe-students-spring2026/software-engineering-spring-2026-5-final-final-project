@@ -1,4 +1,10 @@
-"""One-shot script to clear the classes collection and reload from classes_example.json."""
+"""Load classes_example.json into MongoDB using idempotent upserts.
+
+Replaces the old delete-then-insert approach so there is no downtime window
+and partial failures leave the collection in a consistent state.
+Also backfills meeting_times from meets_human for older Albert documents
+that were scraped before that field was added.
+"""
 from __future__ import annotations
 
 import json
@@ -9,7 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
-from pymongo import MongoClient
+from pymongo import MongoClient, UpdateOne
 
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
@@ -17,6 +23,35 @@ MONGO_URI = os.getenv("MONGO_URI")
 MONGO_DB_NAME = os.getenv("MONGO_DB_NAME")
 DATA_PATH = Path(__file__).with_name("classes_example.json")
 
+# ── Meeting-times parser (backfill for Albert docs missing the field) ──────────
+
+_MEETS_RE = re.compile(
+    r"^([\w,]+)\s+(\d+)\.(\d+)\s*(AM|PM)\s*-\s*(\d+)\.(\d+)\s*(AM|PM)",
+    re.IGNORECASE,
+)
+_DAY_NUM = {"Mon": 0, "Tue": 1, "Wed": 2, "Thu": 3, "Fri": 4, "Sat": 5, "Sun": 6}
+
+
+def _parse_meets_human(meets: str) -> list[dict[str, Any]]:
+    if not meets:
+        return []
+    match = _MEETS_RE.match(meets.strip())
+    if not match:
+        return []
+    days_str, sh, sm, sampm, eh, em, eampm = match.groups()
+    sh, sm, eh, em = int(sh), int(sm), int(eh), int(em)
+    start_h = sh % 12 + (12 if sampm.upper() == "PM" else 0)
+    end_h = eh % 12 + (12 if eampm.upper() == "PM" else 0)
+    start = f"{start_h:02d}:{sm:02d}"
+    end = f"{end_h:02d}:{em:02d}"
+    return [
+        {"day": day.strip(), "day_num": _DAY_NUM[day.strip()], "start": start, "end": end}
+        for day in days_str.split(",")
+        if day.strip() in _DAY_NUM
+    ]
+
+
+# ── Document normalisation ─────────────────────────────────────────────────────
 
 def parse_date(val: object) -> object:
     if isinstance(val, dict) and "$date" in val:
@@ -32,11 +67,11 @@ def prepare(doc: dict) -> dict:
         out["title"] = ""
     if "scraped_at" in out:
         out["scraped_at"] = parse_date(out["scraped_at"])
-    # Normalize status capitalisation
-    if "status" in out and isinstance(out["status"], str):
-        s = out["status"]
-        if s.lower() == "open":
-            out["status"] = "Open"
+    if out.get("status") and str(out["status"]).lower() == "open":
+        out["status"] = "Open"
+    # Backfill meeting_times for older Albert docs that lack it
+    if not out.get("meeting_times") and out.get("meets_human"):
+        out["meeting_times"] = _parse_meets_human(out["meets_human"])
     stable_id = make_stable_class_id(out)
     if stable_id:
         out["_id"] = stable_id
@@ -139,14 +174,14 @@ def main() -> None:
 
     with open(DATA_PATH, encoding="utf-8") as f:
         raw_docs = json.load(f)
-        docs = dedupe_docs([prepare(d) for d in raw_docs])
 
-    deleted = db.classes.delete_many({}).deleted_count
-    print(f"Deleted {deleted} existing class documents.")
+    docs = dedupe_docs([prepare(d) for d in raw_docs])
     print(f"Loaded {len(raw_docs)} JSON documents; {len(docs)} remain after section-level dedupe.")
 
-    result = db.classes.insert_many(docs, ordered=False)
-    print(f"Inserted {len(result.inserted_ids)} class documents.")
+    # Idempotent bulk upsert — no downtime window, safe to re-run
+    ops = [UpdateOne({"_id": d["_id"]}, {"$set": d}, upsert=True) for d in docs]
+    result = db.classes.bulk_write(ops, ordered=False)
+    print(f"Upserted: {result.upserted_count} new, {result.modified_count} updated.")
 
     client.close()
 

@@ -172,7 +172,7 @@ def search_courses(
     component: str = "",
     limit: int = 20,
 ) -> dict[str, Any]:
-    """Search course catalog in MongoDB."""
+    """Search course catalog in MongoDB. Uses $text index for keyword queries."""
     if _db is None:
         return {"error": "Database not initialized"}
 
@@ -181,19 +181,16 @@ def search_courses(
     if term:
         conditions.append({"term.code": term})
     if component:
-        conditions.append({"component": {"$regex": component, "$options": "i"}})
+        # Exact match — component values are controlled vocabulary
+        conditions.append({"component": component})
     if department:
         conditions.append({"$or": [
             {"subject_code": {"$regex": department, "$options": "i"}},
             {"code": {"$regex": department, "$options": "i"}},
         ]})
     if query:
-        conditions.append({"$or": [
-            {"title": {"$regex": query, "$options": "i"}},
-            {"code": {"$regex": query, "$options": "i"}},
-            {"description": {"$regex": query, "$options": "i"}},
-            {"prerequisites": {"$regex": query, "$options": "i"}},
-        ]})
+        # $text uses the existing text index (title + code + description)
+        conditions.append({"$text": {"$search": query}})
 
     if len(conditions) > 1:
         filter_query: dict = {"$and": conditions}
@@ -217,7 +214,7 @@ def search_courses(
 
 
 def get_course_sections(course_code: str, term: str = "") -> dict[str, Any]:
-    """Get all sections matching a course code or title from MongoDB."""
+    """Get all sections matching a course code or title from MongoDB (capped at 50)."""
     if _db is None:
         return {"error": "Database not initialized"}
 
@@ -238,7 +235,7 @@ def get_course_sections(course_code: str, term: str = "") -> dict[str, Any]:
             "status": 1, "component": 1, "instructional_method": 1,
             "campus_location": 1, "credits": 1, "notes": 1, "prerequisites": 1,
         },
-    ))
+    ).limit(50))
 
     sections = enrich_classes_with_professor_ratings(sections)
     return {"course_code": course_code, "sections": sections, "count": len(sections)}

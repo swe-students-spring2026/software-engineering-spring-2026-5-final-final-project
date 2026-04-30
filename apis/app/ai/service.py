@@ -11,49 +11,21 @@ Flow:
 
 import json
 from datetime import datetime
-from types import SimpleNamespace
 from typing import Any
 
-from unittest.mock import MagicMock
-
 try:
-    from google import genai
     from google.genai import types
-    _GENAI_AVAILABLE = True
 except Exception:
-    _GENAI_AVAILABLE = False
+    types = None  # type: ignore[assignment]
 
-    class _FallbackPart:
-        from_text = MagicMock()
-        from_function_response = MagicMock()
-
-    class _FallbackTypes:
-        Part = _FallbackPart
-        Content = lambda self=None, **kwargs: SimpleNamespace(**kwargs)
-        GenerateContentConfig = lambda self=None, **kwargs: SimpleNamespace(**kwargs)
-
-    class _FallbackModels:
-        def generate_content(self, *args, **kwargs):
-            raise RuntimeError("Gemini SDK is unavailable in this environment.")
-
-    class _FallbackClient:
-        def __init__(self, *args, **kwargs):
-            self.models = _FallbackModels()
-
-    genai = SimpleNamespace(Client=_FallbackClient)
-    types = _FallbackTypes()
-
+from app.ai.client import MODEL, client as _client
+from app.ai.tools import GEMINI_TOOL, TOOL_HANDLERS
 from app.config.settings import (
-    GEMINI_API_KEY,
     GEMINI_MAX_OUTPUT_TOKENS,
     GEMINI_MAX_TOOL_CALL_ROUNDS,
-    GEMINI_MODEL,
     GEMINI_TEMPERATURE,
     GEMINI_TOP_P,
 )
-from app.ai.tools import GEMINI_TOOL, TOOL_HANDLERS
-
-MODEL = GEMINI_MODEL
 
 
 class _MongoEncoder(json.JSONEncoder):
@@ -61,14 +33,10 @@ class _MongoEncoder(json.JSONEncoder):
         if isinstance(obj, datetime):
             return obj.isoformat()
         try:
-            # handles bson.ObjectId without a hard import
             return str(obj)
         except Exception:
             return super().default(obj)
 
-_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY and _GENAI_AVAILABLE else None
-# Backwards-compatible alias (tests and other modules may import `client`)
-client = _client
 
 _SYSTEM_INSTRUCTION = (
     "You are an AI Course Selection Assistant for NYU students. "
@@ -110,17 +78,20 @@ _SYSTEM_INSTRUCTION = (
     "If data is missing or a major is unsupported, say so honestly."
 )
 
-_config = types.GenerateContentConfig(
-    tools=[GEMINI_TOOL],
-    system_instruction=_SYSTEM_INSTRUCTION,
-    temperature=GEMINI_TEMPERATURE,
-    top_p=GEMINI_TOP_P,
-    max_output_tokens=GEMINI_MAX_OUTPUT_TOKENS,
+_config = (
+    types.GenerateContentConfig(
+        tools=[GEMINI_TOOL],
+        system_instruction=_SYSTEM_INSTRUCTION,
+        temperature=GEMINI_TEMPERATURE,
+        top_p=GEMINI_TOP_P,
+        max_output_tokens=GEMINI_MAX_OUTPUT_TOKENS,
+    )
+    if types is not None
+    else None
 )
 
 
 def _execute_tool(name: str, args: dict) -> Any:
-    """Call the matching handler; args is already a dict from Gemini."""
     handler = TOOL_HANDLERS.get(name)
     if handler is None:
         return {"error": f"Unknown tool: {name}"}
@@ -136,12 +107,8 @@ def chat(
     major: str = "",
     student_profile: dict[str, Any] | None = None,
 ) -> str:
-    """
-    Run the full tool-calling loop for a single user turn.
-
-    Returns the model's final plain-text reply.
-    """
-    if _client is None:
+    """Run the full tool-calling loop for a single user turn."""
+    if _client is None or types is None:
         return (
             "AI chat is not configured. Set GEMINI_API_KEY in your environment "
             "or in the repository .env file and restart the API service."
@@ -169,20 +136,13 @@ def chat(
     if graduation_year:
         context_parts.append(f"Expected graduation year: {graduation_year}")
     if profile_completed_courses:
-        context_parts.append(
-            f"Completed courses: {', '.join(profile_completed_courses)}"
-        )
+        context_parts.append(f"Completed courses: {', '.join(profile_completed_courses)}")
     if current_courses:
-        context_parts.append(
-            f"Current courses: {', '.join(current_courses)}"
-        )
+        context_parts.append(f"Current courses: {', '.join(current_courses)}")
 
-    if context_parts:
-        full_message = "\n".join(context_parts) + "\n\n" + user_message
-    else:
-        full_message = user_message
+    full_message = "\n".join(context_parts) + "\n\n" + user_message if context_parts else user_message
 
-    contents: list[types.Content] = [
+    contents = [
         types.Content(
             role="user",
             parts=[types.Part.from_text(text=full_message)],
@@ -195,7 +155,6 @@ def chat(
         config=_config,
     )
 
-    # Keep looping as long as the model wants to call tools.
     rounds = 0
     while response.function_calls:
         rounds += 1
@@ -205,11 +164,9 @@ def chat(
                 "Please try narrowing your request (for example, include a department or term)."
             )
 
-        # Add model's response (contains the function_call parts) to history.
         contents.append(response.candidates[0].content)
 
-        # Execute each tool call and collect results as function response parts.
-        result_parts: list[types.Part] = []
+        result_parts: list = []
         for fc in response.function_calls:
             result = _execute_tool(fc.name, dict(fc.args))
             result_parts.append(
@@ -219,7 +176,6 @@ def chat(
                 )
             )
 
-        # Append tool results and call the model again.
         contents.append(types.Content(role="user", parts=result_parts))
 
         response = _client.models.generate_content(

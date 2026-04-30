@@ -3,6 +3,7 @@ import logging
 import math
 import os
 import re
+import time
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +19,7 @@ try:
     from apis.app.services.professor_ratings import (
         build_professor_profile,
         enrich_classes_with_professor_ratings,
+        init_professor_ratings,
         search_professors,
     )
 except ModuleNotFoundError:
@@ -25,6 +27,7 @@ except ModuleNotFoundError:
     from app.services.professor_ratings import (
         build_professor_profile,
         enrich_classes_with_professor_ratings,
+        init_professor_ratings,
         search_professors,
     )
 
@@ -34,6 +37,7 @@ from app.routes.chat import chat_bp
 
 app = Flask(__name__)
 app.register_blueprint(chat_bp)
+app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024  # 10 MB upload limit
 
 mongo_uri = os.getenv("MONGO_URI")
 mongo_db_name = os.getenv("MONGO_DB_NAME")
@@ -47,6 +51,10 @@ if not mongo_uri or not mongo_db_name:
 client = MongoClient(mongo_uri)
 db = client[mongo_db_name]
 requirements_service = RequirementsService(db)
+
+# Wire professor ratings MongoDB cache and AI tools
+init_professor_ratings(db)
+db.users.create_index("email", unique=True, background=True)
 
 from app.ai.tools import init_tools  # noqa: E402
 init_tools(db)
@@ -117,9 +125,11 @@ def get_classes():
     if term:
         query.update(_term_filter(term, source))
     if school:
-        query["school"] = {"$regex": school, "$options": "i"}
+        # School values come from the /classes/schools dropdown — exact match
+        query["school"] = school
     if component:
-        query["component"] = {"$regex": component, "$options": "i"}
+        # Component values come from a controlled dropdown — exact match
+        query["component"] = component
     if status == "open":
         query["status"] = "Open"
     elif status == "closed":
@@ -152,7 +162,8 @@ def get_classes():
     total_pages = math.ceil(total_courses / page_size) if total_courses > 0 else 1
     page_codes = [row["_id"] for row in facet_result["page_codes"]]
 
-    classes = list(collection.find({**query, "code": {"$in": page_codes}}, {"_id": 0, "source": 0}))
+    # Second query only needs the paginated codes — the aggregation already filtered
+    classes = list(collection.find({"code": {"$in": page_codes}}, {"_id": 0, "source": 0}))
     classes = enrich_classes_with_professor_ratings(classes)
     return jsonify({
         "classes": classes,
@@ -186,10 +197,20 @@ def reload_class_from_bulletin():
     return jsonify({"course": doc, "source": "bulletin"}), 200
 
 
+# Simple TTL cache for the schools list (refreshes every 5 minutes)
+_schools_cache: list | None = None
+_schools_cache_ts: float = 0.0
+_SCHOOLS_CACHE_TTL = 300.0
+
+
 @app.get("/classes/schools")
 def get_schools():
-    schools = db.classes.distinct("school")
-    return jsonify(sorted(s for s in schools if s))
+    global _schools_cache, _schools_cache_ts
+    now = time.monotonic()
+    if _schools_cache is None or now - _schools_cache_ts > _SCHOOLS_CACHE_TTL:
+        _schools_cache = sorted(s for s in db.classes.distinct("school") if s)
+        _schools_cache_ts = now
+    return jsonify(_schools_cache)
 
 
 @app.get("/professors")
@@ -216,7 +237,6 @@ def get_professor_profile():
 @app.get("/classes/campuses")
 def get_campuses():
     return jsonify([])
-
 
 
 @app.post("/auth/register")
@@ -272,7 +292,8 @@ def get_profile():
     email = request.args.get("email", "").strip().lower()
     if not email:
         return jsonify({"error": "email required"}), 400
-    user = db.users.find_one({"email": email}, {"_id": 0, "password": 0})
+    # Exclude password and raw transcript text from API responses
+    user = db.users.find_one({"email": email}, {"_id": 0, "password": 0, "transcript_raw": 0})
     if not user:
         return jsonify({"error": "user not found"}), 404
     return jsonify(user)
@@ -338,7 +359,9 @@ def upload_transcript():
 @app.get("/programs")
 def get_programs():
     programs = requirements_service.list_undergraduate_programs()
-    return jsonify(programs)
+    response = jsonify(programs)
+    response.headers["Cache-Control"] = "public, max-age=300"
+    return response
 
 
 @app.get("/program-requirements")

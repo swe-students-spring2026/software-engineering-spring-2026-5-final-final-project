@@ -24,6 +24,10 @@ HEADERS = {
     "Content-Type":     "application/x-www-form-urlencoded; charset=UTF-8",
 }
 
+# Persistent session — reuses TCP connections across the many API calls in scrape_all_schools_for_term
+_SESSION = requests.Session()
+_SESSION.headers.update(HEADERS)
+
 # ── School → `coll` filter value (pass directly to API) ────────────────────────
 SCHOOL_CODES = {
     "College of Arts and Science":                  "UA,NA",
@@ -74,7 +78,7 @@ def api_post(route: str, query_params: dict, body: dict, retries: int = 3) -> di
     body_str = urllib.parse.quote(json.dumps(body))
     for attempt in range(retries):
         try:
-            r = requests.post(url, headers=HEADERS, data=body_str, timeout=30)
+            r = _SESSION.post(url, data=body_str, timeout=30)
             r.raise_for_status()
             return r.json()
         except Exception as e:

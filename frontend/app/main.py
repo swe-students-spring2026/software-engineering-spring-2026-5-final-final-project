@@ -29,6 +29,11 @@ google = oauth.register(
     client_kwargs={"scope": "openid email profile"},
 )
 
+# Default timeouts (seconds) for API proxy calls
+_T_SHORT = 10   # auth, profile, schools, simple lookups
+_T_NORMAL = 30  # class search, professor lookups
+_T_LONG = 90    # chat (Gemini tool-calling loop), transcript upload, bulletin reload
+
 
 def login_required(f):
     @wraps(f)
@@ -41,7 +46,7 @@ def login_required(f):
 
 def _get_user_profile(email: str) -> dict:
     try:
-        resp = requests.get(f"{API_URL}/user/profile", params={"email": email}, timeout=5)
+        resp = requests.get(f"{API_URL}/user/profile", params={"email": email}, timeout=_T_SHORT)
         if resp.status_code == 200:
             return resp.json()
     except Exception:
@@ -106,7 +111,11 @@ def login_post():
         return render_template("login.html", error="Only @nyu.edu email addresses are allowed.")
 
     try:
-        resp = requests.post(f"{API_URL}/auth/login", json={"email": email, "password": password}, timeout=10)
+        resp = requests.post(
+            f"{API_URL}/auth/login",
+            json={"email": email, "password": password},
+            timeout=_T_SHORT,
+        )
         if resp.status_code == 200:
             data = resp.json()
             session["user"] = {"email": email, "name": data.get("name", email)}
@@ -131,7 +140,7 @@ def register_post():
         resp = requests.post(
             f"{API_URL}/auth/register",
             json={"email": email, "password": password, "name": name},
-            timeout=10,
+            timeout=_T_SHORT,
         )
         if resp.status_code == 201:
             session["user"] = {"email": email, "name": name or email}
@@ -164,7 +173,11 @@ def auth_google_callback():
         name = userinfo.get("name", email)
         session["user"] = {"email": email, "name": name}
 
-        requests.post(f"{API_URL}/auth/google", json={"email": email, "name": name}, timeout=10)
+        requests.post(
+            f"{API_URL}/auth/google",
+            json={"email": email, "name": name},
+            timeout=_T_SHORT,
+        )
     except Exception as exc:
         return render_template("login.html", error=f"Google sign-in failed: {exc}")
 
@@ -216,7 +229,11 @@ def graduation_page():
 @app.get("/professor")
 @login_required
 def professor_page():
-    return render_template("professor.html", user=session["user"], professor_name=request.args.get("name", "").strip())
+    return render_template(
+        "professor.html",
+        user=session["user"],
+        professor_name=request.args.get("name", "").strip(),
+    )
 
 
 # ── API proxy routes ──────────────────────────────────────────────────────────
@@ -224,14 +241,19 @@ def professor_page():
 @app.get("/api/programs")
 @login_required
 def programs():
-    resp = requests.get(f"{API_URL}/programs")
-    return jsonify(resp.json()), resp.status_code
+    resp = requests.get(f"{API_URL}/programs", timeout=_T_SHORT)
+    response = jsonify(resp.json())
+    response.status_code = resp.status_code
+    # Propagate Cache-Control from the API so browsers/CDNs can cache the static list
+    if "Cache-Control" in resp.headers:
+        response.headers["Cache-Control"] = resp.headers["Cache-Control"]
+    return response
 
 
 @app.get("/api/program-requirements")
 @login_required
 def program_requirements():
-    resp = requests.get(f"{API_URL}/program-requirements", params=dict(request.args))
+    resp = requests.get(f"{API_URL}/program-requirements", params=dict(request.args), timeout=_T_NORMAL)
     return jsonify(resp.json()), resp.status_code
 
 
@@ -239,7 +261,7 @@ def program_requirements():
 @login_required
 def proxy_classes():
     params = dict(request.args)
-    resp = requests.get(f"{API_URL}/classes", params=params)
+    resp = requests.get(f"{API_URL}/classes", params=params, timeout=_T_NORMAL)
     return jsonify(resp.json()), resp.status_code
 
 
@@ -247,35 +269,35 @@ def proxy_classes():
 @login_required
 def proxy_reload_class():
     payload = request.get_json(silent=True) or {}
-    resp = requests.post(f"{API_URL}/classes/reload", json=payload, timeout=60)
+    resp = requests.post(f"{API_URL}/classes/reload", json=payload, timeout=_T_LONG)
     return jsonify(resp.json()), resp.status_code
 
 
 @app.get("/api/schools")
 @login_required
 def proxy_schools():
-    resp = requests.get(f"{API_URL}/classes/schools")
+    resp = requests.get(f"{API_URL}/classes/schools", timeout=_T_SHORT)
     return jsonify(resp.json()), resp.status_code
 
 
 @app.get("/api/campuses")
 @login_required
 def proxy_campuses():
-    resp = requests.get(f"{API_URL}/classes/campuses")
+    resp = requests.get(f"{API_URL}/classes/campuses", timeout=_T_SHORT)
     return jsonify(resp.json()), resp.status_code
 
 
 @app.get("/api/professors")
 @login_required
 def proxy_professors():
-    resp = requests.get(f"{API_URL}/professors", params=dict(request.args))
+    resp = requests.get(f"{API_URL}/professors", params=dict(request.args), timeout=_T_NORMAL)
     return jsonify(resp.json()), resp.status_code
 
 
 @app.get("/api/professors/profile")
 @login_required
 def proxy_professor_profile():
-    resp = requests.get(f"{API_URL}/professors/profile", params=dict(request.args))
+    resp = requests.get(f"{API_URL}/professors/profile", params=dict(request.args), timeout=_T_NORMAL)
     return jsonify(resp.json()), resp.status_code
 
 
@@ -283,7 +305,7 @@ def proxy_professor_profile():
 @login_required
 def proxy_get_profile():
     email = session["user"]["email"]
-    resp = requests.get(f"{API_URL}/user/profile", params={"email": email})
+    resp = requests.get(f"{API_URL}/user/profile", params={"email": email}, timeout=_T_SHORT)
     return jsonify(resp.json()), resp.status_code
 
 
@@ -292,9 +314,8 @@ def proxy_get_profile():
 def proxy_update_profile():
     data = request.get_json(silent=True) or {}
     data["email"] = session["user"]["email"]
-    resp = requests.put(f"{API_URL}/user/profile", json=data)
+    resp = requests.put(f"{API_URL}/user/profile", json=data, timeout=_T_SHORT)
     if resp.status_code == 200:
-        # Keep session name in sync
         if "name" in data:
             session["user"] = {**session["user"], "name": data["name"]}
     return jsonify(resp.json()), resp.status_code
@@ -311,7 +332,7 @@ def proxy_transcript():
         f"{API_URL}/user/transcript",
         data={"email": email},
         files={"transcript": (file.filename, file.stream, file.mimetype)},
-        timeout=60,
+        timeout=_T_LONG,
     )
     return jsonify(resp.json()), resp.status_code
 
@@ -322,7 +343,7 @@ def proxy_chat():
     payload = request.get_json(silent=True) or {}
     profile = _get_user_profile(session["user"]["email"])
     payload = _merge_chat_context(payload, profile)
-    resp = requests.post(f"{API_URL}/chat", json=payload)
+    resp = requests.post(f"{API_URL}/chat", json=payload, timeout=_T_LONG)
     return jsonify(resp.json()), resp.status_code
 
 
