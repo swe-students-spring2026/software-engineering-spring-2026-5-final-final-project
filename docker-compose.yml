@@ -10,7 +10,7 @@ services:
       ML_CLIENT_URL: http://machine-learning-client:5001
 
       # Falls back to the local MongoDB container if no MONGODB_URI is provided.
-      MONGODB_URI: mongodb+srv://sleepy_salamanders_team:SleepySalamanders123@cluster0.6bzpovw.mongodb.net/?appName=Cluster0
+      MONGODB_URI: ${MONGODB_URI:-mongodb://mongodb:27017/priority_manager}
 
 
     depends_on:
