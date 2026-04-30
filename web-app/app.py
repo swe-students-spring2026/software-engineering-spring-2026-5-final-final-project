@@ -18,8 +18,10 @@ from db import (
     get_tasks_for_user,
     mark_task_complete,
     delete_task,
+    find_user_by_id,
 )
-
+from dotenv import load_dotenv
+load_dotenv()
 # Initialize Flask app
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "dev-secret-key-change-this")
@@ -33,7 +35,7 @@ login_manager.init_app(app)
 login_manager.login_view = "login"
 
 # ML Client URL (You can change this if you have the ML client running somewhere else)
-ML_CLIENT_URL = os.getenv("ML_CLIENT_URL", "http://localhost:5001")
+ML_CLIENT_URL = os.getenv("ML_CLIENT_URL", "http://localhost:5000")
 
 # User class for Flask-Login
 class User(UserMixin):
@@ -45,7 +47,7 @@ class User(UserMixin):
 # Load user function for Flask-Login
 @login_manager.user_loader
 def load_user(user_id: str):
-    user_doc = find_user_by_username(user_id)
+    user_doc = find_user_by_id(user_id)
     if not user_doc:
         return None
     return User(user_doc)
@@ -87,7 +89,7 @@ def register():
     user_id = insert_user(username=username, email=email, hashed_password=hashed_password)
 
     # Log the user in after registration
-    user_doc = find_user_by_username(user_id)
+    user_doc = find_user_by_id(user_id)
     login_user(User(user_doc))
 
     return redirect(url_for("dashboard"))
