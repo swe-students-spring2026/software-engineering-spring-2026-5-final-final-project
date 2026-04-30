@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+<head>
+  <title>Register</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+<div class="show-task">
+  <h2>Register</h2>
+
+  <form method="POST" action="/api/auth/register">
+    <p>Username:</p>
+    <input type="text" name="username" required>
+
+    <p>Password:</p>
+    <input type="password" name="password" required>
+
+    <br><br>
+    <button type="submit">Register</button>
+  </form>
+
+  <br>
+  <a href="/login">Back to Login</a>
+</div>
+
+</body>
+</html>
