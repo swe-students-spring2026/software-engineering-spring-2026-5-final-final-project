@@ -9,3 +9,11 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+
+  ml-client:
+    build: ./machine-learning-client
+    container_name: ml_client
+    ports:
+      - "5002:5002"
+    env_file:
+      - .env
