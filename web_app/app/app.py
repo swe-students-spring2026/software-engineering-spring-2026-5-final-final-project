@@ -287,11 +287,26 @@ def invites():
 
     return render_template("invites.html", invited_events=invited_events)
 
-
+#TODO: create route for host and add create logic
 @app.route("/host-events")
 @login_required
 def host_events():
-    return render_template("host-events.html")
+    users = get_users_collection()
+    events = get_db()["events"]
+    user = users.find_one({"_id": ObjectId(current_user.id)})
+    hosting_events = []
+    for event_id, event_datetime in user.get("events_owned", {}).items():
+        event = events.find_one({"_id": ObjectId(event_id)})
+        if event:
+            hosting_events.append({
+                "_id": event["_id"],
+                "name": event.get("name", "Untitled Event"),
+                "location": event.get("location", "No location specified"),
+                "date": event_datetime,
+                "details": event.get("description", "No description provided"),
+                "invitees_list": event.get("invitees_list", [])
+            })
+    return render_template("host-events.html", hosting_events=hosting_events)
 
 
 @app.route("/user", methods=["GET", "POST"])
