@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Messages — DinnerMeet{% endblock %}
+
+{% block content %}
+<div class="messages-container">
+    <h1>Messages</h1>
+
+    {% if conversations %}
+        <ul class="conversation-list">
+        {% for convo in conversations %}
+            <li class="conversation-card">
+                <a href="/messages/{{ convo._id }}">
+                    <span class="convo-name">{{ convo.event_title }}</span>
+                    <span class="convo-preview">{{ convo.last_message }}</span>
+                </a>
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No messages yet. Request an invite to an event to start a conversation!</p>
+    {% endif %}
+</div>
+{% endblock %}

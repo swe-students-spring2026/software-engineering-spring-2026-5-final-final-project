@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Sign Up — DinnerMeet{% endblock %}
+
+{% block content %}
+<div class="auth-container wide">
+    <h1>Sign Up</h1>
+
+    {% if error %}
+        <div class="flash error">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST" action="/signup">
+        <div class="form-grid">
+            <div class="form-col">
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" required />
+
+                <label for="verify_email">Verify Email:</label>
+                <input type="email" id="verify_email" name="verify_email" required />
+
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required />
+
+                <label for="verify_password">Verify Password:</label>
+                <input type="password" id="verify_password" name="verify_password" required />
+
+                <label for="first_name">First Name:</label>
+                <input type="text" id="first_name" name="first_name" required />
+
+                <label for="last_name">Last Name: <small>(We will only share initial)</small></label>
+                <input type="text" id="last_name" name="last_name" required />
+            </div>
+
+            <div class="form-col">
+                <label for="age">Age:</label>
+                <input type="number" id="age" name="age" min="18" />
+
+                <label for="neighborhood">Neighborhood in NYC:</label>
+                <input type="text" id="neighborhood" name="neighborhood" />
+
+                <label for="pronouns">Pronouns:</label>
+                <select id="pronouns" name="pronouns">
+                    <option value="">Select...</option>
+                    <option value="he/him">He/Him</option>
+                    <option value="she/her">She/Her</option>
+                    <option value="they/them">They/Them</option>
+                    <option value="other">Other</option>
+                </select>
+
+                <label for="drinking_smoking">Drinking/Smoking:</label>
+                <input type="text" id="drinking_smoking" name="drinking_smoking" placeholder="e.g. Social drinker, non-smoker" />
+
+                <label for="job">Job/Student:</label>
+                <input type="text" id="job" name="job" />
+
+                <label for="dietary">Dietary Restrictions:</label>
+                <input type="text" id="dietary" name="dietary" />
+            </div>
+
+            <div class="form-col">
+                <label for="hobbies">Hobbies:</label>
+                <textarea id="hobbies" name="hobbies" rows="5"></textarea>
+
+                <label for="interests">Interests:</label>
+                <textarea id="interests" name="interests" rows="5"></textarea>
+            </div>
+        </div>
+
+        <button type="submit">Create Account</button>
+    </form>
+
+    <p>Already have an account? <a href="/login">Log In</a></p>
+</div>
+{% endblock %}
