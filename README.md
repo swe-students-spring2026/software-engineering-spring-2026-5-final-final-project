@@ -11,4 +11,9 @@
 - [Yuliang Liu](https://github.com/yl11529)
 
 ### DockerHub
+- TODO: add link to DockerHub
 
+### Intstructions for running
+
+
+### Environment variables / db seeding
