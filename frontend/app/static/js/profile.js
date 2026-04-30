@@ -18,9 +18,10 @@ function showToast(id, msg, type) {
 
 // ── Programs loader for school/major dropdowns ─────────────────────────────
 let _allPrograms = [];
-const _savedSchool   = window._profileData?.school || '';
-const _savedMajor    = window._profileData?.major || '';
-const _savedMajorUrl = window._profileData?.major_url || '';
+const profileDataEl = document.getElementById('profile-data');
+const _profileData = profileDataEl ? JSON.parse(profileDataEl.textContent || '{}') : (window.profile || {});
+const _savedSchool   = _profileData.school || '';
+const _savedMajorUrl = _profileData.major_url || '';
 
 async function loadProgramsForSettings() {
   const res = await fetch('/api/programs');
@@ -92,7 +93,7 @@ async function saveSettings() {
 }
 
 // ── Manual course management ───────────────────────────────────────────────
-let _courses = window._profileData?.completed_courses || [];
+let _courses = _profileData.completed_courses || [];
 
 function refreshCourseTags(containerId) {
   const container = document.getElementById(containerId);

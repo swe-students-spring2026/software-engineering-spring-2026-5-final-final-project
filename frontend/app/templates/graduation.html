@@ -22,9 +22,7 @@
     <div class="loading">Loading your graduation progress…</div>
   </div>
 
-  <script>
-    window.profile = {{ profile | tojson }};
-  </script>
+  <script type="application/json" id="profile-data">{{ profile | tojson }}</script>
   <script src="/static/js/graduation.js"></script>
 </body>
 </html>

@@ -1,4 +1,5 @@
-const profile = window.profile || {};
+const profileDataEl = document.getElementById('profile-data');
+const profile = profileDataEl ? JSON.parse(profileDataEl.textContent || '{}') : (window.profile || {});
 const completedSet = new Set((profile.completed_courses || []).map(c => normalizeCode(c)));
 const currentSet   = new Set((profile.current_courses   || []).map(c => normalizeCode(c)));
 

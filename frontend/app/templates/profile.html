@@ -230,14 +230,13 @@
     </div><!-- /.main -->
   </div><!-- /.page -->
 
-  <script>
-    window._profileData = {
-      school: {{ (profile.school or '')|tojson }},
-      major: {{ (profile.major or '')|tojson }},
-      major_url: {{ (profile.major_url or '')|tojson }},
-      completed_courses: {{ (profile.completed_courses or [])|tojson }}
-    };
-  </script>
+  <script type="application/json" id="profile-data">{{ {
+      "school": profile.school or "",
+      "major": profile.major or "",
+      "major_url": profile.major_url or "",
+      "completed_courses": profile.completed_courses or [],
+      "current_courses": profile.current_courses or []
+    } | tojson }}</script>
   <script src="/static/js/profile.js"></script>
 </body>
 </html>
