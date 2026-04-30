@@ -19,17 +19,19 @@ def facility_match_set(results):
     return matched
 
 
-def filter_clusters(query_311, query_facilities):
+def filter_clusters(query_311, query_facilities, debug=False):
     """filter each cluster in clusters so only matched place are kept"""
     matched_311 = find_311_categories(query_311)
     clusters = cluster_locations(matched_311)
 
-    print(matched_311)
+    if debug:
+        print(matched_311)
 
     matched_facilities = find_facilities_categories(query_facilities, clusters)
     matched_facilities_set = facility_match_set(matched_facilities)
 
-    print(matched_facilities)
+    if debug:
+        print(matched_facilities)
 
     for c in clusters:
         filtered_facilities = []
@@ -49,9 +51,10 @@ def filter_clusters(query_311, query_facilities):
 
         c.facilities = filtered_facilities
 
-        print(c)
+        if debug:
+            print(c)
 
-        for i in range(5):
-            print(c.facilities[i])
+            for i in c.facilities:
+                print(i)
 
     return clusters

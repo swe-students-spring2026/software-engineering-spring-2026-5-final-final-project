@@ -20,7 +20,8 @@ EMBEDDINGS_311_PATH = PROCESSED_DIR / EMBEDDED_311_FILENAME
 
 MAX_CLEAN_ROWS = 1000000 # 80MB of size, can be lower if necessary
 TOTAL_K = 30
-CATEGORY_TOP_K = 20 # can be higher if necessary
+CATEGORY_311_TOP_K = 50 # can be higher if necessary
+CATEGORY_FACILITIES_TOP_K = 30
 CLUSTER_TOPK = 5
 
 SOURCE_COLUMNS = [

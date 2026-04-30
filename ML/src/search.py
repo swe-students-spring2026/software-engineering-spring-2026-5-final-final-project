@@ -6,7 +6,7 @@ import numpy as np
 import torch
 from sentence_transformers import SentenceTransformer, util
 
-from config import CATEGORY_TOP_K, EMBEDDINGS_MODEL
+from config import CATEGORY_311_TOP_K, CATEGORY_FACILITIES_TOP_K, EMBEDDINGS_MODEL
 from embedding import load_311_categories, embed_311, load_facilities_categories, embed_facilities
 
 
@@ -27,7 +27,7 @@ def find_311_categories(query):
     hits = util.semantic_search(
         embedded_query,
         embedded_category,
-        top_k=min(CATEGORY_TOP_K, len(categories)),
+        top_k=min(CATEGORY_311_TOP_K, len(categories)),
     )[0]
 
     indexes = [hit["corpus_id"] for hit in hits]
@@ -53,7 +53,7 @@ def find_facilities_categories(query, clusters):
     hits = util.semantic_search(
         embedded_query,
         embedded_category,
-        top_k=min(CATEGORY_TOP_K, len(categories)),
+        top_k=min(CATEGORY_FACILITIES_TOP_K, len(categories)),
     )[0]
 
     indexes = [hit["corpus_id"] for hit in hits]

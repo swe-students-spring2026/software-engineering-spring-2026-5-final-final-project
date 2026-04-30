@@ -10,12 +10,17 @@ class Cluster:
         self.facilities = []
         self.matched_complaint = 0
         self.total_complaint = 0
+        self.ratio = 0
+        self.rank = 0
+
 
     def __repr__(self):
         return (
             f"center={self.center}, "
             f"matched_complaint={self.matched_complaint}, "
-            f"total_complaint={self.total_complaint}"
+            f"total_complaint={self.total_complaint},"
+            f"ratio={self.ratio},"
+            f"rank={self.rank}"
         )
 
 
@@ -112,7 +117,11 @@ def cluster_locations(matches, k=TOTAL_K, random_state=0):
             closest_clus.total_complaint += 1
         else:
             closest_clus.total_complaint += 1
-    clusters.sort(key=lambda c : c.matched_complaint / c.total_complaint)
+
+    for c in clusters:
+        c.ratio = c.matched_complaint / c.total_complaint
+
+    clusters.sort(key=lambda c : c.ratio)
     
     data = load_facilities_data()
 
@@ -129,5 +138,8 @@ def cluster_locations(matches, k=TOTAL_K, random_state=0):
                 closest_clus = c
 
         closest_clus.facilities.append(d[:-2])
+
+    for i in range(CLUSTER_TOPK):
+        clusters[i].rank = i
 
     return clusters[:CLUSTER_TOPK]
