@@ -4,12 +4,11 @@ services:
       context: ./web-app
     volumes:
       - ./web-app:/app          # TODO: REMOVE THIS VOLUME IN PROD
-      - ./scraper:/scraper:ro   # TODO: REMOVE THIS VOLUME IN PROD
     ports:
       - "5000:5000"
-    command: bash -lc "python /scraper/scrape_prof.py || true; python app.py"
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
     environment:
       MONGO_URI: mongodb://admin:secret@mongodb:27017/?authSource=admin
       MONGO_DBNAME: potatoes
@@ -25,7 +24,8 @@ services:
     ports:
       - "5001:5001"
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
     # environment:
       # MONGO_URI: mongodb://admin:secret@mongodb:27017/?authSource=admin
       # MONGO_DBNAME: potatoes
@@ -40,6 +40,12 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: secret
     volumes:
       - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--username", "admin", "--password", "secret", "--authenticationDatabase", "admin", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
 volumes:
   mongodb_data:

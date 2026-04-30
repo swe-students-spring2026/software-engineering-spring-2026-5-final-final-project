@@ -9,6 +9,10 @@ flask-login = "*"
 dotenv = "*"
 pymongo = "*"
 requests = "*"
+bs4 = "*"
+pytest = "*"
+coverage = "*"
+pytest-cov = "*"
 
 [dev-packages]
 

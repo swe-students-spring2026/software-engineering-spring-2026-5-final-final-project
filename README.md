@@ -28,6 +28,13 @@ The system is built with a microservice-style architecture, including:
 
 ---
 
+## Docker Hub Images
+
+- [Web App](https://hub.docker.com/repository/docker/ch4049/potatoes-webapp/general)  
+- [ML Client](https://hub.docker.com/repository/docker/ch4049/potatoes-ml-client/general)
+
+---
+
 ## Option 1: Quick Start (Recommended)
 
 ### Prerequisites

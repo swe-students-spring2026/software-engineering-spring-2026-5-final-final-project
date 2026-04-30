@@ -1,0 +1,59 @@
+name: ML Client CI/CD
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "machine-learning-client/**"
+      - ".github/workflows/ml-client.yml"
+  pull_request:
+    branches: [main, master]
+    paths:
+      - "machine-learning-client/**"
+      - ".github/workflows/ml-client.yml"
+
+jobs:
+  test-build-push-deploy:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: machine-learning-client
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
+
+      - name: Download NLTK data
+        run: |
+          python -m textblob.download_corpora
+
+      - name: Run tests with coverage
+        run: |
+          pytest --cov=.
+
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/potatoes-ml-client:latest .
+
+      - name: Log in to Docker Hub
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Push Docker image
+        if: github.event_name == 'push'
+        run: |
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/potatoes-ml-client:latest
