@@ -94,6 +94,121 @@ async function saveSettings() {
 
 // ── Manual course management ───────────────────────────────────────────────
 let _courses = _profileData.completed_courses || [];
+let _courseSuggestions = [];
+let _selectedCourseCode = "";
+let _suggestionReqId = 0;
+
+function normalizeCourseText(value) {
+    return String(value || "").trim().replace(/\s+/g, " ");
+}
+
+function setCoursePickerStatus(message, isError = false) {
+    const el = document.getElementById('course-picker-status');
+    if (!el) return;
+    el.textContent = message || '';
+    el.style.color = isError ? '#c00' : '#0a7a2f';
+}
+
+function renderCourseSuggestions(items) {
+    const container = document.getElementById('course-suggestions');
+    if (!container) return;
+
+    if (!items.length) {
+        container.innerHTML = '';
+        container.style.display = 'none';
+        return;
+    }
+
+    container.innerHTML = items.map(course => `
+        <button type="button" class="course-suggestion" data-code="${course.code}" data-title="${course.title}">
+          <strong>${course.code}</strong>
+          <span>${course.title}${course.school ? ` · ${course.school}` : ''}</span>
+        </button>
+    `).join('');
+    container.style.display = 'flex';
+
+    container.querySelectorAll('.course-suggestion').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const code = btn.dataset.code || '';
+            const title = btn.dataset.title || '';
+            const input = document.getElementById('add-course-input');
+            input.value = code;
+            _selectedCourseCode = code;
+            setCoursePickerStatus(`Selected ${code}${title ? ` — ${title}` : ''}.`);
+            container.style.display = 'none';
+            container.innerHTML = '';
+        });
+    });
+}
+
+async function updateCourseSuggestions(query) {
+    const term = normalizeCourseText(query);
+    const input = document.getElementById('add-course-input');
+    const container = document.getElementById('course-suggestions');
+    if (!container) return;
+
+    _selectedCourseCode = "";
+
+    if (term.length < 2) {
+        renderCourseSuggestions([]);
+        setCoursePickerStatus('');
+        return;
+    }
+
+    const reqId = ++_suggestionReqId;
+    try {
+        const res = await fetch(`/api/classes?q=${encodeURIComponent(term)}&page=1`);
+        const data = await res.json();
+        if (reqId !== _suggestionReqId) return;
+
+        const seen = new Set();
+        const items = [];
+        for (const course of (data.classes || [])) {
+            const code = normalizeCourseText(course.code).toUpperCase();
+            if (!code || seen.has(code)) continue;
+            seen.add(code);
+            items.push({ code: course.code, title: course.title || '', school: course.school || '' });
+            if (items.length >= 8) break;
+        }
+
+        _courseSuggestions = items;
+        renderCourseSuggestions(items);
+        if (items.length === 0) {
+            setCoursePickerStatus('No matching courses found.', true);
+        } else {
+            setCoursePickerStatus(`Found ${items.length} matching course${items.length === 1 ? '' : 's'}.`);
+        }
+    } catch {
+        if (reqId === _suggestionReqId) {
+            renderCourseSuggestions([]);
+            setCoursePickerStatus('Could not load course matches.', true);
+        }
+    }
+}
+
+function resolvePickedCourse(rawValue) {
+    const normalized = normalizeCourseText(rawValue);
+    if (!normalized) return null;
+
+    if (_selectedCourseCode && normalizeCourseText(_selectedCourseCode).toUpperCase() === normalized.toUpperCase()) {
+        return _selectedCourseCode;
+    }
+
+    const match = _courseSuggestions.find(course => normalizeCourseText(course.code).toUpperCase() === normalized.toUpperCase());
+    if (match) return match.code;
+
+    return null;
+}
+
+function clearCoursePicker() {
+    const input = document.getElementById('add-course-input');
+    input.value = '';
+    _selectedCourseCode = '';
+    _courseSuggestions = [];
+    _suggestionReqId += 1;
+    renderCourseSuggestions([]);
+    setCoursePickerStatus('');
+}
 
 function refreshCourseTags(containerId) {
     const container = document.getElementById(containerId);
@@ -115,13 +230,24 @@ async function saveCourses() {
     });
 }
 
-function addCourseManually() {
+async function addCourseManually() {
     const input = document.getElementById('add-course-input');
-    const val = input.value.trim().toUpperCase();
-    if (!val) return;
-    if (_courses.includes(val)) { input.value = ''; return; }
+    let selected = resolvePickedCourse(input.value);
+    if (!selected) {
+        await updateCourseSuggestions(input.value);
+        selected = resolvePickedCourse(input.value);
+    }
+    if (!selected) {
+        setCoursePickerStatus('Pick a course from the suggestions first.', true);
+        return;
+    }
+    const val = normalizeCourseText(selected).toUpperCase();
+    if (_courses.includes(val)) {
+        clearCoursePicker();
+        return;
+    }
     _courses.push(val);
-    input.value = '';
+    clearCoursePicker();
     refreshCourseTags('settings-courses');
     refreshCourseTags('overview-courses');
     refreshCourseTags('transcript-courses');
@@ -129,7 +255,14 @@ function addCourseManually() {
 }
 
 document.getElementById('add-course-input').addEventListener('keydown', e => {
-    if (e.key === 'Enter') addCourseManually();
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        addCourseManually();
+    }
+});
+
+document.getElementById('add-course-input').addEventListener('input', e => {
+    updateCourseSuggestions(e.target.value);
 });
 
 function removeCourse(btn, course) {
