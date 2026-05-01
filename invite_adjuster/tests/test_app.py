@@ -22,7 +22,7 @@ users.update_one(
 print(f"Set lateness for user {USER_ID} to {LATENESS_VALUES}")
 print("All users in DB:", list(users.find()))
 
-time.sleep(1)  # Give MongoDB a moment
+time.sleep(1) 
 
 url = f"http://invite-adjuster:5000/lateness_penalty/{USER_ID}"
 response = requests.get(url)
