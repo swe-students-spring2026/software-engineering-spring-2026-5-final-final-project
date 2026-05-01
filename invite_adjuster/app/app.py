@@ -27,4 +27,4 @@ def lateness_penalty(user_id):
     return jsonify({"lateness_penalty": avg_penalty, "num_events": len(lateness_list)})
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5001)
+    app.run(host="0.0.0.0", port=5000)
