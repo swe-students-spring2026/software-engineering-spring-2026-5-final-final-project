@@ -1,7 +1,7 @@
-"""Load classes_example.json into MongoDB using idempotent upserts.
+"""Replace the MongoDB classes collection from classes_example.json.
 
-Replaces the old delete-then-insert approach so there is no downtime window
-and partial failures leave the collection in a consistent state.
+Loads into a temporary collection first, then swaps it over the target classes
+collection so partial failures do not leave classes half-loaded.
 Also backfills meeting_times from meets_human for older Albert documents
 that were scraped before that field was added.
 """
@@ -15,13 +15,15 @@ from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
-from pymongo import MongoClient, UpdateOne
+from pymongo import MongoClient
 
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 MONGO_URI = os.getenv("MONGO_URI")
 MONGO_DB_NAME = os.getenv("MONGO_DB_NAME")
 DATA_PATH = Path(__file__).with_name("classes_example.json")
+CLASS_COLLECTION = "classes"
+TEMP_COLLECTION = f"{CLASS_COLLECTION}__load_tmp"
 
 # ── Meeting-times parser (backfill for Albert docs missing the field) ──────────
 
@@ -63,6 +65,9 @@ def parse_date(val: object) -> object:
 def prepare(doc: dict) -> dict:
     out = dict(doc)
     out["term"] = normalize_term(out)
+    topic = extract_topic(out)
+    if topic:
+        out["topic"] = topic
     if is_unit_title(out.get("title", "")):
         out["title"] = ""
     if "scraped_at" in out:
@@ -98,6 +103,20 @@ def normalize_term(doc: dict) -> object:
     if match:
         return f"{match.group(1)} {match.group(2)}"
     return term
+
+
+def extract_topic(doc: dict) -> str:
+    topic = str(doc.get("topic") or "").strip()
+    if topic:
+        return topic
+
+    source_row = (doc.get("source") or {}).get("raw_row", [])
+    if isinstance(source_row, list):
+        for line in reversed(source_row):
+            match = re.match(r"^topic:\s*(.+)$", str(line or "").strip(), re.I)
+            if match:
+                return match.group(1).strip()
+    return ""
 
 
 def is_unit_title(value: object) -> bool:
@@ -168,7 +187,35 @@ def clean_token(value: object) -> str:
     return re.sub(r"[^A-Za-z0-9_-]", "", str(value or ""))
 
 
+def create_class_indexes(collection) -> None:
+    collection.create_index("term")
+    collection.create_index("term.code")
+    collection.create_index("subject_code")
+    collection.create_index("school")
+    collection.create_index("component")
+    collection.create_index("status")
+    collection.create_index("code")
+    collection.create_index("crn")
+    collection.create_index("instructor")
+    collection.create_index([("title", "text"), ("code", "text"), ("description", "text")])
+
+
+def replace_classes_collection(db, docs: list[dict]) -> None:
+    temp = db[TEMP_COLLECTION]
+    temp.drop()
+    db.create_collection(TEMP_COLLECTION)
+    temp = db[TEMP_COLLECTION]
+
+    if docs:
+        temp.insert_many(docs, ordered=False)
+    create_class_indexes(temp)
+    temp.rename(CLASS_COLLECTION, dropTarget=True)
+
+
 def main() -> None:
+    if not MONGO_URI or not MONGO_DB_NAME:
+        raise RuntimeError("MONGO_URI and MONGO_DB_NAME must be set in the environment or root .env file.")
+
     client = MongoClient(MONGO_URI)
     db = client[MONGO_DB_NAME]
 
@@ -178,10 +225,9 @@ def main() -> None:
     docs = dedupe_docs([prepare(d) for d in raw_docs])
     print(f"Loaded {len(raw_docs)} JSON documents; {len(docs)} remain after section-level dedupe.")
 
-    # Idempotent bulk upsert — no downtime window, safe to re-run
-    ops = [UpdateOne({"_id": d["_id"]}, {"$set": d}, upsert=True) for d in docs]
-    result = db.classes.bulk_write(ops, ordered=False)
-    print(f"Upserted: {result.upserted_count} new, {result.modified_count} updated.")
+    # Full replacement: temp collection is swapped over classes only after it is ready.
+    replace_classes_collection(db, docs)
+    print(f"Replaced collection '{CLASS_COLLECTION}' with {len(docs)} documents.")
 
     client.close()
 

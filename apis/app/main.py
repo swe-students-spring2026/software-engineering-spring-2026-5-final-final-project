@@ -22,6 +22,7 @@ try:
         init_professor_ratings,
         search_professors,
     )
+    from apis.app.services.terms import class_term_filter
 except ModuleNotFoundError:
     from app.services.requirements_service import RequirementsService
     from app.services.professor_ratings import (
@@ -30,6 +31,7 @@ except ModuleNotFoundError:
         init_professor_ratings,
         search_professors,
     )
+    from app.services.terms import class_term_filter
 
 load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
@@ -41,6 +43,7 @@ app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024  # 10 MB upload limit
 
 mongo_uri = os.getenv("MONGO_URI")
 mongo_db_name = os.getenv("MONGO_DB_NAME")
+internal_api_token = os.getenv("API_INTERNAL_TOKEN", "")
 
 if not mongo_uri or not mongo_db_name:
     raise RuntimeError(
@@ -86,13 +89,6 @@ def health():
     })
 
 
-TERM_CODES: dict[str, str] = {
-    "1268": "Fall 2026",
-    "1266": "Summer 2026",
-    "1264": "Spring 2026",
-}
-
-
 def _class_collection(source: str):
     if source == "bulletin":
         return db[BULLETIN_CLASS_COLLECTION]
@@ -100,9 +96,21 @@ def _class_collection(source: str):
 
 
 def _term_filter(term: str, source: str) -> dict[str, Any]:
-    if source == "bulletin":
-        return {"term.code": term}
-    return {"term": TERM_CODES.get(term, term)}
+    return class_term_filter(term, source)
+
+
+def _require_internal_api_token():
+    if not internal_api_token:
+        return jsonify({"error": "API_INTERNAL_TOKEN is not configured"}), 503
+    if request.headers.get("X-Internal-API-Token") != internal_api_token:
+        return jsonify({"error": "forbidden"}), 403
+    return None
+
+
+def _prepare_class_response(doc: dict[str, Any]) -> dict[str, Any]:
+    course = dict(doc)
+    course.pop("source", None)
+    return course
 
 
 @app.get("/classes")
@@ -162,8 +170,21 @@ def get_classes():
     total_pages = math.ceil(total_courses / page_size) if total_courses > 0 else 1
     page_codes = [row["_id"] for row in facet_result["page_codes"]]
 
-    # Second query only needs the paginated codes — the aggregation already filtered
-    classes = list(collection.find({"code": {"$in": page_codes}}, {"_id": 0, "source": 0}))
+    # Keep original filters when expanding paginated course codes to sections.
+    if page_codes:
+        code_filter = {"code": {"$in": page_codes}}
+        section_query = {"$and": [query, code_filter]} if query else code_filter
+        cursor = collection.find(section_query, {"_id": 0, "source": 0})
+        cursor_sort = getattr(cursor, "sort", None)
+        if callable(cursor_sort) and not isinstance(cursor, list):
+            cursor = cursor_sort([
+                ("code", 1),
+                ("section", 1),
+                ("component", 1),
+            ])
+        classes = [_prepare_class_response(course) for course in cursor]
+    else:
+        classes = []
     classes = enrich_classes_with_professor_ratings(classes)
     return jsonify({
         "classes": classes,
@@ -176,6 +197,10 @@ def get_classes():
 
 @app.post("/classes/reload")
 def reload_class_from_bulletin():
+    auth_error = _require_internal_api_token()
+    if auth_error:
+        return auth_error
+
     data = request.get_json(silent=True) or {}
     term = str(data.get("term", "")).strip()
     code = str(data.get("code", "")).strip()
@@ -272,6 +297,10 @@ def auth_login():
 
 @app.post("/auth/google")
 def auth_google_upsert():
+    auth_error = _require_internal_api_token()
+    if auth_error:
+        return auth_error
+
     data = request.get_json(silent=True) or {}
     email = data.get("email", "").strip().lower()
     name = data.get("name", "").strip()
@@ -289,6 +318,10 @@ def auth_google_upsert():
 
 @app.get("/user/profile")
 def get_profile():
+    auth_error = _require_internal_api_token()
+    if auth_error:
+        return auth_error
+
     email = request.args.get("email", "").strip().lower()
     if not email:
         return jsonify({"error": "email required"}), 400
@@ -301,6 +334,10 @@ def get_profile():
 
 @app.put("/user/profile")
 def update_profile():
+    auth_error = _require_internal_api_token()
+    if auth_error:
+        return auth_error
+
     data = request.get_json(silent=True) or {}
     email = data.get("email", "").strip().lower()
     if not email:
@@ -317,6 +354,10 @@ def update_profile():
 
 @app.post("/user/transcript")
 def upload_transcript():
+    auth_error = _require_internal_api_token()
+    if auth_error:
+        return auth_error
+
     email = request.form.get("email", "").strip().lower()
     file = request.files.get("transcript")
 

@@ -31,5 +31,6 @@ header a:hover { background: rgba(255,255,255,0.25); }
 .course-entry-title { font-size: 0.82rem; font-weight: bold; display: flex; align-items: center; gap: 6px; }
 .color-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 .course-entry-detail { font-size: 0.75rem; color: #666; margin-top: 4px; line-height: 1.5; padding-left: 16px; }
+.course-topic { color: #57068c; font-weight: bold; }
 .remove-btn { background: none; border: none; color: #c00; cursor: pointer; font-size: 0.8rem; margin-left: auto; }
 .no-courses { color: #bbb; font-size: 0.82rem; }

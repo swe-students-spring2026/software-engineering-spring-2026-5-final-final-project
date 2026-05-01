@@ -27,7 +27,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: pip install -r apis/requirements.txt
+        run: pip install -r apis/requirements-dev.txt
 
       - name: Run tests
         working-directory: apis

@@ -38,6 +38,7 @@ except Exception:
     )
 
 from app.services.professor_ratings import build_professor_profile, enrich_classes_with_professor_ratings
+from app.services.terms import flexible_term_filter
 
 _db = None
 
@@ -179,7 +180,7 @@ def search_courses(
     conditions: list[dict] = []
 
     if term:
-        conditions.append({"term.code": term})
+        conditions.append(flexible_term_filter(term))
     if component:
         # Exact match — component values are controlled vocabulary
         conditions.append({"component": component})
@@ -205,7 +206,7 @@ def search_courses(
             "_id": 0, "code": 1, "title": 1, "description": 1, "credits": 1,
             "school": 1, "subject_code": 1, "component": 1, "section": 1,
             "crn": 1, "instructor": 1, "meets_human": 1, "status": 1,
-            "term": 1, "prerequisites": 1,
+            "term": 1, "topic": 1, "prerequisites": 1,
         },
     ).limit(limit))
 
@@ -223,7 +224,7 @@ def get_course_sections(course_code: str, term: str = "") -> dict[str, Any]:
         {"title": {"$regex": course_code, "$options": "i"}},
     ]}
     if term:
-        query: dict = {"$and": [or_clause, {"term.code": term}]}
+        query: dict = {"$and": [or_clause, flexible_term_filter(term)]}
     else:
         query = or_clause
 
@@ -233,7 +234,7 @@ def get_course_sections(course_code: str, term: str = "") -> dict[str, Any]:
             "_id": 0, "code": 1, "title": 1, "section": 1, "crn": 1,
             "instructor": 1, "meets_human": 1, "meeting_times": 1,
             "status": 1, "component": 1, "instructional_method": 1,
-            "campus_location": 1, "credits": 1, "notes": 1, "prerequisites": 1,
+            "campus_location": 1, "credits": 1, "topic": 1, "notes": 1, "prerequisites": 1,
         },
     ).limit(50))
 

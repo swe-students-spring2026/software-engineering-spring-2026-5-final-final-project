@@ -1063,7 +1063,7 @@ def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url:
     docs: list[dict[str, Any]] = []
     # Tracks the last primary (lecture) record's title/term so secondary sections
     # (recitations, discussions) can inherit them when Albert omits the course header.
-    last_primary: dict[str, str] = {"subject_code": "", "catalog_number": "", "title": "", "term": ""}
+    last_primary: dict[str, str] = {"subject_code": "", "catalog_number": "", "title": "", "term": "", "topic": ""}
 
     for index, row in enumerate(rows, start=1):
         code = sanitize_albert_text(row.get("code", ""))
@@ -1079,6 +1079,7 @@ def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url:
         meeting_details = extract_meeting_details(row)
         term = extract_term_label(row, fallback=term_code)
         course_text = extract_course_text(row, code)
+        topic = extract_topic(row)
         notes = extract_notes(row)
         prerequisites = extract_prerequisites(notes)
         title = course_text["title"] or sanitize_albert_text(row.get("title", ""))
@@ -1092,6 +1093,8 @@ def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url:
                 title = last_primary["title"]
             if not term:
                 term = last_primary["term"]
+            if not topic:
+                topic = last_primary["topic"]
 
         if title and term:
             last_primary = {
@@ -1099,6 +1102,7 @@ def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url:
                 "catalog_number": catalog_number,
                 "title": title,
                 "term": term,
+                "topic": topic,
             }
 
         crn = sanitize_albert_text(row.get("crn", ""))
@@ -1119,6 +1123,7 @@ def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url:
                 "catalog_number": catalog_number,
                 "code": code,
                 "title": title,
+                "topic": topic,
                 "description": course_text["description"],
                 "section": section,
                 "crn": crn,
@@ -1201,6 +1206,17 @@ def extract_term_label(row: dict[str, Any], *, fallback: str = "") -> str:
             if term:
                 return sanitize_albert_text(term)
     return sanitize_albert_text(fallback)
+
+
+def extract_topic(row: dict[str, Any]) -> str:
+    source_row = row.get("source_row", [])
+    if isinstance(source_row, list):
+        for line in reversed(source_row):
+            text = clean_text(line)
+            topic = find_first(r"^topic:\s*(.+)$", text, flags=re.I)
+            if topic:
+                return sanitize_albert_text(topic)
+    return sanitize_albert_text(row.get("topic", ""))
 
 
 def extract_course_text(row: dict[str, Any], code: str) -> dict[str, str]:

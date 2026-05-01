@@ -156,10 +156,12 @@ scrapers/classes_example_report.json
 check_lectures.py
 
 # classes example
-# scrapers/classes_example.json
+scrapers/classes_example.json
 
 # local authenticated browser sessions
 .secrets/
+scrapers/session.json
+session.json
 *storage-state*.json
 *albert-state*.json
 

@@ -3,6 +3,7 @@ import pytest
 
 os.environ.setdefault("API_URL", "http://test-backend:8000")
 os.environ.setdefault("FRONTEND_INTERNAL_PORT", "3000")
+os.environ.setdefault("API_INTERNAL_TOKEN", "test-internal-token")
 os.environ.setdefault("FLASK_SECRET_KEY", "test-secret-key")
 os.environ.setdefault("GOOGLE_CLIENT_ID", "")
 os.environ.setdefault("GOOGLE_CLIENT_SECRET", "")

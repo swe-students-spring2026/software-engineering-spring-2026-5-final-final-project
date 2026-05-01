@@ -30,6 +30,23 @@ class TestClassesRoute:
         assert "classes" in data
         assert isinstance(data["classes"], list)
 
+    def test_get_classes_returns_top_level_topic(self, client, mock_db):
+        with patch.object(mock_db.classes, "aggregate", return_value=[
+            {"total": [{"n": 1}], "page_codes": [{"_id": "CORE-UA 400"}]}
+        ]), patch.object(mock_db.classes, "find", return_value=[
+            {
+                "code": "CORE-UA 400",
+                "title": "Texts and Ideas",
+                "topic": "The Black Radical Tradition",
+                "source": {"raw_row": ["Topic: The Black Radical Tradition"]},
+            }
+        ]):
+            res = client.get("/classes")
+
+        data = res.get_json()
+        assert data["classes"][0]["topic"] == "The Black Radical Tradition"
+        assert "source" not in data["classes"][0]
+
     def test_get_classes_enriches_professor_ratings(self, client, mock_db):
         mock_db.classes.find.return_value = [{"title": "Algorithms", "instructor": "Joanna Klukowska"}]
         with patch("app.main.enrich_classes_with_professor_ratings", return_value=[
@@ -49,6 +66,13 @@ class TestClassesRoute:
         assert res.status_code == 200
         match = mock_db.classes.aggregate.call_args[0][0][0]["$match"]
         assert match.get("term") == "Fall 2026"
+
+    def test_get_classes_with_future_term_filter(self, client, mock_db):
+        mock_db.classes.find.return_value = []
+        res = client.get("/classes?term=1272")
+        assert res.status_code == 200
+        match = mock_db.classes.aggregate.call_args[0][0][0]["$match"]
+        assert match.get("term") == "Winter 2027"
 
     def test_get_classes_with_query_filter(self, client, mock_db):
         mock_db.classes.find.return_value = []
@@ -307,6 +331,13 @@ class TestAuthGoogleRoute:
 
 
 class TestUserProfileRoute:
+    def test_get_profile_rejects_bad_internal_token(self, client):
+        res = client.get(
+            "/user/profile?email=user@nyu.edu",
+            headers={"X-Internal-API-Token": "wrong-token"},
+        )
+        assert res.status_code == 403
+
     def test_get_profile_missing_email_returns_400(self, client):
         res = client.get("/user/profile")
         assert res.status_code == 400

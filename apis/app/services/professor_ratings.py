@@ -9,6 +9,8 @@ from urllib.parse import quote
 import requests
 from bs4 import BeautifulSoup
 
+from app.services.terms import flexible_term_filter
+
 RMP_BASE_URL = "https://www.ratemyprofessors.com"
 RMP_NYU_SCHOOL_ID = "675"
 RMP_NYU_FALLBACK_QUERY = "NYU"
@@ -317,7 +319,7 @@ def build_professor_profile(db: Any, name: str, term: str = "") -> dict[str, Any
         "instructor": {"$regex": instructor_regex(normalized_name), "$options": "i"}
     }
     if term:
-        query["term.code"] = term
+        query = {"$and": [query, flexible_term_filter(term)]}
 
     courses = list(db.classes.find(
         query,
@@ -379,7 +381,7 @@ def search_professors(db: Any, query: str = "", term: str = "", limit: int = 20)
         }
     mongo_query: dict[str, Any] = {"instructor": instructor_clause}
     if term:
-        mongo_query["term.code"] = term
+        mongo_query = {"$and": [mongo_query, flexible_term_filter(term)]}
 
     pipeline = [
         {"$match": mongo_query},

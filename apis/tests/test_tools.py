@@ -30,6 +30,17 @@ class TestSearchCourses:
         assert "courses" in result
         assert result["count"] == 1
 
+    def test_returns_top_level_topic(self, mock_db):
+        mock_db.classes.find.return_value.limit.return_value = [
+            {
+                "code": "CORE-UA 400",
+                "title": "Texts and Ideas",
+                "topic": "The Black Radical Tradition",
+            },
+        ]
+        result = search_courses()
+        assert result["courses"][0]["topic"] == "The Black Radical Tradition"
+
     def test_no_db_returns_error(self):
         tools_module._db = None
         result = search_courses(query="algorithms")
