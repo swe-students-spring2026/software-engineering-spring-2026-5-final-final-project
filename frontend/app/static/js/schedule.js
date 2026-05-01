@@ -1,4 +1,4 @@
-const DAYS = ["Mon","Tue","Wed","Thu","Fri"];
+const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 const HOUR_START = 8, HOUR_END = 22;
 const PX_PER_HOUR = 60;
 
@@ -6,14 +6,14 @@ let schedule = JSON.parse(localStorage.getItem("nyu_schedule") || "[]");
 function saveSchedule() { localStorage.setItem("nyu_schedule", JSON.stringify(schedule)); }
 
 function getMeetingSlots(section) {
-  return (section?.meeting_times || [])
-    .filter(t => t.start && t.end && typeof t.day_num === "number")
-    .map(t => ({ dayIdx: t.day_num, start: t.start, end: t.end }));
+    return (section?.meeting_times || [])
+        .filter(t => t.start && t.end && typeof t.day_num === "number")
+        .map(t => ({ dayIdx: t.day_num, start: t.start, end: t.end }));
 }
 
 function timeToFrac(t) {
-  const [h, m] = t.split(':').map(Number);
-  return h + m / 60;
+    const [h, m] = t.split(':').map(Number);
+    return h + m / 60;
 }
 
 function escapeHtml(value) {
@@ -31,22 +31,23 @@ function topicText(section) {
 }
 
 function fmt12(t) {
-  const [h, m] = t.split(':').map(Number);
-  const ampm = h < 12 ? 'am' : 'pm';
-  return `${h % 12 || 12}:${String(m).padStart(2,'0')}${ampm}`;
+    const [h, m] = t.split(':').map(Number);
+    const ampm = h < 12 ? 'am' : 'pm';
+    return `${h % 12 || 12}:${String(m).padStart(2, '0')}${ampm}`;
 }
 
 function renderCalendar() {
-  const grid = document.getElementById("cal-grid");
+    const grid = document.getElementById("cal-grid");
 
-  let html = `<div class="cal-day-header" style="grid-column:1"></div>`;
-  DAYS.forEach(d => { html += `<div class="cal-day-header">${d}</div>`; });
+    let html = `<div class="cal-day-header" style="grid-column:1"></div>`;
+    DAYS.forEach(d => { html += `<div class="cal-day-header">${d}</div>`; });
 
-  for (let h = HOUR_START; h < HOUR_END; h++) {
-    const label = h < 12 ? `${h}am` : h === 12 ? "12pm" : `${h-12}pm`;
-    html += `<div class="cal-time-label">${label}</div>`;
-    for (let d = 0; d < 5; d++) {
-      html += `<div class="cal-cell" data-day="${d}" data-hour="${h}"></div>`;
+    for (let h = HOUR_START; h < HOUR_END; h++) {
+        const label = h < 12 ? `${h}am` : h === 12 ? "12pm" : `${h - 12}pm`;
+        html += `<div class="cal-time-label">${label}</div>`;
+        for (let d = 0; d < 5; d++) {
+            html += `<div class="cal-cell" data-day="${d}" data-hour="${h}"></div>`;
+        }
     }
   }
 
@@ -82,10 +83,10 @@ function renderCalendar() {
           <span class="ev-sub">${fmt12(start)}–${fmt12(end)}</span>
           ${sec.instructor ? `<span class="ev-sub">${sec.instructor}</span>` : ""}
         `;
-        cell.appendChild(ev);
-      });
+                cell.appendChild(ev);
+            });
+        });
     });
-  });
 }
 
 function renderSidebar() {
@@ -119,10 +120,10 @@ function renderSidebar() {
 }
 
 function removeEntry(i) {
-  schedule.splice(i, 1);
-  saveSchedule();
-  renderCalendar();
-  renderSidebar();
+    schedule.splice(i, 1);
+    saveSchedule();
+    renderCalendar();
+    renderSidebar();
 }
 
 function downloadCalendar() {
@@ -182,26 +183,25 @@ function downloadCalendar() {
         );
       });
     });
-  });
 
-  lines.push("END:VCALENDAR");
-  const blob = new Blob([lines.join("\r\n")], { type: "text/calendar;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `NYU_${sem.name.replace(" ", "_")}_Schedule.ics`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+    lines.push("END:VCALENDAR");
+    const blob = new Blob([lines.join("\r\n")], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `NYU_${sem.name.replace(" ", "_")}_Schedule.ics`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 }
 
 function clearAll() {
-  if (!confirm("Clear your entire schedule?")) return;
-  schedule = [];
-  saveSchedule();
-  renderCalendar();
-  renderSidebar();
+    if (!confirm("Clear your entire schedule?")) return;
+    schedule = [];
+    saveSchedule();
+    renderCalendar();
+    renderSidebar();
 }
 
 renderCalendar();

@@ -1,36 +1,36 @@
 async function fetchProfessorSuggestions() {
-  const q = document.getElementById("name").value.trim();
-  const term = document.getElementById("term").value;
-  const holder = document.getElementById("search-results");
-  holder.innerHTML = "";
-  if (!q) return;
+    const q = document.getElementById("name").value.trim();
+    const term = document.getElementById("term").value;
+    const holder = document.getElementById("search-results");
+    holder.innerHTML = "";
+    if (!q) return;
 
-  const params = new URLSearchParams({ q, limit: "8" });
-  if (term) params.set("term", term);
-  const res = await fetch(`/api/professors?${params}`);
-  const data = await res.json();
-  holder.innerHTML = (data.professors || []).map(p =>
-    `<button class="search-chip" data-name="${encodeURIComponent(p.name)}">${p.name}</button>`
-  ).join("");
-  holder.querySelectorAll(".search-chip").forEach(btn => {
-    btn.addEventListener("click", () => selectProfessor(decodeURIComponent(btn.dataset.name)));
-  });
+    const params = new URLSearchParams({ q, limit: "8" });
+    if (term) params.set("term", term);
+    const res = await fetch(`/api/professors?${params}`);
+    const data = await res.json();
+    holder.innerHTML = (data.professors || []).map(p =>
+        `<button class="search-chip" data-name="${encodeURIComponent(p.name)}">${p.name}</button>`
+    ).join("");
+    holder.querySelectorAll(".search-chip").forEach(btn => {
+        btn.addEventListener("click", () => selectProfessor(decodeURIComponent(btn.dataset.name)));
+    });
 }
 
 function selectProfessor(name) {
-  document.getElementById("name").value = name;
-  loadProfessor();
+    document.getElementById("name").value = name;
+    loadProfessor();
 }
 
 function renderRating(rating) {
-  if (!rating) {
-    return `
+    if (!rating) {
+        return `
       <div class="rating-box">
         <div class="rating-score">N/A</div>
         <div class="rating-meta">No Rate My Professors result was matched for this instructor yet.</div>
       </div>`;
-  }
-  return `
+    }
+    return `
     <div class="rating-box">
       <div class="rating-score">${rating.rating.toFixed(1)}/5</div>
       <div class="rating-meta">
@@ -43,8 +43,8 @@ function renderRating(rating) {
 }
 
 function renderCourses(courses) {
-  if (!courses.length) return '<div class="empty">No current courses found for this professor.</div>';
-  return `
+    if (!courses.length) return '<div class="empty">No current courses found for this professor.</div>';
+    return `
     <div class="courses">
       <h3>Courses They Are Teaching</h3>
       ${courses.map(c => `
@@ -63,29 +63,29 @@ function renderCourses(courses) {
 }
 
 async function loadProfessor() {
-  const name = document.getElementById("name").value.trim();
-  const term = document.getElementById("term").value;
-  const content = document.getElementById("content");
-  if (!name) {
-    content.innerHTML = '<div class="empty">Enter a professor name first.</div>';
-    return;
-  }
+    const name = document.getElementById("name").value.trim();
+    const term = document.getElementById("term").value;
+    const content = document.getElementById("content");
+    if (!name) {
+        content.innerHTML = '<div class="empty">Enter a professor name first.</div>';
+        return;
+    }
 
-  history.replaceState({}, "", `/professor?name=${encodeURIComponent(name)}${term ? `&term=${encodeURIComponent(term)}` : ""}`);
-  content.innerHTML = '<div class="loading">Loading professor profile...</div>';
-  await fetchProfessorSuggestions();
+    history.replaceState({}, "", `/professor?name=${encodeURIComponent(name)}${term ? `&term=${encodeURIComponent(term)}` : ""}`);
+    content.innerHTML = '<div class="loading">Loading professor profile...</div>';
+    await fetchProfessorSuggestions();
 
-  const params = new URLSearchParams({ name });
-  if (term) params.set("term", term);
+    const params = new URLSearchParams({ name });
+    if (term) params.set("term", term);
 
-  const res = await fetch(`/api/professors/profile?${params}`);
-  const data = await res.json();
-  if (!res.ok) {
-    content.innerHTML = `<div class="error">${data.error || "Professor not found."}</div>`;
-    return;
-  }
+    const res = await fetch(`/api/professors/profile?${params}`);
+    const data = await res.json();
+    if (!res.ok) {
+        content.innerHTML = `<div class="error">${data.error || "Professor not found."}</div>`;
+        return;
+    }
 
-  content.innerHTML = `
+    content.innerHTML = `
     <div class="hero-top">
       <div>
         <h2>${data.name}</h2>
@@ -98,12 +98,12 @@ async function loadProfessor() {
 }
 
 document.getElementById("name").addEventListener("keydown", (e) => {
-  if (e.key === "Enter") loadProfessor();
+    if (e.key === "Enter") loadProfessor();
 });
 document.getElementById("name").addEventListener("input", () => {
-  fetchProfessorSuggestions();
+    fetchProfessorSuggestions();
 });
 
 if (document.getElementById("name").value.trim()) {
-  loadProfessor();
+    loadProfessor();
 }
