@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NYU Course Planner</title>
+  <link rel="stylesheet" href="/static/css/shared.css">
   <link rel="stylesheet" href="/static/css/index.css">
 </head>
+
 <body>
   <header>
     <h1>NYU Course Planner</h1>
@@ -25,7 +28,9 @@
           <option value="1266">Summer 2026</option>
         </select>
         <input type="text" id="query" placeholder="Search by name, subject code, instructor…" />
-        <select id="school"><option value="">Any School</option></select>
+        <select id="school">
+          <option value="">Any School</option>
+        </select>
         <select id="component">
           <option value="">Any Type</option>
           <option value="Lecture">Lecture</option>
@@ -52,8 +57,11 @@
       <div class="cal-header">
         <h2>My Schedule</h2>
         <div class="cal-header-btns">
-          <a href="/schedule" style="padding:4px 10px;background:#f0e6f7;color:#57068c;border:1px solid #c9a7e0;border-radius:4px;font-size:0.78rem;text-decoration:none;" class="schedule-btn">Full View</a>
-          <button class="export-btn" onclick="downloadCalendar()" title="Export to Google / Apple Calendar">⬇ Download Calendar</button>
+          <a href="/schedule"
+            style="padding:4px 10px;background:#f0e6f7;color:#57068c;border:1px solid #c9a7e0;border-radius:4px;font-size:0.78rem;text-decoration:none;"
+            class="schedule-btn">Full View</a>
+          <button class="export-btn" onclick="downloadCalendar()" title="Export to Google / Apple Calendar">⬇ Download
+            Calendar</button>
           <button class="clear-btn" onclick="clearSchedule()">Clear</button>
           <button class="cal-collapse-btn" onclick="toggleCalendar()" id="collapse-btn">▶</button>
         </div>
@@ -112,4 +120,5 @@
   <script src="/static/js/index.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </body>
+
 </html>

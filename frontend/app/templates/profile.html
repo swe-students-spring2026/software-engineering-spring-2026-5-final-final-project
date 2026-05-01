@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Profile — NYU Course Planner</title>
+  <link rel="stylesheet" href="/static/css/shared.css">
   <link rel="stylesheet" href="/static/css/profile.css">
 </head>
+
 <body>
   <header>
     <h1>NYU Course Planner</h1>
@@ -33,7 +36,8 @@
         {% if profile.graduation_year %}
         <div class="stat">Class of <strong id="sidebar-year">{{ profile.graduation_year }}</strong></div>
         {% endif %}
-        <div class="stat"><strong id="sidebar-course-count">{{ (profile.completed_courses or []) | length }}</strong> courses completed</div>
+        <div class="stat"><strong id="sidebar-course-count">{{ (profile.completed_courses or []) | length }}</strong>
+          courses completed</div>
       </div>
 
       <nav class="side-nav">
@@ -80,12 +84,14 @@
             </div>
           </div>
           <div style="margin-top:8px">
-            <button class="btn btn-primary" onclick="switchPanel('settings', document.getElementById('nav-settings'))">Edit Profile</button>
+            <button class="btn btn-primary"
+              onclick="switchPanel('settings', document.getElementById('nav-settings'))">Edit Profile</button>
           </div>
         </div>
 
         <div class="card">
-          <h3>Completed Courses <span style="font-size:0.78rem;font-weight:400;color:#aaa;margin-left:6px">used by AI for recommendations</span></h3>
+          <h3>Completed Courses <span style="font-size:0.78rem;font-weight:400;color:#aaa;margin-left:6px">used by AI
+              for recommendations</span></h3>
           <div class="course-tags" id="overview-courses">
             {% for course in (profile.completed_courses or []) %}
             <div class="course-tag">{{ course }}</div>
@@ -95,7 +101,9 @@
           </div>
           {% if not (profile.completed_courses or []) %}
           <div style="margin-top:14px">
-            <button class="btn btn-primary btn-sm" onclick="switchPanel('transcript', document.getElementById('nav-transcript'))">Upload Transcript →</button>
+            <button class="btn btn-primary btn-sm"
+              onclick="switchPanel('transcript', document.getElementById('nav-transcript'))">Upload Transcript
+              →</button>
           </div>
           {% endif %}
         </div>
@@ -128,7 +136,7 @@
               <select id="s-year">
                 <option value="">Select year</option>
                 {% for y in ['2025','2026','2027','2028','2029'] %}
-                <option value="{{ y }}" {% if profile.graduation_year == y %}selected{% endif %}>{{ y }}</option>
+                <option value="{{ y }}" {% if profile.graduation_year==y %}selected{% endif %}>{{ y }}</option>
                 {% endfor %}
               </select>
             </div>
@@ -157,7 +165,8 @@
 
         <div class="card">
           <h3>Manage Completed Courses</h3>
-          <p style="font-size:0.82rem;color:#666;margin-bottom:14px">Manually add or remove courses. These are shared with the AI assistant.</p>
+          <p style="font-size:0.82rem;color:#666;margin-bottom:14px">Manually add or remove courses. These are shared
+            with the AI assistant.</p>
           <div style="display:flex;gap:8px;margin-bottom:14px">
             <input id="add-course-input" type="text" placeholder="e.g. CSCI-UA 101" style="flex:1">
             <button class="btn btn-primary btn-sm" onclick="addCourseManually()">Add</button>
@@ -177,15 +186,15 @@
         <div class="card">
           <h3>Upload Transcript</h3>
           <p style="font-size:0.82rem;color:#666;margin-bottom:18px">
-            Upload your NYU unofficial transcript PDF. The AI will automatically extract your completed courses and use them for personalized recommendations.
+            Upload your NYU unofficial transcript PDF. The AI will automatically extract your completed courses and use
+            them for personalized recommendations.
           </p>
 
           <div id="toast-transcript" class="toast"></div>
 
           <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()"
-               ondragover="event.preventDefault();this.classList.add('dragover')"
-               ondragleave="this.classList.remove('dragover')"
-               ondrop="handleDrop(event)">
+            ondragover="event.preventDefault();this.classList.add('dragover')"
+            ondragleave="this.classList.remove('dragover')" ondrop="handleDrop(event)">
             <div class="upload-icon">📂</div>
             <p><strong>Click to upload</strong> or drag and drop</p>
             <p class="hint">PDF only · Max 10MB</p>
@@ -239,4 +248,5 @@
     } | tojson }}</script>
   <script src="/static/js/profile.js"></script>
 </body>
+
 </html>
