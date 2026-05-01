@@ -6,7 +6,10 @@ from bson.objectid import ObjectId
 import pymongo
 from config import Config
 from mongo_wrapper import MongoWrapper
+import requests
 
+mongo = MongoWrapper()
+ML_SERVICE_URL = "http://ml-client:5002/analyze"
 app = Flask(__name__)
 app.secret_key = 'lacewing squad'
 
@@ -47,39 +50,47 @@ def request_loader(request):
 @app.route('/')
 @login_required
 def index():
-    return render_template('index.html', overdue=overdue, due_soon=due_soon, upcoming=upcoming, completed=completed)
+    user = "test_user"
+
+    overdue = mongo.get_assignments_by_status(user, "overdue")
+    due_soon = mongo.get_assignments_by_status(user, "due_soon")
+    upcoming = mongo.get_assignments_by_status(user, "upcoming")
+    completed = mongo.get_assignments_by_status(user, "completed")
+
+    return render_template(
+        'index.html',
+        overdue=overdue,
+        due_soon=due_soon,
+        upcoming=upcoming,
+        completed=completed
+    )
 
 @app.route('/submit_new_task', methods=['POST'])
 def submit_new_task():
-    global task_id_counter
+    data = request.json
 
-    form_data = request.json
+    ml_response = requests.post(ML_SERVICE_URL, json={
+        "title": data.get("title"),
+        "course": data.get("course"),
+        "description": data.get("description"),
+        "due_date": data.get("due_date")
+    })
 
-    # fields needed for detail/edit pages
-    # temporary data
-    form_data['id'] = task_id_counter
-    task_id_counter += 1
-    form_data['due_date'] = form_data.get('due_date') or form_data.get('date')
-    form_data['completed'] = False
-    form_data['created_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    form_data['updated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    ml_data = ml_response.json()
 
-    # ML placeholder
-    form_data['estimated_hours'] = 3
-    form_data['difficulty'] = 3
-    form_data['priority'] = 'medium'
+    mongo.add_assignment(
+        user_email="test_user",
+        title=data.get("title"),
+        course=data.get("course"),
+        description=data.get("description"),
+        due_date=datetime.strptime(data.get("due_date"), "%Y-%m-%d"),
+        estimated_hours=ml_data.get("estimated_hours"),
+        difficulty=ml_data.get("difficulty"),
+        priority=ml_data.get("priority"),
+        status="upcoming"
+    )
 
-    if form_data.get('status') == 'overdue':
-        overdue.append(form_data)
-    elif form_data.get('status') == 'due_soon':
-        due_soon.append(form_data)
-    elif form_data.get('status') == 'upcoming':
-        upcoming.append(form_data)
-
-    payload = {
-        'status': 'success'
-    }
-    return json.dumps(payload)
+    return json.dumps({"status": "success"})
 
 @app.route('/login', methods=['GET', 'POST'])
 def login_page():

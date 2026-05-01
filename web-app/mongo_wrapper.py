@@ -1,6 +1,8 @@
 import os
 import pymongo
-
+import datetime
+from bson.objectid import ObjectId
+from config import Config
 class MongoWrapper:
     def __init__(self):
         config = Config()
@@ -79,14 +81,14 @@ class MongoWrapper:
         if course == None:
             assignments = list(
                 self.db.assignments.find(
-                    {"user-email": user_email, "due_date": {"$gte": start, "$lt": end}}
+                    {"user_email": user_email, "due_date": {"$gte": start, "$lt": end}}
                 )
             )
         else:
             assignments = list(
                 self.db.assignments.find(
                     {
-                        "user-email": user_email,
+                        "user_email": user_email,
                         "course": course,
                         "due_date": {"$gte": start, "$lt": end},
                     }
@@ -127,7 +129,7 @@ class MongoWrapper:
             raise ValueError("Invalid value for status parameter")
 
         assignments = list(
-            self.db.assignments.find({"user-email": user_email, "status": status})
+            self.db.assignments.find({"user_email": user_email, "status": status})
         )
         return assignments
 
@@ -137,7 +139,7 @@ class MongoWrapper:
     # Return: String id / None if not found
     def get_assignment_id(self, user_email, title, course):
         assignment = self.db.assignments.find_one(
-            {"user-email": user_email, "title": title, "course": course}
+            {"user_email": user_email, "title": title, "course": course}
         )
 
         if assignment:
