@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyCast — Calendar</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="container">
+
+    <div class="page-header">
+        <h1>StudyCast</h1>
+        {% if session.user_name %}
+            <span class="user-info">{{ session.user_name }} &nbsp;·&nbsp; <a href="/logout">Log out</a></span>
+        {% endif %}
+    </div>
+
+    <div class="nav">
+        <a href="/dashboard">Dashboard</a>
+        <a href="/exams">Exams</a>
+        <a href="/preparations">Preparations</a>
+        <a href="/calendar" class="active">Calendar</a>
+        <a href="/todos">To-Do</a>
+    </div>
+
+    <div class="card">
+        <form action="/calendar" method="GET" class="weather-form">
+            <input type="hidden" name="year" value="{{ request.args.get('year', '') }}">
+            <input type="hidden" name="month" value="{{ request.args.get('month', '') }}">
+            <div class="weather-form-row">
+                <div class="form-row">
+                    <label>U.S. City</label>
+                    <input type="text" name="city" value="{{ selected_city }}" placeholder="New York City" required>
+                </div>
+                <div class="weather-form-action">
+                    <button type="submit">Update Weather</button>
+                </div>
+            </div>
+            <p class="weather-caption">
+                Forecast for {{ resolved_city }}
+                {% if weather_error %}
+                    <span class="weather-error">{{ weather_error }}</span>
+                {% endif %}
+            </p>
+        </form>
+
+        <div class="calendar-header">
+            <a href="/calendar?year={{ prev_year }}&month={{ prev_month }}&city={{ selected_city }}" class="btn btn-outline btn-sm">Previous</a>
+            <h2>{{ month_label }}</h2>
+            <a href="/calendar?year={{ next_year }}&month={{ next_month }}&city={{ selected_city }}" class="btn btn-outline btn-sm">Next</a>
+        </div>
+
+        <div class="calendar-grid calendar-days">
+            <div>Sun</div>
+            <div>Mon</div>
+            <div>Tue</div>
+            <div>Wed</div>
+            <div>Thu</div>
+            <div>Fri</div>
+            <div>Sat</div>
+        </div>
+
+        <div class="calendar-grid calendar-body">
+            {% for week in month_weeks %}
+                {% for day in week %}
+                    <div class="calendar-cell{% if not day.is_current_month %} is-outside-month{% endif %}{% if day.is_today %} is-today{% endif %}">
+                        <div class="calendar-date">{{ day.day_number }}</div>
+                        {% if day.weather_label %}
+                            <div class="calendar-weather">
+                                <span class="calendar-weather-label">{{ day.weather_label }}</span>
+                                {% if day.weather and day.weather.temp_min is not none and day.weather.temp_max is not none %}
+                                    <span class="calendar-weather-temp">{{ day.weather.temp_min|round|int }}F - {{ day.weather.temp_max|round|int }}F</span>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+
+                        {% if day.exams or day.preparations %}
+                            <ul class="calendar-events">
+                                {% for exam in day.exams %}
+                                    <li class="calendar-event exam-event">
+                                        <div class="calendar-event-row">
+                                            <span class="calendar-event-title{% if exam.status == 'done' %} status-done{% endif %}">{{ exam.subject }}</span>
+                                            <div class="calendar-event-actions">
+                                                <form action="/delete-exam/{{ exam._id }}" method="POST" class="inline-form"
+                                                      onsubmit="return confirm('Delete this exam?')">
+                                                    <button type="submit" class="calendar-delete-btn">Delete</button>
+                                                </form>
+                                                {% if exam.status != 'done' %}
+                                                    <form action="/complete-exam/{{ exam._id }}" method="POST" class="inline-form">
+                                                        <input type="hidden" name="redirect_to" value="{{ request.full_path }}">
+                                                        <button type="submit" class="calendar-action-btn">Done</button>
+                                                    </form>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <span class="calendar-event-meta">{{ exam.exam_type }}</span>
+                                    </li>
+                                {% endfor %}
+
+                                {% for preparation in day.preparations %}
+                                    <li class="calendar-event preparation-event{% if preparation.is_past_due or preparation.weather_alert %} overdue-preparation-event{% endif %}">
+                                        <div class="calendar-event-row">
+                                            <span class="calendar-event-title{% if preparation.completed %} status-done{% endif %}">
+                                                Prep{% if preparation.exam %}: {{ preparation.exam.subject }}{% endif %}
+                                            </span>
+                                            <div class="calendar-event-actions">
+                                                <form action="/delete-preparation/{{ preparation._id }}" method="POST" class="inline-form"
+                                                      onsubmit="return confirm('Delete this preparation session?')">
+                                                    <input type="hidden" name="redirect_to" value="{{ request.full_path }}">
+                                                    <button type="submit" class="calendar-delete-btn">Delete</button>
+                                                </form>
+                                                {% if not preparation.completed %}
+                                                    <form action="/complete-preparation/{{ preparation._id }}" method="POST" class="inline-form">
+                                                        <input type="hidden" name="redirect_to" value="{{ request.full_path }}">
+                                                        <button type="submit" class="calendar-action-btn">Done</button>
+                                                    </form>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <span class="calendar-event-meta">
+                                            {{ preparation.difficulty }} · {{ preparation.location }}{% if preparation.weather_alert %} <span class="weather-alert">!!!!!!</span>{% endif %}
+                                        </span>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="calendar-empty">No events</p>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+</body>
+</html>

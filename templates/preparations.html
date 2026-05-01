@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyCast — Preparations</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="container">
+
+    <div class="page-header">
+        <h1>StudyCast</h1>
+        {% if session.user_name %}
+            <span class="user-info">{{ session.user_name }} &nbsp;·&nbsp; <a href="/logout">Log out</a></span>
+        {% endif %}
+    </div>
+
+    <div class="nav">
+        <a href="/dashboard">Dashboard</a>
+        <a href="/exams">Exams</a>
+        <a href="/preparations" class="active">Preparations</a>
+        <a href="/calendar">Calendar</a>
+        <a href="/todos">To-Do</a>
+    </div>
+
+    <div class="card">
+        <h2>Add Preparation Session</h2>
+
+        {% if error %}
+            <p class="form-error">{{ error }}</p>
+        {% endif %}
+
+        {% if exams %}
+            <form action="/add-preparation" method="POST" class="form-group">
+                <div class="form-grid">
+                    <div class="form-row">
+                        <label>Exam</label>
+                        <select name="exam_id" id="examSelect" required>
+                            {% for exam in exams %}
+                                <option value="{{ exam._id }}" data-exam-date="{{ exam.exam_date }}">
+                                    {{ exam.subject }} — {{ exam.exam_type }} on {{ exam.exam_date }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label>Preparation Date</label>
+                        <input type="date" name="preparation_date" id="preparationDate" required>
+                        <p class="prep-date-hint">
+                            Exam date:
+                            <span id="selectedExamDate" class="prep-date-highlight"></span>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-row">
+                        <label>Study Time Needed</label>
+                        <select name="difficulty" required>
+                            <option value="Light (~1 hr)">Light — ~1 hr</option>
+                            <option value="Medium (~3 hrs)">Medium — ~3 hrs</option>
+                            <option value="Heavy (~5+ hrs)">Heavy — ~5+ hrs</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label>Study Environment</label>
+                        <select name="location" required>
+                            <option value="Indoor">Indoor</option>
+                            <option value="Outdoor">Outdoor</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <label>Notes (optional)</label>
+                    <input type="text" name="notes" placeholder="What do you want to review?">
+                </div>
+
+                <div><button type="submit">Add Preparation</button></div>
+            </form>
+        {% else %}
+            <p class="empty">Add an exam first, then you can schedule preparation sessions for it.</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h2>Planned Preparation Sessions</h2>
+
+        {% if preparations %}
+            <ul>
+                {% for preparation in preparations %}
+                    <li class="exam-item">
+                        <div class="exam-info">
+                            <div class="subject">
+                                {{ preparation.exam.subject if preparation.exam else "Deleted exam" }}
+                            </div>
+                            <div class="meta">
+                                Prep on {{ preparation.preparation_date }}
+                                {% if preparation.exam %}
+                                    &nbsp;·&nbsp; Exam: {{ preparation.exam.exam_date }}
+                                {% endif %}
+                                &nbsp;·&nbsp; {{ preparation.difficulty }}
+                                &nbsp;·&nbsp; {{ preparation.location }}
+                                {% if preparation.notes %} &nbsp;·&nbsp; {{ preparation.notes }}{% endif %}
+                            </div>
+                        </div>
+                        <div class="exam-actions">
+                            <form action="/delete-preparation/{{ preparation._id }}" method="POST" class="inline-form"
+                                  onsubmit="return confirm('Delete this preparation session?')">
+                                <button type="submit" class="btn-outline btn-sm">Delete</button>
+                            </form>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="empty">No preparation sessions yet.</p>
+        {% endif %}
+    </div>
+
+</div>
+<script>
+    const examSelect = document.getElementById("examSelect");
+    const preparationDate = document.getElementById("preparationDate");
+    const selectedExamDate = document.getElementById("selectedExamDate");
+
+    function syncExamDate() {
+        const selectedOption = examSelect.options[examSelect.selectedIndex];
+        const examDate = selectedOption.dataset.examDate;
+
+        selectedExamDate.textContent = examDate || "Not set";
+        preparationDate.max = examDate || "";
+
+        if (preparationDate.value && examDate && preparationDate.value > examDate) {
+            preparationDate.value = examDate;
+        }
+    }
+
+    syncExamDate();
+    examSelect.addEventListener("change", syncExamDate);
+</script>
+</body>
+</html>

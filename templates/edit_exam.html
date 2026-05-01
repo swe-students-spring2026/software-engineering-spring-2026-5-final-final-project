@@ -19,6 +19,8 @@
     <div class="nav">
         <a href="/dashboard">Dashboard</a>
         <a href="/exams" class="active">Exams</a>
+        <a href="/preparations">Preparations</a>
+        <a href="/calendar">Calendar</a>
         <a href="/todos">To-Do</a>
     </div>
 
@@ -47,36 +49,12 @@
                     </select>
                 </div>
                 <div class="form-row">
-                    <label>Study Time Needed</label>
-                    <select name="difficulty">
-                        {% set opts = [("Light (~1 hr)", "Light — ~1 hr"), ("Medium (~3 hrs)", "Medium — ~3 hrs"), ("Heavy (~5+ hrs)", "Heavy — ~5+ hrs")] %}
-                        {% for val, label in opts %}
-                            <option value="{{ val }}" {% if exam.difficulty == val %}selected{% endif %}>{{ label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </div>
-
-            <div class="form-grid">
-                <div class="form-row">
-                    <label>Study Environment</label>
-                    <select name="location">
-                        <option value="Indoor" {% if exam.location == "Indoor" %}selected{% endif %}>Indoor</option>
-                        <option value="Outdoor" {% if exam.location == "Outdoor" %}selected{% endif %}>Outdoor</option>
-                    </select>
-                </div>
-                <div class="form-row">
                     <label>Status</label>
                     <select name="status">
                         <option value="upcoming" {% if exam.status == "upcoming" %}selected{% endif %}>Upcoming</option>
                         <option value="done" {% if exam.status == "done" %}selected{% endif %}>Done</option>
                     </select>
                 </div>
-            </div>
-
-            <div class="form-row">
-                <label>Notes (optional)</label>
-                <input type="text" name="notes" value="{{ exam.notes or '' }}" placeholder="Any extra notes…">
             </div>
 
             <div style="display:flex;gap:8px;margin-top:4px;">

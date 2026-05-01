@@ -13,13 +13,17 @@
     <div class="brand">StudyCast</div>
     <p class="subtitle">Track exams, assignments, and study sessions.</p>
 
+    {% if error %}
+        <div class="card" style="margin-bottom:16px; color:#b00020;">{{ error }}</div>
+    {% endif %}
+
     <div class="tab-switch">
-        <button id="tab-signin" class="active" onclick="showSignin()">Sign In</button>
-        <button id="tab-signup" onclick="showSignup()">Sign Up</button>
+        <button id="tab-signin" class="{% if active_tab != 'signup' %}active{% endif %}" onclick="showSignin()">Sign In</button>
+        <button id="tab-signup" class="{% if active_tab == 'signup' %}active{% endif %}" onclick="showSignup()">Sign Up</button>
     </div>
 
     <!-- Sign In -->
-    <div id="signinForm" class="card">
+    <div id="signinForm" class="card" {% if active_tab == 'signup' %}style="display:none;"{% endif %}>
         <form action="/auth" method="POST" class="form-group">
             <input type="hidden" name="action" value="signin">
 
@@ -37,7 +41,7 @@
     </div>
 
     <!-- Sign Up -->
-    <div id="signupForm" class="card" style="display:none;">
+    <div id="signupForm" class="card" {% if active_tab != 'signup' %}style="display:none;"{% endif %}>
         <form action="/auth" method="POST" class="form-group">
             <input type="hidden" name="action" value="signup">
 

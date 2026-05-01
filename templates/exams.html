@@ -19,6 +19,8 @@
     <div class="nav">
         <a href="/dashboard">Dashboard</a>
         <a href="/exams" class="active">Exams</a>
+        <a href="/preparations">Preparations</a>
+        <a href="/calendar">Calendar</a>
         <a href="/todos">To-Do</a>
     </div>
 
@@ -49,28 +51,6 @@
                         <option value="Homework">Homework</option>
                     </select>
                 </div>
-                <div class="form-row">
-                    <label>Study Time Needed</label>
-                    <select name="difficulty">
-                        <option value="Light (~1 hr)">Light — ~1 hr</option>
-                        <option value="Medium (~3 hrs)">Medium — ~3 hrs</option>
-                        <option value="Heavy (~5+ hrs)">Heavy — ~5+ hrs</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="form-grid">
-                <div class="form-row">
-                    <label>Study Environment</label>
-                    <select name="location">
-                        <option value="Indoor">Indoor</option>
-                        <option value="Outdoor">Outdoor</option>
-                    </select>
-                </div>
-                <div class="form-row">
-                    <label>Notes (optional)</label>
-                    <input type="text" name="notes" placeholder="Any extra notes…">
-                </div>
             </div>
 
             <div><button type="submit">Add Exam</button></div>
@@ -89,10 +69,7 @@
                             <div class="subject">{{ exam.subject }}</div>
                             <div class="meta">
                                 {{ exam.exam_date }} &nbsp;·&nbsp;
-                                {{ exam.exam_type }} &nbsp;·&nbsp;
-                                {{ exam.difficulty }} &nbsp;·&nbsp;
-                                {{ exam.location }}
-                                {% if exam.notes %} &nbsp;·&nbsp; {{ exam.notes }}{% endif %}
+                                {{ exam.exam_type }}
                             </div>
                         </div>
                         <div class="exam-actions">
