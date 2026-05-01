@@ -336,18 +336,59 @@ function updateDescriptionToggles() {
     });
 }
 
-function handleAdd(crn) {
-    const sec = sectionMap[crn];
+async function handleAdd(crn) {
+    let sec = sectionMap[crn];
     if (!sec) return;
 
     const card = document.querySelector(`.course-card[data-code="${sec.code}"]`);
-    const allRows = card ? [...card.querySelectorAll(".section-row")] : [];
-    const myRcts = [];
-    let foundLec = false;
-    for (const row of allRows) {
-        if (row.dataset.crn === crn) { foundLec = true; continue; }
-        if (foundLec && row.classList.contains("rct-row")) myRcts.push(sectionMap[row.dataset.crn]);
-        else if (foundLec && !row.classList.contains("rct-row")) break;
+    const gatherRctsFromDom = () => {
+        const allRows = card ? [...card.querySelectorAll(".section-row")] : [];
+        const myRcts = [];
+        let foundLec = false;
+        for (const row of allRows) {
+            if (row.dataset.crn === crn) { foundLec = true; continue; }
+            if (foundLec && row.classList.contains("rct-row")) myRcts.push(sectionMap[row.dataset.crn]);
+            else if (foundLec && !row.classList.contains("rct-row")) break;
+        }
+        return myRcts;
+    };
+
+    let myRcts = gatherRctsFromDom();
+
+    // If no recitations found in current DOM (e.g. search filtered them out by professor/q),
+    // fetch full course sections for this code and rebuild sectionMap, then retry.
+    if (myRcts.length === 0) {
+        try {
+            const term = document.getElementById("term")?.value || '';
+            const params = new URLSearchParams({ term, code: sec.code });
+            const res = await fetch(`/api/classes?${params}`);
+            const data = await res.json();
+            if (res.ok && Array.isArray(data.classes) && data.classes.length) {
+                // update sectionMap and DOM for this course-card
+                const sections = data.classes;
+                sections.forEach(s => { sectionMap[s.crn] = s; });
+                // rebuild the card's sections HTML
+                const newHtml = renderCourseGroup(sec.code, sections[0]?.title || '', sections[0]?.description || '', sections[0]?.school || '', sections);
+                if (card) card.outerHTML = newHtml;
+                // re-select the card element (it was replaced)
+                const newCard = document.querySelector(`.course-card[data-code="${sec.code}"]`);
+                if (newCard) sec = sectionMap[crn] || sec;
+                // recompute myRcts from new DOM
+                myRcts = (() => {
+                    const rows = newCard ? [...newCard.querySelectorAll('.section-row')] : [];
+                    const arr = [];
+                    let found = false;
+                    for (const row of rows) {
+                        if (row.dataset.crn === crn) { found = true; continue; }
+                        if (found && row.classList.contains('rct-row')) arr.push(sectionMap[row.dataset.crn]);
+                        else if (found && !row.classList.contains('rct-row')) break;
+                    }
+                    return arr;
+                })();
+            }
+        } catch (e) {
+            console.warn('Failed to fetch full course sections:', e);
+        }
     }
 
     if (myRcts.length > 0) openModal(sec, myRcts);
