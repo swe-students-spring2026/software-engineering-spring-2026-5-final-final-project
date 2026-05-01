@@ -1,0 +1,57 @@
+services:
+
+  mongodb:
+    build: ./database
+    container_name: pennywise-mongodb
+    environment:
+      MONGO_INITDB_DATABASE: ${MONGO_DB_NAME:-pennywise}
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      - pennywise-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  backend:
+    build: ./backend
+    container_name: pennywise-backend
+    environment:
+      MONGO_URI: mongodb://mongodb:27017
+      MONGO_DB_NAME: ${MONGO_DB_NAME:-pennywise}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
+    ports:
+      - "5000:5000"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - pennywise-net
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: pennywise-frontend
+    environment:
+      BACKEND_URL: http://backend:5000
+      FLASK_SECRET: ${FLASK_SECRET:-dev-frontend-secret}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - pennywise-net
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
+
+networks:
+  pennywise-net:
+    driver: bridge
