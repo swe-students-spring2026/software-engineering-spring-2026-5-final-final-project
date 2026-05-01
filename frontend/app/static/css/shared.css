@@ -53,9 +53,16 @@ header h1 {
     font-weight: 600
 }
 
+header a {
+    color: #fff;
+    text-decoration: none
+}
+
 .header-nav {
     display: flex;
-    gap: 8px
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap
 }
 
 .header-nav a {
@@ -63,11 +70,17 @@ header h1 {
     text-decoration: none;
     padding: 6px 12px;
     border-radius: 6px;
-    background: rgba(255, 255, 255, 0.08)
+    background: rgba(255, 255, 255, 0.08);
+    font-size: 0.85rem;
+    transition: background 0.15s
+}
+
+.header-nav a:hover {
+    background: rgba(255, 255, 255, 0.18)
 }
 
 .header-nav a.active {
-    background: rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.22);
     font-weight: 600
 }
 

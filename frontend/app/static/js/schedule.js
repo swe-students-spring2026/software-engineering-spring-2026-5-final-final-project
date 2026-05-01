@@ -77,11 +77,11 @@ function renderCalendar() {
         ev.style.cssText = `top:${offsetPx}px;height:${heightPx}px;background:${color};opacity:${isRct ? 0.85 : 1};`;
         const topic = topicText(sec);
         ev.innerHTML = `
-                  <strong>${sec.code}${isRct ? " Rct" : ""}</strong>
-                  ${topic ? `<span class="ev-sub">${escapeHtml(topic)}</span>` : ""}
-                  <span class="ev-sub">${fmt12(start)}–${fmt12(end)}</span>
-                  ${sec.instructor ? `<span class="ev-sub">${sec.instructor}</span>` : ""}
-                `;
+          <strong>${sec.code}${isRct ? " Rct" : ""}</strong>
+          ${topic ? `<span class="ev-sub">${escapeHtml(topic)}</span>` : ""}
+          <span class="ev-sub">${fmt12(start)}–${fmt12(end)}</span>
+          ${sec.instructor ? `<span class="ev-sub">${sec.instructor}</span>` : ""}
+        `;
         cell.appendChild(ev);
       });
     });

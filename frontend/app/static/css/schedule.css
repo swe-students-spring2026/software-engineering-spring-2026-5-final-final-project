@@ -6,6 +6,7 @@
     flex-direction: column;
     overflow: hidden;
     background: white;
+    min-height: calc(100vh - 120px);
 }
 
 .cal-toolbar {
@@ -14,6 +15,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-shrink: 0;
 }
 
 .cal-toolbar span {
@@ -48,11 +50,13 @@
 .cal-scroll {
     flex: 1;
     overflow-y: auto;
+    min-height: 0;
 }
 
 .cal-grid {
     display: grid;
     grid-template-columns: 52px repeat(5, 1fr);
+    min-height: calc(100vh - 180px);
 }
 
 .cal-day-header {

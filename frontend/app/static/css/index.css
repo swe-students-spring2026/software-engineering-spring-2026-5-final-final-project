@@ -39,7 +39,7 @@
     border-radius: 4px;
     cursor: pointer;
     font-size: 0.85rem;
-    display: none;
+    display: inline-block;
 }
 
 .filters button:hover {
