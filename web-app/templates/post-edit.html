@@ -1,9 +1,12 @@
 {% extends "base.html" %}
 
 {% block content %}
-  <section>
-    <h1>{% if mode == "edit" %}Edit Post{% else %}Create Post{% endif %}</h1>
-    <p>About: <strong>{{ professor_name }}</strong></p>
+	  <section>
+	    {% if professor_id %}
+	      <a class="back-link" href="{{ url_for('professor_page', professor_id=professor_id) }}{% if post_id %}#post-{{ post_id }}{% endif %}">← Back</a>
+	    {% endif %}
+	    <h1>{% if mode == "edit" %}Edit Post{% else %}Create Post{% endif %}</h1>
+	    <p>About: <strong>{{ professor_name }}</strong></p>
 
     <form method="post" action="{{ form_action }}">
       <label for="text">Post</label>
@@ -14,4 +17,3 @@
     </form>
   </section>
 {% endblock %}
-

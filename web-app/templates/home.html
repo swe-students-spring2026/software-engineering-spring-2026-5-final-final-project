@@ -44,8 +44,8 @@
   {% endif %}
 
   <section>
-    <details class="home-posts">
-      <summary>Posts</summary>
+    <div class="home-posts">
+      <h2>Posts</h2>
       {% if my_posts_by_prof and my_posts_by_prof|length %}
         <div class="home-posts-body">
           {% for item in my_posts_by_prof %}
@@ -54,7 +54,7 @@
               <ul class="home-posts-list">
                 {% for post in item.posts %}
                   <li class="home-posts-item">
-                    <a href="{{ url_for('view_post', post_id=post._id, next='home') }}" class="home-post-link">
+                    <a href="{{ url_for('professor_page', professor_id=post.professor_id) }}#post-{{ post._id }}" class="home-post-link">
                       <div class="home-posts-text">{{ post.text }}</div>
                       {% if post.created_at %}
                         <div class="home-posts-meta">{{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
@@ -69,7 +69,7 @@
       {% else %}
         <p>You haven’t posted about any professors yet.</p>
       {% endif %}
-    </details>
+    </div>
   </section>
 
   <script src="{{ url_for('static', filename='ticker.js') }}"></script>
