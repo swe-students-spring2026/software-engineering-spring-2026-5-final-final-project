@@ -1,0 +1,98 @@
+name: Database CI/CD
+
+on:
+  push:
+    paths:
+      - "database/**"
+      - ".github/workflows/database-ci.yml"
+  pull_request:
+    paths:
+      - "database/**"
+
+jobs:
+  test-seed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install pymongo python-dotenv bcrypt pytest pytest-cov mongomock
+
+      - name: Run seed tests with coverage
+        run: |
+          pytest database/tests \
+            --cov=database \
+            --cov-report=term-missing \
+            --cov-fail-under=80 \
+            -p no:cacheprovider
+
+  integration-seed:
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install pymongo python-dotenv bcrypt
+
+      - name: Run seed script against live MongoDB
+        env:
+          MONGO_URI: mongodb://localhost:27017
+          MONGO_DB_NAME: pennywise_ci
+        run: python database/seed.py
+
+  build-and-push:
+    needs: [test-seed, integration-seed]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push database image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./database
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/pennywise-database:latest
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Deploy MongoDB to DigitalOcean via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DO_HOST }}
+          username: ${{ secrets.DO_USER }}
+          key: ${{ secrets.DO_SSH_KEY }}
+          script: |
+            docker network create pennywise-net || true
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/pennywise-database:latest
+            docker stop pennywise-mongodb || true
+            docker rm   pennywise-mongodb || true
+            docker run -d --name pennywise-mongodb \
+              --network pennywise-net \
+              -p 27017:27017 \
+              -v mongo_data:/data/db \
+              -e MONGO_INITDB_DATABASE=pennywise \
+              --restart unless-stopped \
+              ${{ secrets.DOCKERHUB_USERNAME }}/pennywise-database:latest

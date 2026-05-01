@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %} — Budgets{% endblock %}
+
+{% block content %}
+<div class="row">
+  <!-- Add form -->
+  <div class="col-md-4 mb-4">
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold">Set Budget</div>
+      <div class="card-body">
+        <form method="POST">
+          <div class="mb-2">
+            <label class="form-label">Category</label>
+            <input type="text" name="category" class="form-control" required placeholder="e.g. food" />
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Monthly Limit ($)</label>
+            <input type="number" step="0.01" min="0.01" name="limit" class="form-control" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Month (YYYY-MM)</label>
+            <input type="month" name="month" class="form-control" required />
+          </div>
+          <button type="submit" class="btn btn-success w-100">Save Budget</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status -->
+  <div class="col-md-8">
+    <h4>Budget Status</h4>
+    {% if budgets %}
+    <div class="row g-3">
+    {% for b in budgets %}
+    <div class="col-sm-6">
+      <div class="card {{ 'border-danger' if b.over_budget else 'border-success' }}">
+        <div class="card-body">
+          <h5 class="card-title text-capitalize">{{ b.category }} <small class="text-muted fs-6">{{ b.month }}</small></h5>
+          <div class="progress mb-2" style="height:12px">
+            {% set pct = [[(b.spent / b.limit * 100)|int, 0]|max, 100]|min %}
+            <div class="progress-bar {{ 'bg-danger' if b.over_budget else 'bg-success' }}"
+                 style="width:{{ pct }}%"></div>
+          </div>
+          <small>
+            Spent: <strong>${{ "%.2f"|format(b.spent) }}</strong> /
+            Limit: <strong>${{ "%.2f"|format(b.limit) }}</strong> —
+            {% if b.over_budget %}
+            <span class="text-danger fw-bold">Over by ${{ "%.2f"|format(b.spent - b.limit) }}</span>
+            {% else %}
+            <span class="text-success">${{ "%.2f"|format(b.remaining) }} remaining</span>
+            {% endif %}
+          </small>
+          <form method="POST" action="{{ url_for('delete_budget', bid=b.budget_id) }}" class="mt-2">
+            <button class="btn btn-sm btn-outline-danger">Remove</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted">No budgets set yet.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
