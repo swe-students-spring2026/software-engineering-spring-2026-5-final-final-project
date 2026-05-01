@@ -1,5 +1,25 @@
 /* shared base styles moved to shared.css */
 
+/* Page layout - graduation is single column */
+.page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 28px 24px;
+    display: block;
+    width: 100%;
+}
+
+/* Ensure tables don't get squashed */
+.req-section-body {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.req-section-body table {
+    min-width: 600px;
+    width: 100%;
+}
+
 /* ── Summary card ── */
 .summary-card {
     background: white;

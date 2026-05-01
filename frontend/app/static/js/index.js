@@ -688,6 +688,12 @@ async function init() {
         if (e.key === "Enter") { clearTimeout(_searchDebounce); search(1); }
     });
 
+    // Wire up the Search button
+    const searchBtn = document.getElementById("search-btn");
+    if (searchBtn) {
+        searchBtn.addEventListener("click", () => { clearTimeout(_searchDebounce); search(1); });
+    }
+
     // Always load courses on page open
     search(parseInt(urlp.get("page") || "1"));
 }

@@ -2,10 +2,12 @@
 
 .cal-wrap {
     flex: 1;
+    width: 1200px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     background: white;
+    min-height: calc(100vh - 120px);
 }
 
 .cal-event .cal-event-actions {
@@ -13,6 +15,7 @@
     align-items: center;
     gap: 8px;
     margin-top: 8px;
+    flex-shrink: 0;
 }
 
 .cal-event .cal-event-actions .cal-event-delete {
@@ -46,11 +49,13 @@
 .cal-scroll {
     flex: 1;
     overflow-y: auto;
+    min-height: 0;
 }
 
 .cal-grid {
     display: grid;
     grid-template-columns: 52px repeat(5, 1fr);
+    min-height: calc(100vh - 180px);
 }
 
 .cal-day-header {
@@ -125,7 +130,7 @@
 }
 
 .sidebar {
-    width: 280px;
+    width: 500px;
     border-left: 1px solid #ddd;
     overflow-y: auto;
     background: white;
