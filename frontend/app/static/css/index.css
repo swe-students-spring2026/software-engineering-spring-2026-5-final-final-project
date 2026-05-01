@@ -1,9 +1,11 @@
 /* shared base styles moved to shared.css */
 
 .main {
-    display: flex;
     flex: 1;
+    display: flex;
     overflow: hidden;
+    min-height: 0;
+    width: 100%
 }
 
 /* ── Search panel ── */
