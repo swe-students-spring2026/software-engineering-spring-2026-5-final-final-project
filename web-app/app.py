@@ -91,7 +91,8 @@ def login():
     password = request.form.get('password')
 
     if username not in users or users[username]['password'] != password:
-        return 'Invalid credentials', 401
+        return """<div>wrong username or password</div>
+                <a href="/login"> go back to login </a>"""
 
     user = User()
     user.id = username
@@ -104,9 +105,11 @@ def register():
     password = request.form.get('password')
 
     if username in users:
-        return 'Username already exists', 400
+        return """<div>username already exists</div>
+                <a href="/login"> go to login </a>"""
 
     users[username] = {'password': password}
+    print(users)
     return redirect('/login')
 
 def find_task(task_id):

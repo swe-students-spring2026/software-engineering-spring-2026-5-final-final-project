@@ -181,20 +181,21 @@
             document.getElementById("popup-info").classList.add("hidden");
         }
 
-        let done_buttons = document.querySelectorAll('.done-button');
-        for (let i = 0; i < done_buttons.length; i++){
-            done_buttons[i].onclick = function(event) {
-                event.preventDefault();
-                confetti({
-                    particleCount: 500,
-                    spread: 180,
-                    origin: { y: event.clientY/window.innerHeight, x: event.clientX/window.innerWidth }
-                });
-                // setTimeout(() => {
-                //     window.location.href = this.href;
-                // }, 200);
-            }
-        }
+        //added confetti, cute but looks kind of bad
+        // let done_buttons = document.querySelectorAll('.done-button');
+        // for (let i = 0; i < done_buttons.length; i++){
+        //     done_buttons[i].onclick = function(event) {
+        //         event.preventDefault();
+        //         confetti({
+        //             particleCount: 500,
+        //             spread: 180,
+        //             origin: { y: event.clientY/window.innerHeight, x: event.clientX/window.innerWidth }
+        //         });
+        //         setTimeout(() => {
+        //             window.location.href = this.href;
+        //         }, 200);
+        //     }
+        // }
 
     </script>
 
