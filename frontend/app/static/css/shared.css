@@ -79,6 +79,15 @@ header a {
     background: rgba(255, 255, 255, 0.18)
 }
 
+/* Ensure any links directly inside header (some templates use a plain div) match header-nav */
+header a {
+    color: #fff;
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.08);
+}
+
 .header-nav a.active {
     background: rgba(255, 255, 255, 0.22);
     font-weight: 600
