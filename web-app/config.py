@@ -12,6 +12,6 @@ class Config:
     # Connect to Mongo
     @staticmethod
     def connect_to_db():
-        connection = pymongo.MongoClient(self.MONGO_URI)
-        db = connection[self.MONGO_DBNAME]
+        connection = pymongo.MongoClient(Config.MONGO_URI)
+        db = connection[Config.MONGO_DBNAME]
         return db
