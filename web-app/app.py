@@ -283,6 +283,10 @@ def professor_page(professor_id):
     )
     for p in prof_posts:
         p["_id"] = str(p.get("_id", ""))
+
+    my_posts = [p for p in prof_posts if p.get("author_email") == getattr(current_user, "email", "")]
+    other_posts = [p for p in prof_posts if p.get("author_email") != getattr(current_user, "email", "")]
+    prof_posts = my_posts + other_posts
     return render_template("professor.html", professor=prof, posts=prof_posts)
 
 
@@ -435,7 +439,7 @@ def delete_post(post_id):
     _refresh_user_rated_professors(user_oid=ObjectId(current_user.id), author_email=current_user.email)
 
     # Recompute professor-level aggregates
-    _update_professor_sentiment(pid)
+    _update_professor_sentiment(post["professor_id"])
 
     flash("Post deleted successfully.")
     
@@ -491,12 +495,13 @@ def edit_post_form(post_id):
 
     return render_template(
         "post-edit.html",
-        professor_id=str(pid),
-        professor_name=prof.get("name", ""),
+        professor_id=str(post.get("professor_id", "")),
+        professor_name=(prof or {}).get("name", ""),
         post_text=post.get("text", ""),
         form_action=url_for("edit_post", post_id=str(pid), next=next_page),
         mode="edit",
         next_page=next_page,
+        post_id=str(pid),
     )
 
 @app.route("/posts/<post_id>/edit", methods=["POST"])
@@ -536,7 +541,7 @@ def edit_post(post_id):
     _refresh_user_rated_professors(user_oid=ObjectId(current_user.id), author_email=current_user.email)
 
     # Recompute professor-level aggregates
-    _update_professor_sentiment(pid)
+    _update_professor_sentiment(existing["professor_id"])
 
     flash("Post updated successfully.")
     
