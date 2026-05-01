@@ -6,7 +6,7 @@ from typing import Callable, TypeVar
 from bson import ObjectId
 from flask import abort, current_app, g, redirect, session, url_for
 
-from web.app.db import get_db
+from ..db import get_db
 
 F = TypeVar("F", bound=Callable[..., object])
 

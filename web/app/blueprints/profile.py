@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from flask import Blueprint, flash, g, redirect, render_template, request, url_for
 
-from web.app.db import get_db
-from web.app.utils.auth import login_required
+from ..db import get_db
+from ..utils.auth import login_required
 
 bp = Blueprint("profile", __name__)
 
