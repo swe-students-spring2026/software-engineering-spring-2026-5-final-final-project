@@ -474,7 +474,6 @@ function closeModal() {
 // ── Calendar rendering ──
 function renderCalendar() {
     const grid = document.getElementById("cal-grid");
-
     let html = `<div class="cal-day-header" style="grid-column:1"></div>`;
     DAYS.forEach(d => { html += `<div class="cal-day-header">${d}</div>`; });
 
@@ -492,43 +491,36 @@ function renderCalendar() {
         grid.innerHTML += `<div class="cal-empty">Add courses to see them here</div>`;
         return;
     }
-  }
 
-  grid.innerHTML = html;
+    schedule.forEach(({ lecture, recitation, color }) => {
+        [lecture, recitation].filter(Boolean).forEach(sec => {
+            getMeetingSlots(sec).forEach(({ dayIdx, start, end }) => {
+                const startFrac = timeToFrac(start);
+                const endFrac   = timeToFrac(end);
+                const hourCell  = Math.floor(startFrac);
+                if (hourCell < HOUR_START || hourCell >= HOUR_END) return;
 
-  if (schedule.length === 0) {
-    grid.innerHTML += `<div class="cal-empty">Add courses to see them here</div>`;
-    return;
-  }
+                const cell = grid.querySelector(`[data-day="${dayIdx}"][data-hour="${hourCell}"]`);
+                if (!cell) return;
 
-  schedule.forEach(({ lecture, recitation, color }) => {
-    [lecture, recitation].filter(Boolean).forEach(sec => {
-      getMeetingSlots(sec).forEach(({ dayIdx, start, end }) => {
-        const startFrac = timeToFrac(start);
-        const endFrac   = timeToFrac(end);
-        const hourCell  = Math.floor(startFrac);
-        if (hourCell < HOUR_START || hourCell >= HOUR_END) return;
+                const offsetPx  = (startFrac - hourCell) * PX_PER_HOUR;
+                const heightPx  = (endFrac - startFrac) * PX_PER_HOUR;
 
-        const cell = grid.querySelector(`[data-day="${dayIdx}"][data-hour="${hourCell}"]`);
-        if (!cell) return;
-
-        const offsetPx  = (startFrac - hourCell) * PX_PER_HOUR;
-        const heightPx  = (endFrac - startFrac) * PX_PER_HOUR;
-
-        const ev = document.createElement("div");
-        ev.className = "cal-event";
-        ev.dataset.dayIdx = dayIdx;
-        ev.dataset.start = startFrac;
-        ev.dataset.end = endFrac;
-        ev.style.cssText = `top:${offsetPx}px;height:${heightPx}px;background:${color};`;
-        const topic = topicText(sec);
-        ev.innerHTML = `
-          <strong>${sec.code}</strong>
-          ${topic ? `<span>${escapeHtml(topic)}</span>` : ""}
-          <span>${sec.meets_human || ""}</span>
-        `;
-        cell.appendChild(ev);
-      });
+                const ev = document.createElement("div");
+                ev.className = "cal-event";
+                ev.dataset.dayIdx = dayIdx;
+                ev.dataset.start = startFrac;
+                ev.dataset.end = endFrac;
+                ev.style.cssText = `top:${offsetPx}px;height:${heightPx}px;background:${color};`;
+                const topic = topicText(sec);
+                ev.innerHTML = `
+                  <strong>${sec.code}</strong>
+                  ${topic ? `<span>${escapeHtml(topic)}</span>` : ""}
+                  <span>${sec.meets_human || ""}</span>
+                `;
+                cell.appendChild(ev);
+            });
+        });
     });
 
     // Highlight conflicts
@@ -578,7 +570,7 @@ function clearSchedule() {
     search(currentPage);
 }
 
-document.getElementById("modal").addEventListener("click", e => { if (e.target === e.currentTarget) closeModal(); });
+document.getElementById("modal").addEventListener("click", function (e) { if (e.target === e.currentTarget) closeModal(); });
 
 // ── Export .ics ──
 function downloadCalendar() {
@@ -648,9 +640,10 @@ function downloadCalendar() {
           "END:VEVENT",
         );
       });
+        });
     });
 
-    lines.push("END:VCALENDAR");
+        lines.push("END:VCALENDAR");
 
     const blob = new Blob([lines.join("\r\n")], { type: "text/calendar;charset=utf-8" });
     const url = URL.createObjectURL(blob);
