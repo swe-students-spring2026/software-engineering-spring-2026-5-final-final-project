@@ -25,7 +25,7 @@ print("All users in DB:", list(users.find()))
 
 time.sleep(1) 
 
-url = f"http://invite-adjuster:5000/lateness_penalty/{USER_ID}"
+url = f"http://localhost:5000/lateness_penalty/{USER_ID}"
 response = requests.get(url)
 print("API response:", response.json())
 

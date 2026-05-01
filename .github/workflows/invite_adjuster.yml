@@ -30,4 +30,6 @@ jobs:
           python-version: "3.9"
       - run: pip install pipenv
       - run: pipenv install --dev pytest pytest-cov
+      - run: pipenv run python app/app.py &
+      - run: sleep 5
       - run: pipenv run pytest
