@@ -3,6 +3,8 @@ import pymongo
 from flask import Flask, render_template
 from dotenv import load_dotenv
 
+from routes.tasks import tasks_bp 
+
 load_dotenv()
 MONGO_URI = os.getenv('MONGO_URI')
 MONGO_DBNAME = os.getenv('DB_NAME')
@@ -12,6 +14,8 @@ app = Flask(__name__)
 connection = pymongo.MongoClient(MONGO_URI)
 db = connection[MONGO_DBNAME]
 
+tasks_bp.db = db
+app.register_blueprint(tasks_bp)
 
 @app.route('/')
 def show_tasks():
