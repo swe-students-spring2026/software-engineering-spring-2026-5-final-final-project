@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(cd \"C:\\\\Users\\\\Hanso\\\\5-final-not_sleepy_pandas\\\\backend\"; Get-ChildItem -Recurse -Force | Select-Object FullName, @{Name='RelPath'; Expression={$_.FullName -replace [regex]::Escape\\(\\(Get-Location\\).Path + '\\\\'\\), ''}} | Sort-Object RelPath | Select-Object RelPath)",
+      "PowerShell(cd \"C:\\\\Users\\\\Hanso\\\\5-final-not_sleepy_pandas\"; Get-ChildItem -Directory | Where-Object {$_.Name -ne \".git\" -and $_.Name -ne \".claude\" -and $_.Name -ne \".cursor\" -and $_.Name -ne \".github\" -and $_.Name -ne \".githooks\" -and $_.Name -ne \".automations\"})"
+    ]
+  }
+}

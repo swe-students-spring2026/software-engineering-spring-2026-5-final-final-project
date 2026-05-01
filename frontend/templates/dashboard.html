@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %} — Dashboard{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Dashboard</h2>
+
+<div class="row g-4">
+  <!-- Monthly Summary Table -->
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header fw-semibold">Monthly Summary</div>
+      <div class="card-body">
+        {% if monthly %}
+        <table class="table table-sm table-striped">
+          <thead><tr><th>Month</th><th>Income</th><th>Expense</th><th>Net</th></tr></thead>
+          <tbody>
+          {% for row in monthly %}
+          <tr>
+            <td>{{ row.month }}</td>
+            <td class="text-success">+${{ "%.2f"|format(row.income) }}</td>
+            <td class="text-danger">-${{ "%.2f"|format(row.expense) }}</td>
+            <td class="{{ 'text-success' if row.net >= 0 else 'text-danger' }}">
+              ${{ "%.2f"|format(row.net) }}
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted">No data yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Categories Doughnut -->
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header fw-semibold">Top Spending Categories</div>
+      <div class="card-body d-flex justify-content-center align-items-center">
+        {% if categories %}
+        <canvas id="categoryChart" style="max-height:260px"></canvas>
+        {% else %}
+        <p class="text-muted">No expense data yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Spending Trends Bar Chart -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header fw-semibold">Month-over-Month Spending Trend</div>
+      <div class="card-body">
+        {% if trends %}
+        <canvas id="trendsChart" style="max-height:220px"></canvas>
+        {% else %}
+        <p class="text-muted">No trend data yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if categories %}
+<script>
+const catCtx = document.getElementById('categoryChart');
+new Chart(catCtx, {
+  type: 'doughnut',
+  data: {
+    labels: {{ categories | map(attribute='category') | list | tojson }},
+    datasets: [{
+      data: {{ categories | map(attribute='total_spent') | list | tojson }},
+      backgroundColor: ['#4e73df','#1cc88a','#36b9cc','#f6c23e','#e74a3b','#858796'],
+    }]
+  }
+});
+</script>
+{% endif %}
+{% if trends %}
+<script>
+const tCtx = document.getElementById('trendsChart');
+new Chart(tCtx, {
+  type: 'bar',
+  data: {
+    labels: {{ trends | map(attribute='month') | list | tojson }},
+    datasets: [{
+      label: 'Total Spent ($)',
+      data: {{ trends | map(attribute='total_spent') | list | tojson }},
+      backgroundColor: '#4e73df',
+    }]
+  },
+  options: { scales: { y: { beginAtZero: true } } }
+});
+</script>
+{% endif %}
+{% endblock %}
