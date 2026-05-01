@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}{{ match.username }} | Question Match{% endblock %}
+
+{% block content %}
+<section class="profile-strip">
+  <img src="{{ match.profile_pic }}" alt="{{ match.username }} profile picture">
+  <div>
+    <p class="eyebrow">Matched profile</p>
+    <h1>{{ match.username }}</h1>
+    <p class="muted">Age {{ match.age }} · {{ match.gender }} · {{ match.email }}</p>
+  </div>
+</section>
+
+<section class="answer-list">
+  <h2>Question answers</h2>
+  {% for item in match.questions %}
+    <div class="answer-row">
+      <span>{{ item.question }}</span>
+      <strong>{{ item.answer }}</strong>
+    </div>
+  {% endfor %}
+</section>
+{% endblock %}

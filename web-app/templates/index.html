@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Question Match{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div>
+    <p class="eyebrow">Daily question-based matching</p>
+    <h1>Meet people by guessing what they love.</h1>
+    <p class="lede">Answer one user's question set each day. Get all 10 right and a match opens up with their profile and contact info.</p>
+    <div class="actions">
+      <a class="button primary" href="{{ url_for('register') }}">Create account</a>
+      <a class="button" href="{{ url_for('login') }}">Log in</a>
+    </div>
+  </div>
+</section>
+{% endblock %}
