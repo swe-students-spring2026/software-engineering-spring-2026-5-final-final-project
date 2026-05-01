@@ -21,6 +21,20 @@ function timeToFrac(t) {
   return h + m / 60;
 }
 
+function escapeHtml(value) {
+  return String(value || "").replace(/[&<>"']/g, ch => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  }[ch]));
+}
+
+function topicText(section) {
+  return String(section?.topic || "").trim();
+}
+
 // ── Calendar collapse ──
 let calCollapsed = false;
 function toggleCalendar() {
@@ -121,6 +135,8 @@ function renderSection(c, isRct) {
     const label = rating.found_name && ratings.length > 1 ? `${rating.found_name}: ` : "";
     return `<div class="section-rating"><a href="${rating.url}" target="_blank" rel="noopener noreferrer">${label}${ratingParts.join(" · ")}</a></div>`;
   }).join("");
+  const topic = topicText(c);
+  const topicHtml = topic ? `<span class="section-topic">Topic: ${escapeHtml(topic)}</span>` : "";
   const instructorLinks = (c.instructor || "")
     .split(/\s*(?:;|\/|\||&| and )\s*/i)
     .map(name => name.trim())
@@ -135,6 +151,7 @@ function renderSection(c, isRct) {
         ${c.location ? `<span class="section-loc">${c.location}</span>` : ""}
       </div>
       <div class="section-mid">
+        ${topicHtml}
         ${instructorLinks ? `<span><strong>${instructorLinks}</strong></span>` : ""}
         ${ratingHtml}
         ${c.meets_human ? `<span>${c.meets_human}</span>` : ""}
@@ -380,7 +397,13 @@ function addToSchedule(lecture, recitation) {
 function openModal(lecture, rcts) {
   pendingLecture = lecture; pendingRcts = rcts; selectedRct = null;
   document.getElementById("modal-title").textContent = `${lecture.code} — ${lecture.title}`;
-  document.getElementById("modal-subtitle").textContent = `Lecture Sec ${lecture.section} · ${lecture.meets_human || ""} — Pick a recitation:`;
+  const topic = topicText(lecture);
+  const details = [
+    `Lecture Sec ${lecture.section}`,
+    topic ? `Topic: ${topic}` : "",
+    lecture.meets_human || "",
+  ].filter(Boolean).join(" | ");
+  document.getElementById("modal-subtitle").textContent = `${details} - Pick a recitation:`;
   document.getElementById("modal-confirm").disabled = true;
   document.getElementById("modal-rct-list").innerHTML = rcts.map((r, i) => `
     <div class="modal-rct-row" onclick="selectRct(${i})" id="rct-opt-${i}">
@@ -449,7 +472,12 @@ function renderCalendar() {
         ev.dataset.start = startFrac;
         ev.dataset.end = endFrac;
         ev.style.cssText = `top:${offsetPx}px;height:${heightPx}px;background:${color};`;
-        ev.innerHTML = `<strong>${sec.code}</strong><span>${sec.meets_human || ""}</span>`;
+        const topic = topicText(sec);
+        ev.innerHTML = `
+          <strong>${sec.code}</strong>
+          ${topic ? `<span>${escapeHtml(topic)}</span>` : ""}
+          <span>${sec.meets_human || ""}</span>
+        `;
         cell.appendChild(ev);
       });
     });
@@ -475,12 +503,15 @@ function renderSelectedList() {
     container.innerHTML = '<div style="color:#bbb;font-size:0.76rem">No courses added yet</div>';
     return;
   }
-  container.innerHTML = schedule.map((e, i) => `
-    <div class="selected-item">
-      <div class="color-dot" style="background:${e.color}"></div>
-      <span>${e.lecture.code} Sec ${e.lecture.section}${e.recitation ? " + Rct " + e.recitation.section : ""}</span>
-      <button class="remove-btn" onclick="removeEntry(${i})">✕</button>
-    </div>`).join("");
+  container.innerHTML = schedule.map((e, i) => {
+    const topic = topicText(e.lecture);
+    return `
+      <div class="selected-item">
+        <div class="color-dot" style="background:${e.color}"></div>
+        <span>${e.lecture.code} Sec ${e.lecture.section}${topic ? " - " + escapeHtml(topic) : ""}${e.recitation ? " + Rct " + e.recitation.section : ""}</span>
+        <button class="remove-btn" onclick="removeEntry(${i})">✕</button>
+      </div>`;
+  }).join("");
 }
 
 function removeEntry(i) {
@@ -547,8 +578,10 @@ function downloadCalendar() {
         firstDay.setDate(firstDay.getDate() + mt.day_num);
         const dateStr = icsDate(firstDay);
 
-        const summary = escape(`${sec.code}${sec.title ? " – " + sec.title : ""}`);
+        const topic = topicText(sec);
+        const summary = escape(`${sec.code}${sec.title ? " - " + sec.title : ""}${topic ? " - " + topic : ""}`);
         const desc = [
+          topic          ? `Topic: ${topic}` : "",
           sec.instructor ? `Instructor: ${sec.instructor}` : "",
           sec.component  ? `Type: ${sec.component}` : "",
           sec.section    ? `Section: ${sec.section}` : "",

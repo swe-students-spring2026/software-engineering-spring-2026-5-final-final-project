@@ -16,6 +16,20 @@ function timeToFrac(t) {
   return h + m / 60;
 }
 
+function escapeHtml(value) {
+  return String(value || "").replace(/[&<>"']/g, ch => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  }[ch]));
+}
+
+function topicText(section) {
+  return String(section?.topic || "").trim();
+}
+
 function fmt12(t) {
   const [h, m] = t.split(':').map(Number);
   const ampm = h < 12 ? 'am' : 'pm';
@@ -61,8 +75,10 @@ function renderCalendar() {
         const ev = document.createElement("div");
         ev.className = "cal-event";
         ev.style.cssText = `top:${offsetPx}px;height:${heightPx}px;background:${color};opacity:${isRct ? 0.85 : 1};`;
+        const topic = topicText(sec);
         ev.innerHTML = `
           <strong>${sec.code}${isRct ? " Rct" : ""}</strong>
+          ${topic ? `<span class="ev-sub">${escapeHtml(topic)}</span>` : ""}
           <span class="ev-sub">${fmt12(start)}–${fmt12(end)}</span>
           ${sec.instructor ? `<span class="ev-sub">${sec.instructor}</span>` : ""}
         `;
@@ -81,21 +97,25 @@ function renderSidebar() {
     return;
   }
   summary.textContent = `${schedule.length} course${schedule.length !== 1 ? "s" : ""} selected`;
-  container.innerHTML = schedule.map((e, i) => `
-    <div class="course-entry">
-      <div class="course-entry-title">
-        <div class="color-dot" style="background:${e.color}"></div>
-        <span>${e.lecture.code}</span>
-        <button class="remove-btn" onclick="removeEntry(${i})">✕</button>
-      </div>
-      <div class="course-entry-detail">
-        <div><strong>${e.lecture.title}</strong></div>
-        <div>Lecture Sec ${e.lecture.section} · ${e.lecture.meets_human || "TBA"}</div>
-        ${e.lecture.instructor ? `<div>${e.lecture.instructor}</div>` : ""}
-        ${e.recitation ? `<div>Recitation Sec ${e.recitation.section} · ${e.recitation.meets_human || "TBA"}</div>` : ""}
-        ${e.lecture.school ? `<div style="color:#aaa;margin-top:2px">${e.lecture.school}</div>` : ""}
-      </div>
-    </div>`).join("");
+  container.innerHTML = schedule.map((e, i) => {
+    const topic = topicText(e.lecture);
+    return `
+      <div class="course-entry">
+        <div class="course-entry-title">
+          <div class="color-dot" style="background:${e.color}"></div>
+          <span>${e.lecture.code}</span>
+          <button class="remove-btn" onclick="removeEntry(${i})">✕</button>
+        </div>
+        <div class="course-entry-detail">
+          <div><strong>${e.lecture.title}</strong></div>
+          ${topic ? `<div class="course-topic">Topic: ${escapeHtml(topic)}</div>` : ""}
+          <div>Lecture Sec ${e.lecture.section} · ${e.lecture.meets_human || "TBA"}</div>
+          ${e.lecture.instructor ? `<div>${e.lecture.instructor}</div>` : ""}
+          ${e.recitation ? `<div>Recitation Sec ${e.recitation.section} · ${e.recitation.meets_human || "TBA"}</div>` : ""}
+          ${e.lecture.school ? `<div style="color:#aaa;margin-top:2px">${e.lecture.school}</div>` : ""}
+        </div>
+      </div>`;
+  }).join("");
 }
 
 function removeEntry(i) {
@@ -140,8 +160,10 @@ function downloadCalendar() {
         if (mt.day_num < 0 || mt.day_num > 4) return;
         const firstDay = new Date(semMonday);
         firstDay.setDate(firstDay.getDate() + mt.day_num);
-        const summary = escape(`${sec.code}${sec.title ? " – " + sec.title : ""}`);
+        const topic = topicText(sec);
+        const summary = escape(`${sec.code}${sec.title ? " - " + sec.title : ""}${topic ? " - " + topic : ""}`);
         const desc = [
+          topic          ? `Topic: ${topic}` : "",
           sec.instructor ? `Instructor: ${sec.instructor}` : "",
           sec.component  ? `Type: ${sec.component}` : "",
           sec.section    ? `Section: ${sec.section}` : "",

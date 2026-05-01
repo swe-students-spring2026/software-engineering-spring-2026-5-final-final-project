@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -47,6 +48,35 @@ SCHOOL_URL_SEGMENTS = {
     "dentistry": "Dentistry",
 }
 
+# Module-level constants — avoids rebuilding on every call
+_KNOWN_SCHOOLS = (
+    "Arts & Science",
+    "Tandon",
+    "Steinhardt",
+    "Tisch",
+    "Stern",
+    "Wagner",
+    "Global Public Health",
+    "Liberal Studies",
+    "SPS",
+    "Abu Dhabi",
+    "Shanghai",
+    "Nursing",
+    "Gallatin",
+    "Social Work",
+    "Dentistry",
+)
+
+# Matches "YYYY-YYYY" bulletin year tokens (e.g. "2025-2026")
+_BULLETIN_YEAR_RE = re.compile(r"\b(\d{4}-\d{4})\b")
+
+# Use lxml if available — significantly faster than html.parser for large pages
+try:
+    import lxml  # noqa: F401
+    _BS_PARSER = "lxml"
+except ImportError:
+    _BS_PARSER = "html.parser"
+
 
 @dataclass(frozen=True)
 class BulletinProgram:
@@ -69,7 +99,7 @@ class NYUBulletinScraper:
             try:
                 response = self.session.get(url, timeout=self.timeout)
                 response.raise_for_status()
-                return BeautifulSoup(response.text, "html.parser")
+                return BeautifulSoup(response.text, _BS_PARSER)
             except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
                 if attempt == retries - 1:
                     raise
@@ -211,24 +241,7 @@ class NYUBulletinScraper:
         return title.rsplit("(", 1)[-1].rstrip(")").strip() or None
 
     def _extract_school_from_anchor_text(self, text: str) -> str | None:
-        known_schools = [
-            "Arts & Science",
-            "Tandon",
-            "Steinhardt",
-            "Tisch",
-            "Stern",
-            "Wagner",
-            "Global Public Health",
-            "Liberal Studies",
-            "SPS",
-            "Abu Dhabi",
-            "Shanghai",
-            "Nursing",
-            "Gallatin",
-            "Social Work",
-            "Dentistry",
-        ]
-        for school in known_schools:
+        for school in _KNOWN_SCHOOLS:
             if text.endswith(school):
                 return school
         return None
@@ -259,11 +272,16 @@ class NYUBulletinScraper:
         return text_school
 
     def _extract_bulletin_year(self, soup: BeautifulSoup) -> str | None:
-        page_text = self._clean_text(soup.get_text(" ", strip=True))
-        for token in page_text.split():
-            if len(token) == 9 and token[4] == "-" and token[:4].isdigit() and token[5:].isdigit():
-                return token
-        return None
+        # Check high-signal locations first (title, header, nav) before full-page scan
+        for selector in ("title", "header", ".site-header", "nav", ".breadcrumb"):
+            node = soup.select_one(selector)
+            if node:
+                m = _BULLETIN_YEAR_RE.search(node.get_text(" ", strip=True))
+                if m:
+                    return m.group(1)
+        # Fall back to full-page scan — still returns on first match
+        m = _BULLETIN_YEAR_RE.search(soup.get_text(" ", strip=True))
+        return m.group(1) if m else None
 
     def _clean_text(self, value: str) -> str:
         return " ".join(value.split())

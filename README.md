@@ -65,6 +65,7 @@ Workflows run on every push and pull request to `main`/`master`. The Docker imag
 - Environment variables:
   - `MONGO_URI` = your Atlas connection string
   - `MONGO_DB_NAME` = `final_project`
+  - `API_INTERNAL_TOKEN` = same random token used by the frontend
   - `GEMINI_API_KEY` = your Gemini key
   - `GEMINI_MODEL` = `gemini-2.0-flash`
 
@@ -73,6 +74,7 @@ Workflows run on every push and pull request to `main`/`master`. The Docker imag
 - HTTP port: `3000`
 - Environment variables:
   - `API_URL` = the internal URL of the API service (e.g. `http://api-service:8000`)
+  - `API_INTERNAL_TOKEN` = same random token used by the API service
 
 > DigitalOcean injects a `PORT` environment variable automatically. Both services read `PORT` first, then fall back to their own port variable, so no extra config is needed.
 
@@ -163,6 +165,7 @@ cp .env.example .env
 |---|---|---|
 | `MONGO_URI` | `apis`, `scrapers` | Full MongoDB connection string |
 | `MONGO_DB_NAME` | `apis` | Database name, e.g. `final_project` |
+| `API_INTERNAL_TOKEN` | `apis`, `frontend` | Shared token the frontend sends to protected API endpoints |
 | `GEMINI_API_KEY` | `apis` | Google Gemini API key |
 | `GEMINI_MODEL` | `apis` | Model name, default `gemini-2.0-flash` |
 | `API_URL` | `frontend` | Internal URL of the API service |
@@ -176,4 +179,4 @@ cp .env.example .env
 - `frontend/app/main.py` — Frontend entrypoint; proxies class search to the API.
 - `apis/app/ai/` — Gemini AI client, tool-calling loop, and mock tool handlers.
 - `scrapers/scraper.py` — Full scraper CLI; run with `--help` to see all options.
-- Each subsystem has its own `Dockerfile` and `requirements.txt`.
+- Each subsystem has its own `Dockerfile` and runtime `requirements.txt`; API and frontend tests use `requirements-dev.txt`.

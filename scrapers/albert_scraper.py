@@ -13,6 +13,28 @@ from bs4 import BeautifulSoup
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import sync_playwright
 
+# Pre-compiled regexes used in per-row loops
+_COURSE_CODE_RE = re.compile(r"\b[A-Z]{2,5}-[A-Z]{2,3}\s+[A-Z0-9.]+[A-Z]?\b")
+_CLEAN_ALBERT_RE = re.compile(r"\b(?:more|less)\s+description\s+for\s+.*$", re.I)
+_CLEAN_TOKEN_RE = re.compile(r"[^A-Za-z0-9_-]")
+_HEADER_NORMALIZE_RE = re.compile(r"[^a-z0-9& ]+")
+_DATES_LINE_RE = re.compile(r"^\d{1,2}/\d{1,2}/\d{4}\s*-\s*\d{1,2}/\d{1,2}/\d{4}\b")
+
+# Login-page markers — module-level avoids rebuilding the tuple each call
+_LOGIN_MARKERS = (
+    "sign in to albert",
+    "cookies enabled",
+    "login to albert",
+    "recaptcha validation",
+    "verify that you are not a robot",
+)
+
+try:
+    import lxml as _lxml  # noqa: F401
+    _BS_PARSER = "lxml"
+except ImportError:
+    _BS_PARSER = "html.parser"
+
 try:
     from scrapers.scraper import make_id, school_for_subject, split_code
 except ModuleNotFoundError:
@@ -812,16 +834,9 @@ def is_albert_page(page: Any, url: str) -> bool:
 
 
 def is_login_or_cookie_page(page: Any) -> bool:
-    markers = (
-        "sign in to albert",
-        "cookies enabled",
-        "login to albert",
-        "recaptcha validation",
-        "verify that you are not a robot",
-    )
     for frame in iter_accessible_frames(page):
         text = safe_frame_text(frame).lower()
-        if any(marker in text for marker in markers):
+        if any(marker in text for marker in _LOGIN_MARKERS):
             return True
     return False
 
@@ -967,7 +982,7 @@ def extract_table_rows_from_frame(frame: Any) -> list[dict[str, Any]]:
 
 
 def extract_rows_from_html(html: str) -> list[dict[str, Any]]:
-    soup = BeautifulSoup(html, "html.parser")
+    soup = BeautifulSoup(html, _BS_PARSER)
     table_rows: list[dict[str, Any]] = []
 
     for table in soup.select("table"):
@@ -1048,7 +1063,7 @@ def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url:
     docs: list[dict[str, Any]] = []
     # Tracks the last primary (lecture) record's title/term so secondary sections
     # (recitations, discussions) can inherit them when Albert omits the course header.
-    last_primary: dict[str, str] = {"subject_code": "", "catalog_number": "", "title": "", "term": ""}
+    last_primary: dict[str, str] = {"subject_code": "", "catalog_number": "", "title": "", "term": "", "topic": ""}
 
     for index, row in enumerate(rows, start=1):
         code = sanitize_albert_text(row.get("code", ""))
@@ -1064,6 +1079,7 @@ def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url:
         meeting_details = extract_meeting_details(row)
         term = extract_term_label(row, fallback=term_code)
         course_text = extract_course_text(row, code)
+        topic = extract_topic(row)
         notes = extract_notes(row)
         prerequisites = extract_prerequisites(notes)
         title = course_text["title"] or sanitize_albert_text(row.get("title", ""))
@@ -1077,6 +1093,8 @@ def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url:
                 title = last_primary["title"]
             if not term:
                 term = last_primary["term"]
+            if not topic:
+                topic = last_primary["topic"]
 
         if title and term:
             last_primary = {
@@ -1084,6 +1102,7 @@ def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url:
                 "catalog_number": catalog_number,
                 "title": title,
                 "term": term,
+                "topic": topic,
             }
 
         crn = sanitize_albert_text(row.get("crn", ""))
@@ -1104,6 +1123,7 @@ def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url:
                 "catalog_number": catalog_number,
                 "code": code,
                 "title": title,
+                "topic": topic,
                 "description": course_text["description"],
                 "section": section,
                 "crn": crn,
@@ -1128,8 +1148,7 @@ def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url:
 
 
 def make_albert_id(term_code: str, subject: str, catalog: str, section: str) -> str:
-    clean = lambda value: re.sub(r"[^A-Za-z0-9_-]", "", str(value or ""))
-    parts = [clean(part) for part in (term_code, subject, catalog, section)]
+    parts = [_CLEAN_TOKEN_RE.sub("", str(v or "")) for v in (term_code, subject, catalog, section)]
     parts = [part for part in parts if part]
     return "_".join(parts)
 
@@ -1174,7 +1193,7 @@ def extract_prerequisites(notes: str) -> str:
 
 def sanitize_albert_text(value: object) -> str:
     text = clean_text(value)
-    text = re.sub(r"\b(?:more|less)\s+description\s+for\s+.*$", "", text, flags=re.I)
+    text = _CLEAN_ALBERT_RE.sub("", text)
     return clean_text(text)
 
 
@@ -1187,6 +1206,17 @@ def extract_term_label(row: dict[str, Any], *, fallback: str = "") -> str:
             if term:
                 return sanitize_albert_text(term)
     return sanitize_albert_text(fallback)
+
+
+def extract_topic(row: dict[str, Any]) -> str:
+    source_row = row.get("source_row", [])
+    if isinstance(source_row, list):
+        for line in reversed(source_row):
+            text = clean_text(line)
+            topic = find_first(r"^topic:\s*(.+)$", text, flags=re.I)
+            if topic:
+                return sanitize_albert_text(topic)
+    return sanitize_albert_text(row.get("topic", ""))
 
 
 def extract_course_text(row: dict[str, Any], code: str) -> dict[str, str]:
@@ -1256,7 +1286,7 @@ def extract_meeting_details(row: dict[str, Any]) -> dict[str, str]:
         text = clean_text(line)
         if not text:
             continue
-        if not re.match(r"^\d{1,2}/\d{1,2}/\d{4}\s*-\s*\d{1,2}/\d{1,2}/\d{4}\b", text):
+        if not _DATES_LINE_RE.match(text):
             continue
 
         details["dates"] = find_first(
@@ -1382,7 +1412,8 @@ def dedupe_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def find_course_code(text: str) -> str:
-    return find_first(r"\b[A-Z]{2,5}-[A-Z]{2,3}\s+[A-Z0-9.]+[A-Z]?\b", text)
+    m = _COURSE_CODE_RE.search(text)
+    return clean_text(m.group(0)) if m else ""
 
 
 def find_first(pattern: str, text: str, *, flags: int = 0) -> str:
@@ -1394,7 +1425,7 @@ def find_first(pattern: str, text: str, *, flags: int = 0) -> str:
 
 def normalize_header(value: str) -> str:
     value = clean_text(value).lower()
-    value = re.sub(r"[^a-z0-9& ]+", " ", value)
+    value = _HEADER_NORMALIZE_RE.sub(" ", value)
     return clean_text(value)
 
 
