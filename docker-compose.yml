@@ -1,0 +1,27 @@
+services:
+  mongo:
+    image: mongo:latest
+    container_name: mongodb_dockerhub
+    ports:
+      - "27017:27017"
+    env_file:
+      - .env
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+
+  ml-client:
+    build: ./machine-learning-client
+    container_name: ml_client
+    ports:
+      - "5002:5002"
+    env_file:
+      - .env
+
+  web-app:
+    build: ./web-app
+    container_name: web_app
+    ports:
+      - "5001:5001"
+    env_file:
+      - .env
