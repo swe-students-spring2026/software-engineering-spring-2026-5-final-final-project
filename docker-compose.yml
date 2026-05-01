@@ -17,3 +17,11 @@ services:
       - "5002:5002"
     env_file:
       - .env
+
+  web-app:
+    build: ./web-app
+    container_name: web_app
+    ports:
+      - "5001:5001"
+    env_file:
+      - .env
