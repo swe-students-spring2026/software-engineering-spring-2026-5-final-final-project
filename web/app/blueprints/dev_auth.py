@@ -4,7 +4,7 @@ import os
 
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 
-from web.app.db import get_db
+from ..db import get_db
 
 bp = Blueprint("auth", __name__)
 

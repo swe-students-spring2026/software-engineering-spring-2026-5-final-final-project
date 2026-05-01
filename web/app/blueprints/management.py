@@ -5,8 +5,8 @@ from datetime import datetime, timezone
 from bson import ObjectId
 from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
 
-from web.app.db import get_db
-from web.app.utils.auth import login_required, require_poster
+from ..db import get_db
+from ..utils.auth import login_required, require_poster
 
 bp = Blueprint("management", __name__)
 
