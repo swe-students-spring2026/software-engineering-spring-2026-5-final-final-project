@@ -1,6 +1,9 @@
 from flask import Flask, render_template, redirect, request
+import logging
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required
 import json
+import os
+import requests
 from datetime import datetime
 from bson.objectid import ObjectId
 import pymongo
@@ -11,6 +14,7 @@ import requests
 mongo = MongoWrapper()
 ML_SERVICE_URL = "http://ml-client:5002/analyze"
 app = Flask(__name__)
+logger = logging.getLogger(__name__)
 app.secret_key = 'lacewing squad'
 
 overdue = []
@@ -46,7 +50,6 @@ def request_loader(request):
     user.id = username
     return user
 
-
 @app.route('/')
 @login_required
 def index():
@@ -69,26 +72,29 @@ def index():
 def submit_new_task():
     data = request.json
 
-    ml_response = requests.post(ML_SERVICE_URL, json={
-        "title": data.get("title"),
-        "course": data.get("course"),
-        "description": data.get("description"),
-        "due_date": data.get("due_date")
-    })
+    try:
+        ml_response = requests.post(ML_SERVICE_URL, json={
+            "title": data.get("title"),
+            "course": data.get("course"),
+            "description": data.get("description"),
+            "due_date": data.get("due_date")
+        })
+        ml_data = ml_response.json()
 
-    ml_data = ml_response.json()
-
-    mongo.add_assignment(
-        user_email="test_user",
-        title=data.get("title"),
-        course=data.get("course"),
-        description=data.get("description"),
-        due_date=datetime.strptime(data.get("due_date"), "%Y-%m-%d"),
-        estimated_hours=ml_data.get("estimated_hours"),
-        difficulty=ml_data.get("difficulty"),
-        priority=ml_data.get("priority"),
-        status="upcoming"
-    )
+        mongo.add_assignment(
+            user_email="test_user",
+            title=data.get("title"),
+            course=data.get("course"),
+            description=data.get("description"),
+            due_date=datetime.strptime(data.get("due_date"), "%Y-%m-%d"),
+            estimated_hours=ml_data.get("estimated_hours"),
+            difficulty=ml_data.get("difficulty"),
+            priority=ml_data.get("priority"),
+            status="upcoming"
+        )
+    except Exception as e:
+        logger.exception("ML service request failed: %s", e)
+        return json.dumps({'status': 'error', 'message': 'Failed to analyze assignment'})
 
     return json.dumps({"status": "success"})
 
@@ -140,7 +146,6 @@ def task_detail(task_id):
 
     return render_template('detail.html', task=task)
 
-
 @app.route('/task/<int:task_id>/edit', methods=['GET', 'POST'])
 def edit_task(task_id):
     task = find_task(task_id)
@@ -157,7 +162,6 @@ def edit_task(task_id):
         return redirect(f'/task/{task_id}')
     
     return render_template('edit.html', task=task)
-
 
 @app.route('/complete_task/<int:task_id>')
 def complete_task(task_id):
@@ -181,8 +185,6 @@ def complete_task(task_id):
 def logout():
     logout_user()
     return 'Logged out'
-
-
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001)
