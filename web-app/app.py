@@ -1,5 +1,5 @@
 from flask import Flask, render_template, redirect, request
-from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required
 import json
 from datetime import datetime
 
@@ -161,6 +161,11 @@ def complete_task(task_id):
     completed.append(task)
     
     return redirect('/')
+
+@app.route('/logout')
+def logout():
+    logout_user()
+    return 'Logged out'
 
 
 
