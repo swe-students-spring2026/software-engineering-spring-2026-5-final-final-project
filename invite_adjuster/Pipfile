@@ -9,6 +9,7 @@ requests = "*"
 pytz = "*"
 python-dateutil = "*"
 flask = "*"
+pymongo = "*"
 
 [dev-packages]
 
