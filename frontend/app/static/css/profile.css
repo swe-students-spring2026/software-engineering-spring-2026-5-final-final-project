@@ -246,6 +246,72 @@ input[disabled] {
     margin-top: 8px;
 }
 
+.course-picker {
+    margin-bottom: 14px;
+}
+
+.course-picker-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.course-picker-row input {
+    flex: 1;
+}
+
+.course-picker-hint {
+    margin-top: 6px;
+    font-size: 0.75rem;
+    color: #888;
+}
+
+.course-picker-status {
+    min-height: 18px;
+    margin-top: 4px;
+    font-size: 0.75rem;
+    color: #c00;
+}
+
+.course-suggestions {
+    margin-top: 8px;
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+.course-suggestion {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    text-align: left;
+    padding: 10px 12px;
+    border: 1px solid #e5d7ef;
+    border-radius: 8px;
+    background: #fff;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.course-suggestion:hover {
+    background: #faf5ff;
+    border-color: #c9a7e0;
+    transform: translateY(-1px);
+}
+
+.course-suggestion strong {
+    font-size: 0.82rem;
+    color: #57068c;
+}
+
+.course-suggestion span {
+    font-size: 0.76rem;
+    color: #666;
+}
+
 .course-tag {
     background: #f0e6f7;
     color: #57068c;
