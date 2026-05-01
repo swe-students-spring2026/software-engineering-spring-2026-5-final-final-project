@@ -50,6 +50,19 @@ def test_enrich_classes_with_professor_ratings_adds_multiple_ratings():
     ]
 
 
+def test_enrich_does_not_mutate_input():
+    original = {"instructor": "Joanna Klukowska", "code": "CSCI-UA 102"}
+    courses = [original]
+    rating = {"rating": 3.3, "url": "https://www.ratemyprofessors.com/professor/1"}
+
+    with patch("app.services.professor_ratings.lookup_professor_rating", return_value=rating):
+        result = enrich_classes_with_professor_ratings(courses)
+
+    # Original dict must be untouched
+    assert "professor_rating" not in original
+    assert result[0]["professor_rating"] == rating
+
+
 def test_lookup_professor_rating_parses_search_results():
     html = """
     <html><body>
@@ -64,7 +77,7 @@ def test_lookup_professor_rating_parses_search_results():
     response.raise_for_status.return_value = None
 
     lookup_professor_rating.cache_clear()
-    with patch("app.services.professor_ratings.requests.get", return_value=response):
+    with patch("app.services.professor_ratings._rmp_get", return_value=response):
         result = lookup_professor_rating("Klukowska, Joanna")
 
     assert result == {
@@ -95,7 +108,7 @@ def test_lookup_professor_rating_retries_with_general_nyu_search():
     fallback_response.raise_for_status.return_value = None
 
     lookup_professor_rating.cache_clear()
-    with patch("app.services.professor_ratings.requests.get", side_effect=[empty_response, fallback_response]) as mock_get:
+    with patch("app.services.professor_ratings._rmp_get", side_effect=[empty_response, fallback_response]) as mock_get:
         result = lookup_professor_rating("Klukowska, Joanna")
 
     assert mock_get.call_count == 2

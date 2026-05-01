@@ -21,6 +21,20 @@ function timeToFrac(t) {
     return h + m / 60;
 }
 
+function escapeHtml(value) {
+  return String(value || "").replace(/[&<>"']/g, ch => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  }[ch]));
+}
+
+function topicText(section) {
+  return String(section?.topic || "").trim();
+}
+
 // ── Calendar collapse ──
 let calCollapsed = false;
 function toggleCalendar() {
@@ -108,26 +122,28 @@ function renderSection(c, isRct) {
           onclick="handleRemoveByCrn('${c.crn}')"
           onmouseenter="this.textContent='Remove'"
           onmouseleave="this.textContent='Added'">Added</button>`
-        : `<button class="add-btn" onclick="handleAdd('${c.crn}')">Add</button>`;
-    const ratings = Array.isArray(c.professor_ratings) && c.professor_ratings.length
-        ? c.professor_ratings
-        : (c.professor_rating ? [c.professor_rating] : []);
-    const ratingHtml = ratings.map(rating => {
-        const ratingParts = [];
-        if (rating && typeof rating.rating === "number") ratingParts.push(`RMP ${rating.rating.toFixed(1)}/5`);
-        if (rating && typeof rating.rating_count === "number") ratingParts.push(`${rating.rating_count} ratings`);
-        if (rating && typeof rating.would_take_again_percent === "number") ratingParts.push(`${rating.would_take_again_percent}% again`);
-        if (!rating || !rating.url || !ratingParts.length) return "";
-        const label = rating.found_name && ratings.length > 1 ? `${rating.found_name}: ` : "";
-        return `<div class="section-rating"><a href="${rating.url}" target="_blank" rel="noopener noreferrer">${label}${ratingParts.join(" · ")}</a></div>`;
-    }).join("");
-    const instructorLinks = (c.instructor || "")
-        .split(/\s*(?:;|\/|\||&| and )\s*/i)
-        .map(name => name.trim())
-        .filter(Boolean)
-        .map(name => `<a class="instructor-link" href="/professor?name=${encodeURIComponent(name)}">${name}</a>`)
-        .join(" · ");
-    return `
+    : `<button class="add-btn" onclick="handleAdd('${c.crn}')">Add</button>`;
+  const ratings = Array.isArray(c.professor_ratings) && c.professor_ratings.length
+    ? c.professor_ratings
+    : (c.professor_rating ? [c.professor_rating] : []);
+  const ratingHtml = ratings.map(rating => {
+    const ratingParts = [];
+    if (rating && typeof rating.rating === "number") ratingParts.push(`RMP ${rating.rating.toFixed(1)}/5`);
+    if (rating && typeof rating.rating_count === "number") ratingParts.push(`${rating.rating_count} ratings`);
+    if (rating && typeof rating.would_take_again_percent === "number") ratingParts.push(`${rating.would_take_again_percent}% again`);
+    if (!rating || !rating.url || !ratingParts.length) return "";
+    const label = rating.found_name && ratings.length > 1 ? `${rating.found_name}: ` : "";
+    return `<div class="section-rating"><a href="${rating.url}" target="_blank" rel="noopener noreferrer">${label}${ratingParts.join(" · ")}</a></div>`;
+  }).join("");
+  const topic = topicText(c);
+  const topicHtml = topic ? `<span class="section-topic">Topic: ${escapeHtml(topic)}</span>` : "";
+  const instructorLinks = (c.instructor || "")
+    .split(/\s*(?:;|\/|\||&| and )\s*/i)
+    .map(name => name.trim())
+    .filter(Boolean)
+    .map(name => `<a class="instructor-link" href="/professor?name=${encodeURIComponent(name)}">${name}</a>`)
+    .join(" · ");
+  return `
     <div class="section-row${isRct ? " rct-row" : ""}" data-crn="${c.crn}">
       <div class="section-left">
         <span class="section-type">${c.component || ""}</span>
@@ -135,6 +151,7 @@ function renderSection(c, isRct) {
         ${c.location ? `<span class="section-loc">${c.location}</span>` : ""}
       </div>
       <div class="section-mid">
+        ${topicHtml}
         ${instructorLinks ? `<span><strong>${instructorLinks}</strong></span>` : ""}
         ${ratingHtml}
         ${c.meets_human ? `<span>${c.meets_human}</span>` : ""}
@@ -419,11 +436,17 @@ function addToSchedule(lecture, recitation) {
 
 // ── Modal ──
 function openModal(lecture, rcts) {
-    pendingLecture = lecture; pendingRcts = rcts; selectedRct = null;
-    document.getElementById("modal-title").textContent = `${lecture.code} — ${lecture.title}`;
-    document.getElementById("modal-subtitle").textContent = `Lecture Sec ${lecture.section} · ${lecture.meets_human || ""} — Pick a recitation:`;
-    document.getElementById("modal-confirm").disabled = true;
-    document.getElementById("modal-rct-list").innerHTML = rcts.map((r, i) => `
+  pendingLecture = lecture; pendingRcts = rcts; selectedRct = null;
+  document.getElementById("modal-title").textContent = `${lecture.code} — ${lecture.title}`;
+  const topic = topicText(lecture);
+  const details = [
+    `Lecture Sec ${lecture.section}`,
+    topic ? `Topic: ${topic}` : "",
+    lecture.meets_human || "",
+  ].filter(Boolean).join(" | ");
+  document.getElementById("modal-subtitle").textContent = `${details} - Pick a recitation:`;
+  document.getElementById("modal-confirm").disabled = true;
+  document.getElementById("modal-rct-list").innerHTML = rcts.map((r, i) => `
     <div class="modal-rct-row" onclick="selectRct(${i})" id="rct-opt-${i}">
       <span><strong>Sec ${r.section}</strong> &nbsp; ${r.meets_human || "TBA"}</span>
       <span style="color:#888;font-size:0.78rem">${r.instructor || ""}${r.campus_location ? " · " + r.campus_location : ""}</span>
@@ -469,31 +492,43 @@ function renderCalendar() {
         grid.innerHTML += `<div class="cal-empty">Add courses to see them here</div>`;
         return;
     }
+  }
 
-    schedule.forEach(({ lecture, recitation, color }) => {
-        [lecture, recitation].filter(Boolean).forEach(sec => {
-            getMeetingSlots(sec).forEach(({ dayIdx, start, end }) => {
-                const startFrac = timeToFrac(start);
-                const endFrac = timeToFrac(end);
-                const hourCell = Math.floor(startFrac);
-                if (hourCell < HOUR_START || hourCell >= HOUR_END) return;
+  grid.innerHTML = html;
 
-                const cell = grid.querySelector(`[data-day="${dayIdx}"][data-hour="${hourCell}"]`);
-                if (!cell) return;
+  if (schedule.length === 0) {
+    grid.innerHTML += `<div class="cal-empty">Add courses to see them here</div>`;
+    return;
+  }
 
-                const offsetPx = (startFrac - hourCell) * PX_PER_HOUR;
-                const heightPx = (endFrac - startFrac) * PX_PER_HOUR;
+  schedule.forEach(({ lecture, recitation, color }) => {
+    [lecture, recitation].filter(Boolean).forEach(sec => {
+      getMeetingSlots(sec).forEach(({ dayIdx, start, end }) => {
+        const startFrac = timeToFrac(start);
+        const endFrac   = timeToFrac(end);
+        const hourCell  = Math.floor(startFrac);
+        if (hourCell < HOUR_START || hourCell >= HOUR_END) return;
 
-                const ev = document.createElement("div");
-                ev.className = "cal-event";
-                ev.dataset.dayIdx = dayIdx;
-                ev.dataset.start = startFrac;
-                ev.dataset.end = endFrac;
-                ev.style.cssText = `top:${offsetPx}px;height:${heightPx}px;background:${color};`;
-                ev.innerHTML = `<strong>${sec.code}</strong><span>${sec.meets_human || ""}</span>`;
-                cell.appendChild(ev);
-            });
-        });
+        const cell = grid.querySelector(`[data-day="${dayIdx}"][data-hour="${hourCell}"]`);
+        if (!cell) return;
+
+        const offsetPx  = (startFrac - hourCell) * PX_PER_HOUR;
+        const heightPx  = (endFrac - startFrac) * PX_PER_HOUR;
+
+        const ev = document.createElement("div");
+        ev.className = "cal-event";
+        ev.dataset.dayIdx = dayIdx;
+        ev.dataset.start = startFrac;
+        ev.dataset.end = endFrac;
+        ev.style.cssText = `top:${offsetPx}px;height:${heightPx}px;background:${color};`;
+        const topic = topicText(sec);
+        ev.innerHTML = `
+          <strong>${sec.code}</strong>
+          ${topic ? `<span>${escapeHtml(topic)}</span>` : ""}
+          <span>${sec.meets_human || ""}</span>
+        `;
+        cell.appendChild(ev);
+      });
     });
 
     // Highlight conflicts
@@ -511,17 +546,20 @@ function renderCalendar() {
 }
 
 function renderSelectedList() {
-    const container = document.getElementById("selected-list-items");
-    if (schedule.length === 0) {
-        container.innerHTML = '<div style="color:#bbb;font-size:0.76rem">No courses added yet</div>';
-        return;
-    }
-    container.innerHTML = schedule.map((e, i) => `
-    <div class="selected-item">
-      <div class="color-dot" style="background:${e.color}"></div>
-      <span>${e.lecture.code} Sec ${e.lecture.section}${e.recitation ? " + Rct " + e.recitation.section : ""}</span>
-      <button class="remove-btn" onclick="removeEntry(${i})">✕</button>
-    </div>`).join("");
+  const container = document.getElementById("selected-list-items");
+  if (schedule.length === 0) {
+    container.innerHTML = '<div style="color:#bbb;font-size:0.76rem">No courses added yet</div>';
+    return;
+  }
+  container.innerHTML = schedule.map((e, i) => {
+    const topic = topicText(e.lecture);
+    return `
+      <div class="selected-item">
+        <div class="color-dot" style="background:${e.color}"></div>
+        <span>${e.lecture.code} Sec ${e.lecture.section}${topic ? " - " + escapeHtml(topic) : ""}${e.recitation ? " + Rct " + e.recitation.section : ""}</span>
+        <button class="remove-btn" onclick="removeEntry(${i})">✕</button>
+      </div>`;
+  }).join("");
 }
 
 function removeEntry(i) {
@@ -544,71 +582,72 @@ document.getElementById("modal").addEventListener("click", e => { if (e.target =
 
 // ── Export .ics ──
 function downloadCalendar() {
-    if (schedule.length === 0) { alert("No courses in your schedule to export."); return; }
+  if (schedule.length === 0) { alert("No courses in your schedule to export."); return; }
 
-    const term = document.getElementById("term").value;
-    const SEMESTERS = {
-        "1264": { name: "Spring 2026", monday: [2026, 0, 26], until: "20260515T235959Z" },
-        "1266": { name: "Summer 2026", monday: [2026, 4, 18], until: "20260814T235959Z" },
-        "1268": { name: "Fall 2026", monday: [2026, 8, 7], until: "20261218T235959Z" },
-    };
-    const sem = SEMESTERS[term] || SEMESTERS["1268"];
-    const semMonday = new Date(sem.monday[0], sem.monday[1], sem.monday[2]);
-    const DAY_CODES = ["MO", "TU", "WE", "TH", "FR"];
+  const term = document.getElementById("term").value;
+  const SEMESTERS = {
+    "1264": { name: "Spring 2026", monday: [2026, 0, 26], until: "20260515T235959Z" },
+    "1266": { name: "Summer 2026", monday: [2026, 4, 18], until: "20260814T235959Z" },
+    "1268": { name: "Fall 2026",   monday: [2026, 8,  7], until: "20261218T235959Z" },
+  };
+  const sem = SEMESTERS[term] || SEMESTERS["1268"];
+  const semMonday = new Date(sem.monday[0], sem.monday[1], sem.monday[2]);
+  const DAY_CODES = ["MO", "TU", "WE", "TH", "FR"];
 
-    function pad2(n) { return String(n).padStart(2, "0"); }
-    function icsDate(date) {
-        return `${date.getFullYear()}${pad2(date.getMonth() + 1)}${pad2(date.getDate())}`;
-    }
-    function icsTime(hhmm) {
-        return hhmm.replace(":", "") + "00";
-    }
-    function escape(s) {
-        return (s || "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n");
-    }
+  function pad2(n) { return String(n).padStart(2, "0"); }
+  function icsDate(date) {
+    return `${date.getFullYear()}${pad2(date.getMonth() + 1)}${pad2(date.getDate())}`;
+  }
+  function icsTime(hhmm) {
+    return hhmm.replace(":", "") + "00";
+  }
+  function escape(s) {
+    return (s || "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n");
+  }
 
-    const lines = [
-        "BEGIN:VCALENDAR",
-        "VERSION:2.0",
-        "PRODID:-//NYU Course Planner//EN",
-        "CALSCALE:GREGORIAN",
-        `X-WR-CALNAME:NYU ${sem.name} Schedule`,
-        "X-WR-TIMEZONE:America/New_York",
-    ];
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//NYU Course Planner//EN",
+    "CALSCALE:GREGORIAN",
+    `X-WR-CALNAME:NYU ${sem.name} Schedule`,
+    "X-WR-TIMEZONE:America/New_York",
+  ];
 
-    let uid = 0;
-    schedule.forEach(({ lecture, recitation }) => {
-        [lecture, recitation].filter(Boolean).forEach(sec => {
-            (sec.meeting_times || []).forEach(mt => {
-                if (!mt.start || !mt.end || typeof mt.day_num !== "number") return;
-                if (mt.day_num < 0 || mt.day_num > 4) return;
+  let uid = 0;
+  schedule.forEach(({ lecture, recitation }) => {
+    [lecture, recitation].filter(Boolean).forEach(sec => {
+      (sec.meeting_times || []).forEach(mt => {
+        if (!mt.start || !mt.end || typeof mt.day_num !== "number") return;
+        if (mt.day_num < 0 || mt.day_num > 4) return;
 
-                // First occurrence = semester Monday + day offset
-                const firstDay = new Date(semMonday);
-                firstDay.setDate(firstDay.getDate() + mt.day_num);
-                const dateStr = icsDate(firstDay);
+        // First occurrence = semester Monday + day offset
+        const firstDay = new Date(semMonday);
+        firstDay.setDate(firstDay.getDate() + mt.day_num);
+        const dateStr = icsDate(firstDay);
 
-                const summary = escape(`${sec.code}${sec.title ? " – " + sec.title : ""}`);
-                const desc = [
-                    sec.instructor ? `Instructor: ${sec.instructor}` : "",
-                    sec.component ? `Type: ${sec.component}` : "",
-                    sec.section ? `Section: ${sec.section}` : "",
-                    sec.crn ? `Class#: ${sec.crn}` : "",
-                ].filter(Boolean).map(escape).join("\\n");
+        const topic = topicText(sec);
+        const summary = escape(`${sec.code}${sec.title ? " - " + sec.title : ""}${topic ? " - " + topic : ""}`);
+        const desc = [
+          topic          ? `Topic: ${topic}` : "",
+          sec.instructor ? `Instructor: ${sec.instructor}` : "",
+          sec.component  ? `Type: ${sec.component}` : "",
+          sec.section    ? `Section: ${sec.section}` : "",
+          sec.crn        ? `Class#: ${sec.crn}` : "",
+        ].filter(Boolean).map(escape).join("\\n");
 
-                lines.push(
-                    "BEGIN:VEVENT",
-                    `UID:nyu-${sec.crn}-${mt.day_num}-${++uid}@nyu-planner`,
-                    `SUMMARY:${summary}`,
-                    `DTSTART;TZID=America/New_York:${dateStr}T${icsTime(mt.start)}`,
-                    `DTEND;TZID=America/New_York:${dateStr}T${icsTime(mt.end)}`,
-                    `RRULE:FREQ=WEEKLY;BYDAY=${DAY_CODES[mt.day_num]};UNTIL=${sem.until}`,
-                    ...(desc ? [`DESCRIPTION:${desc}`] : []),
-                    ...(sec.location ? [`LOCATION:${escape(sec.location)}`] : []),
-                    "END:VEVENT",
-                );
-            });
-        });
+        lines.push(
+          "BEGIN:VEVENT",
+          `UID:nyu-${sec.crn}-${mt.day_num}-${++uid}@nyu-planner`,
+          `SUMMARY:${summary}`,
+          `DTSTART;TZID=America/New_York:${dateStr}T${icsTime(mt.start)}`,
+          `DTEND;TZID=America/New_York:${dateStr}T${icsTime(mt.end)}`,
+          `RRULE:FREQ=WEEKLY;BYDAY=${DAY_CODES[mt.day_num]};UNTIL=${sem.until}`,
+          ...(desc ? [`DESCRIPTION:${desc}`] : []),
+          ...(sec.location ? [`LOCATION:${escape(sec.location)}`] : []),
+          "END:VEVENT",
+        );
+      });
     });
 
     lines.push("END:VCALENDAR");

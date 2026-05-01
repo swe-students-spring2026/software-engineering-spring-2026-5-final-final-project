@@ -38,6 +38,7 @@ except Exception:
     )
 
 from app.services.professor_ratings import build_professor_profile, enrich_classes_with_professor_ratings
+from app.services.terms import flexible_term_filter
 
 _db = None
 
@@ -172,28 +173,25 @@ def search_courses(
     component: str = "",
     limit: int = 20,
 ) -> dict[str, Any]:
-    """Search course catalog in MongoDB."""
+    """Search course catalog in MongoDB. Uses $text index for keyword queries."""
     if _db is None:
         return {"error": "Database not initialized"}
 
     conditions: list[dict] = []
 
     if term:
-        conditions.append({"term.code": term})
+        conditions.append(flexible_term_filter(term))
     if component:
-        conditions.append({"component": {"$regex": component, "$options": "i"}})
+        # Exact match — component values are controlled vocabulary
+        conditions.append({"component": component})
     if department:
         conditions.append({"$or": [
             {"subject_code": {"$regex": department, "$options": "i"}},
             {"code": {"$regex": department, "$options": "i"}},
         ]})
     if query:
-        conditions.append({"$or": [
-            {"title": {"$regex": query, "$options": "i"}},
-            {"code": {"$regex": query, "$options": "i"}},
-            {"description": {"$regex": query, "$options": "i"}},
-            {"prerequisites": {"$regex": query, "$options": "i"}},
-        ]})
+        # $text uses the existing text index (title + code + description)
+        conditions.append({"$text": {"$search": query}})
 
     if len(conditions) > 1:
         filter_query: dict = {"$and": conditions}
@@ -208,7 +206,7 @@ def search_courses(
             "_id": 0, "code": 1, "title": 1, "description": 1, "credits": 1,
             "school": 1, "subject_code": 1, "component": 1, "section": 1,
             "crn": 1, "instructor": 1, "meets_human": 1, "status": 1,
-            "term": 1, "prerequisites": 1,
+            "term": 1, "topic": 1, "prerequisites": 1,
         },
     ).limit(limit))
 
@@ -217,7 +215,7 @@ def search_courses(
 
 
 def get_course_sections(course_code: str, term: str = "") -> dict[str, Any]:
-    """Get all sections matching a course code or title from MongoDB."""
+    """Get all sections matching a course code or title from MongoDB (capped at 50)."""
     if _db is None:
         return {"error": "Database not initialized"}
 
@@ -226,7 +224,7 @@ def get_course_sections(course_code: str, term: str = "") -> dict[str, Any]:
         {"title": {"$regex": course_code, "$options": "i"}},
     ]}
     if term:
-        query: dict = {"$and": [or_clause, {"term.code": term}]}
+        query: dict = {"$and": [or_clause, flexible_term_filter(term)]}
     else:
         query = or_clause
 
@@ -236,9 +234,9 @@ def get_course_sections(course_code: str, term: str = "") -> dict[str, Any]:
             "_id": 0, "code": 1, "title": 1, "section": 1, "crn": 1,
             "instructor": 1, "meets_human": 1, "meeting_times": 1,
             "status": 1, "component": 1, "instructional_method": 1,
-            "campus_location": 1, "credits": 1, "notes": 1, "prerequisites": 1,
+            "campus_location": 1, "credits": 1, "topic": 1, "notes": 1, "prerequisites": 1,
         },
-    ))
+    ).limit(50))
 
     sections = enrich_classes_with_professor_ratings(sections)
     return {"course_code": course_code, "sections": sections, "count": len(sections)}

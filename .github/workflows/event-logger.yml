@@ -20,10 +20,10 @@ jobs:
       PR_CREATED_AT: ${{ github.event.pull_request.created_at}}
       PR_CLOSED_AT: ${{ github.event.pull_request.closed_at}}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0 # this is important so git fetches all history.. the actions/checkout by default fetches all history as one commit which throws off stats
-      - uses: actions/setup-python@v3
+      - uses: actions/setup-python@v6
         with:
           python-version: "^3.9"
       - name: Install dependencies

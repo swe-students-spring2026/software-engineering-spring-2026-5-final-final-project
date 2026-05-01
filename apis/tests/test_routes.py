@@ -30,6 +30,23 @@ class TestClassesRoute:
         assert "classes" in data
         assert isinstance(data["classes"], list)
 
+    def test_get_classes_returns_top_level_topic(self, client, mock_db):
+        with patch.object(mock_db.classes, "aggregate", return_value=[
+            {"total": [{"n": 1}], "page_codes": [{"_id": "CORE-UA 400"}]}
+        ]), patch.object(mock_db.classes, "find", return_value=[
+            {
+                "code": "CORE-UA 400",
+                "title": "Texts and Ideas",
+                "topic": "The Black Radical Tradition",
+                "source": {"raw_row": ["Topic: The Black Radical Tradition"]},
+            }
+        ]):
+            res = client.get("/classes")
+
+        data = res.get_json()
+        assert data["classes"][0]["topic"] == "The Black Radical Tradition"
+        assert "source" not in data["classes"][0]
+
     def test_get_classes_enriches_professor_ratings(self, client, mock_db):
         mock_db.classes.find.return_value = [{"title": "Algorithms", "instructor": "Joanna Klukowska"}]
         with patch("app.main.enrich_classes_with_professor_ratings", return_value=[
@@ -47,58 +64,65 @@ class TestClassesRoute:
         mock_db.classes.find.return_value = []
         res = client.get("/classes?term=1268")
         assert res.status_code == 200
-        query = mock_db.classes.find.call_args[0][0]
-        assert query.get("term") == "Fall 2026"
+        match = mock_db.classes.aggregate.call_args[0][0][0]["$match"]
+        assert match.get("term") == "Fall 2026"
+
+    def test_get_classes_with_future_term_filter(self, client, mock_db):
+        mock_db.classes.find.return_value = []
+        res = client.get("/classes?term=1272")
+        assert res.status_code == 200
+        match = mock_db.classes.aggregate.call_args[0][0][0]["$match"]
+        assert match.get("term") == "Winter 2027"
 
     def test_get_classes_with_query_filter(self, client, mock_db):
         mock_db.classes.find.return_value = []
         res = client.get("/classes?q=algorithms")
         assert res.status_code == 200
-        query = mock_db.classes.find.call_args[0][0]
-        assert "$or" in query
+        match = mock_db.classes.aggregate.call_args[0][0][0]["$match"]
+        assert "$or" in match
 
     def test_get_classes_with_term_and_query(self, client, mock_db):
         mock_db.classes.find.return_value = []
         res = client.get("/classes?term=1268&q=CS")
         assert res.status_code == 200
-        query = mock_db.classes.find.call_args[0][0]
-        assert query.get("term") == "Fall 2026"
-        assert "$or" in query
+        match = mock_db.classes.aggregate.call_args[0][0][0]["$match"]
+        assert match.get("term") == "Fall 2026"
+        assert "$or" in match
 
     def test_get_classes_with_school_filter(self, client, mock_db):
         mock_db.classes.find.return_value = []
         res = client.get("/classes?school=CAS")
         assert res.status_code == 200
-        query = mock_db.classes.find.call_args[0][0]
-        assert "school" in query
+        match = mock_db.classes.aggregate.call_args[0][0][0]["$match"]
+        assert "school" in match
 
     def test_get_classes_with_component_filter(self, client, mock_db):
         mock_db.classes.find.return_value = []
         res = client.get("/classes?component=Lecture")
         assert res.status_code == 200
-        query = mock_db.classes.find.call_args[0][0]
-        assert "component" in query
+        match = mock_db.classes.aggregate.call_args[0][0][0]["$match"]
+        assert "component" in match
 
     def test_get_classes_with_status_open_filter(self, client, mock_db):
         mock_db.classes.find.return_value = []
         res = client.get("/classes?status=open")
         assert res.status_code == 200
-        query = mock_db.classes.find.call_args[0][0]
-        assert "status" in query
+        match = mock_db.classes.aggregate.call_args[0][0][0]["$match"]
+        assert "status" in match
 
     def test_get_classes_with_status_waitlist_filter(self, client, mock_db):
         mock_db.classes.find.return_value = []
         res = client.get("/classes?status=waitlist")
         assert res.status_code == 200
-        query = mock_db.classes.find.call_args[0][0]
-        assert query["status"]["$regex"].startswith("^wait")
+        match = mock_db.classes.aggregate.call_args[0][0][0]["$match"]
+        assert match["status"]["$regex"].startswith("^wait")
 
     def test_get_classes_instructor_flexible_match(self, client, mock_db):
         mock_db.classes.find.return_value = []
         res = client.get("/classes?q=Spathis+Promethee")
         assert res.status_code == 200
-        query = mock_db.classes.find.call_args[0][0]
-        instructor_regex = next(c["instructor"]["$regex"] for c in query["$or"] if "instructor" in c)
+        match = mock_db.classes.aggregate.call_args[0][0][0]["$match"]
+        instructor_regex = next(c["instructor"]["$regex"] for c in match["$or"] if "instructor" in c)
         assert ".*" in instructor_regex
 
     def test_get_classes_uses_bulletin_collection_when_requested(self, client):
@@ -113,8 +137,8 @@ class TestClassesRoute:
 
         assert res.status_code == 200
         mock_db.__getitem__.assert_called_with("bulletin_classes")
-        query = bulletin_collection.find.call_args[0][0]
-        assert query["term.code"] == "1268"
+        match = bulletin_collection.aggregate.call_args[0][0][0]["$match"]
+        assert match["term.code"] == "1268"
 
     def test_get_classes_rejects_unknown_source(self, client):
         res = client.get("/classes?source=bad")
@@ -133,7 +157,7 @@ class TestClassesRoute:
         }
 
         with patch("app.main.db", mock_db):
-            with patch("app.main._load_bulletin_course_refresher", return_value=MagicMock(return_value=doc)):
+            with patch("app.main._BULLETIN_REFRESH", return_value=doc):
                 res = client.post("/classes/reload", json={"term": "1268", "code": "CSCI-UA 101", "section": "001"})
 
         assert res.status_code == 200
@@ -188,7 +212,8 @@ class TestProfessorsRoute:
         assert res.status_code == 400
 
     def test_get_professor_profile_returns_404_when_missing(self, client, mock_db):
-        mock_db.classes.find.return_value = []
+        mock_db.classes.find.return_value = MagicMock()
+        mock_db.classes.find.return_value.limit.return_value = []
         res = client.get("/professors/profile?name=Nobody")
         assert res.status_code == 404
 
@@ -306,6 +331,13 @@ class TestAuthGoogleRoute:
 
 
 class TestUserProfileRoute:
+    def test_get_profile_rejects_bad_internal_token(self, client):
+        res = client.get(
+            "/user/profile?email=user@nyu.edu",
+            headers={"X-Internal-API-Token": "wrong-token"},
+        )
+        assert res.status_code == 403
+
     def test_get_profile_missing_email_returns_400(self, client):
         res = client.get("/user/profile")
         assert res.status_code == 400
@@ -372,7 +404,7 @@ class TestUploadTranscriptRoute:
         fake_reader = MagicMock()
         fake_reader.pages = [fake_page]
         with patch("pypdf.PdfReader", return_value=fake_reader):
-            with patch("app.ai.service.parse_transcript", return_value={"completed": ["CSCI-UA 101", "MATH-UA 123"], "current": [], "course_credits": {"CSCI-UA 101": 4, "MATH-UA 123": 4}}):
+            with patch("app.services.transcript_parser.parse_transcript", return_value={"completed": ["CSCI-UA 101", "MATH-UA 123"], "current": [], "course_credits": {"CSCI-UA 101": 4, "MATH-UA 123": 4}}):
                 res = client.post(
                     "/user/transcript",
                     data={"email": "user@nyu.edu", "transcript": (BytesIO(b"%PDF-1.4"), "t.pdf", "application/pdf")},

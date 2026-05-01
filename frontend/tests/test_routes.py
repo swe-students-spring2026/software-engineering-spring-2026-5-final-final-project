@@ -155,6 +155,11 @@ class TestClassesProxy:
             res = client.get("/api/classes")
         assert res.status_code == 500
 
+    def test_backend_unavailable_returns_502(self, client):
+        with patch("app.main.requests.get", side_effect=Exception("network error")):
+            res = client.get("/api/classes")
+        assert res.status_code == 502
+
     def test_proxies_course_reload(self, client):
         payload = {"course": {"code": "CSCI-UA 101"}, "source": "bulletin"}
         with patch("app.main.requests.post", return_value=_mock_response(payload)) as mock_post:
@@ -210,10 +215,11 @@ class TestProgramsProxy:
 
 class TestProfileProxy:
     def test_get_profile_returns_200(self, client):
-        with patch("app.main.requests.get", return_value=_mock_response({"name": "Test", "major": "CS"})):
+        with patch("app.main.requests.get", return_value=_mock_response({"name": "Test", "major": "CS"})) as mock_get:
             res = client.get("/api/profile")
         assert res.status_code == 200
         assert res.get_json()["major"] == "CS"
+        assert mock_get.call_args.kwargs["headers"]["X-Internal-API-Token"] == "test-internal-token"
 
     def test_update_profile_returns_200(self, client):
         with patch("app.main.requests.put", return_value=_mock_response({"message": "profile updated"})):

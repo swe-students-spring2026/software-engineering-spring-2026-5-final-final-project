@@ -19,7 +19,7 @@ class TestExecuteTool:
 
     def test_known_tool_get_course_sections(self):
         db = MagicMock()
-        db.classes.find.return_value = []
+        db.classes.find.return_value.limit.return_value = []
         tools_module._db = db
         from app.ai.service import _execute_tool
         result = _execute_tool("get_course_sections", {"course_code": "CSCI-UA 101"})
@@ -53,7 +53,7 @@ class TestChat:
     def test_chat_returns_text_with_no_tool_calls(self):
         from app.ai import service
         mock_response = self._make_response("Here are some courses.")
-        with patch.object(service._client.models, "generate_content", return_value=mock_response):
+        with patch.object(service.client.models, "generate_content", return_value=mock_response):
             result = service.chat("what courses are available?")
         assert result == "Here are some courses."
 
@@ -62,7 +62,7 @@ class TestChat:
         mock_response = MagicMock()
         mock_response.function_calls = []
         mock_response.text = ""
-        with patch.object(service._client.models, "generate_content", return_value=mock_response):
+        with patch.object(service.client.models, "generate_content", return_value=mock_response):
             result = service.chat("hello")
         assert result == ""
 
@@ -83,7 +83,7 @@ class TestChat:
         second_response.text = "I found CS courses for you."
 
         with patch.object(
-            service._client.models, "generate_content",
+            service.client.models, "generate_content",
             side_effect=[first_response, second_response]
         ):
             result = service.chat("show me CS courses")
@@ -94,7 +94,7 @@ class TestChat:
         from app.ai import service
         service.types.Part.from_text.reset_mock()
         mock_response = self._make_response("Here are your recommendations.")
-        with patch.object(service._client.models, "generate_content", return_value=mock_response):
+        with patch.object(service.client.models, "generate_content", return_value=mock_response):
             service.chat(
                 "recommend courses",
                 completed_courses=["CSCI-UA 101"],
@@ -110,7 +110,7 @@ class TestChat:
         from app.ai import service
         service.types.Part.from_text.reset_mock()
         mock_response = self._make_response("Here are your recommendations.")
-        with patch.object(service._client.models, "generate_content", return_value=mock_response):
+        with patch.object(service.client.models, "generate_content", return_value=mock_response):
             service.chat(
                 "recommend courses",
                 student_profile={
@@ -135,7 +135,7 @@ class TestChat:
         from app.ai import service
         service.types.Part.from_text.reset_mock()
         mock_response = self._make_response("Reply.")
-        with patch.object(service._client.models, "generate_content", return_value=mock_response):
+        with patch.object(service.client.models, "generate_content", return_value=mock_response):
             service.chat("just a question")
         from_text_calls = service.types.Part.from_text.call_args_list
         text = from_text_calls[0].kwargs.get("text") or from_text_calls[0].args[0]
@@ -163,29 +163,3 @@ class TestMongoEncoder:
         assert "fake-id-value" in result
 
 
-class TestParseTranscript:
-    def test_returns_list_of_course_codes(self):
-        from app.ai import service
-        mock_resp = MagicMock()
-        mock_resp.text = '{"completed": ["CSCI-UA 101", "MATH-UA 123"], "current": [], "course_credits": {"CSCI-UA 101": 4, "MATH-UA 123": 4}}'
-        with patch.object(service._client.models, "generate_content", return_value=mock_resp):
-            result = service.parse_transcript("sample transcript text")
-        assert "CSCI-UA 101" in result["completed"]
-        assert "MATH-UA 123" in result["completed"]
-        assert result["course_credits"]["CSCI-UA 101"] == 4
-
-    def test_returns_empty_list_on_bad_response(self):
-        from app.ai import service
-        mock_resp = MagicMock()
-        mock_resp.text = "Sorry, I cannot parse this."
-        with patch.object(service._client.models, "generate_content", return_value=mock_resp):
-            result = service.parse_transcript("gibberish")
-        assert result == {"completed": [], "current": [], "course_credits": {}}
-
-    def test_returns_empty_list_on_empty_response(self):
-        from app.ai import service
-        mock_resp = MagicMock()
-        mock_resp.text = ""
-        with patch.object(service._client.models, "generate_content", return_value=mock_resp):
-            result = service.parse_transcript("")
-        assert result == {"completed": [], "current": [], "course_credits": {}}

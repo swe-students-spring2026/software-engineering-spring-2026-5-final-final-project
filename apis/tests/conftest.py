@@ -7,12 +7,16 @@ os.environ["GEMINI_API_KEY"] = "test_key_for_ci"
 os.environ["GEMINI_MODEL"] = "gemini-2.5-flash"
 os.environ["MONGO_URI"] = "mongodb://localhost:27017/test"
 os.environ["MONGO_DB_NAME"] = "test"
+os.environ["API_INTERNAL_TOKEN"] = "test-internal-token"
 
 # Stub google.genai so the AI service can be imported without a real key
 _mock_genai_module = MagicMock()
 sys.modules.setdefault("google", MagicMock())
 sys.modules.setdefault("google.genai", _mock_genai_module)
 sys.modules.setdefault("google.genai.types", MagicMock())
+
+# Ensure the apis package is importable when running tests from repo root
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import pytest
 
@@ -41,4 +45,5 @@ def mock_db():
 @pytest.fixture
 def client(flask_app):
     with flask_app.test_client() as c:
+        c.environ_base["HTTP_X_INTERNAL_API_TOKEN"] = "test-internal-token"
         yield c
