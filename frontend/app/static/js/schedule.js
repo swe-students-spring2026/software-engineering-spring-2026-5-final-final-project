@@ -49,40 +49,39 @@ function renderCalendar() {
             html += `<div class="cal-cell" data-day="${d}" data-hour="${h}"></div>`;
         }
     }
-  }
 
-  grid.innerHTML = html;
+    grid.innerHTML = html;
 
-  if (schedule.length === 0) {
-    grid.innerHTML += `<div class="cal-empty">No courses yet. <a href="/">Search for courses</a></div>`;
-    return;
-  }
+    if (schedule.length === 0) {
+        grid.innerHTML += `<div class="cal-empty">No courses yet. <a href="/">Search for courses</a></div>`;
+        return;
+    }
 
-  schedule.forEach(({ lecture, recitation, color }) => {
-    [lecture, recitation].filter(Boolean).forEach(sec => {
-      const isRct = recitation && sec.crn === recitation.crn;
-      getMeetingSlots(sec).forEach(({ dayIdx, start, end }) => {
-        const startFrac = timeToFrac(start);
-        const endFrac   = timeToFrac(end);
-        const hourCell  = Math.floor(startFrac);
-        if (hourCell < HOUR_START || hourCell >= HOUR_END) return;
+    schedule.forEach(({ lecture, recitation, color }) => {
+        [lecture, recitation].filter(Boolean).forEach(sec => {
+            const isRct = recitation && sec.crn === recitation.crn;
+            getMeetingSlots(sec).forEach(({ dayIdx, start, end }) => {
+                const startFrac = timeToFrac(start);
+                const endFrac = timeToFrac(end);
+                const hourCell = Math.floor(startFrac);
+                if (hourCell < HOUR_START || hourCell >= HOUR_END) return;
 
-        const cell = grid.querySelector(`[data-day="${dayIdx}"][data-hour="${hourCell}"]`);
-        if (!cell) return;
+                const cell = grid.querySelector(`[data-day="${dayIdx}"][data-hour="${hourCell}"]`);
+                if (!cell) return;
 
-        const offsetPx = (startFrac - hourCell) * PX_PER_HOUR;
-        const heightPx = (endFrac - startFrac) * PX_PER_HOUR;
+                const offsetPx = (startFrac - hourCell) * PX_PER_HOUR;
+                const heightPx = (endFrac - startFrac) * PX_PER_HOUR;
 
-        const ev = document.createElement("div");
-        ev.className = "cal-event";
-        ev.style.cssText = `top:${offsetPx}px;height:${heightPx}px;background:${color};opacity:${isRct ? 0.85 : 1};`;
-        const topic = topicText(sec);
-        ev.innerHTML = `
-          <strong>${sec.code}${isRct ? " Rct" : ""}</strong>
-          ${topic ? `<span class="ev-sub">${escapeHtml(topic)}</span>` : ""}
-          <span class="ev-sub">${fmt12(start)}–${fmt12(end)}</span>
-          ${sec.instructor ? `<span class="ev-sub">${sec.instructor}</span>` : ""}
-        `;
+                const ev = document.createElement("div");
+                ev.className = "cal-event";
+                ev.style.cssText = `top:${offsetPx}px;height:${heightPx}px;background:${color};opacity:${isRct ? 0.85 : 1};`;
+                const topic = topicText(sec);
+                ev.innerHTML = `
+                  <strong>${sec.code}${isRct ? " Rct" : ""}</strong>
+                  ${topic ? `<span class="ev-sub">${escapeHtml(topic)}</span>` : ""}
+                  <span class="ev-sub">${fmt12(start)}–${fmt12(end)}</span>
+                  ${sec.instructor ? `<span class="ev-sub">${sec.instructor}</span>` : ""}
+                `;
                 cell.appendChild(ev);
             });
         });
@@ -183,17 +182,18 @@ function downloadCalendar() {
         );
       });
     });
+  });
 
-    lines.push("END:VCALENDAR");
-    const blob = new Blob([lines.join("\r\n")], { type: "text/calendar;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `NYU_${sem.name.replace(" ", "_")}_Schedule.ics`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  lines.push("END:VCALENDAR");
+  const blob = new Blob([lines.join("\r\n")], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `NYU_${sem.name.replace(" ", "_")}_Schedule.ics`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 function clearAll() {
