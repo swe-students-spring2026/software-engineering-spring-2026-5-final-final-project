@@ -11,6 +11,7 @@ class MongoWrapper:
 
     # Add a new assignment into database
     # _id : ObjectID, generated automatically
+    # user_email : String, associates assignment with user
     # title : String
     # course : String
     # description : String
@@ -23,6 +24,7 @@ class MongoWrapper:
     # Returns the id of the newly created assignment as a string
     def add_assignment(
         self,
+        user_email,
         title,
         course,
         description,
@@ -34,6 +36,7 @@ class MongoWrapper:
         completed=False,
     ):
         doc = {
+            "user_email": user_email,
             "title": title,
             "course": course,
             "description": description,
@@ -51,11 +54,12 @@ class MongoWrapper:
         return str(result.inserted_id)
 
     # Find assignments
+    # user_email : String, the user to find assignments for
     # view : string with the value day/week/month
     # date : dateTime , optional, only include if viewing from the past/future, defaults to current
     # course : String, optional, only include if searching for a specific course
     # returns a list of assignment docs due today, this week, or this month/from the provided date
-    def view_assignments(self, view, date=None, course=None):
+    def view_assignments(self, user_email, view, date=None, course=None):
         if date == None:
             day = datetime.datetime.now(datetime.timezone.utc)
         elif isinstance(date, datetime.datetime):
@@ -77,12 +81,18 @@ class MongoWrapper:
 
         if course == None:
             assignments = list(
-                self.db.assignments.find({"due_date": {"$gte": start, "$lt": end}})
+                self.db.assignments.find(
+                    {"user-email": user_email, "due_date": {"$gte": start, "$lt": end}}
+                )
             )
         else:
             assignments = list(
                 self.db.assignments.find(
-                    {"course": course, "due_date": {"$gte": start, "$lt": end}}
+                    {
+                        "user-email": user_email,
+                        "course": course,
+                        "due_date": {"$gte": start, "$lt": end},
+                    }
                 )
             )
 
@@ -112,20 +122,26 @@ class MongoWrapper:
         )
 
     # Get list of assignments with provided status, or ValueError if status invalid
+    # user_email : String, the user to find assignments for
     # status : String (overdue, due_soon, upcoming, completed)
     # Use for status tracker
-    def get_assignments_by_status(self, status):
+    def get_assignments_by_status(self, user_email, status):
         if status not in ["overdue", "due_soon", "upcoming", "completed"]:
             raise ValueError("Invalid value for status parameter")
 
-        assignments = list(self.db.assignments.find({"status": status}))
+        assignments = list(
+            self.db.assignments.find({"user-email": user_email, "status": status})
+        )
         return assignments
 
     # Get assignment id by title and course
+    # user_email : String, the user to find assignment id for
     # Used to send into other methods mostly
     # Return: String id / None if not found
-    def get_assignment_id(self, title, course):
-        assignment = self.db.assignments.find_one({"title": title, "course": course})
+    def get_assignment_id(self, user_email, title, course):
+        assignment = self.db.assignments.find_one(
+            {"user-email": user_email, "title": title, "course": course}
+        )
 
         if assignment:
             return str(assignment["_id"])
