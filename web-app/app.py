@@ -1,4 +1,5 @@
 from flask import Flask, render_template, redirect, request
+import logging
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required
 import json
 import os
@@ -13,6 +14,7 @@ import requests
 mongo = MongoWrapper()
 ML_SERVICE_URL = "http://ml-client:5002/analyze"
 app = Flask(__name__)
+logger = logging.getLogger(__name__)
 app.secret_key = 'lacewing squad'
 
 overdue = []
@@ -47,7 +49,6 @@ def request_loader(request):
     user = User()
     user.id = username
     return user
-
 
 @app.route('/')
 @login_required
@@ -91,7 +92,8 @@ def submit_new_task():
             priority=ml_data.get("priority"),
             status="upcoming"
         )
-    except Exception:
+    except Exception as e:
+        logger.exception("ML service request failed: %s", e)
         return json.dumps({'status': 'error', 'message': 'Failed to analyze assignment'})
 
     return json.dumps({"status": "success"})
@@ -144,7 +146,6 @@ def task_detail(task_id):
 
     return render_template('detail.html', task=task)
 
-
 @app.route('/task/<int:task_id>/edit', methods=['GET', 'POST'])
 def edit_task(task_id):
     task = find_task(task_id)
@@ -161,7 +162,6 @@ def edit_task(task_id):
         return redirect(f'/task/{task_id}')
     
     return render_template('edit.html', task=task)
-
 
 @app.route('/complete_task/<int:task_id>')
 def complete_task(task_id):
