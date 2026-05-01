@@ -1,6 +1,8 @@
 from flask import Flask, render_template, redirect, request
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required
 import json
+import os
+import requests
 from datetime import datetime
 from bson.objectid import ObjectId
 import pymongo
@@ -69,26 +71,28 @@ def index():
 def submit_new_task():
     data = request.json
 
-    ml_response = requests.post(ML_SERVICE_URL, json={
-        "title": data.get("title"),
-        "course": data.get("course"),
-        "description": data.get("description"),
-        "due_date": data.get("due_date")
-    })
+    try:
+        ml_response = requests.post(ML_SERVICE_URL, json={
+            "title": data.get("title"),
+            "course": data.get("course"),
+            "description": data.get("description"),
+            "due_date": data.get("due_date")
+        })
+        ml_data = ml_response.json()
 
-    ml_data = ml_response.json()
-
-    mongo.add_assignment(
-        user_email="test_user",
-        title=data.get("title"),
-        course=data.get("course"),
-        description=data.get("description"),
-        due_date=datetime.strptime(data.get("due_date"), "%Y-%m-%d"),
-        estimated_hours=ml_data.get("estimated_hours"),
-        difficulty=ml_data.get("difficulty"),
-        priority=ml_data.get("priority"),
-        status="upcoming"
-    )
+        mongo.add_assignment(
+            user_email="test_user",
+            title=data.get("title"),
+            course=data.get("course"),
+            description=data.get("description"),
+            due_date=datetime.strptime(data.get("due_date"), "%Y-%m-%d"),
+            estimated_hours=ml_data.get("estimated_hours"),
+            difficulty=ml_data.get("difficulty"),
+            priority=ml_data.get("priority"),
+            status="upcoming"
+        )
+    except Exception:
+        return json.dumps({'status': 'error', 'message': 'Failed to analyze assignment'})
 
     return json.dumps({"status": "success"})
 
