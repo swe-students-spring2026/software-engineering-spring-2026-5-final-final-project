@@ -508,18 +508,16 @@ function renderCalendar() {
 
                 const ev = document.createElement("div");
                 ev.className = "cal-event";
-                                ev.dataset.crn = sec.crn || '';
                 ev.dataset.dayIdx = dayIdx;
                 ev.dataset.start = startFrac;
                 ev.dataset.end = endFrac;
                 ev.style.cssText = `top:${offsetPx}px;height:${heightPx}px;background:${color};`;
                 const topic = topicText(sec);
-                                ev.innerHTML = `
-                                    <strong>${sec.code}</strong>
-                                    ${topic ? `<span>${escapeHtml(topic)}</span>` : ""}
-                                    <div class="cal-event-times">${escapeHtml(sec.meets_human || "")}</div>
-                                    <div class="cal-event-actions"><button class="cal-event-delete" onclick="handleRemoveByCrn('${sec.crn}')" title="Remove from schedule">delete</button></div>
-                                `;
+                ev.innerHTML = `
+                  <strong>${sec.code}</strong>
+                  ${topic ? `<span>${escapeHtml(topic)}</span>` : ""}
+                  <span>${sec.meets_human || ""}</span>
+                `;
                 cell.appendChild(ev);
             });
         });
