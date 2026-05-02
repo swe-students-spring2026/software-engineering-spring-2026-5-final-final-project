@@ -123,9 +123,10 @@ function renderCourses(courses, sectionsByCode = {}) {
     <div class="courses">
       <h3>Courses They Are Teaching</h3>
       ${[...grouped.values()].map(group => {
-        const allSections = sectionsByCode[group.code] || group.sections;
-        const lectures = allSections.filter(c => !isSecondarySection(c));
-        const secondaries = allSections.filter(c => isSecondarySection(c));
+        const ownSections = group.sections;
+        const allSections = sectionsByCode[group.code] || ownSections;
+        const lectures = ownSections.filter(c => !isSecondarySection(c));
+        const secondaries = ownSections.filter(c => isSecondarySection(c));
         const rows = lectures.length > 0
             ? lectures.map(lec => [
                 renderProfessorSection(lec, false),
@@ -138,7 +139,7 @@ function renderCourses(courses, sectionsByCode = {}) {
             <div class="course-item-head">
               <div>
                 <div class="course-code">${group.code}</div>
-                <div class="course-sub">${allSections.length} section${allSections.length === 1 ? "" : "s"}</div>
+                <div class="course-sub">${ownSections.length} section${ownSections.length === 1 ? "" : "s"}</div>
               </div>
               <div><strong>${group.title || ""}</strong></div>
             </div>
