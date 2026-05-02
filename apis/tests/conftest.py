@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 # Set env vars before any app module is imported
 os.environ["GEMINI_API_KEY"] = "test_key_for_ci"
-os.environ["GEMINI_MODEL"] = "gemini-2.5-flash"
+os.environ["GEMINI_MODEL"] = "gemini-2.0-flash"
 os.environ["MONGO_URI"] = "mongodb://localhost:27017/test"
 os.environ["MONGO_DB_NAME"] = "test"
 os.environ["API_INTERNAL_TOKEN"] = "test-internal-token"
