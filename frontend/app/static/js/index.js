@@ -690,9 +690,175 @@ init();
 let chatOpen = false;
 let contextOpen = false;
 
+// ── Chat panel drag + side-panel docking ──
+(function () {
+    const SNAP_THRESHOLD = 80; // px from left/right edge to trigger dock
+
+    let dragging = false;
+    let didDrag = false;
+    let startX = 0, startY = 0, startLeft = 0, startTop = 0;
+    // Preview indicator shown while hovering near an edge during drag
+    let snapPreview = null;
+
+    function getSnapPreview() {
+        if (!snapPreview) {
+            snapPreview = document.createElement("div");
+            snapPreview.id = "chat-snap-preview";
+            document.body.appendChild(snapPreview);
+        }
+        return snapPreview;
+    }
+
+    function showPreview(side) {
+        const el = getSnapPreview();
+        el.className = "snap-preview-" + side;
+        el.style.display = "block";
+    }
+
+    function hidePreview() {
+        if (snapPreview) snapPreview.style.display = "none";
+    }
+
+    function isDocked() {
+        const panel = document.getElementById("chat-panel");
+        return panel.classList.contains("docked-left") || panel.classList.contains("docked-right");
+    }
+
+    function dock(side) {
+        const panel = document.getElementById("chat-panel");
+        const main = document.querySelector(".main");
+
+        // Clear any inline float positioning
+        panel.style.left = "";
+        panel.style.top = "";
+        panel.style.right = "";
+        panel.style.bottom = "";
+        panel.style.width = "";
+        panel.style.height = "";
+        panel.style.position = "";
+
+        panel.classList.remove("docked-left", "docked-right", "open");
+        panel.classList.add("docked-" + side);
+        main.classList.add("chat-docked-" + side);
+    }
+
+    function undock() {
+        const panel = document.getElementById("chat-panel");
+        const main = document.querySelector(".main");
+
+        panel.classList.remove("docked-left", "docked-right");
+        main.classList.remove("chat-docked-left", "chat-docked-right");
+
+        // Restore floating position
+        panel.style.position = "fixed";
+        panel.style.right = "28px";
+        panel.style.bottom = "90px";
+        panel.style.left = "";
+        panel.style.top = "";
+        panel.style.width = "";
+        panel.style.height = "";
+
+        // Re-open as floating overlay
+        panel.classList.add("open");
+        chatOpen = true;
+    }
+
+    function onMouseDown(e) {
+        if (e.target.closest("#chat-close-btn")) return;
+        const panel = document.getElementById("chat-panel");
+
+        if (isDocked()) {
+            // Start drag from docked state — pull it out
+            const rect = panel.getBoundingClientRect();
+            undock();
+            // Reposition under cursor so it doesn't jump
+            panel.style.left = (e.clientX - rect.width / 2) + "px";
+            panel.style.top = rect.top + "px";
+            panel.style.right = "auto";
+            panel.style.bottom = "auto";
+            startX = e.clientX;
+            startY = e.clientY;
+            startLeft = e.clientX - rect.width / 2;
+            startTop = rect.top;
+        } else {
+            const rect = panel.getBoundingClientRect();
+            panel.style.left = rect.left + "px";
+            panel.style.top = rect.top + "px";
+            panel.style.right = "auto";
+            panel.style.bottom = "auto";
+            startX = e.clientX;
+            startY = e.clientY;
+            startLeft = rect.left;
+            startTop = rect.top;
+        }
+
+        dragging = true;
+        didDrag = false;
+        panel.classList.add("dragging");
+        e.preventDefault();
+    }
+
+    function onMouseMove(e) {
+        if (!dragging) return;
+        didDrag = true;
+        const panel = document.getElementById("chat-panel");
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        const newLeft = Math.max(0, Math.min(startLeft + dx, window.innerWidth - panel.offsetWidth));
+        const newTop = Math.max(0, Math.min(startTop + dy, window.innerHeight - panel.offsetHeight));
+        panel.style.left = newLeft + "px";
+        panel.style.top = newTop + "px";
+
+        // Show snap preview hint
+        if (newLeft <= SNAP_THRESHOLD) {
+            showPreview("left");
+        } else if (newLeft + panel.offsetWidth >= window.innerWidth - SNAP_THRESHOLD) {
+            showPreview("right");
+        } else {
+            hidePreview();
+        }
+    }
+
+    function onMouseUp() {
+        if (!dragging) return;
+        dragging = false;
+        hidePreview();
+        const panel = document.getElementById("chat-panel");
+        panel.classList.remove("dragging");
+
+        if (!didDrag) return;
+
+        const left = parseFloat(panel.style.left);
+        if (left <= SNAP_THRESHOLD) {
+            dock("left");
+        } else if (left + panel.offsetWidth >= window.innerWidth - SNAP_THRESHOLD) {
+            dock("right");
+        }
+        // else stays floating where it was dropped
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        document.getElementById("chat-panel-header").addEventListener("mousedown", onMouseDown);
+    });
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+})();
+
 function toggleChat() {
+    const panel = document.getElementById("chat-panel");
+    const docked = panel.classList.contains("docked-left") || panel.classList.contains("docked-right");
+    if (docked) {
+        // Closing while docked: fully remove from layout
+        panel.classList.remove("docked-left", "docked-right");
+        document.querySelector(".main").classList.remove("chat-docked-left", "chat-docked-right");
+        panel.style.position = "fixed";
+        panel.style.right = "28px";
+        panel.style.bottom = "90px";
+        chatOpen = false;
+        return;
+    }
     chatOpen = !chatOpen;
-    document.getElementById("chat-panel").classList.toggle("open", chatOpen);
+    panel.classList.toggle("open", chatOpen);
     if (chatOpen) document.getElementById("chat-input").focus();
 }
 

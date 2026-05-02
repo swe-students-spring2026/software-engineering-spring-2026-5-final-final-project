@@ -650,10 +650,61 @@
 }
 
 #chat-panel.open {
-    transform: translateX(-50%) scale(1) translateY(0);
+    transform: scale(1) translateY(0);
     opacity: 1;
     pointer-events: all;
 }
+
+#chat-panel.dragging {
+    transition: none;
+    user-select: none;
+}
+
+/* ── Side-panel dock: chat becomes a flex column inside .main ── */
+#chat-panel.docked-left,
+#chat-panel.docked-right {
+    position: relative;   /* exits fixed positioning, joins the flex row */
+    width: 360px;
+    min-width: 280px;
+    max-width: 480px;
+    height: auto;
+    max-height: none;
+    bottom: auto;
+    right: auto;
+    top: auto;
+    left: auto;
+    border-radius: 0;
+    box-shadow: none;
+    resize: horizontal;
+    transform: none;
+    opacity: 1;
+    pointer-events: all;
+    transition: none;
+    flex-shrink: 0;
+}
+
+#chat-panel.docked-left  { border-right: 1px solid #ddd; order: -1; }
+#chat-panel.docked-right { border-left:  1px solid #ddd; order: 99; }
+
+/* .main grows a third flex child when chat is docked */
+.main.chat-docked-left,
+.main.chat-docked-right {
+    overflow: hidden;
+}
+
+/* Snap-zone preview highlight shown while dragging near an edge */
+#chat-snap-preview {
+    position: fixed;
+    top: 0;
+    height: 100vh;
+    width: 6px;
+    pointer-events: none;
+    z-index: 190;
+    display: none;
+}
+
+#chat-snap-preview.snap-preview-left  { left: 0;  background: linear-gradient(to right, rgba(87,6,140,0.18), transparent); width: 60px; }
+#chat-snap-preview.snap-preview-right { right: 0; background: linear-gradient(to left,  rgba(87,6,140,0.18), transparent); width: 60px; left: auto; }
 
 #chat-panel-header {
     background: #57068c;
@@ -663,11 +714,23 @@
     justify-content: space-between;
     align-items: center;
     flex-shrink: 0;
+    cursor: grab;
 }
 
-#chat-panel-header span {
+#chat-panel.dragging #chat-panel-header {
+    cursor: grabbing;
+}
+
+#chat-panel-header > span:not(#chat-drag-handle) {
     font-size: 1rem;
     font-weight: bold;
+}
+
+#chat-drag-handle {
+    display: flex;
+    align-items: center;
+    margin-right: 10px;
+    flex-shrink: 0;
 }
 
 #chat-close-btn {
