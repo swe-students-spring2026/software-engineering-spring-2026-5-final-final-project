@@ -1,0 +1,33 @@
+services:
+  mongodb:
+    build: ./mongodb
+    image: ${DOCKERHUB_USERNAME:-local}/studycast-mongodb:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  planner-web:
+    build: ./planner-web
+    image: ${DOCKERHUB_USERNAME:-local}/studycast-planner-web:latest
+    environment:
+      MONGO_URI: mongodb://mongodb:27017/
+      MONGO_DB: studycast
+    ports:
+      - "5001:5001"
+    depends_on:
+      - mongodb
+
+  study-session-service:
+    build: ./study-session-service
+    image: ${DOCKERHUB_USERNAME:-local}/studycast-study-session-service:latest
+    environment:
+      MONGO_URI: mongodb://mongodb:27017/
+      MONGO_DB: studycast
+    ports:
+      - "5002:5002"
+    depends_on:
+      - mongodb
+
+volumes:
+  mongo-data:
