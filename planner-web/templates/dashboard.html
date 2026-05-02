@@ -36,7 +36,7 @@
         </div>
         <div class="stat-card">
             <div class="number">{{ today_todos|length }}</div>
-            <div class="label">Today Tasks</div>
+            <div class="label">Short Term Tasks</div>
         </div>
     </div>
 
@@ -139,7 +139,7 @@
     </div>
 
     <div class="card">
-        <h2>Today's Tasks</h2>
+        <h2>Short Term Tasks</h2>
         {% if today_todos %}
             <ul>
                 {% for todo in today_todos %}
@@ -155,7 +155,7 @@
                 {% endfor %}
             </ul>
         {% else %}
-            <p class="empty">Nothing due today.</p>
+            <p class="empty">Nothing due short term.</p>
         {% endif %}
     </div>
 
