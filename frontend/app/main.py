@@ -229,7 +229,8 @@ def logout():
 @app.get("/")
 @login_required
 def index():
-    return render_template("index.html", user=session["user"])
+    profile = _get_user_profile(session["user"]["email"])
+    return render_template("index.html", user=session["user"], profile=profile)
 
 
 @app.get("/schedule")

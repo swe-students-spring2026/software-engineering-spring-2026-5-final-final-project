@@ -166,23 +166,24 @@ GEMINI_TOOL = types.Tool(
 
 # ── Handler functions ─────────────────────────────────────────────────────────
 
-def search_courses(
-    query: str = "",
-    department: str = "",
-    term: str = "",
-    component: str = "",
-    limit: int = 20,
-) -> dict[str, Any]:
-    """Search course catalog in MongoDB. Uses $text index for keyword queries."""
-    if _db is None:
-        return {"error": "Database not initialized"}
+_SLIM_COURSE_PROJECTION = {
+    "_id": 0, "code": 1, "title": 1, "credits": 1,
+    "subject_code": 1, "component": 1, "term": 1,
+}
 
+_DETAILED_COURSE_PROJECTION = {
+    "_id": 0, "code": 1, "title": 1, "description": 1, "credits": 1,
+    "school": 1, "subject_code": 1, "component": 1, "section": 1,
+    "crn": 1, "instructor": 1, "meets_human": 1, "status": 1,
+    "term": 1, "topic": 1, "prerequisites": 1,
+}
+
+
+def _build_search_filter(query: str, department: str, term: str, component: str) -> dict:
     conditions: list[dict] = []
-
     if term:
         conditions.append(flexible_term_filter(term))
     if component:
-        # Exact match — component values are controlled vocabulary
         conditions.append({"component": component})
     if department:
         conditions.append({"$or": [
@@ -190,32 +191,83 @@ def search_courses(
             {"code": {"$regex": department, "$options": "i"}},
         ]})
     if query:
-        # $text uses the existing text index (title + code + description)
         conditions.append({"$text": {"$search": query}})
 
     if len(conditions) > 1:
-        filter_query: dict = {"$and": conditions}
-    elif conditions:
-        filter_query = conditions[0]
-    else:
-        filter_query = {}
-
-    courses = list(_db.classes.find(
-        filter_query,
-        {
-            "_id": 0, "code": 1, "title": 1, "description": 1, "credits": 1,
-            "school": 1, "subject_code": 1, "component": 1, "section": 1,
-            "crn": 1, "instructor": 1, "meets_human": 1, "status": 1,
-            "term": 1, "topic": 1, "prerequisites": 1,
-        },
-    ).limit(limit))
-
-    courses = enrich_classes_with_professor_ratings(courses)
-    return {"courses": courses, "count": len(courses)}
+        return {"$and": conditions}
+    if conditions:
+        return conditions[0]
+    return {}
 
 
-def get_course_sections(course_code: str, term: str = "") -> dict[str, Any]:
-    """Get all sections matching a course code or title from MongoDB (capped at 50)."""
+def _dedupe_by_code(courses: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    seen: set[str] = set()
+    unique: list[dict[str, Any]] = []
+    for c in courses:
+        key = c.get("code") or ""
+        if key and key in seen:
+            continue
+        seen.add(key)
+        unique.append(c)
+    return unique
+
+
+def search_courses(
+    query: str = "",
+    department: str = "",
+    term: str = "",
+    component: str = "",
+    limit: int = 10,
+    include_details: bool = False,
+) -> dict[str, Any]:
+    """Search course catalog in MongoDB. Uses $text index for keyword queries.
+
+    By default returns a slim payload (code, title, credits, component, term)
+    to keep the LLM context small. Pass include_details=True to also return
+    description, prerequisites, instructor, and professor ratings.
+    """
+    if _db is None:
+        return {"error": "Database not initialized"}
+
+    filter_query = _build_search_filter(query, department, term, component)
+    safe_limit = max(1, min(int(limit) if limit else 10, 25))
+    projection = _DETAILED_COURSE_PROJECTION if include_details else _SLIM_COURSE_PROJECTION
+
+    courses = list(_db.classes.find(filter_query, projection).limit(safe_limit))
+    unique = _dedupe_by_code(courses)
+
+    if include_details:
+        unique = enrich_classes_with_professor_ratings(unique)
+    return {"courses": unique, "count": len(unique)}
+
+
+_SLIM_SECTION_PROJECTION = {
+    "_id": 0, "code": 1, "title": 1, "section": 1, "crn": 1,
+    "instructor": 1, "meets_human": 1, "status": 1,
+    "component": 1, "credits": 1, "topic": 1,
+}
+
+_DETAILED_SECTION_PROJECTION = {
+    "_id": 0, "code": 1, "title": 1, "section": 1, "crn": 1,
+    "instructor": 1, "meets_human": 1, "meeting_times": 1,
+    "status": 1, "component": 1, "instructional_method": 1,
+    "campus_location": 1, "credits": 1, "topic": 1, "notes": 1, "prerequisites": 1,
+}
+
+
+def get_course_sections(
+    course_code: str,
+    term: str = "",
+    limit: int = 15,
+    include_details: bool = False,
+    include_ratings: bool = False,
+) -> dict[str, Any]:
+    """Get sections matching a course code or title from MongoDB.
+
+    By default returns a slim payload (no raw meeting_times array, no notes,
+    no prerequisites) with up to 15 sections. Pass include_details=True for
+    full section data and include_ratings=True to attach professor ratings.
+    """
     if _db is None:
         return {"error": "Database not initialized"}
 
@@ -228,17 +280,13 @@ def get_course_sections(course_code: str, term: str = "") -> dict[str, Any]:
     else:
         query = or_clause
 
-    sections = list(_db.classes.find(
-        query,
-        {
-            "_id": 0, "code": 1, "title": 1, "section": 1, "crn": 1,
-            "instructor": 1, "meets_human": 1, "meeting_times": 1,
-            "status": 1, "component": 1, "instructional_method": 1,
-            "campus_location": 1, "credits": 1, "topic": 1, "notes": 1, "prerequisites": 1,
-        },
-    ).limit(50))
+    safe_limit = max(1, min(int(limit) if limit else 15, 30))
+    projection = _DETAILED_SECTION_PROJECTION if include_details else _SLIM_SECTION_PROJECTION
 
-    sections = enrich_classes_with_professor_ratings(sections)
+    sections = list(_db.classes.find(query, projection).limit(safe_limit))
+
+    if include_ratings:
+        sections = enrich_classes_with_professor_ratings(sections)
     return {"course_code": course_code, "sections": sections, "count": len(sections)}
 
 

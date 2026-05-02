@@ -45,6 +45,84 @@ function toggleCalendar() {
     btn.textContent = calCollapsed ? '◀' : '▶';
 }
 
+// ── Panel resizing ──
+// Each resizer is identified by data-resize and walks up to .main to set
+// the correct CSS variables on a width pair. We don't rely on DOM siblings
+// because flex `order` reshuffles the visual layout when chat docks.
+(function () {
+    const MIN_PANEL_W = 180;
+
+    function panelWidth(el) {
+        return el ? el.getBoundingClientRect().width : 0;
+    }
+
+    function startResize(handle, e) {
+        e.preventDefault();
+        const main = document.querySelector(".main");
+        const chatPanel = document.getElementById("chat-panel");
+        const searchPanel = document.querySelector(".search-panel");
+        const calPanel = document.getElementById("cal-panel");
+        const kind = handle.dataset.resize;
+
+        // Decide which two panels this handle resizes, and which CSS vars to set.
+        // `left` is the panel to the visual left, `right` to the visual right.
+        let left, right, leftVar, rightVar;
+        if (kind === "search-cal") {
+            left = searchPanel;
+            right = calPanel;
+            leftVar = "--search-width";
+            rightVar = "--cal-width";
+        } else if (kind === "chat-side") {
+            // Position depends on which side chat is docked
+            if (chatPanel.classList.contains("docked-left")) {
+                left = chatPanel; right = searchPanel;
+                leftVar = "--chat-width"; rightVar = "--search-width";
+            } else if (chatPanel.classList.contains("docked-right")) {
+                left = calPanel; right = chatPanel;
+                leftVar = "--cal-width"; rightVar = "--chat-width";
+            } else {
+                return; // resizer shouldn't be visible/active when undocked
+            }
+        } else {
+            return;
+        }
+
+        const startX = e.clientX;
+        const startLeftW = panelWidth(left);
+        const startRightW = panelWidth(right);
+
+        handle.classList.add("resizing");
+        document.body.style.cursor = "col-resize";
+        document.body.style.userSelect = "none";
+
+        function onMove(ev) {
+            const dx = ev.clientX - startX;
+            const newLeftW = startLeftW + dx;
+            const newRightW = startRightW - dx;
+            if (newLeftW < MIN_PANEL_W || newRightW < MIN_PANEL_W) return;
+            main.style.setProperty(leftVar, newLeftW + "px");
+            main.style.setProperty(rightVar, newRightW + "px");
+        }
+
+        function onUp() {
+            handle.classList.remove("resizing");
+            document.body.style.cursor = "";
+            document.body.style.userSelect = "";
+            document.removeEventListener("mousemove", onMove);
+            document.removeEventListener("mouseup", onUp);
+        }
+
+        document.addEventListener("mousemove", onMove);
+        document.addEventListener("mouseup", onUp);
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".panel-resizer").forEach(function (handle) {
+            handle.addEventListener("mousedown", function (e) { startResize(handle, e); });
+        });
+    });
+})();
+
 // ── Conflict detection ──
 function getSectionSlots(sec) {
     return getMeetingSlots(sec).map(({ dayIdx, start, end }) => ({
@@ -690,9 +768,201 @@ init();
 let chatOpen = false;
 let contextOpen = false;
 
+// ── Chat panel drag + side-panel docking ──
+(function () {
+    const SNAP_THRESHOLD = 80; // px from left/right edge to trigger dock
+
+    let dragging = false;
+    let didDrag = false;
+    let startX = 0, startY = 0, startLeft = 0, startTop = 0;
+    // Preview indicator shown while hovering near an edge during drag
+    let snapPreview = null;
+
+    function getSnapPreview() {
+        if (!snapPreview) {
+            snapPreview = document.createElement("div");
+            snapPreview.id = "chat-snap-preview";
+            document.body.appendChild(snapPreview);
+        }
+        return snapPreview;
+    }
+
+    function showPreview(side) {
+        const el = getSnapPreview();
+        el.className = "snap-preview-" + side;
+        el.style.display = "block";
+    }
+
+    function hidePreview() {
+        if (snapPreview) snapPreview.style.display = "none";
+    }
+
+    function isDocked() {
+        const panel = document.getElementById("chat-panel");
+        return panel.classList.contains("docked-left") || panel.classList.contains("docked-right");
+    }
+
+    function dock(side) {
+        const panel = document.getElementById("chat-panel");
+        const main = document.querySelector(".main");
+
+        // Clear any inline float positioning
+        panel.style.left = "";
+        panel.style.top = "";
+        panel.style.right = "";
+        panel.style.bottom = "";
+        panel.style.width = "";
+        panel.style.height = "";
+        panel.style.position = "";
+        panel.style.transform = "";
+
+        // Ensure we don't carry the wrong dock side (left ↔ right toggle)
+        main.classList.remove("chat-docked-left", "chat-docked-right");
+        panel.classList.remove("docked-left", "docked-right", "open");
+        panel.classList.add("docked-" + side);
+        main.classList.add("chat-docked-" + side);
+    }
+
+    function undock() {
+        const panel = document.getElementById("chat-panel");
+        const main = document.querySelector(".main");
+
+        panel.classList.remove("docked-left", "docked-right");
+        main.classList.remove("chat-docked-left", "chat-docked-right");
+        // Drop pixel widths set while docked so search/cal grow back to defaults
+        main.style.removeProperty("--search-width");
+        main.style.removeProperty("--cal-width");
+
+        // Restore floating position (centered above bubble)
+        panel.style.position = "fixed";
+        panel.style.left = "50%";
+        panel.style.bottom = "76px";
+        panel.style.right = "";
+        panel.style.top = "";
+        panel.style.width = "";
+        panel.style.height = "";
+        panel.style.transform = "";
+
+        // Re-open as floating overlay
+        panel.classList.add("open");
+        chatOpen = true;
+    }
+
+    function onMouseDown(e) {
+        if (e.target.closest("#chat-close-btn")) return;
+        const panel = document.getElementById("chat-panel");
+
+        if (isDocked()) {
+            // Start drag from docked state — pull it out
+            const rect = panel.getBoundingClientRect();
+            undock();
+            // Reposition under cursor so it doesn't jump
+            panel.style.left = (e.clientX - rect.width / 2) + "px";
+            panel.style.top = rect.top + "px";
+            panel.style.right = "auto";
+            panel.style.bottom = "auto";
+            startX = e.clientX;
+            startY = e.clientY;
+            startLeft = e.clientX - rect.width / 2;
+            startTop = rect.top;
+        } else {
+            const rect = panel.getBoundingClientRect();
+            // Kill the centering transform before setting left/top,
+            // otherwise translateX(-50%) stacks on top of the explicit left value
+            panel.style.transform = "none";
+            panel.style.left = rect.left + "px";
+            panel.style.top = rect.top + "px";
+            panel.style.right = "auto";
+            panel.style.bottom = "auto";
+            startX = e.clientX;
+            startY = e.clientY;
+            startLeft = rect.left;
+            startTop = rect.top;
+        }
+
+        dragging = true;
+        didDrag = false;
+        panel.classList.add("dragging");
+        e.preventDefault();
+    }
+
+    function onMouseMove(e) {
+        if (!dragging) return;
+        didDrag = true;
+        const panel = document.getElementById("chat-panel");
+        const panelW = panel.getBoundingClientRect().width;
+        const panelH = panel.getBoundingClientRect().height;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        // Allow panel to slide far enough to reach either snap zone
+        const newLeft = Math.max(-panelW + SNAP_THRESHOLD + 1,
+                                 Math.min(startLeft + dx, window.innerWidth - SNAP_THRESHOLD - 1));
+        const newTop = Math.max(0, Math.min(startTop + dy, window.innerHeight - panelH));
+        panel.style.left = newLeft + "px";
+        panel.style.top = newTop + "px";
+
+        // Show snap preview hint
+        if (newLeft <= SNAP_THRESHOLD) {
+            showPreview("left");
+        } else if (newLeft + panelW >= window.innerWidth - SNAP_THRESHOLD) {
+            showPreview("right");
+        } else {
+            hidePreview();
+        }
+    }
+
+    function onMouseUp() {
+        if (!dragging) return;
+        dragging = false;
+        hidePreview();
+        const panel = document.getElementById("chat-panel");
+        panel.classList.remove("dragging");
+
+        if (!didDrag) return;
+
+        const left = parseFloat(panel.style.left);
+        const panelW = panel.getBoundingClientRect().width;
+        if (left <= SNAP_THRESHOLD) {
+            dock("left");
+        } else if (left + panelW >= window.innerWidth - SNAP_THRESHOLD) {
+            dock("right");
+        } else {
+            // Floating free — keep explicit left/top, no centering transform needed
+            panel.style.transform = "none";
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        document.getElementById("chat-panel-header").addEventListener("mousedown", onMouseDown);
+    });
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+})();
+
 function toggleChat() {
+    const panel = document.getElementById("chat-panel");
+    const main = document.querySelector(".main");
+    const docked = panel.classList.contains("docked-left") || panel.classList.contains("docked-right");
+    if (docked) {
+        // Closing while docked: fully remove from layout
+        panel.classList.remove("docked-left", "docked-right");
+        main.classList.remove("chat-docked-left", "chat-docked-right");
+        // Drop pixel widths set while docked so search/cal grow back to defaults
+        main.style.removeProperty("--search-width");
+        main.style.removeProperty("--cal-width");
+        panel.style.position = "fixed";
+        panel.style.left = "50%";
+        panel.style.bottom = "76px";
+        panel.style.right = "";
+        panel.style.top = "";
+        panel.style.width = "";
+        panel.style.height = "";
+        panel.style.transform = "";
+        chatOpen = false;
+        return;
+    }
     chatOpen = !chatOpen;
-    document.getElementById("chat-panel").classList.toggle("open", chatOpen);
+    panel.classList.toggle("open", chatOpen);
     if (chatOpen) document.getElementById("chat-input").focus();
 }
 
