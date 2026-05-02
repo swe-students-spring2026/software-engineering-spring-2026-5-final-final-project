@@ -6,6 +6,5 @@ addopts = "-ra -q" # default pytest command line options
 pythonpath = [
   "."
 ]
-testpaths = [
-    "tests",
-]
+testpaths = ["backend/tests"]
+python_files = ["test_*.py"]

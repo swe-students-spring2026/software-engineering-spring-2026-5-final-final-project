@@ -1,0 +1,74 @@
+name: Backend CI/CD
+
+on:
+  push:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r backend/requirements.txt pytest pytest-cov bcrypt PyJWT mongomock
+
+      - name: Run tests with coverage
+        run: |
+          pytest backend/tests \
+            --cov=backend \
+            --cov-report=term-missing \
+            --cov-fail-under=80 \
+            -p no:cacheprovider
+
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/pennywise-backend:latest
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Deploy to DigitalOcean via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DO_HOST }}
+          username: ${{ secrets.DO_USER }}
+          key: ${{ secrets.DO_SSH_KEY }}
+          script: |
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/pennywise-backend:latest
+            docker stop pennywise-backend || true
+            docker rm pennywise-backend || true
+            docker run -d --name pennywise-backend \
+              --network pennywise-net \
+              -p 5000:5000 \
+              -e MONGO_URI=${{ secrets.MONGO_URI }} \
+              -e MONGO_DB_NAME=pennywise \
+              -e JWT_SECRET=${{ secrets.JWT_SECRET }} \
+              ${{ secrets.DOCKERHUB_USERNAME }}/pennywise-backend:latest
