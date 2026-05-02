@@ -117,6 +117,7 @@ def _prepare_class_response(doc: dict[str, Any]) -> dict[str, Any]:
 def get_classes():
     term      = request.args.get("term")
     q         = request.args.get("q")
+    code      = request.args.get("code")
     school    = request.args.get("school")
     component = request.args.get("component")
     status    = request.args.get("status")
@@ -132,6 +133,10 @@ def get_classes():
 
     if term:
         query.update(_term_filter(term, source))
+    if code:
+        # Exact course-code match — used by the Add-to-schedule flow to pull
+        # all sections (incl. recitations not visible in the filtered results).
+        query["code"] = code.strip()
     if school:
         # School values come from the /classes/schools dropdown — exact match
         query["school"] = school

@@ -167,18 +167,13 @@ function renderCourseGroup(code, title, description, school, sections) {
     const lectures = sections.filter(c => !isRecitation(c));
     const rcts = sections.filter(c => isRecitation(c));
 
-    const rctsByLec = new Map(lectures.map(l => [l.section, []]));
-    const lecSections = lectures.map(l => l.section).sort();
-    rcts.forEach(rct => {
-        let parent = lecSections[0];
-        for (const ls of lecSections) { if (ls <= rct.section) parent = ls; }
-        rctsByLec.get(parent)?.push(rct);
-    });
-
-    const sectionsHtml = lectures.map(lec => {
-        const myRcts = rctsByLec.get(lec.section) || [];
-        return renderSection(lec, false) + myRcts.map(r => renderSection(r, true)).join("");
-    }).join("") + (lectures.length === 0 ? rcts.map(r => renderSection(r, true)).join("") : "");
+    // Search results show LECTUREs only — recitations are picked from a modal
+    // when the user clicks Add (handleAdd fetches the full section list by code).
+    // If a course has no lectures (recitation-only listing), fall back to showing
+    // the recitations so the row isn't empty.
+    const visibleRows = lectures.length > 0
+        ? lectures.map(lec => renderSection(lec, false)).join("")
+        : rcts.map(r => renderSection(r, true)).join("");
 
     return `
     <div class="course-card" data-code="${code}">
@@ -196,7 +191,7 @@ function renderCourseGroup(code, title, description, school, sections) {
         <div class="course-description">${description}</div>
         <button class="desc-toggle" onclick="toggleDescription(this)">Show more</button>
       ` : ""}
-      <div class="sections-table">${sectionsHtml}</div>
+      <div class="sections-table">${visibleRows}</div>
     </div>`;
 }
 
@@ -353,61 +348,54 @@ function updateDescriptionToggles() {
     });
 }
 
+// Find the recitations that belong to a given lecture section.
+// Convention: a recitation pairs with the largest lecture section number
+// that is <= the recitation's section (e.g. lec 001 owns rct 002, 003).
+function recitationsForLecture(lectureSec, allSections) {
+    const lectures = allSections.filter(c => !isRecitation(c));
+    const rcts = allSections.filter(c => isRecitation(c));
+    if (lectures.length <= 1) return rcts;
+
+    const lecSections = lectures.map(l => l.section).sort();
+    return rcts.filter(rct => {
+        let parent = lecSections[0];
+        for (const ls of lecSections) { if (ls <= rct.section) parent = ls; }
+        return parent === lectureSec;
+    });
+}
+
 async function handleAdd(crn) {
     let sec = sectionMap[crn];
     if (!sec) return;
 
-    const card = document.querySelector(`.course-card[data-code="${sec.code}"]`);
-    const gatherRctsFromDom = () => {
-        const allRows = card ? [...card.querySelectorAll(".section-row")] : [];
-        const myRcts = [];
-        let foundLec = false;
-        for (const row of allRows) {
-            if (row.dataset.crn === crn) { foundLec = true; continue; }
-            if (foundLec && row.classList.contains("rct-row")) myRcts.push(sectionMap[row.dataset.crn]);
-            else if (foundLec && !row.classList.contains("rct-row")) break;
-        }
-        return myRcts;
-    };
+    const addBtn = document.querySelector(`.section-row[data-crn="${crn}"] .add-btn`);
+    const originalLabel = addBtn ? addBtn.textContent : "";
+    if (addBtn) { addBtn.disabled = true; addBtn.textContent = "Loading…"; }
 
-    let myRcts = gatherRctsFromDom();
-
-    // If no recitations found in current DOM (e.g. search filtered them out by professor/q),
-    // fetch full course sections for this code and rebuild sectionMap, then retry.
-    if (myRcts.length === 0) {
-        try {
-            const term = document.getElementById("term")?.value || '';
-            const params = new URLSearchParams({ term, code: sec.code });
-            const res = await fetch(`/api/classes?${params}`);
-            const data = await res.json();
-            if (res.ok && Array.isArray(data.classes) && data.classes.length) {
-                // update sectionMap and DOM for this course-card
-                const sections = data.classes;
-                sections.forEach(s => { sectionMap[s.crn] = s; });
-                // rebuild the card's sections HTML
-                const newHtml = renderCourseGroup(sec.code, sections[0]?.title || '', sections[0]?.description || '', sections[0]?.school || '', sections);
-                if (card) card.outerHTML = newHtml;
-                // re-select the card element (it was replaced)
-                const newCard = document.querySelector(`.course-card[data-code="${sec.code}"]`);
-                if (newCard) sec = sectionMap[crn] || sec;
-                // recompute myRcts from new DOM
-                myRcts = (() => {
-                    const rows = newCard ? [...newCard.querySelectorAll('.section-row')] : [];
-                    const arr = [];
-                    let found = false;
-                    for (const row of rows) {
-                        if (row.dataset.crn === crn) { found = true; continue; }
-                        if (found && row.classList.contains('rct-row')) arr.push(sectionMap[row.dataset.crn]);
-                        else if (found && !row.classList.contains('rct-row')) break;
-                    }
-                    return arr;
-                })();
-            }
-        } catch (e) {
-            console.warn('Failed to fetch full course sections:', e);
+    // Always fetch the full section list for this course code so we have every
+    // recitation, even when the current search filtered them out (e.g. by
+    // professor/instructor query, where recitations are taught by TAs).
+    let allSections = null;
+    try {
+        const term = document.getElementById("term")?.value || "";
+        const params = new URLSearchParams({ term, code: sec.code });
+        const res = await fetch(`/api/classes?${params}`);
+        const data = await res.json();
+        if (res.ok && Array.isArray(data.classes) && data.classes.length) {
+            allSections = data.classes;
+            allSections.forEach(s => { sectionMap[s.crn] = s; });
+            sec = sectionMap[crn] || sec;
         }
+    } catch (e) {
+        console.warn("Failed to fetch full course sections:", e);
     }
 
+    if (addBtn) { addBtn.disabled = false; addBtn.textContent = originalLabel || "Add"; }
+
+    // Fall back to whatever we already had if the fetch failed
+    if (!allSections) allSections = Object.values(sectionMap).filter(s => s && s.code === sec.code);
+
+    const myRcts = recitationsForLecture(sec.section, allSections);
     if (myRcts.length > 0) openModal(sec, myRcts);
     else addToSchedule(sec, null);
 }

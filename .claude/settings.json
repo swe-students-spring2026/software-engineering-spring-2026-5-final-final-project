@@ -1,4 +1,12 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(git ls-remote *)",
+      "Bash(grep -nE \"request.args.get\\\\\\(['\\\\\"]code|args\\\\.get\\\\\\\\\\(['\\\\\"]code\" apis/app/main.py)",
+      "Bash(python -m py_compile apis/app/main.py)",
+      "Bash(node -e \"console.log\\('python check skipped'\\)\")"
+    ]
+  },
   "hooks": {
     "PostToolUse": [
       {
