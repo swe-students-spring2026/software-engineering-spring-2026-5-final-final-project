@@ -124,6 +124,8 @@ def chat(
     school = str(student_profile.get("school", "")).strip()
     profile_major = str(student_profile.get("major", "")).strip() or major
     minor = str(student_profile.get("minor", "")).strip()
+    majors = student_profile.get("majors") or []
+    minors = student_profile.get("minors") or []
     graduation_year = str(student_profile.get("graduation_year", "")).strip()
     profile_completed_courses = student_profile.get("completed_courses") or completed_courses or []
     current_courses = student_profile.get("current_courses") or []
@@ -134,8 +136,24 @@ def chat(
         context_parts.append(f"Student's school: {school}")
     if profile_major:
         context_parts.append(f"Student's intended major: {profile_major}")
+    if majors:
+        major_names = [
+            str(item.get("title") if isinstance(item, dict) else item).strip()
+            for item in majors
+        ]
+        major_names = [name for name in major_names if name]
+        if major_names:
+            context_parts.append(f"Student's majors: {', '.join(major_names)}")
     if minor:
         context_parts.append(f"Student's minor: {minor}")
+    if minors:
+        minor_names = [
+            str(item.get("title") if isinstance(item, dict) else item).strip()
+            for item in minors
+        ]
+        minor_names = [name for name in minor_names if name]
+        if minor_names:
+            context_parts.append(f"Student's minors: {', '.join(minor_names)}")
     if graduation_year:
         context_parts.append(f"Expected graduation year: {graduation_year}")
     if profile_completed_courses:

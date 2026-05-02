@@ -238,6 +238,12 @@ tr.choice-options-row td {
     padding: 0 14px 10px 58px;
 }
 
+.credit-note {
+    color: #777;
+    font-size: 0.74rem;
+    font-weight: normal;
+}
+
 .course-code {
     font-family: monospace;
     font-weight: bold;
@@ -271,6 +277,16 @@ tr.choice-options-row td {
 
 .choice-options td {
     padding: 6px 8px;
+}
+
+.elective-credit-options-row td {
+    padding-top: 6px;
+}
+
+.choice-options tr.elective-detail-group td {
+    background: #fbf8ff;
+    color: #57068c;
+    font-weight: bold;
 }
 
 /* ── Status indicators ── */

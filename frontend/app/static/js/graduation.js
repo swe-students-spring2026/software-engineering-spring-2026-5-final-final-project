@@ -1,16 +1,34 @@
 const profileDataEl = document.getElementById('profile-data');
 const profile = profileDataEl ? JSON.parse(profileDataEl.textContent || '{}') : (window.profile || {});
-const completedSet = new Set((profile.completed_courses || []).map(c => normalizeCode(c)));
-const currentSet = new Set((profile.current_courses || []).map(c => normalizeCode(c)));
+const completedSet = new Set((profile.completed_courses || []).map(c => normalizeCode(c)).filter(isTranscriptCourseCode));
+const currentSet = new Set((profile.current_courses || []).map(c => normalizeCode(c)).filter(isTranscriptCourseCode));
 
 // Build a normalized code → credit hours map from the transcript
 const transcriptCredits = {};
 Object.entries(profile.course_credits || {}).forEach(([code, credits]) => {
-    transcriptCredits[normalizeCode(code)] = Number(credits) || 0;
+    const normalized = normalizeCode(code);
+    if (isTranscriptCourseCode(normalized)) {
+        transcriptCredits[normalized] = toCreditNumber(credits);
+    }
 });
+const courseCatalogCredits = {};
+
+const testCredits = (profile.test_credits || [])
+    .map(credit => ({
+        test: String(credit?.test || "Test").trim(),
+        component: String(credit?.component || "").trim(),
+        units: toCreditNumber(credit?.units),
+    }))
+    .filter(credit => credit.units > 0);
+const testCreditEntryTotal = testCredits.reduce((total, credit) => total + credit.units, 0);
+const testCreditTotal = testCredits.length ? testCreditEntryTotal : toCreditNumber(profile.test_credit_total);
 
 function normalizeCode(s) {
     return (s || "").replace(/[-\s]+(\d{3}[-\s]\d{3}|\d{4}[-\s]\d{3})$/, "").trim().toUpperCase();
+}
+
+function isTranscriptCourseCode(s) {
+    return /^[A-Z]{2,5}-[A-Z]{2,3}\s+\d+[A-Z]?$/i.test(s || "");
 }
 
 function canonicalRequirementCode(code) {
@@ -51,8 +69,39 @@ function parseCredits(value) {
     return Math.max(...matches.map(Number));
 }
 
+function toCreditNumber(value) {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : 0;
+}
+
+function hasExplicitCreditValue(value) {
+    return String(value ?? "").trim() !== "";
+}
+
 function formatCredits(value) {
     return Number.isInteger(value) ? String(value) : value.toFixed(1).replace(/\.0$/, "");
+}
+
+function hasTranscriptCredit(code) {
+    return transcriptCredits[normalizeCode(code)] !== undefined;
+}
+
+function hasCatalogCredit(code) {
+    return courseCatalogCredits[normalizeCode(code)] !== undefined;
+}
+
+function creditsForCourse(code, fallbackCredits = 0) {
+    const normalized = normalizeCode(code);
+    if (transcriptCredits[normalized] !== undefined) return transcriptCredits[normalized];
+    if (courseCatalogCredits[normalized] !== undefined) return courseCatalogCredits[normalized];
+    return fallbackCredits;
+}
+
+function displayCreditsForCourse(code, fallbackValue = "") {
+    const normalized = normalizeCode(code);
+    if (transcriptCredits[normalized] !== undefined) return formatCredits(transcriptCredits[normalized]);
+    if (courseCatalogCredits[normalized] !== undefined) return formatCredits(courseCatalogCredits[normalized]);
+    return fallbackValue || "";
 }
 
 const specialRequirements = [
@@ -84,15 +133,19 @@ function findSpecialRequirement(first) {
     return specialRequirements.find(req => req.match(first));
 }
 
+function matchedSpecialRequirementCourse(req, sourceSet = completedSet) {
+    return [...sourceSet].find(code => req.matches(code)) || null;
+}
+
 function statusOfSpecialRequirement(req) {
-    if ([...completedCanonicalSet].some(code => req.matches(code))) return "done";
-    if ([...currentCanonicalSet].some(code => req.matches(code))) return "current";
+    if (matchedSpecialRequirementCourse(req, completedSet)) return "done";
+    if (matchedSpecialRequirementCourse(req, currentSet)) return "current";
     return "needed";
 }
 
 function renderSpecialRequirementOptions(req) {
-    const completedMatches = [...completedCanonicalSet].filter(code => req.matches(code));
-    const currentMatches = [...currentCanonicalSet].filter(code => req.matches(code));
+    const completedMatches = [...completedSet].filter(code => req.matches(code));
+    const currentMatches = [...currentSet].filter(code => req.matches(code));
     const matches = [
         ...completedMatches.map(code => `Completed: ${code}`),
         ...currentMatches.map(code => `In progress: ${code}`),
@@ -176,31 +229,203 @@ function choiceOptionKey(option) {
 function creditsForChoice(options, fallbackCredits) {
     const matched = matchedChoiceOption(options);
     if (matched?.code) {
-        const tc = transcriptCredits[normalizeCode(matched.code)];
-        if (tc !== undefined) return tc;
+        return creditsForCourse(matched.code, parseCredits(matched.credits || fallbackCredits));
     }
     return parseCredits(matched?.credits || fallbackCredits);
 }
 
-function extraChoiceCredits(choiceTables, creditedChoiceKeys) {
-    let doneCredits = 0;
-    let currentCredits = 0;
+function creditsForTranscriptCode(code, fallbackCredits = 0) {
+    return creditsForCourse(code, fallbackCredits);
+}
 
-    for (const choice of choiceTables.values()) {
-        choice.options.forEach(option => {
-            const key = choiceOptionKey(option);
-            const st = statusOf(option.code);
-            if (!key || creditedChoiceKeys.has(key)) return;
-            if (st !== "done" && st !== "current") return;
+function sumTranscriptCredits(codes, fallbackCredits = 0) {
+    return codes.reduce((total, code) => total + creditsForTranscriptCode(code, fallbackCredits), 0);
+}
 
-            const credits = parseCredits(option.credits);
-            if (st === "done") doneCredits += credits;
-            else currentCredits += credits;
-            creditedChoiceKeys.add(key);
+function escapeHtml(value) {
+    return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+function collectSatisfiedRequirementKeys(tables, choiceTables) {
+    const keys = new Set();
+    tables.forEach(t => {
+        (t.rows || []).forEach(row => {
+            const cells = row || [];
+            const first = (cells[0] || "").trim();
+            const isCourse = looksLikeCourseCode(first);
+            const isAlt = first.toLowerCase().startsWith("or ");
+            const choice = findChoiceRequirement(first, choiceTables);
+            const specialReq = findSpecialRequirement(first);
+
+            if (specialReq) {
+                const matched = matchedSpecialRequirementCourse(specialReq, completedSet)
+                    || matchedSpecialRequirementCourse(specialReq, currentSet);
+                if (matched) keys.add(canonicalRequirementCode(matched));
+                return;
+            }
+            if (choice) {
+                const matched = matchedChoiceOption(choice.options);
+                if (matched && statusOf(matched.code) !== "needed") {
+                    keys.add(choiceOptionKey(matched));
+                }
+                return;
+            }
+            if (!isCourse && !isAlt) return;
+
+            const code = extractCode(first);
+            if (code && statusOf(code) !== "needed") {
+                keys.add(canonicalRequirementCode(code));
+            }
+        });
+    });
+    return keys;
+}
+
+function collectCourseCreditLookupCodes(tables, choiceTables) {
+    const codes = new Set();
+    const maybeAdd = (code, fallbackValue = "") => {
+        if (!code || hasTranscriptCredit(code)) return;
+        if (!hasExplicitCreditValue(fallbackValue)) codes.add(normalizeCode(code));
+    };
+
+    tables.forEach(t => {
+        (t.rows || []).forEach(row => {
+            const cells = row || [];
+            const first = (cells[0] || "").trim();
+            const isCourse = looksLikeCourseCode(first);
+            const isAlt = first.toLowerCase().startsWith("or ");
+            const choice = findChoiceRequirement(first, choiceTables);
+
+            if (choice) {
+                choice.options.forEach(option => maybeAdd(option.code, option.credits));
+                return;
+            }
+            if (!isCourse && !isAlt) return;
+
+            const code = extractCode(first);
+            const creditVal = cells[2] !== undefined ? cells[2] : (cells.length === 2 ? cells[1] : "");
+            maybeAdd(code, creditVal);
+        });
+    });
+
+    [...completedSet, ...currentSet].forEach(code => maybeAdd(code));
+    return codes;
+}
+
+async function loadCourseCatalogCredits(codes) {
+    const missingCodes = [...codes].filter(code => code && !hasTranscriptCredit(code) && !hasCatalogCredit(code));
+    await Promise.all(missingCodes.map(async code => {
+        const credits = await fetchCourseCatalogCredits(code);
+        if (credits !== null) {
+            courseCatalogCredits[normalizeCode(code)] = credits;
+        }
+    }));
+}
+
+async function fetchCourseCatalogCredits(code) {
+    for (const source of ["bulletin", "albert"]) {
+        try {
+            const res = await fetch(`/api/classes?source=${source}&q=${encodeURIComponent(code)}`);
+            if (!res.ok) continue;
+            const payload = await res.json();
+            const classes = Array.isArray(payload.classes) ? payload.classes : [];
+            const exact = classes.find(course => canonicalRequirementCode(course.code) === canonicalRequirementCode(code))
+                || classes.find(course => normalizeCode(course.code) === normalizeCode(code));
+            if (!exact) continue;
+            const rawCredits = exact.credits ?? exact.units ?? "";
+            if (!hasExplicitCreditValue(rawCredits)) continue;
+            return parseCredits(rawCredits);
+        } catch (err) {
+            // Missing catalog credits should not block rendering transcript-backed progress.
+        }
+    }
+    return null;
+}
+
+function electiveCreditBreakdown(creditedRequirementKeys) {
+    const isOutsideRequirement = code => !creditedRequirementKeys.has(canonicalRequirementCode(code));
+    const completedOutside = [...completedSet].filter(isOutsideRequirement);
+    const currentOutside = [...currentSet].filter(isOutsideRequirement);
+    const completedCourseCredits = sumTranscriptCredits(completedOutside);
+    const currentCourseCredits = sumTranscriptCredits(currentOutside);
+
+    return {
+        completedOutside,
+        currentOutside,
+        completedCourseCredits,
+        currentCourseCredits,
+        testCreditTotal,
+        earnedCredits: completedCourseCredits + testCreditTotal,
+        totalCredits: completedCourseCredits + currentCourseCredits + testCreditTotal,
+    };
+}
+
+function renderAppliedElectiveCreditsDetails(breakdown) {
+    const rows = [];
+    const courseCount = breakdown.completedOutside.length + breakdown.currentOutside.length;
+    const courseCredits = breakdown.completedCourseCredits + breakdown.currentCourseCredits;
+
+    if (courseCredits > 0 || courseCount > 0) {
+        rows.push(`
+            <tr class="elective-detail-group">
+              <td></td><td colspan="2">Courses Outside Requirements <span class="credit-note">(${courseCount} courses)</span></td><td>${formatCredits(courseCredits)}</td>
+            </tr>`);
+        breakdown.completedOutside.forEach(code => {
+            rows.push(`
+                <tr class="row-done">
+                  <td><span class="status-icon status-done">&#10003;</span></td>
+                  <td><span class="course-code">${escapeHtml(code)}</span></td>
+                  <td>Completed outside requirements</td>
+                  <td>${formatCredits(creditsForTranscriptCode(code))}</td>
+                </tr>`);
+        });
+        breakdown.currentOutside.forEach(code => {
+            rows.push(`
+                <tr class="row-current">
+                  <td><span class="status-icon status-current">&rarr;</span></td>
+                  <td><span class="course-code">${escapeHtml(code)}</span></td>
+                  <td>In progress outside requirements</td>
+                  <td>${formatCredits(creditsForTranscriptCode(code))}</td>
+                </tr>`);
         });
     }
 
-    return { doneCredits, currentCredits };
+    if (breakdown.testCreditTotal > 0) {
+        rows.push(`
+            <tr class="elective-detail-group">
+              <td></td><td colspan="2">AP/Test Credits</td><td>${formatCredits(breakdown.testCreditTotal)}</td>
+            </tr>`);
+        testCredits.forEach(credit => {
+            rows.push(`
+                <tr class="row-done">
+                  <td><span class="status-icon status-done">&#10003;</span></td>
+                  <td><span class="course-code">${escapeHtml(credit.test)}</span></td>
+                  <td>${escapeHtml(credit.component)}</td>
+                  <td>${formatCredits(credit.units)}</td>
+                </tr>`);
+        });
+    }
+
+    if (!rows.length) return "";
+    return `
+    <details class="choice-options elective-credit-options">
+      <summary>Applied elective credits</summary>
+      <table>
+        <thead><tr><th style="width:28px"></th><th>Credit</th><th>For</th><th>Credits</th></tr></thead>
+        <tbody>${rows.join("")}</tbody>
+      </table>
+    </details>`;
+}
+
+function renderElectiveCreditBreakdownRows(breakdown) {
+    const details = renderAppliedElectiveCreditsDetails(breakdown);
+    if (!details) return "";
+    return `<tr class="choice-options-row elective-credit-options-row"><td></td><td colspan="3">${details}</td></tr>`;
 }
 
 function renderChoiceOptions(choice) {
@@ -210,7 +435,8 @@ function renderChoiceOptions(choice) {
             : st === "current" ? '<span class="status-icon status-current">→</span>'
                 : '<span class="status-icon status-needed">○</span>';
         const rowCls = st === "done" ? "row-done" : st === "current" ? "row-current" : "";
-        return `<tr class="${rowCls}"><td>${icon}</td><td><span class="course-code">${option.display}</span></td><td>${option.title}</td><td>${option.credits}</td></tr>`;
+        const creditDisplay = displayCreditsForCourse(option.code, option.credits);
+        return `<tr class="${rowCls}"><td>${icon}</td><td><span class="course-code">${option.display}</span></td><td>${option.title}</td><td>${creditDisplay}</td></tr>`;
     }).join("");
     return `
     <details class="choice-options">
@@ -222,7 +448,7 @@ function renderChoiceOptions(choice) {
     </details>`;
 }
 
-function renderTable(t, choiceTables, creditedChoiceKeys) {
+function renderTable(t, choiceTables, creditedRequirementKeys) {
     const rows = t.rows || [];
     let doneCnt = 0, currentCnt = 0, neededCnt = 0;
     let doneCredits = 0, currentCredits = 0, requiredCredits = 0;
@@ -258,6 +484,11 @@ function renderTable(t, choiceTables, creditedChoiceKeys) {
             const rowCls = st === "done" ? "row-done" : st === "current" ? "row-current" : "";
             tableHtml += `<tr class="${rowCls}"><td>${icon}</td><td colspan="2"><span class="choice-label">${first}</span></td><td>${cells[1] || ""}</td></tr>`;
             tableHtml += `<tr class="choice-options-row"><td></td><td colspan="3">${renderSpecialRequirementOptions(specialReq)}</td></tr>`;
+            const matched = matchedSpecialRequirementCourse(specialReq, completedSet)
+                || matchedSpecialRequirementCourse(specialReq, currentSet);
+            if (matched && (st === "done" || st === "current")) {
+                creditedRequirementKeys.add(canonicalRequirementCode(matched));
+            }
             return;
         }
         if (choice) {
@@ -270,7 +501,7 @@ function renderTable(t, choiceTables, creditedChoiceKeys) {
             if (st === "done") doneCredits += credits;
             else if (st === "current") currentCredits += credits;
             if (matched && (st === "done" || st === "current")) {
-                creditedChoiceKeys.add(choiceOptionKey(matched));
+                creditedRequirementKeys.add(choiceOptionKey(matched));
             }
 
             const icon = st === "done" ? '<span class="status-icon status-done">✓</span>'
@@ -284,13 +515,35 @@ function renderTable(t, choiceTables, creditedChoiceKeys) {
         if (!isCourse && !isAlt) {
             // "Other Elective Credits" — count unmatched completed courses toward it
             if (/other\s+elective/i.test(first)) {
-                const unmatched = [...completedSet].filter(c => !creditedChoiceKeys.has(canonicalRequirementCode(c)));
-                const unmatchedCredits = unmatched.length * 4; // approximate; exact credits need DB lookup
-                const st = unmatched.length > 0 ? "done" : "needed";
+                const breakdown = electiveCreditBreakdown(creditedRequirementKeys);
+                const requirementCredits = parseCredits(cells[1] || cells[2]);
+                const appliedDoneCredits = requirementCredits
+                    ? Math.min(breakdown.earnedCredits, requirementCredits)
+                    : breakdown.earnedCredits;
+                const remainingAfterDone = requirementCredits ? Math.max(requirementCredits - appliedDoneCredits, 0) : 0;
+                const appliedCurrentCredits = requirementCredits
+                    ? Math.min(breakdown.currentCourseCredits, remainingAfterDone)
+                    : breakdown.currentCourseCredits;
+                const appliedCredits = appliedDoneCredits + appliedCurrentCredits;
+                const st = requirementCredits && appliedCredits >= requirementCredits
+                    ? "done"
+                    : appliedCredits > 0 ? "current" : "needed";
                 const icon = st === "done" ? '<span class="status-icon status-done">✓</span>' : '<span class="status-icon status-needed">○</span>';
-                const rowCls = st === "done" ? "row-done" : "";
-                const creditDisplay = unmatched.length > 0 ? `${unmatchedCredits}+ / ${cells[1] || ""}` : (cells[1] || "");
-                tableHtml += `<tr class="${rowCls}"><td>${icon}</td><td colspan="2">${first}${unmatched.length > 0 ? ` <span style="font-size:0.75rem;color:#555;font-weight:normal">(${unmatched.length} extra courses)</span>` : ""}</td><td>${creditDisplay}</td></tr>`;
+                const rowCls = st === "done" ? "row-done" : st === "current" ? "row-current" : "";
+                const displayIcon = st === "done" ? '<span class="status-icon status-done">&#10003;</span>'
+                    : st === "current" ? '<span class="status-icon status-current">&rarr;</span>'
+                        : '<span class="status-icon status-needed">&#9675;</span>';
+                const creditDisplay = requirementCredits
+                    ? `${formatCredits(appliedCredits)} / ${formatCredits(requirementCredits)}`
+                    : formatCredits(appliedCredits);
+                if (st === "done") doneCnt++;
+                else if (st === "current") currentCnt++;
+                else neededCnt++;
+                doneCredits += appliedDoneCredits;
+                currentCredits += appliedCurrentCredits;
+
+                tableHtml += `<tr class="${rowCls}"><td>${displayIcon}</td><td colspan="2">${first}</td><td>${creditDisplay}</td></tr>`;
+                tableHtml += renderElectiveCreditBreakdownRows(breakdown);
             } else {
                 tableHtml += `<tr class="group-row"><td></td><td colspan="2">${first}</td><td>${cells[1] || ""}</td></tr>`;
             }
@@ -301,8 +554,8 @@ function renderTable(t, choiceTables, creditedChoiceKeys) {
         const st = statusOf(code);
         // credits: transcript value first, then bulletin (cells[2] or cells[1] for 2-col rows)
         const creditVal = cells[2] !== undefined ? cells[2] : (cells.length === 2 ? cells[1] : "");
-        const transcriptCredit = code ? transcriptCredits[normalizeCode(code)] : undefined;
-        const credits = transcriptCredit !== undefined ? transcriptCredit : parseCredits(creditVal);
+        const credits = code ? creditsForCourse(code, parseCredits(creditVal)) : parseCredits(creditVal);
+        const creditDisplay = code ? displayCreditsForCourse(code, creditVal) : creditVal;
         if (st === "done") doneCnt++;
         else if (st === "current") currentCnt++;
         else if (code) neededCnt++;
@@ -314,68 +567,171 @@ function renderTable(t, choiceTables, creditedChoiceKeys) {
                 : '<span class="status-icon status-needed">○</span>';
         const rowCls = st === "done" ? "row-done" : st === "current" ? "row-current" : "";
         if (code && (st === "done" || st === "current")) {
-            creditedChoiceKeys.add(canonicalRequirementCode(code));
+            creditedRequirementKeys.add(canonicalRequirementCode(code));
         }
         const altCls = isAlt ? " alt-row" : "";
         const codeHtml = code ? `<span class="course-code">${first}</span>` : first;
-        tableHtml += `<tr class="${rowCls}${altCls}"><td>${icon}</td><td>${codeHtml}</td><td>${cells[1] || ""}</td><td>${creditVal}</td></tr>`;
+        tableHtml += `<tr class="${rowCls}${altCls}"><td>${icon}</td><td>${codeHtml}</td><td>${cells[1] || ""}</td><td>${creditDisplay}</td></tr>`;
     });
 
     tableHtml += `</tbody></table>`;
     return { html: tableHtml, done: doneCnt, current: currentCnt, needed: neededCnt, doneCredits, currentCredits, requiredCredits };
 }
 
+function cleanProgramName(value) {
+    return String(value || "")
+        .replace(/\((?:BA|BS|BFA|BMUS|MINOR|MAJOR)\)/gi, "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .toLowerCase();
+}
+
+function programLabel(program) {
+    const title = program?.title || "";
+    const award = program?.award || "";
+    if (!award || title.toLowerCase().includes(`(${award.toLowerCase()})`)) return title;
+    return `${title} (${award})`;
+}
+
+function isMinorProgram(program) {
+    return /minor/i.test(`${program?.award || ""} ${program?.title || ""} ${program?.url || ""}`);
+}
+
+function profileProgramItems(value, fallback, type) {
+    const list = Array.isArray(value) ? value : [];
+    const items = list
+        .map(item => typeof item === "string" ? { title: item } : item)
+        .filter(Boolean)
+        .map(item => ({
+            title: String(item.title || item.name || "").trim(),
+            url: String(item.url || "").trim(),
+            school: String(item.school || "").trim(),
+            award: String(item.award || "").trim(),
+            type,
+        }))
+        .filter(item => item.title || item.url);
+    if (items.length || !fallback?.title) return items;
+    return [{ ...fallback, type }];
+}
+
+function resolveProgramItem(item, availablePrograms) {
+    if (item.url) return item;
+    const target = cleanProgramName(item.title);
+    if (!target) return null;
+    const sameType = availablePrograms.filter(program => item.type === "minor" ? isMinorProgram(program) : !isMinorProgram(program));
+    const candidates = sameType.length ? sameType : availablePrograms;
+    const exact = candidates.find(program => cleanProgramName(program.title) === target || cleanProgramName(programLabel(program)) === target);
+    const partial = candidates.find(program => {
+        const title = cleanProgramName(program.title);
+        return title.includes(target) || target.includes(title);
+    });
+    const match = exact || partial;
+    return match ? { title: match.title, url: match.url, school: match.school || "", award: match.award || "", type: item.type } : item;
+}
+
+async function loadPrograms() {
+    try {
+        const res = await fetch("/api/programs");
+        if (!res.ok) return [];
+        const programs = await res.json();
+        return Array.isArray(programs) ? programs : [];
+    } catch {
+        return [];
+    }
+}
+
+function selectedRequirementPrograms(availablePrograms) {
+    const legacyMajor = profile.major_url || profile.major
+        ? { title: profile.major || "", url: profile.major_url || "", school: profile.school || "", award: "" }
+        : null;
+    const majorItems = profileProgramItems(profile.majors, legacyMajor, "major");
+    const legacyMinorItems = (!Array.isArray(profile.minors) || profile.minors.length === 0) && profile.minor
+        ? String(profile.minor).split(",").map(title => ({ title: title.trim(), url: "", school: "", award: "Minor", type: "minor" }))
+        : [];
+    const minorItems = profileProgramItems(profile.minors, null, "minor").concat(legacyMinorItems);
+    const seen = new Set();
+
+    return [...majorItems, ...minorItems]
+        .map(item => resolveProgramItem(item, availablePrograms))
+        .filter(item => item && item.url)
+        .filter(item => {
+            if (seen.has(item.url)) return false;
+            seen.add(item.url);
+            return true;
+        });
+}
+
 async function render() {
     const root = document.getElementById("page-root");
-    const majorUrl = profile.major_url;
+    const availablePrograms = await loadPrograms();
+    const selectedPrograms = selectedRequirementPrograms(availablePrograms);
 
-    if (!majorUrl) {
+    if (!selectedPrograms.length) {
         root.innerHTML = `
       <div class="no-major">
-        <h2>No major selected</h2>
-        <p>Go to your profile settings and select your school and major to see graduation requirements.</p>
+        <h2>No programs selected</h2>
+        <p>Go to your profile settings and select your majors and minors to see graduation requirements.</p>
         <a href="/profile" class="btn">Go to Settings</a>
       </div>`;
         return;
     }
 
-    let prog;
+    let programPayloads;
     try {
-        const res = await fetch(`/api/program-requirements?url=${encodeURIComponent(majorUrl)}`);
-        prog = await res.json();
-        if (!res.ok) throw new Error(prog.error || "Failed to load");
+        programPayloads = await Promise.all(selectedPrograms.map(async selected => {
+            const res = await fetch(`/api/program-requirements?url=${encodeURIComponent(selected.url)}`);
+            const prog = await res.json();
+            if (!res.ok) throw new Error(prog.error || `Failed to load ${programLabel(selected)}`);
+            return { selected, prog };
+        }));
     } catch (e) {
         root.innerHTML = `<div class="loading">Error loading requirements: ${e.message}</div>`;
         return;
     }
 
-    const allTables = (prog.tables || []).filter(t => !isSamplePlan(t.label));
-    const choiceTables = buildChoiceTables(allTables);
-    const tables = allTables.filter(t => !isChoiceTable(t, choiceTables));
-    const creditedChoiceKeys = new Set();
+    const preparedPrograms = programPayloads.map(({ selected, prog }) => {
+        const allTables = (prog.tables || []).filter(t => !isSamplePlan(t.label));
+        const choiceTables = buildChoiceTables(allTables);
+        const tables = allTables.filter(t => !isChoiceTable(t, choiceTables));
+        return { selected, prog, choiceTables, tables };
+    });
+    const lookupCodes = new Set();
+    preparedPrograms.forEach(item => {
+        collectCourseCreditLookupCodes(item.tables, item.choiceTables).forEach(code => lookupCodes.add(code));
+    });
+    await loadCourseCatalogCredits(lookupCodes);
     let totalDone = 0, totalCurrent = 0, totalNeeded = 0;
     let totalDoneCredits = 0, totalCurrentCredits = 0, totalRequiredCredits = 0;
-    const renderedSections = tables.map(t => {
-        const r = renderTable(t, choiceTables, creditedChoiceKeys);
-        totalDone += r.done;
-        totalCurrent += r.current;
-        totalNeeded += r.needed;
-        totalDoneCredits += r.doneCredits;
-        totalCurrentCredits += r.currentCredits;
-        totalRequiredCredits = Math.max(totalRequiredCredits, r.requiredCredits || 0);
-        return { label: t.label || "Requirements", ...r };
+    const renderedPrograms = preparedPrograms.map((item, programIndex) => {
+        const creditedRequirementKeys = collectSatisfiedRequirementKeys(item.tables, item.choiceTables);
+        let programRequiredCredits = 0;
+        const sections = item.tables.map((t, tableIndex) => {
+            const r = renderTable(t, item.choiceTables, creditedRequirementKeys);
+            totalDone += r.done;
+            totalCurrent += r.current;
+            totalNeeded += r.needed;
+            totalDoneCredits += r.doneCredits;
+            totalCurrentCredits += r.currentCredits;
+            programRequiredCredits = Math.max(programRequiredCredits, r.requiredCredits || 0);
+            return { label: t.label || "Requirements", id: `sec-${programIndex}-${tableIndex}`, ...r };
+        });
+        totalRequiredCredits += programRequiredCredits;
+        return { ...item, sections, requiredCredits: programRequiredCredits };
     });
-    const extraCredits = extraChoiceCredits(choiceTables, creditedChoiceKeys);
-    totalDoneCredits += extraCredits.doneCredits;
-    totalCurrentCredits += extraCredits.currentCredits;
-
+    const renderedSections = renderedPrograms.flatMap(program => {
+        const prefix = `${program.selected.type === "minor" ? "Minor" : "Major"} / ${program.prog.title || programLabel(program.selected)}`;
+        return program.sections.map(sec => ({ ...sec, label: `${prefix}: ${sec.label}` }));
+    });
     const totalCourses = totalDone + totalCurrent + totalNeeded;
     const pct = totalCourses ? Math.round((totalDone / totalCourses) * 100) : 0;
+    const selectedProgramNames = selectedPrograms.map(program => `${program.type === "minor" ? "Minor: " : ""}${programLabel(program)}`);
+    const prog = { school: selectedProgramNames.join(" Â· ") };
+    profile.minor = "";
 
     let html = `
     <div class="summary-card">
       <div class="summary-info">
-        <h2>${prog.title || "Graduation Progress"}</h2>
+        <h2>Graduation Progress</h2>
         <div class="sub">${prog.school || ""}${profile.minor ? " · Minor: " + profile.minor : ""}</div>
         <div class="stat-pills">
           <span class="pill pill-done">✓ ${totalDone} completed</span>

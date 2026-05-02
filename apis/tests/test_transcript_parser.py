@@ -35,7 +35,7 @@ class TestRegexPath:
         assert result["completed"] == []
         assert result["course_credits"] == {"CSCI-UA 474": 4}
 
-    def test_excludes_test_credits_section(self):
+    def test_separates_test_credits_section(self):
         from app.services import transcript_parser
         text = (
             "Test Credits Applied Toward Fall 2021\n"
@@ -45,6 +45,11 @@ class TestRegexPath:
         )
         result = transcript_parser._parse_transcript_regex(text)
         assert result["completed"] == ["MATH-UA 140"]
+        assert result["test_credits"] == [
+            {"test": "ADV_PL", "component": "Calculus BC", "units": 4},
+            {"test": "ADV_PL", "component": "Chemistry", "units": 8},
+        ]
+        assert result["test_credit_total"] == 12
 
     def test_excludes_withdrawn_and_incomplete_grades(self):
         from app.services import transcript_parser
@@ -100,12 +105,24 @@ class TestRegexPath:
     def test_empty_input_returns_empty(self):
         from app.services import transcript_parser
         result = transcript_parser._parse_transcript_regex("")
-        assert result == {"completed": [], "current": [], "course_credits": {}}
+        assert result == {
+            "completed": [],
+            "current": [],
+            "course_credits": {},
+            "test_credits": [],
+            "test_credit_total": 0,
+        }
 
     def test_no_courses_in_text_returns_empty(self):
         from app.services import transcript_parser
         result = transcript_parser._parse_transcript_regex("This is not a transcript.")
-        assert result == {"completed": [], "current": [], "course_credits": {}}
+        assert result == {
+            "completed": [],
+            "current": [],
+            "course_credits": {},
+            "test_credits": [],
+            "test_credit_total": 0,
+        }
 
 
 class TestParseTranscriptOrchestrator:
@@ -118,6 +135,14 @@ class TestParseTranscriptOrchestrator:
             result = transcript_parser.parse_transcript(text)
         mock_ai.assert_not_called()
         assert "MATH-UA 140" in result["completed"]
+
+    def test_test_credit_only_transcript_skips_ai_fallback(self):
+        from app.services import transcript_parser
+        text = "Test Credits Applied Toward Fall 2021\nADV_PL Chemistry 8.0\n"
+        with patch.object(transcript_parser, "_parse_transcript_ai") as mock_ai:
+            result = transcript_parser.parse_transcript(text)
+        mock_ai.assert_not_called()
+        assert result["test_credit_total"] == 8
 
     def test_unconventional_input_falls_back_to_ai(self):
         """A non-NYU-format transcript triggers the AI fallback."""
@@ -144,6 +169,8 @@ class TestAIFallback:
         assert "CSCI-UA 101" in result["completed"]
         assert "MATH-UA 123" in result["completed"]
         assert result["course_credits"]["CSCI-UA 101"] == 4
+        assert result["test_credits"] == []
+        assert result["test_credit_total"] == 0
 
     def test_returns_empty_on_unparseable_response(self):
         from app.services import transcript_parser
@@ -151,7 +178,13 @@ class TestAIFallback:
         mock_resp.text = "Sorry, I cannot parse this."
         with patch.object(transcript_parser.client.models, "generate_content", return_value=mock_resp):
             result = transcript_parser._parse_transcript_ai("gibberish")
-        assert result == {"completed": [], "current": [], "course_credits": {}}
+        assert result == {
+            "completed": [],
+            "current": [],
+            "course_credits": {},
+            "test_credits": [],
+            "test_credit_total": 0,
+        }
 
     def test_returns_empty_on_empty_response(self):
         from app.services import transcript_parser
@@ -159,4 +192,10 @@ class TestAIFallback:
         mock_resp.text = ""
         with patch.object(transcript_parser.client.models, "generate_content", return_value=mock_resp):
             result = transcript_parser._parse_transcript_ai("")
-        assert result == {"completed": [], "current": [], "course_credits": {}}
+        assert result == {
+            "completed": [],
+            "current": [],
+            "course_credits": {},
+            "test_credits": [],
+            "test_credit_total": 0,
+        }
