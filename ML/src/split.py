@@ -53,15 +53,23 @@ Attribute: {query}
     return generate(prompt)
 
 
-def split_query(query):
+def split_query(query, debug=False):
     prompt = f"""
-Split the user request into two search queries.
+Split the user's request into exactly two short search phrases.
+Return exactly one valid JSON object:
 
-- "attribute": generic qualities of the desired place.
-- "type": the kinds of place or facility the user wants.
+Definitions:
+- "attribute": the desired qualities, atmosphere, or characteristics.
+- "type": the kind of place, activity, or facility being sought.
 
-Return exactly one JSON object with these keys:
-Do not include anything else.
+Rules:
+- Use short, generic phrases.
+- Preserve the user's meaning.
+- Do not include locations, business names, or unnecessary words.
+- Both values must be lowercase.
+- Each value should usually be 1-5 words.
+- Output JSON only.
+- Do not include explanations or markdown.
 
 User request: {query}
 """.strip()
@@ -72,5 +80,10 @@ User request: {query}
     attribute = parsed["attribute"]
     reversed_attribute = reverse_query(attribute)
     place_type = parsed["type"]
+
+    if debug:
+        print(response)
+        print(attribute, "->", reversed_attribute)
+        print(place_type)
 
     return reversed_attribute, place_type
