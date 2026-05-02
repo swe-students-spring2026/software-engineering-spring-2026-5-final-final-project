@@ -428,6 +428,39 @@ function renderElectiveCreditBreakdownRows(breakdown) {
     return `<tr class="choice-options-row elective-credit-options-row"><td></td><td colspan="3">${details}</td></tr>`;
 }
 
+function renderStandaloneTestCreditsSection() {
+    if (testCreditTotal <= 0) return null;
+    const rows = testCredits.length
+        ? testCredits.map(credit => `
+            <tr class="row-done">
+              <td><span class="status-icon status-done">&#10003;</span></td>
+              <td><span class="course-code">${escapeHtml(credit.test)}</span></td>
+              <td>${escapeHtml(credit.component || "Applied test credit")}</td>
+              <td>${formatCredits(credit.units)}</td>
+            </tr>`).join("")
+        : `
+            <tr class="row-done">
+              <td><span class="status-icon status-done">&#10003;</span></td>
+              <td><span class="course-code">TEST CREDIT</span></td>
+              <td>Applied test credits from transcript</td>
+              <td>${formatCredits(testCreditTotal)}</td>
+            </tr>`;
+    return {
+        label: "Applied AP/Test Credits",
+        html: `
+            <table>
+              <thead><tr><th style="width:28px"></th><th>Credit</th><th>For</th><th>Credits</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>`,
+        done: testCredits.length || 1,
+        current: 0,
+        needed: 0,
+        doneCredits: testCreditTotal,
+        currentCredits: 0,
+        requiredCredits: 0,
+    };
+}
+
 function renderChoiceOptions(choice) {
     const rows = choice.options.map(option => {
         const st = statusOf(option.code);
@@ -718,10 +751,14 @@ async function render() {
         totalRequiredCredits += programRequiredCredits;
         return { ...item, sections, requiredCredits: programRequiredCredits };
     });
-    const renderedSections = renderedPrograms.flatMap(program => {
+    const testCreditsSection = renderStandaloneTestCreditsSection();
+    const renderedSections = [
+        ...(testCreditsSection ? [testCreditsSection] : []),
+        ...renderedPrograms.flatMap(program => {
         const prefix = `${program.selected.type === "minor" ? "Minor" : "Major"} / ${program.prog.title || programLabel(program.selected)}`;
         return program.sections.map(sec => ({ ...sec, label: `${prefix}: ${sec.label}` }));
-    });
+        }),
+    ];
     const totalCourses = totalDone + totalCurrent + totalNeeded;
     const pct = totalCourses ? Math.round((totalDone / totalCourses) * 100) : 0;
     const selectedProgramNames = selectedPrograms.map(program => `${program.type === "minor" ? "Minor: " : ""}${programLabel(program)}`);
@@ -738,6 +775,7 @@ async function render() {
           ${totalCurrent ? `<span class="pill pill-current">→ ${totalCurrent} in progress</span>` : ""}
           <span class="pill pill-needed">○ ${totalNeeded} remaining</span>
           ${totalRequiredCredits ? `<span class="pill pill-done">${formatCredits(totalDoneCredits + totalCurrentCredits)} / ${formatCredits(totalRequiredCredits)} credits</span>` : ""}
+          ${testCreditTotal ? `<span class="pill pill-done">${formatCredits(testCreditTotal)} AP/test credits</span>` : ""}
         </div>
       </div>
       <div class="progress-bar-wrap">

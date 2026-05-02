@@ -144,6 +144,23 @@ class TestParseTranscriptOrchestrator:
         mock_ai.assert_not_called()
         assert result["test_credit_total"] == 8
 
+    def test_parse_test_credits_extracts_only_test_credit_rows(self):
+        from app.services import transcript_parser
+        text = (
+            "Test Credits Applied Toward Fall 2021\n"
+            "ADV_PL Chemistry 8.0\n"
+            "CSCI-UA 101-001 4.0 A Intro to Computer Science\n"
+            "ADV_PL Calculus BC 4.0\n"
+        )
+        result = transcript_parser.parse_test_credits(text)
+        assert result == {
+            "test_credits": [
+                {"test": "ADV_PL", "component": "Chemistry", "units": 8},
+                {"test": "ADV_PL", "component": "Calculus BC", "units": 4},
+            ],
+            "test_credit_total": 12,
+        }
+
     def test_unconventional_input_falls_back_to_ai(self):
         """A non-NYU-format transcript triggers the AI fallback."""
         from app.services import transcript_parser

@@ -354,6 +354,21 @@ class TestUserProfileRoute:
         assert res.status_code == 200
         assert res.get_json()["major"] == "CS"
 
+    def test_get_profile_backfills_test_credits_from_stored_transcript(self, client, mock_db):
+        mock_db.users.update_one.reset_mock()
+        mock_db.users.find_one.return_value = {
+            "email": "user@nyu.edu",
+            "name": "Test",
+            "transcript_raw": "Test Credits Applied Toward Fall 2021\nADV_PL Chemistry 8.0\n",
+        }
+        res = client.get("/user/profile?email=user@nyu.edu")
+        data = res.get_json()
+        assert res.status_code == 200
+        assert "transcript_raw" not in data
+        assert data["test_credits"] == [{"test": "ADV_PL", "component": "Chemistry", "units": 8}]
+        assert data["test_credit_total"] == 8
+        mock_db.users.update_one.assert_called_once()
+
 
 class TestUpdateProfileRoute:
     def test_update_missing_email_returns_400(self, client):
