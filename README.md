@@ -1,13 +1,317 @@
-Instructions:
-See [instructions](./instructions.md) for details.
+# CatCh
 
-# CatCh: 
+Instructions: See [instructions](./instructions.md) for details.
 
 CatCh is a gamified programming practice platform where users solve coding problems, earn fishing chances, catch fish, collect medals, trade fish, and compete on leaderboards.
 
 In this project, programmers are represented as **kittens**, teachers are represented as **cats**, and classrooms are represented as **fish ponds**. Instead of only completing coding problems for scores, users complete problems to unlock fishing chances. Each fishing chance gives the user an opportunity to catch a fish with a certain rarity level.
 
 CatCh combines coding practice, classroom management, collection-based gameplay, and a player marketplace into one learning platform.
+
+---
+
+## Team Members
+
+- [Celia Liang](https://github.com/liangchuxin)
+- [Grace Yin](https://github.com/gy28611)
+- [Hollan Yuan](https://github.com/hwyuanzi)
+- [Jonas Chen](https://github.com/JonasChenJusFox)
+- [Meili Liang](https://github.com/ml8397)
+
+---
+
+## Installation and Launch Guide
+
+This project is a monorepo with multiple subsystems:
+
+- `game-service`: main FastAPI backend for quiz, fishing, inventory, and gameplay APIs
+- `grader-service`: Python code checking service
+- `auth-service`: email verification and authentication service
+- `teacher-service`: teacher and fish pond management service
+- `integration`: integration layer
+- `mongo`: MongoDB database
+- `frontend/quiz`: quiz frontend
+- `frontend/fishing`: fishing frontend
+
+### Prerequisites
+
+Install:
+
+- Python 3.12
+- Pipenv
+- Node.js 18 or newer
+- npm
+- Docker Desktop
+- Git
+
+Install Pipenv if needed:
+
+```bash
+pip install pipenv
+```
+
+or:
+
+```bash
+brew install pipenv
+```
+
+### Clone the Repository
+
+```bash
+git clone <your-repository-url>
+cd SWE_Final_Project
+```
+
+### Environment Variables
+
+Copy the example environment file:
+
+```bash
+cp .env.example .env
+```
+
+For local development, the default values are enough for most backend features.
+
+Important environment variables include:
+
+```env
+DB_BACKEND=mock
+MONGO_URL=mongodb://localhost:27017
+MONGO_DB=fish_likes_cat
+GRADER_SERVICE_URL=http://localhost:8001
+ALLOWED_ORIGINS=http://localhost:5173,http://localhost:5174,http://localhost:3000
+JWT_SECRET=change-me-for-local-dev
+```
+
+---
+
+## Option A: Run Backend Services with Docker Compose
+
+From the project root:
+
+```bash
+docker compose up --build
+```
+
+This starts:
+
+- MongoDB
+- game-service
+- grader-service
+- auth-service
+- teacher-service
+- integration service
+
+After startup, open:
+
+```text
+http://localhost:8000/docs
+```
+
+Useful backend URLs:
+
+```text
+game-service:      http://localhost:8000
+auth-service:      http://localhost:8002
+teacher-service:   http://localhost:8003
+integration:       http://localhost:8004
+MongoDB:           mongodb://localhost:27017
+```
+
+To stop the backend:
+
+```bash
+docker compose down
+```
+
+To remove the MongoDB volume as well:
+
+```bash
+docker compose down -v
+```
+
+---
+
+## Option B: Run Services Locally for Development
+
+Use separate terminal windows.
+
+### Terminal 1: Grader Service
+
+```bash
+cd grader-service
+pipenv install --dev
+pipenv run uvicorn app.main:app --reload --port 8001
+```
+
+### Terminal 2: Game Service
+
+```bash
+cd game-service
+pipenv install --dev
+cp .env.example .env
+pipenv run uvicorn app.main:app --reload --port 8000
+```
+
+Open:
+
+```text
+http://localhost:8000/docs
+```
+
+### Terminal 3: Quiz Frontend
+
+```bash
+cd frontend/quiz
+npm install
+npm run dev
+```
+
+Open:
+
+```text
+http://localhost:5173
+```
+
+### Terminal 4: Fishing Frontend
+
+```bash
+cd frontend/fishing
+npm install
+npm run dev
+```
+
+Open:
+
+```text
+http://localhost:5174
+```
+
+---
+
+## Fishing Dataset
+
+The fish dataset is committed to the repository.
+
+Main dataset files:
+
+```text
+data/fish_species.json
+data/fish_images/
+```
+
+The dataset currently contains 50 fish species.
+
+Each fish record includes:
+
+- Fish name
+- Species
+- Rarity
+- Catch probability
+- Image path
+- Description
+- Sell value
+- Marketplace eligibility
+
+The fishing images are transparent PNG files in:
+
+```text
+data/fish_images/
+```
+
+The backend serves them through:
+
+```text
+/fish_images/<species_id>.png
+```
+
+To regenerate the fish catalog metadata:
+
+```bash
+python3 scripts/build_fish_catalog.py
+```
+
+No external dataset download is required for normal development.
+
+---
+
+## Quick Fishing Demo
+
+The fishing frontend may show no available chances at first. A user must earn fishing chances by solving quiz problems.
+
+Grant a fishing chance by submitting a correct quiz answer:
+
+```bash
+curl -X POST "http://localhost:8000/quiz/problems/leap/submit" \
+  -H "Content-Type: application/json" \
+  -d '{"code":"def leap_year(y): return y % 4 == 0 and (y % 100 != 0 or y % 400 == 0)","user_id":"demo_user"}'
+```
+
+Cast a fish:
+
+```bash
+curl -X POST "http://localhost:8000/fishing/cast?user_id=demo_user"
+```
+
+View inventory:
+
+```bash
+curl "http://localhost:8000/fishing/inventory/demo_user"
+```
+
+List all fish species:
+
+```bash
+curl "http://localhost:8000/fishing/species"
+```
+
+---
+
+## Running Tests
+
+### Game Service Tests
+
+```bash
+cd game-service
+pipenv install --dev
+pipenv run pytest --cov=app --cov-report=term-missing
+```
+
+### Fishing Tests Only
+
+```bash
+cd game-service
+pipenv run pytest tests/test_fishing.py -v
+```
+
+### Grader Service Tests
+
+```bash
+cd grader-service
+pipenv install --dev
+pipenv run pytest --cov=app --cov-report=term-missing
+```
+
+---
+
+## Frontend Build Check
+
+### Quiz Frontend
+
+```bash
+cd frontend/quiz
+npm install
+npm run build
+```
+
+### Fishing Frontend
+
+```bash
+cd frontend/fishing
+npm install
+npm run build
+```
 
 ---
 
@@ -197,7 +501,7 @@ When a kitten fails a problem after all 5 attempts, that problem is saved to the
 
 This page helps kittens review problems they could not solve before.
 
-The Uncaught Fish page may include:
+This page may include:
 
 - The missed problem
 - The correct answer
