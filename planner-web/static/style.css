@@ -113,6 +113,19 @@ ul { list-style: none; padding: 0; margin: 0; }
 .empty { color: #888; font-size: 0.88rem; }
 .status-done { color: #888; text-decoration: line-through; }
 
+#redAlertOverlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(255, 0, 0, 0.85);
+    z-index: 9999;
+    pointer-events: none;
+}
+
+#redAlertOverlay.active {
+    display: block;
+}
+
 @media (max-width: 560px) {
     .form-grid, .stats-row { grid-template-columns: 1fr; }
     .focus-grid { grid-template-columns: 1fr; }
