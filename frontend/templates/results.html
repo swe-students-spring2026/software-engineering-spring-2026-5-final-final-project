@@ -1,17 +1,27 @@
 {% extends "base.html" %}
-{% block title %}Results — MovieApp{% endblock %}
+{% block title %}Results - MovieApp{% endblock %}
 
 {% block content %}
 <section class="results-section">
-  <h2>Results for <em>"{{ query }}"</em></h2>
+  <h2>
+    {% if mode == "favorites" %}
+      Recommendations for your favorites
+    {% else %}
+      Results for <em>"{{ query }}"</em>
+    {% endif %}
+  </h2>
 
   {% if mode == "intent" %}
     <p class="mode-badge intent">
-      Recommendation mode — your query was interpreted as a natural language request.
+      Semantic search mode: your query was interpreted as a natural-language request.
     </p>
   {% elif mode == "direct" %}
     <p class="mode-badge direct">
-      Direct search mode — searching by keyword.
+      Direct search mode: searching by title or keyword.
+    </p>
+  {% elif mode == "favorites" %}
+    <p class="mode-badge recommendation">
+      Personalized mode: recommendations are ranked by cosine similarity.
     </p>
   {% endif %}
 
@@ -19,11 +29,28 @@
     <ul class="movie-list">
       {% for movie in results %}
         <li class="movie-card">
-          <a href="/movie/{{ movie.id }}">
-            <h3>{{ movie.title }}</h3>
-          </a>
-          <p>{{ movie.description }}</p>
-          <span class="meta">{{ movie.genre }} &middot; {{ movie.year }} &middot; &#9733; {{ movie.rating }}</span>
+          <div class="movie-card-main">
+            <a href="/movie/{{ movie.id }}">
+              <h3>{{ movie.title }}</h3>
+            </a>
+            <p>{{ movie.description }}</p>
+            {% if movie.reason %}
+              <p class="match-reason">{{ movie.reason }}</p>
+            {% endif %}
+            <span class="meta">
+              {{ movie.genre }} &middot; {{ movie.year }} &middot; &#9733; {{ movie.rating }}
+              {% if movie.similarity %}
+                &middot; {{ "%.0f"|format(movie.similarity * 100) }}% match
+              {% endif %}
+            </span>
+          </div>
+
+          <form action="/watchlist/toggle/{{ movie.id }}" method="post">
+            <input type="hidden" name="next" value="{{ request.full_path }}" />
+            <button type="submit" class="btn-secondary">
+              {% if movie.id in watchlist_ids %}Remove from Watchlist{% else %}Add to Watchlist{% endif %}
+            </button>
+          </form>
         </li>
       {% endfor %}
     </ul>

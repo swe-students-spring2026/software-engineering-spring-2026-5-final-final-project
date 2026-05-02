@@ -1,15 +1,25 @@
 {% extends "base.html" %}
-{% block title %}{{ movie.title }} — MovieApp{% endblock %}
+{% block title %}{{ movie.title }} - MovieApp{% endblock %}
 
 {% block content %}
 <article class="movie-detail">
-  <h1>{{ movie.title }}</h1>
+  <div class="movie-detail-header">
+    <div>
+      <h1>{{ movie.title }}</h1>
+      <div class="movie-meta">
+        <span>{{ movie.genre }}</span>
+        <span>{{ movie.year }}</span>
+        <span>&#9733; {{ movie.rating }}</span>
+        <span>Dir. {{ movie.director }}</span>
+      </div>
+    </div>
 
-  <div class="movie-meta">
-    <span>{{ movie.genre }}</span>
-    <span>{{ movie.year }}</span>
-    <span>&#9733; {{ movie.rating }}</span>
-    <span>Dir. {{ movie.director }}</span>
+    <form action="/watchlist/toggle/{{ movie.id }}" method="post">
+      <input type="hidden" name="next" value="/movie/{{ movie.id }}" />
+      <button type="submit" class="btn-secondary">
+        {% if movie.id in watchlist_ids %}Remove from Watchlist{% else %}Add to Watchlist{% endif %}
+      </button>
+    </form>
   </div>
 
   <p class="movie-description">{{ movie.description }}</p>
@@ -22,7 +32,28 @@
       {% endfor %}
     </ul>
   </div>
-
-  <button class="btn-secondary">+ Add to Favorites</button>
 </article>
+
+<section class="similar-section">
+  <div class="section-header">
+    <h2>Similar Movies</h2>
+    <p>More recommendations based on this movie.</p>
+  </div>
+
+  {% if similar_movies %}
+    <ul class="movie-grid">
+      {% for similar in similar_movies %}
+        <li class="movie-card compact">
+          <a href="/movie/{{ similar.id }}">
+            <h3>{{ similar.title }}</h3>
+          </a>
+          <p>{{ similar.description }}</p>
+          <span class="meta">{{ similar.genre }} &middot; {{ similar.year }} &middot; &#9733; {{ similar.rating }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="empty-state">No similar movies available yet.</p>
+  {% endif %}
+</section>
 {% endblock %}
