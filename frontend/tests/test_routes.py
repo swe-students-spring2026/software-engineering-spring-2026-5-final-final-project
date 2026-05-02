@@ -71,6 +71,11 @@ def test_login_post_success(client):
     resp = client.post("/login", data={"username": "alice", "password": "secret"}, follow_redirects=False)
     assert resp.status_code == 302
     assert "/dashboard" in resp.headers["Location"]
+    with client.session_transaction() as sess:
+        assert sess["token"] == "tok123"
+        assert sess["user_id"] == "u1"
+        assert sess["username"] == "alice"
+
 
 
 @rsps_lib.activate
@@ -83,6 +88,12 @@ def test_login_post_failure(client):
     )
     resp = client.post("/login", data={"username": "alice", "password": "wrong"}, follow_redirects=True)
     assert b"Invalid credentials" in resp.data
+
+@rsps_lib.activate
+def test_login_post_generic_error_message(client):
+    rsps_lib.add(rsps_lib.POST, f"{BACKEND}/api/auth/login", json={}, status=401)
+    resp = client.post("/login", data={"username": "alice", "password": "wrong"}, follow_redirects=True)
+    assert b"Login failed" in resp.data
 
 
 def test_login_backend_down(client):
@@ -112,6 +123,12 @@ def test_register_post_success(client):
         follow_redirects=True,
     )
     assert b"Account created" in resp.data
+
+@rsps_lib.activate
+def test_register_post_generic_error_message(client):
+    rsps_lib.add(rsps_lib.POST, f"{BACKEND}/api/auth/register", json={}, status=400)
+    resp = client.post("/register", data={"username": "x", "password": "y"}, follow_redirects=True)
+    assert b"Registration failed" in resp.data
 
 
 @rsps_lib.activate
@@ -160,6 +177,33 @@ def test_dashboard_renders(auth_client):
     resp = auth_client.get("/dashboard")
     assert resp.status_code == 200
     assert b"Dashboard" in resp.data
+
+
+@rsps_lib.activate
+def test_dashboard_renders_charts_and_table(auth_client):
+    rsps_lib.add(
+        rsps_lib.GET,
+        f"{BACKEND}/api/analytics/monthly-summary",
+        json={"monthly_summary": [{"month": "2026-04", "income": 100.0, "expense": 40.0, "net": 60.0}]},
+        status=200,
+    )
+    rsps_lib.add(
+        rsps_lib.GET,
+        f"{BACKEND}/api/analytics/spending-trends",
+        json={"spending_trends": [{"month": "2026-03", "total_spent": 10.0}, {"month": "2026-04", "total_spent": 20.0}]},
+        status=200,
+    )
+    rsps_lib.add(
+        rsps_lib.GET,
+        f"{BACKEND}/api/analytics/top-categories",
+        json={"top_categories": [{"category": "food", "total_spent": 15.5}]},
+        status=200,
+    )
+    resp = auth_client.get("/dashboard")
+    assert resp.status_code == 200
+    assert b"2026-04" in resp.data
+    assert b"categoryChart" in resp.data
+    assert b"trendsChart" in resp.data
 
 
 def test_dashboard_backend_down(auth_client):
@@ -219,6 +263,23 @@ def test_delete_transaction(auth_client):
     assert resp.status_code == 302
 
 
+def test_delete_transaction_backend_unreachable_flashes(auth_client):
+    resp = auth_client.post("/transactions/xyz/delete", follow_redirects=True)
+    assert b"Cannot reach" in resp.data
+
+
+@rsps_lib.activate
+def test_transactions_create_generic_error_message(auth_client):
+    rsps_lib.add(rsps_lib.POST, f"{BACKEND}/api/transactions", json={}, status=400)
+    rsps_lib.add(rsps_lib.GET, f"{BACKEND}/api/transactions", json={"transactions": []}, status=200)
+    resp = auth_client.post(
+        "/transactions",
+        data={"type": "expense", "amount": "1", "category": "x", "date": "2026-04-01"},
+        follow_redirects=True,
+    )
+    assert b"Failed to add transaction" in resp.data
+
+
 def test_transactions_backend_down(auth_client):
     resp = auth_client.get("/transactions")
     assert resp.status_code == 200
@@ -276,6 +337,66 @@ def test_delete_budget(auth_client):
     assert resp.status_code == 302
 
 
+def test_delete_budget_backend_unreachable_flashes(auth_client):
+    resp = auth_client.post("/budgets/b99/delete", follow_redirects=True)
+    assert b"Cannot reach" in resp.data
+
+
+@rsps_lib.activate
+def test_budgets_create_generic_error_message(auth_client):
+    rsps_lib.add(rsps_lib.POST, f"{BACKEND}/api/budgets", json={}, status=400)
+    rsps_lib.add(rsps_lib.GET, f"{BACKEND}/api/budgets/status", json={"status": []}, status=200)
+    resp = auth_client.post(
+        "/budgets",
+        data={"category": "food", "limit": "10", "month": "2026-04"},
+        follow_redirects=True,
+    )
+    assert b"Failed to create budget" in resp.data
+
+
 def test_budgets_backend_down(auth_client):
     resp = auth_client.get("/budgets")
     assert resp.status_code == 200
+
+
+@rsps_lib.activate
+def test_transactions_list_income_row(auth_client):
+    rsps_lib.add(
+        rsps_lib.GET,
+        f"{BACKEND}/api/transactions",
+        json={
+            "transactions": [
+                {"_id": "i1", "type": "income", "amount": 500.0, "category": "salary", "date": "2026-04-01", "description": ""}
+            ]
+        },
+        status=200,
+    )
+    resp = auth_client.get("/transactions")
+    assert resp.status_code == 200
+    assert b"salary" in resp.data
+    assert b"income" in resp.data
+
+
+@rsps_lib.activate
+def test_budgets_over_budget_card(auth_client):
+    rsps_lib.add(
+        rsps_lib.GET,
+        f"{BACKEND}/api/budgets/status",
+        json={
+            "status": [
+                {
+                    "budget_id": "b1",
+                    "category": "food",
+                    "month": "2026-04",
+                    "limit": 100.0,
+                    "spent": 150.0,
+                    "remaining": -50.0,
+                    "over_budget": True,
+                }
+            ]
+        },
+        status=200,
+    )
+    resp = auth_client.get("/budgets")
+    assert resp.status_code == 200
+    assert b"Over by" in resp.data

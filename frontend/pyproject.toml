@@ -1,5 +1,8 @@
 [tool.pytest.ini_options]
 minversion = "7.0"
-addopts = "-ra -q"
+addopts = "-ra -q --cov=api_client --cov=app --cov-report=term-missing --cov-fail-under=80"
 testpaths = ["tests"]
 python_files = ["test_*.py"]
+[tool.coverage.run]
+branch = true
+omit = ["tests/*"]
