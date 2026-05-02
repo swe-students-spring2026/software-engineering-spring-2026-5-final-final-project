@@ -12,7 +12,7 @@ from api_client import BackendClient
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 
-def create_app(backend: BackendClient | None = None)):
+def create_app(backend: BackendClient | None = None):
     app = Flask(__name__)
     app.secret_key = os.getenv("FLASK_SECRET", "dev-frontend-secret")
     api = backend or BackendClient()
