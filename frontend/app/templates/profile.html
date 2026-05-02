@@ -167,9 +167,14 @@
           <h3>Manage Completed Courses</h3>
           <p style="font-size:0.82rem;color:#666;margin-bottom:14px">Manually add or remove courses. These are shared
             with the AI assistant.</p>
-          <div style="display:flex;gap:8px;margin-bottom:14px">
-            <input id="add-course-input" type="text" placeholder="e.g. CSCI-UA 101" style="flex:1">
-            <button class="btn btn-primary btn-sm" onclick="addCourseManually()">Add</button>
+          <div class="course-picker">
+            <div class="course-picker-row">
+              <input id="add-course-input" type="text" placeholder="e.g. CSCI-UA 101 or Algorithms" autocomplete="off">
+              <button class="btn btn-primary btn-sm" onclick="addCourseManually()">Add</button>
+            </div>
+            <div class="course-picker-hint">Start typing a course code or title, then choose from the list.</div>
+            <div id="course-picker-status" class="course-picker-status" aria-live="polite"></div>
+            <div id="course-suggestions" class="course-suggestions" aria-label="Matching courses"></div>
           </div>
           <div class="course-tags" id="settings-courses">
             {% for course in (profile.completed_courses or []) %}

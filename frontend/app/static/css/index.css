@@ -1,9 +1,11 @@
 /* shared base styles moved to shared.css */
 
 .main {
-    display: flex;
     flex: 1;
+    display: flex;
     overflow: hidden;
+    min-height: 0;
+    width: 100%
 }
 
 /* ── Search panel ── */
@@ -573,26 +575,43 @@
 /* ── AI Chat widget ── */
 #chat-bubble {
     position: fixed;
-    bottom: 28px;
-    right: 28px;
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
-    background: #57068c;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    min-width: 160px;
+    height: 46px;
+    padding: 0 18px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #6f16a7 0%, #57068c 100%);
     color: white;
     border: none;
-    font-size: 1.4rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 8px 24px rgba(87, 6, 140, 0.28);
     z-index: 200;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.2s;
+    gap: 8px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 #chat-bubble:hover {
-    background: #7a0fa8;
+    background: linear-gradient(180deg, #7a25b2 0%, #650d9b 100%);
+    transform: translateX(-50%) translateY(-2px);
+    box-shadow: 0 12px 30px rgba(87, 6, 140, 0.34);
+}
+
+.chat-bubble-icon {
+    font-size: 0.75rem;
+    line-height: 1;
+    transform: translateY(-1px);
+}
+
+.chat-bubble-text {
+    font-size: 0.86rem;
 }
 
 #chat-panel {
@@ -631,7 +650,7 @@
 }
 
 #chat-panel.open {
-    transform: scale(1) translateY(0);
+    transform: translateX(-50%) scale(1) translateY(0);
     opacity: 1;
     pointer-events: all;
 }
