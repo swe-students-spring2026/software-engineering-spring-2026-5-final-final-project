@@ -33,7 +33,7 @@ jobs:
         working-directory: apis
         env:
           GEMINI_API_KEY: test_key_for_ci
-          GEMINI_MODEL: gemini-2.5-flash
+          GEMINI_MODEL: gemini-2.0-flash
           MONGO_URI: mongodb://localhost:27017/test
           MONGO_DB_NAME: test
         run: pytest tests/ --cov=app --cov-report=term-missing --cov-fail-under=80

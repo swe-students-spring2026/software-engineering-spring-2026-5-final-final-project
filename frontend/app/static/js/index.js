@@ -45,6 +45,84 @@ function toggleCalendar() {
     btn.textContent = calCollapsed ? '◀' : '▶';
 }
 
+// ── Panel resizing ──
+// Each resizer is identified by data-resize and walks up to .main to set
+// the correct CSS variables on a width pair. We don't rely on DOM siblings
+// because flex `order` reshuffles the visual layout when chat docks.
+(function () {
+    const MIN_PANEL_W = 180;
+
+    function panelWidth(el) {
+        return el ? el.getBoundingClientRect().width : 0;
+    }
+
+    function startResize(handle, e) {
+        e.preventDefault();
+        const main = document.querySelector(".main");
+        const chatPanel = document.getElementById("chat-panel");
+        const searchPanel = document.querySelector(".search-panel");
+        const calPanel = document.getElementById("cal-panel");
+        const kind = handle.dataset.resize;
+
+        // Decide which two panels this handle resizes, and which CSS vars to set.
+        // `left` is the panel to the visual left, `right` to the visual right.
+        let left, right, leftVar, rightVar;
+        if (kind === "search-cal") {
+            left = searchPanel;
+            right = calPanel;
+            leftVar = "--search-width";
+            rightVar = "--cal-width";
+        } else if (kind === "chat-side") {
+            // Position depends on which side chat is docked
+            if (chatPanel.classList.contains("docked-left")) {
+                left = chatPanel; right = searchPanel;
+                leftVar = "--chat-width"; rightVar = "--search-width";
+            } else if (chatPanel.classList.contains("docked-right")) {
+                left = calPanel; right = chatPanel;
+                leftVar = "--cal-width"; rightVar = "--chat-width";
+            } else {
+                return; // resizer shouldn't be visible/active when undocked
+            }
+        } else {
+            return;
+        }
+
+        const startX = e.clientX;
+        const startLeftW = panelWidth(left);
+        const startRightW = panelWidth(right);
+
+        handle.classList.add("resizing");
+        document.body.style.cursor = "col-resize";
+        document.body.style.userSelect = "none";
+
+        function onMove(ev) {
+            const dx = ev.clientX - startX;
+            const newLeftW = startLeftW + dx;
+            const newRightW = startRightW - dx;
+            if (newLeftW < MIN_PANEL_W || newRightW < MIN_PANEL_W) return;
+            main.style.setProperty(leftVar, newLeftW + "px");
+            main.style.setProperty(rightVar, newRightW + "px");
+        }
+
+        function onUp() {
+            handle.classList.remove("resizing");
+            document.body.style.cursor = "";
+            document.body.style.userSelect = "";
+            document.removeEventListener("mousemove", onMove);
+            document.removeEventListener("mouseup", onUp);
+        }
+
+        document.addEventListener("mousemove", onMove);
+        document.addEventListener("mouseup", onUp);
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".panel-resizer").forEach(function (handle) {
+            handle.addEventListener("mousedown", function (e) { startResize(handle, e); });
+        });
+    });
+})();
+
 // ── Conflict detection ──
 function getSectionSlots(sec) {
     return getMeetingSlots(sec).map(({ dayIdx, start, end }) => ({
@@ -167,18 +245,13 @@ function renderCourseGroup(code, title, description, school, sections) {
     const lectures = sections.filter(c => !isRecitation(c));
     const rcts = sections.filter(c => isRecitation(c));
 
-    const rctsByLec = new Map(lectures.map(l => [l.section, []]));
-    const lecSections = lectures.map(l => l.section).sort();
-    rcts.forEach(rct => {
-        let parent = lecSections[0];
-        for (const ls of lecSections) { if (ls <= rct.section) parent = ls; }
-        rctsByLec.get(parent)?.push(rct);
-    });
-
-    const sectionsHtml = lectures.map(lec => {
-        const myRcts = rctsByLec.get(lec.section) || [];
-        return renderSection(lec, false) + myRcts.map(r => renderSection(r, true)).join("");
-    }).join("") + (lectures.length === 0 ? rcts.map(r => renderSection(r, true)).join("") : "");
+    // Search results show LECTUREs only — recitations are picked from a modal
+    // when the user clicks Add (handleAdd fetches the full section list by code).
+    // If a course has no lectures (recitation-only listing), fall back to showing
+    // the recitations so the row isn't empty.
+    const visibleRows = lectures.length > 0
+        ? lectures.map(lec => renderSection(lec, false)).join("")
+        : rcts.map(r => renderSection(r, true)).join("");
 
     return `
     <div class="course-card" data-code="${code}">
@@ -196,7 +269,7 @@ function renderCourseGroup(code, title, description, school, sections) {
         <div class="course-description">${description}</div>
         <button class="desc-toggle" onclick="toggleDescription(this)">Show more</button>
       ` : ""}
-      <div class="sections-table">${sectionsHtml}</div>
+      <div class="sections-table">${visibleRows}</div>
     </div>`;
 }
 
@@ -353,61 +426,54 @@ function updateDescriptionToggles() {
     });
 }
 
+// Find the recitations that belong to a given lecture section.
+// Convention: a recitation pairs with the largest lecture section number
+// that is <= the recitation's section (e.g. lec 001 owns rct 002, 003).
+function recitationsForLecture(lectureSec, allSections) {
+    const lectures = allSections.filter(c => !isRecitation(c));
+    const rcts = allSections.filter(c => isRecitation(c));
+    if (lectures.length <= 1) return rcts;
+
+    const lecSections = lectures.map(l => l.section).sort();
+    return rcts.filter(rct => {
+        let parent = lecSections[0];
+        for (const ls of lecSections) { if (ls <= rct.section) parent = ls; }
+        return parent === lectureSec;
+    });
+}
+
 async function handleAdd(crn) {
     let sec = sectionMap[crn];
     if (!sec) return;
 
-    const card = document.querySelector(`.course-card[data-code="${sec.code}"]`);
-    const gatherRctsFromDom = () => {
-        const allRows = card ? [...card.querySelectorAll(".section-row")] : [];
-        const myRcts = [];
-        let foundLec = false;
-        for (const row of allRows) {
-            if (row.dataset.crn === crn) { foundLec = true; continue; }
-            if (foundLec && row.classList.contains("rct-row")) myRcts.push(sectionMap[row.dataset.crn]);
-            else if (foundLec && !row.classList.contains("rct-row")) break;
-        }
-        return myRcts;
-    };
+    const addBtn = document.querySelector(`.section-row[data-crn="${crn}"] .add-btn`);
+    const originalLabel = addBtn ? addBtn.textContent : "";
+    if (addBtn) { addBtn.disabled = true; addBtn.textContent = "Loading…"; }
 
-    let myRcts = gatherRctsFromDom();
-
-    // If no recitations found in current DOM (e.g. search filtered them out by professor/q),
-    // fetch full course sections for this code and rebuild sectionMap, then retry.
-    if (myRcts.length === 0) {
-        try {
-            const term = document.getElementById("term")?.value || '';
-            const params = new URLSearchParams({ term, code: sec.code });
-            const res = await fetch(`/api/classes?${params}`);
-            const data = await res.json();
-            if (res.ok && Array.isArray(data.classes) && data.classes.length) {
-                // update sectionMap and DOM for this course-card
-                const sections = data.classes;
-                sections.forEach(s => { sectionMap[s.crn] = s; });
-                // rebuild the card's sections HTML
-                const newHtml = renderCourseGroup(sec.code, sections[0]?.title || '', sections[0]?.description || '', sections[0]?.school || '', sections);
-                if (card) card.outerHTML = newHtml;
-                // re-select the card element (it was replaced)
-                const newCard = document.querySelector(`.course-card[data-code="${sec.code}"]`);
-                if (newCard) sec = sectionMap[crn] || sec;
-                // recompute myRcts from new DOM
-                myRcts = (() => {
-                    const rows = newCard ? [...newCard.querySelectorAll('.section-row')] : [];
-                    const arr = [];
-                    let found = false;
-                    for (const row of rows) {
-                        if (row.dataset.crn === crn) { found = true; continue; }
-                        if (found && row.classList.contains('rct-row')) arr.push(sectionMap[row.dataset.crn]);
-                        else if (found && !row.classList.contains('rct-row')) break;
-                    }
-                    return arr;
-                })();
-            }
-        } catch (e) {
-            console.warn('Failed to fetch full course sections:', e);
+    // Always fetch the full section list for this course code so we have every
+    // recitation, even when the current search filtered them out (e.g. by
+    // professor/instructor query, where recitations are taught by TAs).
+    let allSections = null;
+    try {
+        const term = document.getElementById("term")?.value || "";
+        const params = new URLSearchParams({ term, code: sec.code });
+        const res = await fetch(`/api/classes?${params}`);
+        const data = await res.json();
+        if (res.ok && Array.isArray(data.classes) && data.classes.length) {
+            allSections = data.classes;
+            allSections.forEach(s => { sectionMap[s.crn] = s; });
+            sec = sectionMap[crn] || sec;
         }
+    } catch (e) {
+        console.warn("Failed to fetch full course sections:", e);
     }
 
+    if (addBtn) { addBtn.disabled = false; addBtn.textContent = originalLabel || "Add"; }
+
+    // Fall back to whatever we already had if the fetch failed
+    if (!allSections) allSections = Object.values(sectionMap).filter(s => s && s.code === sec.code);
+
+    const myRcts = recitationsForLecture(sec.section, allSections);
     if (myRcts.length > 0) openModal(sec, myRcts);
     else addToSchedule(sec, null);
 }
@@ -702,9 +768,201 @@ init();
 let chatOpen = false;
 let contextOpen = false;
 
+// ── Chat panel drag + side-panel docking ──
+(function () {
+    const SNAP_THRESHOLD = 80; // px from left/right edge to trigger dock
+
+    let dragging = false;
+    let didDrag = false;
+    let startX = 0, startY = 0, startLeft = 0, startTop = 0;
+    // Preview indicator shown while hovering near an edge during drag
+    let snapPreview = null;
+
+    function getSnapPreview() {
+        if (!snapPreview) {
+            snapPreview = document.createElement("div");
+            snapPreview.id = "chat-snap-preview";
+            document.body.appendChild(snapPreview);
+        }
+        return snapPreview;
+    }
+
+    function showPreview(side) {
+        const el = getSnapPreview();
+        el.className = "snap-preview-" + side;
+        el.style.display = "block";
+    }
+
+    function hidePreview() {
+        if (snapPreview) snapPreview.style.display = "none";
+    }
+
+    function isDocked() {
+        const panel = document.getElementById("chat-panel");
+        return panel.classList.contains("docked-left") || panel.classList.contains("docked-right");
+    }
+
+    function dock(side) {
+        const panel = document.getElementById("chat-panel");
+        const main = document.querySelector(".main");
+
+        // Clear any inline float positioning
+        panel.style.left = "";
+        panel.style.top = "";
+        panel.style.right = "";
+        panel.style.bottom = "";
+        panel.style.width = "";
+        panel.style.height = "";
+        panel.style.position = "";
+        panel.style.transform = "";
+
+        // Ensure we don't carry the wrong dock side (left ↔ right toggle)
+        main.classList.remove("chat-docked-left", "chat-docked-right");
+        panel.classList.remove("docked-left", "docked-right", "open");
+        panel.classList.add("docked-" + side);
+        main.classList.add("chat-docked-" + side);
+    }
+
+    function undock() {
+        const panel = document.getElementById("chat-panel");
+        const main = document.querySelector(".main");
+
+        panel.classList.remove("docked-left", "docked-right");
+        main.classList.remove("chat-docked-left", "chat-docked-right");
+        // Drop pixel widths set while docked so search/cal grow back to defaults
+        main.style.removeProperty("--search-width");
+        main.style.removeProperty("--cal-width");
+
+        // Restore floating position (centered above bubble)
+        panel.style.position = "fixed";
+        panel.style.left = "50%";
+        panel.style.bottom = "76px";
+        panel.style.right = "";
+        panel.style.top = "";
+        panel.style.width = "";
+        panel.style.height = "";
+        panel.style.transform = "";
+
+        // Re-open as floating overlay
+        panel.classList.add("open");
+        chatOpen = true;
+    }
+
+    function onMouseDown(e) {
+        if (e.target.closest("#chat-close-btn")) return;
+        const panel = document.getElementById("chat-panel");
+
+        if (isDocked()) {
+            // Start drag from docked state — pull it out
+            const rect = panel.getBoundingClientRect();
+            undock();
+            // Reposition under cursor so it doesn't jump
+            panel.style.left = (e.clientX - rect.width / 2) + "px";
+            panel.style.top = rect.top + "px";
+            panel.style.right = "auto";
+            panel.style.bottom = "auto";
+            startX = e.clientX;
+            startY = e.clientY;
+            startLeft = e.clientX - rect.width / 2;
+            startTop = rect.top;
+        } else {
+            const rect = panel.getBoundingClientRect();
+            // Kill the centering transform before setting left/top,
+            // otherwise translateX(-50%) stacks on top of the explicit left value
+            panel.style.transform = "none";
+            panel.style.left = rect.left + "px";
+            panel.style.top = rect.top + "px";
+            panel.style.right = "auto";
+            panel.style.bottom = "auto";
+            startX = e.clientX;
+            startY = e.clientY;
+            startLeft = rect.left;
+            startTop = rect.top;
+        }
+
+        dragging = true;
+        didDrag = false;
+        panel.classList.add("dragging");
+        e.preventDefault();
+    }
+
+    function onMouseMove(e) {
+        if (!dragging) return;
+        didDrag = true;
+        const panel = document.getElementById("chat-panel");
+        const panelW = panel.getBoundingClientRect().width;
+        const panelH = panel.getBoundingClientRect().height;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        // Allow panel to slide far enough to reach either snap zone
+        const newLeft = Math.max(-panelW + SNAP_THRESHOLD + 1,
+                                 Math.min(startLeft + dx, window.innerWidth - SNAP_THRESHOLD - 1));
+        const newTop = Math.max(0, Math.min(startTop + dy, window.innerHeight - panelH));
+        panel.style.left = newLeft + "px";
+        panel.style.top = newTop + "px";
+
+        // Show snap preview hint
+        if (newLeft <= SNAP_THRESHOLD) {
+            showPreview("left");
+        } else if (newLeft + panelW >= window.innerWidth - SNAP_THRESHOLD) {
+            showPreview("right");
+        } else {
+            hidePreview();
+        }
+    }
+
+    function onMouseUp() {
+        if (!dragging) return;
+        dragging = false;
+        hidePreview();
+        const panel = document.getElementById("chat-panel");
+        panel.classList.remove("dragging");
+
+        if (!didDrag) return;
+
+        const left = parseFloat(panel.style.left);
+        const panelW = panel.getBoundingClientRect().width;
+        if (left <= SNAP_THRESHOLD) {
+            dock("left");
+        } else if (left + panelW >= window.innerWidth - SNAP_THRESHOLD) {
+            dock("right");
+        } else {
+            // Floating free — keep explicit left/top, no centering transform needed
+            panel.style.transform = "none";
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        document.getElementById("chat-panel-header").addEventListener("mousedown", onMouseDown);
+    });
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+})();
+
 function toggleChat() {
+    const panel = document.getElementById("chat-panel");
+    const main = document.querySelector(".main");
+    const docked = panel.classList.contains("docked-left") || panel.classList.contains("docked-right");
+    if (docked) {
+        // Closing while docked: fully remove from layout
+        panel.classList.remove("docked-left", "docked-right");
+        main.classList.remove("chat-docked-left", "chat-docked-right");
+        // Drop pixel widths set while docked so search/cal grow back to defaults
+        main.style.removeProperty("--search-width");
+        main.style.removeProperty("--cal-width");
+        panel.style.position = "fixed";
+        panel.style.left = "50%";
+        panel.style.bottom = "76px";
+        panel.style.right = "";
+        panel.style.top = "";
+        panel.style.width = "";
+        panel.style.height = "";
+        panel.style.transform = "";
+        chatOpen = false;
+        return;
+    }
     chatOpen = !chatOpen;
-    document.getElementById("chat-panel").classList.toggle("open", chatOpen);
+    panel.classList.toggle("open", chatOpen);
     if (chatOpen) document.getElementById("chat-input").focus();
 }
 
