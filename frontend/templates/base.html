@@ -7,10 +7,11 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <main class="content">
+    <main class="content {% if not active_tab %}content--auth{% endif %}">
         {% block content %}{% endblock %}
     </main>
 
+    {% if active_tab %}
     <nav class="bottom-nav">
         <a href="{{ url_for('dashboard') }}" class="nav-tab {% if active_tab == 'dashboard' %}active{% endif %}">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
@@ -32,6 +33,7 @@
             <span>Profile</span>
         </a>
     </nav>
+    {% endif %}
 
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
