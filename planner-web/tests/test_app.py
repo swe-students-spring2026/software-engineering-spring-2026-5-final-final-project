@@ -20,6 +20,12 @@ def test_auth_page_loads():
     assert response.status_code == 200
 
 
+def test_study_sessions_requires_login():
+    app.config["TESTING"] = True
+    response = app.test_client().get("/study-sessions")
+    assert response.status_code == 302
+
+
 def test_preparation_hours():
     assert get_preparation_hours("Light (~1 hr)") == 1
     assert get_preparation_hours("Unknown") == 0

@@ -1,11 +1,14 @@
-from flask import Flask, request, render_template, redirect, session
+from flask import Flask, request, render_template, redirect, session, jsonify
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError
 from dotenv import load_dotenv
 import os
+import json
 from bson.objectid import ObjectId
 from functools import wraps
 from datetime import date
+from urllib.error import URLError
+from urllib.request import Request as UrlRequest, urlopen
 
 from calendar_weather import register_calendar_weather_routes
 
@@ -22,6 +25,10 @@ client = MongoClient(
     connectTimeoutMS=2000
 )
 db = client["studycast"]
+study_session_service_url = os.getenv(
+    "STUDY_SESSION_SERVICE_URL",
+    "http://localhost:5002"
+).rstrip("/")
 
 
 def login_required(view_func):
@@ -37,8 +44,128 @@ def login_required(view_func):
 register_calendar_weather_routes(app, db, login_required)
 
 
+def call_study_session_service(path, method="GET", payload=None):
+    data = None
+    headers = {}
+    if payload is not None:
+        data = json.dumps(payload).encode("utf-8")
+        headers["Content-Type"] = "application/json"
+
+    request_obj = UrlRequest(
+        f"{study_session_service_url}{path}",
+        data=data,
+        headers=headers,
+        method=method,
+    )
+    with urlopen(request_obj, timeout=3) as response:
+        return json.load(response)
+
+
 def render_auth_page(error=None, active_tab="signin"):
     return render_template("auth.html", error=error, active_tab=active_tab)
+
+
+@app.route("/study-sessions", methods=["GET"])
+@login_required
+def study_sessions_page():
+    service_status = None
+    service_error = None
+    detection_result = session.pop("study_detection_result", None)
+    session_result = session.pop("study_session_result", None)
+
+    try:
+        service_status = call_study_session_service("/health")
+    except (OSError, URLError, TimeoutError):
+        service_error = "Study session service is unavailable."
+
+    return render_template(
+        "study_sessions.html",
+        service_status=service_status,
+        service_error=service_error,
+        detection_result=detection_result,
+        session_result=session_result,
+    )
+
+
+@app.route("/study-sessions/start", methods=["POST"])
+@login_required
+def start_study_session():
+    try:
+        session["study_session_result"] = call_study_session_service(
+            "/sessions",
+            method="POST",
+            payload={"user": session.get("user_name", "anonymous")},
+        )
+    except (OSError, URLError, TimeoutError):
+        session["study_session_result"] = {"error": "Could not start session."}
+    return redirect("/study-sessions")
+
+
+@app.route("/study-sessions/start-json", methods=["POST"])
+@login_required
+def start_study_session_json():
+    try:
+        return jsonify(call_study_session_service(
+            "/sessions",
+            method="POST",
+            payload={"user": session.get("user_name", "anonymous")},
+        ))
+    except (OSError, URLError, TimeoutError):
+        return jsonify({"error": "Could not start session."}), 503
+
+
+@app.route("/study-sessions/end-json", methods=["POST"])
+@login_required
+def end_study_session_json():
+    payload = request.get_json(silent=True) or {}
+    session_id = payload.get("session_id")
+    if not session_id:
+        return jsonify({"error": "Missing session id."}), 400
+    try:
+        return jsonify(call_study_session_service(
+            f"/sessions/{session_id}/end",
+            method="POST",
+            payload={"distraction_count": int(payload.get("distraction_count", 0))},
+        ))
+    except (OSError, URLError, TimeoutError):
+        return jsonify({"error": "Could not end session."}), 503
+
+
+@app.route("/study-sessions/detect", methods=["POST"])
+@login_required
+def detect_study_distraction():
+    payload = {
+        "face_present": request.form.get("face_present") == "true",
+        "looking_away": request.form.get("looking_away") == "true",
+        "phone_visible": request.form.get("phone_visible") == "true",
+    }
+    try:
+        session["study_detection_result"] = call_study_session_service(
+            "/detect",
+            method="POST",
+            payload=payload,
+        )
+    except (OSError, URLError, TimeoutError):
+        session["study_detection_result"] = {"error": "Could not analyze focus."}
+    return redirect("/study-sessions")
+
+
+@app.route("/study-sessions/detect-json", methods=["POST"])
+@login_required
+def detect_study_distraction_json():
+    payload = request.get_json(silent=True) or {}
+    try:
+        return jsonify(call_study_session_service(
+            "/detect",
+            method="POST",
+            payload={
+                "face_present": bool(payload.get("face_present", True)),
+                "looking_away": bool(payload.get("looking_away", False)),
+                "phone_visible": False,
+            },
+        ))
+    except (OSError, URLError, TimeoutError):
+        return jsonify({"error": "Could not analyze focus."}), 503
 
 
 PREPARATION_HOURS = {

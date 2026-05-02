@@ -17,6 +17,12 @@ def test_health():
     assert response.get_json()["status"] == "ok"
 
 
+def test_index_is_health():
+    response = app.test_client().get("/")
+    assert response.status_code == 200
+    assert response.get_json()["service"] == "study-session-service"
+
+
 def test_detect():
     response = app.test_client().post("/detect", json={"looking_away": True})
     assert response.status_code == 200

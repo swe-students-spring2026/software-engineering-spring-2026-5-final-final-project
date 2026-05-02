@@ -13,6 +13,7 @@ services:
     environment:
       MONGO_URI: mongodb://mongodb:27017/
       MONGO_DB: studycast
+      STUDY_SESSION_SERVICE_URL: http://study-session-service:5002
     ports:
       - "5001:5001"
     depends_on:
@@ -24,8 +25,8 @@ services:
     environment:
       MONGO_URI: mongodb://mongodb:27017/
       MONGO_DB: studycast
-    ports:
-      - "5002:5002"
+    expose:
+      - "5002"
     depends_on:
       - mongodb
 
