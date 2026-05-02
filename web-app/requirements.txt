@@ -1,7 +1,8 @@
 flask
+requests
 flask-bcrypt
 flask-login
 pymongo
-requests
+python-dotenv
 pytest
 pytest-cov
