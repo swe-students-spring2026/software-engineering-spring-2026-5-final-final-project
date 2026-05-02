@@ -75,12 +75,22 @@
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label>Major</label>
-              <input type="text" value="{{ profile.major or 'Not set' }}" disabled>
+              <label>Majors</label>
+              <input id="overview-majors" type="text"
+                value="{% if profile.majors %}{{ (profile.majors | map(attribute='title') | list) | join(', ') }}{% else %}{{ profile.major or 'Not set' }}{% endif %}"
+                disabled>
             </div>
             <div class="form-group">
               <label>Graduation Year</label>
               <input type="text" value="{{ profile.graduation_year or 'Not set' }}" disabled>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Minors</label>
+              <input id="overview-minors" type="text"
+                value="{% if profile.minors %}{{ (profile.minors | map(attribute='title') | list) | join(', ') }}{% else %}{{ profile.minor or 'Not set' }}{% endif %}"
+                disabled>
             </div>
           </div>
           <div style="margin-top:8px">
@@ -143,22 +153,44 @@
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label for="s-major">Major</label>
-              <select id="s-major">
+              <label for="s-major">Primary Major</label>
+              <select id="s-major" onchange="renderProgramTags()">
                 <option value="">Select school first</option>
               </select>
               <input type="hidden" id="s-major-url" value="{{ profile.major_url or '' }}">
             </div>
             <div class="form-group">
-              <label for="s-minor">Minor (optional)</label>
-              <input id="s-minor" type="text" value="{{ profile.minor or '' }}" placeholder="e.g. Mathematics">
+              <label for="s-extra-major">Additional Major / Double Major</label>
+              <div class="program-picker-row">
+                <select id="s-extra-major">
+                  <option value="">Loading…</option>
+                </select>
+                <button class="btn btn-primary btn-sm" type="button" onclick="addSelectedMajor()">Add</button>
+              </div>
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
+              <label for="s-minor-program">Minor</label>
+              <div class="program-picker-row">
+                <select id="s-minor-program">
+                  <option value="">Loading…</option>
+                </select>
+                <button class="btn btn-primary btn-sm" type="button" onclick="addSelectedMinor()">Add</button>
+              </div>
+            </div>
+            <div class="form-group">
               <label for="s-studentid">Student ID (optional)</label>
               <input id="s-studentid" type="text" value="{{ profile.student_id or '' }}" placeholder="N12345678">
             </div>
+          </div>
+          <div class="program-list-block">
+            <label>Selected Majors</label>
+            <div class="program-tags" id="selected-majors"></div>
+          </div>
+          <div class="program-list-block">
+            <label>Selected Minors</label>
+            <div class="program-tags" id="selected-minors"></div>
           </div>
           <button class="btn btn-primary" onclick="saveSettings()">Save Changes</button>
         </div>
@@ -248,6 +280,9 @@
       "school": profile.school or "",
       "major": profile.major or "",
       "major_url": profile.major_url or "",
+      "majors": profile.majors or [],
+      "minor": profile.minor or "",
+      "minors": profile.minors or [],
       "completed_courses": profile.completed_courses or [],
       "current_courses": profile.current_courses or []
     } | tojson }}</script>

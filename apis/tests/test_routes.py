@@ -403,8 +403,15 @@ class TestUploadTranscriptRoute:
         fake_page.extract_text.return_value = "CSCI-UA 101 Intro to CS A\nMATH-UA 123 Calculus B"
         fake_reader = MagicMock()
         fake_reader.pages = [fake_page]
+        parsed_transcript = {
+            "completed": ["CSCI-UA 101", "MATH-UA 123"],
+            "current": [],
+            "course_credits": {"CSCI-UA 101": 4, "MATH-UA 123": 4},
+            "test_credits": [{"test": "ADV_PL", "component": "Chemistry", "units": 8}],
+            "test_credit_total": 8,
+        }
         with patch("pypdf.PdfReader", return_value=fake_reader):
-            with patch("app.services.transcript_parser.parse_transcript", return_value={"completed": ["CSCI-UA 101", "MATH-UA 123"], "current": [], "course_credits": {"CSCI-UA 101": 4, "MATH-UA 123": 4}}):
+            with patch("app.services.transcript_parser.parse_transcript", return_value=parsed_transcript):
                 res = client.post(
                     "/user/transcript",
                     data={"email": "user@nyu.edu", "transcript": (BytesIO(b"%PDF-1.4"), "t.pdf", "application/pdf")},
@@ -413,3 +420,6 @@ class TestUploadTranscriptRoute:
         assert res.status_code == 200
         data = res.get_json()
         assert data["count"] == 2
+        assert data["test_credit_total"] == 8
+        saved = mock_db.users.update_one.call_args.args[1]["$set"]
+        assert saved["test_credits"] == parsed_transcript["test_credits"]

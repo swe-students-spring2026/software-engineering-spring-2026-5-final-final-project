@@ -343,7 +343,22 @@ def update_profile():
     if not email:
         return jsonify({"error": "email required"}), 400
 
-    allowed = {"name", "major", "major_url", "school", "minor", "graduation_year", "student_id", "completed_courses", "current_courses", "course_credits"}
+    allowed = {
+        "name",
+        "major",
+        "major_url",
+        "majors",
+        "school",
+        "minor",
+        "minors",
+        "graduation_year",
+        "student_id",
+        "completed_courses",
+        "current_courses",
+        "course_credits",
+        "test_credits",
+        "test_credit_total",
+    }
     updates = {k: v for k, v in data.items() if k in allowed}
     if not updates:
         return jsonify({"error": "no valid fields to update"}), 400
@@ -383,6 +398,8 @@ def upload_transcript():
     completed = result.get("completed", [])
     current = result.get("current", [])
     course_credits = result.get("course_credits", {})
+    test_credits = result.get("test_credits", [])
+    test_credit_total = result.get("test_credit_total", 0)
 
     db.users.update_one(
         {"email": email},
@@ -391,10 +408,18 @@ def upload_transcript():
             "completed_courses": completed,
             "current_courses": current,
             "course_credits": course_credits,
+            "test_credits": test_credits,
+            "test_credit_total": test_credit_total,
         }},
         upsert=True,
     )
-    return jsonify({"courses": completed, "current_courses": current, "count": len(completed)}), 200
+    return jsonify({
+        "courses": completed,
+        "current_courses": current,
+        "count": len(completed),
+        "test_credits": test_credits,
+        "test_credit_total": test_credit_total,
+    }), 200
 
 
 @app.get("/programs")

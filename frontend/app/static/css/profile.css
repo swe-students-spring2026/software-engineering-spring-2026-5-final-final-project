@@ -177,6 +177,57 @@
     gap: 5px;
 }
 
+.program-picker-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: center;
+}
+
+.program-list-block {
+    margin-bottom: 14px;
+}
+
+.program-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+    min-height: 32px;
+}
+
+.program-tag {
+    background: #f0e6f7;
+    color: #57068c;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+}
+
+.program-tag span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.program-tag button {
+    background: none;
+    border: none;
+    color: #a060c8;
+    cursor: pointer;
+    font-size: 0.85rem;
+    line-height: 1;
+    padding: 0;
+}
+
+.program-tag button:hover {
+    color: #c00;
+}
+
 label {
     font-size: 0.8rem;
     font-weight: 600;
