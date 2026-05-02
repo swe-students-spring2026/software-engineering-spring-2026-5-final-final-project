@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, redirect, session
+from flask import Flask, request, render_template, redirect, session, jsonify
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError
 from dotenv import load_dotenv
@@ -118,6 +118,24 @@ def detect_study_distraction():
     except (OSError, URLError, TimeoutError):
         session["study_detection_result"] = {"error": "Could not analyze focus."}
     return redirect("/study-sessions")
+
+
+@app.route("/study-sessions/detect-json", methods=["POST"])
+@login_required
+def detect_study_distraction_json():
+    payload = request.get_json(silent=True) or {}
+    try:
+        return jsonify(call_study_session_service(
+            "/detect",
+            method="POST",
+            payload={
+                "face_present": bool(payload.get("face_present", True)),
+                "looking_away": bool(payload.get("looking_away", False)),
+                "phone_visible": False,
+            },
+        ))
+    except (OSError, URLError, TimeoutError):
+        return jsonify({"error": "Could not analyze focus."}), 503
 
 
 PREPARATION_HOURS = {
