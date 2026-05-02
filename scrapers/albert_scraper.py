@@ -1061,6 +1061,7 @@ def parse_meets_human(meets: str) -> list[dict[str, Any]]:
 
 def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url: str) -> list[dict[str, Any]]:
     docs: list[dict[str, Any]] = []
+    rows = realign_shifted_topic_rows(rows)
     # Tracks the last primary (lecture) record's title/term so secondary sections
     # (recitations, discussions) can inherit them when Albert omits the course header.
     last_primary: dict[str, str] = {"subject_code": "", "catalog_number": "", "title": "", "term": "", "topic": ""}
@@ -1147,6 +1148,62 @@ def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url:
     return docs
 
 
+def realign_shifted_topic_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Move a topic line that Albert's text stream attached to the prior section."""
+    adjusted: list[dict[str, Any]] = []
+    for row in rows:
+        copied = dict(row)
+        source_row = copied.get("source_row")
+        if isinstance(source_row, list):
+            copied["source_row"] = list(source_row)
+        adjusted.append(copied)
+
+    for index in range(len(adjusted) - 1):
+        current = adjusted[index]
+        next_row = adjusted[index + 1]
+        if clean_text(current.get("code", "")) != clean_text(next_row.get("code", "")):
+            continue
+        if row_has_topic(next_row):
+            continue
+
+        topic_line = trailing_topic_after_bookstore(current)
+        if not topic_line:
+            continue
+
+        current_source = current.get("source_row")
+        if isinstance(current_source, list):
+            current_source.pop()
+
+        next_source = next_row.get("source_row")
+        if isinstance(next_source, list):
+            next_source.insert(0, topic_line)
+        elif not next_row.get("topic"):
+            next_row["topic"] = topic_from_line(topic_line)
+
+    return adjusted
+
+
+def row_has_topic(row: dict[str, Any]) -> bool:
+    return bool(extract_topic(row))
+
+
+def trailing_topic_after_bookstore(row: dict[str, Any]) -> str:
+    source_row = row.get("source_row", [])
+    if not isinstance(source_row, list) or not source_row:
+        return ""
+
+    last_line = clean_text(source_row[-1])
+    if not topic_from_line(last_line):
+        return ""
+    if not any(re.match(r"^visit\s+the\s+bookstore\b", clean_text(line), re.I) for line in source_row[:-1]):
+        return ""
+    return last_line
+
+
+def topic_from_line(line: str) -> str:
+    return sanitize_albert_text(find_first(r"^topic:\s*(.+)$", clean_text(line), flags=re.I))
+
+
 def make_albert_id(term_code: str, subject: str, catalog: str, section: str) -> str:
     parts = [_CLEAN_TOKEN_RE.sub("", str(v or "")) for v in (term_code, subject, catalog, section)]
     parts = [part for part in parts if part]
@@ -1213,9 +1270,9 @@ def extract_topic(row: dict[str, Any]) -> str:
     if isinstance(source_row, list):
         for line in reversed(source_row):
             text = clean_text(line)
-            topic = find_first(r"^topic:\s*(.+)$", text, flags=re.I)
+            topic = topic_from_line(text)
             if topic:
-                return sanitize_albert_text(topic)
+                return topic
     return sanitize_albert_text(row.get("topic", ""))
 
 
