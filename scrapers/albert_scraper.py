@@ -9,6 +9,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+# Playwright 1.58 bundles Node 24, which currently emits DEP0169 from its
+# generated WebSocket mock source. Keep scraper output clean while preserving
+# unrelated Node warnings.
+_NODE_DEP0169_SUPPRESS_OPTION = "--disable-warning=DEP0169"
+_node_options = os.environ.get("NODE_OPTIONS", "")
+if _NODE_DEP0169_SUPPRESS_OPTION not in _node_options.split():
+    os.environ["NODE_OPTIONS"] = " ".join(
+        option for option in (_node_options, _NODE_DEP0169_SUPPRESS_OPTION) if option
+    )
+
 from bs4 import BeautifulSoup
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import sync_playwright
@@ -39,6 +49,19 @@ try:
     from scrapers.scraper import make_id, school_for_subject, split_code
 except ModuleNotFoundError:
     from scraper import make_id, school_for_subject, split_code
+
+try:
+    from scrapers.course_text import (
+        normalize_topic_title_fields,
+        title_with_topic,
+        topic_prefix_remainder,
+    )
+except ModuleNotFoundError:
+    from course_text import (
+        normalize_topic_title_fields,
+        title_with_topic,
+        topic_prefix_remainder,
+    )
 
 
 ALBERT_CLASS_SEARCH_URL = "https://sis.nyu.edu/psc/csprod/EMPLOYEE/SA/c/NYU_SR.NYU_CLS_SRCH.GBL"
@@ -1079,8 +1102,8 @@ def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url:
         section = sanitize_albert_text(row.get("section", ""))
         meeting_details = extract_meeting_details(row)
         term = extract_term_label(row, fallback=term_code)
-        course_text = extract_course_text(row, code)
         topic = extract_topic(row)
+        course_text = extract_course_text(row, code, topic=topic)
         notes = extract_notes(row)
         prerequisites = extract_prerequisites(notes)
         title = course_text["title"] or sanitize_albert_text(row.get("title", ""))
@@ -1096,6 +1119,15 @@ def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url:
                 term = last_primary["term"]
             if not topic:
                 topic = last_primary["topic"]
+
+        normalized_text = normalize_topic_title_fields({
+            "title": title,
+            "topic": topic,
+            "description": course_text["description"],
+        })
+        title = normalized_text["title"]
+        topic = normalized_text["topic"]
+        description = normalized_text["description"]
 
         if title and term:
             last_primary = {
@@ -1125,7 +1157,7 @@ def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url:
                 "code": code,
                 "title": title,
                 "topic": topic,
-                "description": course_text["description"],
+                "description": description,
                 "section": section,
                 "crn": crn,
                 "status": sanitize_albert_text(row.get("status", "")),
@@ -1276,7 +1308,7 @@ def extract_topic(row: dict[str, Any]) -> str:
     return sanitize_albert_text(row.get("topic", ""))
 
 
-def extract_course_text(row: dict[str, Any], code: str) -> dict[str, str]:
+def extract_course_text(row: dict[str, Any], code: str, *, topic: str = "") -> dict[str, str]:
     details = {
         "title": "",
         "description": "",
@@ -1299,6 +1331,7 @@ def extract_course_text(row: dict[str, Any], code: str) -> dict[str, str]:
 
     if header_index >= 0:
         description_lines: list[str] = []
+        title_continuation = ""
         stop_markers = (
             "school:",
             "term:",
@@ -1322,7 +1355,12 @@ def extract_course_text(row: dict[str, Any], code: str) -> dict[str, str]:
                 break
             if any(lower.startswith(marker) for marker in stop_markers):
                 break
+            if not title_continuation and topic_prefix_remainder(text, topic) == "":
+                title_continuation = text
+                continue
             description_lines.append(text)
+        if title_continuation:
+            details["title"] = title_with_topic(details["title"], title_continuation)
         details["description"] = sanitize_albert_text(" ".join(description_lines))
 
     return details

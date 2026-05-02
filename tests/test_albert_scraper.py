@@ -1,6 +1,38 @@
 from scrapers.albert_scraper import rows_to_documents
 
 
+def test_rows_to_documents_promotes_topic_line_to_title_not_description():
+    rows = [
+        {
+            "code": "ENGL-UA 59",
+            "section": "001",
+            "crn": "22420",
+            "status": "Open",
+            "source_row": [
+                "ENGL-UA 59 Topics:",
+                "Of Monsters and Medicine",
+                "Topics and prerequisites vary by semester.",
+                "School:",
+                "College of Arts and Science",
+                "Term:Fall 2026",
+                "Topic: Of Monsters and Medicine",
+                "ENGL-UA 59 | 4 units",
+                "Class#: 22420",
+                "Section: 001",
+                "Class Status: Open",
+                "Component: Lecture",
+                "Visit the Bookstore",
+            ],
+        }
+    ]
+
+    docs = rows_to_documents(rows, term_code="Fall 2026", source_url="test")
+
+    assert docs[0]["title"] == "Topics: Of Monsters and Medicine"
+    assert docs[0]["topic"] == "Of Monsters and Medicine"
+    assert docs[0]["description"] == "Topics and prerequisites vary by semester."
+
+
 def test_rows_to_documents_realigns_shifted_topic_to_next_section():
     rows = [
         {

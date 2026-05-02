@@ -12,6 +12,12 @@ from flask import Flask, jsonify, request
 from pymongo import MongoClient
 from werkzeug.security import check_password_hash, generate_password_hash
 
+try:
+    from scrapers.course_text import normalize_topic_title_fields
+except ModuleNotFoundError:
+    def normalize_topic_title_fields(doc: dict[str, Any]) -> dict[str, Any]:
+        return doc
+
 logger = logging.getLogger(__name__)
 
 try:
@@ -109,6 +115,7 @@ def _require_internal_api_token():
 
 def _prepare_class_response(doc: dict[str, Any]) -> dict[str, Any]:
     course = dict(doc)
+    normalize_topic_title_fields(course)
     course.pop("source", None)
     return course
 
@@ -153,6 +160,7 @@ def get_classes():
         instructor_pattern = ".*".join(re.escape(t) for t in q.split())
         query["$or"] = [
             {"title":        {"$regex": re.escape(q), "$options": "i"}},
+            {"topic":        {"$regex": re.escape(q), "$options": "i"}},
             {"code":         {"$regex": re.escape(q), "$options": "i"}},
             {"subject_code": {"$regex": re.escape(q), "$options": "i"}},
             {"instructor":   {"$regex": instructor_pattern, "$options": "i"}},

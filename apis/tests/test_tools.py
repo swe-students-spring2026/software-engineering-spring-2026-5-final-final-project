@@ -41,6 +41,12 @@ class TestSearchCourses:
         result = search_courses()
         assert result["courses"][0]["topic"] == "The Black Radical Tradition"
 
+    def test_slim_search_projection_includes_topic(self, mock_db):
+        mock_db.classes.find.return_value.limit.return_value = []
+        search_courses()
+        projection = mock_db.classes.find.call_args[0][1]
+        assert projection["topic"] == 1
+
     def test_no_db_returns_error(self):
         tools_module._db = None
         result = search_courses(query="algorithms")
@@ -97,6 +103,12 @@ class TestGetCourseSections:
         get_course_sections("CSCI-UA 101", term="1268")
         filter_arg = mock_db.classes.find.call_args[0][0]
         assert "1268" in str(filter_arg)
+
+    def test_matches_topic(self, mock_db):
+        mock_db.classes.find.return_value.limit.return_value = []
+        get_course_sections("Of Monsters and Medicine")
+        filter_arg = mock_db.classes.find.call_args[0][0]
+        assert any("topic" in condition for condition in filter_arg["$or"])
 
     def test_empty_sections_returns_zero_count(self, mock_db):
         mock_db.classes.find.return_value.limit.return_value = []
