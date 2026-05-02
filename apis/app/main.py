@@ -325,10 +325,17 @@ def get_profile():
     email = request.args.get("email", "").strip().lower()
     if not email:
         return jsonify({"error": "email required"}), 400
-    # Exclude password and raw transcript text from API responses
-    user = db.users.find_one({"email": email}, {"_id": 0, "password": 0, "transcript_raw": 0})
+    user = db.users.find_one({"email": email}, {"_id": 0, "password": 0})
     if not user:
         return jsonify({"error": "user not found"}), 404
+    transcript_raw = user.get("transcript_raw", "")
+    if transcript_raw and not user.get("test_credits") and not user.get("test_credit_total"):
+        from app.services.transcript_parser import parse_test_credits
+        parsed_test_credits = parse_test_credits(transcript_raw)
+        if parsed_test_credits["test_credits"] or parsed_test_credits["test_credit_total"]:
+            user.update(parsed_test_credits)
+            db.users.update_one({"email": email}, {"$set": parsed_test_credits})
+    user.pop("transcript_raw", None)
     return jsonify(user)
 
 

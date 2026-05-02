@@ -69,6 +69,19 @@ def _parse_test_credit_line(line: str) -> dict[str, Any] | None:
     }
 
 
+def parse_test_credits(text: str) -> dict[str, Any]:
+    """Extract AP/IB/advanced placement test credits from transcript text."""
+    test_credits = [
+        credit
+        for line in text.splitlines()
+        if (credit := _parse_test_credit_line(line))
+    ]
+    return {
+        "test_credits": test_credits,
+        "test_credit_total": _total_test_credits(test_credits),
+    }
+
+
 def _coerce_parse_result(parsed: dict[str, Any]) -> dict[str, Any]:
     test_credits = parsed.get("test_credits") or []
     if not isinstance(test_credits, list):
