@@ -166,9 +166,16 @@ async function loadDropdown(url, selId) {
 }
 
 // ── Search ──
-function isRecitation(c) {
+function isSecondarySection(c) {
     const comp = (c.component || "").toLowerCase();
-    return comp.includes("rct") || comp.includes("recitation");
+    return comp.includes("rct") || comp.includes("recitation") || comp.includes("lab") || comp.includes("laboratory");
+}
+
+function sectionTypeLabel(c) {
+    const comp = (c.component || "").toLowerCase();
+    if (comp.includes("lab") || comp.includes("laboratory")) return "Laboratory";
+    if (comp.includes("rct") || comp.includes("recitation")) return "Recitation";
+    return c.component || "Section";
 }
 
 function isSectionAdded(crn) {
@@ -193,7 +200,7 @@ function statusBadge(raw) {
     return `<span class="status-badge ${cls}">${s}</span>`;
 }
 
-function renderSection(c, isRct) {
+function renderSection(c, isSecondary) {
     const added = isSectionAdded(c.crn);
     const btn = added
         ? `<button class="add-btn added"
@@ -222,9 +229,9 @@ function renderSection(c, isRct) {
     .map(name => `<a class="instructor-link" href="/professor?name=${encodeURIComponent(name)}">${name}</a>`)
     .join(" · ");
   return `
-    <div class="section-row${isRct ? " rct-row" : ""}" data-crn="${c.crn}">
+        <div class="section-row${isSecondary ? " rct-row" : ""}" data-crn="${c.crn}">
       <div class="section-left">
-        <span class="section-type">${c.component || ""}</span>
+                <span class="section-type">${sectionTypeLabel(c)}</span>
         <span class="section-num">Sec ${c.section} · Class# ${c.crn}</span>
         ${c.location ? `<span class="section-loc">${c.location}</span>` : ""}
       </div>
@@ -235,23 +242,24 @@ function renderSection(c, isRct) {
         ${c.meets_human ? `<span>${c.meets_human}</span>` : ""}
         ${statusBadge(c.status)}
       </div>
-      <div>${isRct ? "" : btn}</div>
+            <div>${isSecondary ? "" : btn}</div>
     </div>`;
 }
 
 function renderCourseGroup(code, title, description, school, sections) {
     sections.forEach(s => { sectionMap[s.crn] = s; });
     const firstSection = sections[0] || {};
-    const lectures = sections.filter(c => !isRecitation(c));
-    const rcts = sections.filter(c => isRecitation(c));
+        const lectures = sections.filter(c => !isSecondarySection(c));
+        const secondaries = sections.filter(c => isSecondarySection(c));
 
-    // Search results show LECTUREs only — recitations are picked from a modal
-    // when the user clicks Add (handleAdd fetches the full section list by code).
-    // If a course has no lectures (recitation-only listing), fall back to showing
-    // the recitations so the row isn't empty.
-    const visibleRows = lectures.length > 0
-        ? lectures.map(lec => renderSection(lec, false)).join("")
-        : rcts.map(r => renderSection(r, true)).join("");
+        // Show lectures with their recitations/labs directly beneath them so the
+        // user can see the full section structure before deciding to add anything.
+        const visibleRows = lectures.length > 0
+                ? lectures.map(lec => {
+                        const related = recitationsForLecture(lec.section, sections);
+                        return [renderSection(lec, false), ...related.map(sec => renderSection(sec, true))].join("");
+                }).join("")
+                : secondaries.map(sec => renderSection(sec, true)).join("");
 
     return `
     <div class="course-card" data-code="${code}">
@@ -426,20 +434,43 @@ function updateDescriptionToggles() {
     });
 }
 
-// Find the recitations that belong to a given lecture section.
-// Convention: a recitation pairs with the largest lecture section number
-// that is <= the recitation's section (e.g. lec 001 owns rct 002, 003).
+// Find the secondary sections that belong to a given lecture section.
+// Convention: a secondary section pairs with the largest lecture section number
+// that is <= the secondary section's section number.
 function recitationsForLecture(lectureSec, allSections) {
-    const lectures = allSections.filter(c => !isRecitation(c));
-    const rcts = allSections.filter(c => isRecitation(c));
-    if (lectures.length <= 1) return rcts;
+    const lectures = allSections.filter(c => !isSecondarySection(c));
+    const secondaries = allSections.filter(c => isSecondarySection(c));
+    if (lectures.length <= 1) return secondaries;
 
-    const lecSections = lectures.map(l => l.section).sort();
-    return rcts.filter(rct => {
-        let parent = lecSections[0];
-        for (const ls of lecSections) { if (ls <= rct.section) parent = ls; }
+    const sortValue = value => {
+        const raw = String(value || "").trim();
+        const numeric = raw.match(/\d+/)?.[0];
+        return numeric ? Number(numeric) : raw;
+    };
+
+    const lecSections = lectures
+        .map(l => ({ section: l.section, sortKey: sortValue(l.section) }))
+        .sort((a, b) => {
+            if (typeof a.sortKey === "number" && typeof b.sortKey === "number") return a.sortKey - b.sortKey;
+            return String(a.sortKey).localeCompare(String(b.sortKey));
+        });
+
+    const matched = secondaries.filter(sec => {
+        const secKey = sortValue(sec.section);
+        let parent = lecSections[0].section;
+        for (const lec of lecSections) {
+            const lecKey = lec.sortKey;
+            if (
+                (typeof lecKey === "number" && typeof secKey === "number" && lecKey <= secKey) ||
+                (typeof lecKey !== "number" && typeof secKey !== "number" && String(lecKey) <= String(secKey))
+            ) {
+                parent = lec.section;
+            }
+        }
         return parent === lectureSec;
     });
+
+    return matched.length ? matched : secondaries;
 }
 
 async function handleAdd(crn) {
