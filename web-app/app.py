@@ -1,11 +1,10 @@
 """Flask Web app - backend for Word Game and Matchmaking"""
 
 import os
-import requests as http
 
 from datetime import date
-from ./game_engine/game_engine/game_engine_client import evaluate_guess
 from flask import Flask, flash, jsonify, redirect, render_template, request, session, url_for
+from game_engine_client import evaluate_guess, create_puzzle
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 from config import Config
@@ -125,31 +124,36 @@ def create_app(test_config=None):
     def dashboard():
         engine_url = app.config["GAME_ENGINE_URL"]
         result = None
-
-        if request.method == "POST":
-            puzzle = db.puzzles.find_one({"date": str(date.today())})
+        candidate = next(db.users.aggregate([
+            {"$match": {"_id": {"$ne": session.get("user_id")}}},
+            {"$sample": {"size": 1}}
+        ]), None)
             
-            guess = request.form.get("answer_1")  
-            previous_guesses = session.get("guesses", [])
+        puzzles = list(db.puzzles.find({"owner_user_id": str(candidate["_id"])})) if candidate else []
+        
+        if request.method == "POST":
+            correct_count = 0
+            for i, puzzle in enumerate(puzzles, start=1):
+                guess = request.form.get(f"answer_{i}")
+                previous_guesses = session.get(f"guesses_{i}", [])
 
-            outcome = evaluate_guess(
-                engine_url,
-                question=puzzle["question"],
-                answer=puzzle["answer"],
-                board=puzzle["board"],
-                guess=guess,
-                previous_guesses=previous_guesses,
-            )
+                outcome = requests.post(f"{engine_url}/guesses", json={
+                    "question": puzzle["question"],
+                    "answer": puzzle["answer"],
+                    "board": puzzle["board"],
+                    "guess": guess,
+                    "previous_guesses": previous_guesses,
+                }).json()
 
-            session.setdefault("guesses", []).append(guess)
+                session.setdefault(f"guesses_{i}", []).append(guess)
+                if outcome["is_correct"]:
+                    correct_count += 1
 
             result = {
-                "score": 1 if outcome["is_correct"] else 0,
-                "total": 1,
-                "matched": outcome["puzzle_solved"],
+                "score": correct_count,
+                "total": len(puzzles),
+                "matched": correct_count == len(puzzles),
             }
-
-        candidate = db.users.find_one({"is_candidate": True}) 
         return render_template("dashboard.html", candidate=candidate, today=date.today(), result=result)
 
     @app.route("/matches")
