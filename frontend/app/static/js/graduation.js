@@ -149,6 +149,16 @@ const specialRequirements = [
             };
         },
     },
+    {
+        key: "first-year-seminar",
+        label: "First-Year Seminar",
+        match: text => /first[\s-]*year.*seminar/i.test(text || ""),
+        options: ["FYSEM-UA 1", "FYSEM-UA 2"],
+        matches: code => {
+            const normalized = canonicalRequirementCode(code);
+            return /^FYSEM-UA\s+\d+/i.test(normalized);
+        },
+    },
 ];
 
 function findSpecialRequirement(first) {
