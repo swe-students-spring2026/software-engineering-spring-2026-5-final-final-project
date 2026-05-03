@@ -1,56 +1,62 @@
 {% extends "base.html" %}
-{% block title %}Home - MovieApp{% endblock %}
+{% block title %}Home - CineMatch{% endblock %}
 
 {% block content %}
 <section class="hero">
   <h1>Find Your Next Watch</h1>
-  <p class="subtitle">
-    Search by title, describe your mood, or enter four favorite movies for a personalized recommendation list.
-  </p>
-
-<!-- Search bar -->
-<div class="home-search">
-  <form class="search-form" action="/search" method="get">
-    <input
-      type="text"
-      name="q"
-      class="search-input"
-      placeholder="Search by title or describe what you want to watch..."
-      autocomplete="off"
-    />
-    <button type="submit" class="btn-primary">Search</button>
-  </form>
-</div>
-
-  <p class="search-hint">
-    Try <em>"Inception"</em> for direct search, or
-    <em>"I want a slow-burn psychological thriller"</em> for semantic search.
-  </p>
+  <p class="subtitle">Choose how you want to discover movies.</p>
 </section>
 
-<section class="recommendation-panel">
-  <div class="section-header">
-    <h2>Personalized Recommendations</h2>
-    <p>Enter exactly four favorite movies to generate cosine-similarity recommendations.</p>
-  </div>
+<div class="workflow-split">
 
-  {% if error %}
-    <p class="form-error">{{ error }}</p>
-  {% endif %}
-
-  <form class="favorites-form" action="/recommendations" method="post">
-    {% for index in range(1, 5) %}
-      <label for="favorite_{{ index }}">Favorite movie {{ index }}</label>
+  <div class="workflow-panel">
+    <h2 class="panel-heading">Search Movies</h2>
+    <p class="panel-desc">Search by title, or describe a mood or genre — we'll find what fits.</p>
+    <form class="search-form" action="/search" method="get">
       <input
         type="text"
-        id="favorite_{{ index }}"
-        name="favorite_{{ index }}"
-        value="{{ favorite_titles[index - 1] if favorite_titles else '' }}"
-        placeholder="Movie title"
-        required
+        name="q"
+        id="search-query"
+        class="search-input"
+        placeholder="Title or description…"
+        autocomplete="off"
+        aria-label="Search movies by title or description"
       />
-    {% endfor %}
-    <button type="submit" class="btn-primary">Generate Recommendations</button>
-  </form>
-</section>
+      <button type="submit" class="btn-primary">Search</button>
+    </form>
+    <p class="search-hint">Try <em>"Inception"</em> or <em>"slow-burn psychological thriller"</em>.</p>
+  </div>
+
+  <div class="workflow-divider" aria-hidden="true">or</div>
+
+  <div class="workflow-panel">
+    <h2 class="panel-heading">Get Recommendations</h2>
+    <p class="panel-desc">Name four movies you love and we'll recommend films that match your taste.</p>
+
+    {% if error %}
+      <p class="form-error">{{ error }}</p>
+    {% endif %}
+
+    <form action="/recommendations" method="post">
+      <div class="rec-inputs">
+        {% for index in range(1, 5) %}
+          <div class="rec-input-row">
+            <label for="favorite_{{ index }}" class="rec-label">{{ index }}</label>
+            <input
+              type="text"
+              id="favorite_{{ index }}"
+              name="favorite_{{ index }}"
+              class="search-input"
+              value="{{ favorite_titles[index - 1] if favorite_titles else '' }}"
+              placeholder="Movie title"
+              required
+            />
+          </div>
+        {% endfor %}
+      </div>
+      <button type="submit" class="btn-primary rec-submit">Get Recommendations</button>
+    </form>
+  </div>
+
+</div>
 {% endblock %}

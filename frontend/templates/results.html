@@ -1,7 +1,8 @@
 {% extends "base.html" %}
-{% block title %}Results - MovieApp{% endblock %}
+{% block title %}Results - CineMatch{% endblock %}
 
 {% block content %}
+<a class="back-link" href="/">&#8592; Back to home</a>
 <section class="results-section">
   <h2>
     {% if mode == "favorites" %}
@@ -26,33 +27,42 @@
   {% endif %}
 
   {% if results %}
-    <ul class="poster-grid">
+    <ul class="movie-list results-list">
       {% for movie in results %}
-        <li class="movie-card">
+        <li class="movie-card result-card">
           <div class="movie-card-main">
-            <a href="/movie/{{ movie.id }}">
+            <a href="/movie/{{ movie.id }}" class="movie-title-link">
               <h3>{{ movie.title }}</h3>
             </a>
-            <p>{{ movie.description }}</p>
-            {% if movie.reason %}
-              <p class="match-reason">{{ movie.reason }}</p>
-            {% endif %}
+
             <span class="meta">
-              {{ movie.genre }} &middot; {{ movie.year }} &middot; &#9733; {{ movie.rating }}
+              {{ movie.genre }} &middot; {{ movie.year }} &middot; &#9733; {{ movie.rating }}/10
               {% if movie.similarity %}
                 &middot; {{ "%.0f"|format(movie.similarity * 100) }}% match
               {% endif %}
             </span>
+
+            <p class="movie-description-preview">{{ movie.description }}</p>
+
+            {% if movie.reason %}
+              <p class="match-reason">{{ movie.reason }}</p>
+            {% endif %}
           </div>
 
-          <form action="/watchlist/toggle/{{ movie.id }}" method="post">
-            <input type="hidden" name="next" value="{{ request.full_path }}" />
-            <button type="submit" class="btn-secondary">
-              {% if movie.id in watchlist_ids %}Remove from Watchlist{% else %}Add to Watchlist{% endif %}
-            </button>
-          </form>
+          <div class="movie-card-actions">
+            <form action="/watchlist/toggle/{{ movie.id }}" method="post">
+              <input type="hidden" name="next" value="{{ request.full_path }}" />
+              <button type="submit" class="btn-secondary">
+                {% if movie.id in watchlist_ids %}
+                  Remove from Watchlist
+                {% else %}
+                  Add to Watchlist
+                {% endif %}
+              </button>
+            </form>
+          </div>
         </li>
-      {% endfor %}
+    {% endfor %}
     </ul>
   {% else %}
     <p class="empty-state">No results found. Try a different search.</p>

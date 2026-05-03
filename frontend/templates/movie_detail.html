@@ -1,7 +1,10 @@
 {% extends "base.html" %}
-{% block title %}{{ movie.title }} - MovieApp{% endblock %}
+{% block title %}{{ movie.title }} - CineMatch{% endblock %}
 
 {% block content %}
+{% if back_url %}
+  <a class="back-link" href="{{ back_url }}">&#8592; Back</a>
+{% endif %}
 <article class="movie-detail">
   <div class="movie-detail-header">
     <div>
