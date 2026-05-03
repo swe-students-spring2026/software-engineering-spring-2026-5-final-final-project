@@ -1,7 +1,12 @@
 const profileDataEl = document.getElementById('profile-data');
 const profile = profileDataEl ? JSON.parse(profileDataEl.textContent || '{}') : (window.profile || {});
-const completedSet = new Set((profile.completed_courses || []).map(c => normalizeCode(c)).filter(isTranscriptCourseCode));
-const currentSet = new Set((profile.current_courses || []).map(c => normalizeCode(c)).filter(isTranscriptCourseCode));
+// Build deduplicated sets of canonical course codes for completed and current courses
+const completedSet = new Set((profile.completed_courses || [])
+    .map(c => canonicalRequirementCode(c))
+    .filter(isTranscriptCourseCode));
+const currentSet = new Set((profile.current_courses || [])
+    .map(c => canonicalRequirementCode(c))
+    .filter(isTranscriptCourseCode));
 
 // Build a normalized code → credit hours map from the transcript
 const transcriptCredits = {};
@@ -22,6 +27,37 @@ const testCredits = (profile.test_credits || [])
     .filter(credit => credit.units > 0);
 const testCreditEntryTotal = testCredits.reduce((total, credit) => total + credit.units, 0);
 const testCreditTotal = testCredits.length ? testCreditEntryTotal : toCreditNumber(profile.test_credit_total);
+
+// Map common test credits to course codes so they satisfy requirements.
+// This helps when a user test-out (AP/IB) but didn't add a course code to completed courses.
+const testCreditCourseMap = [
+    { pattern: /calculus\s*ab/i, codes: ["MATH-UA 121"] },
+    { pattern: /calculus\s*bc/i, codes: ["MATH-UA 121", "MATH-UA 122"] },
+    { pattern: /calculus/i, codes: ["MATH-UA 121"] },
+];
+
+testCredits.forEach(tc => {
+    const text = `${tc.test || ""} ${tc.component || ""}`;
+    for (const map of testCreditCourseMap) {
+        if (map.pattern.test(text)) {
+            map.codes.forEach(code => {
+                try {
+                    const canon = canonicalRequirementCode(code);
+                    // Add to completed set (deduplicated)
+                    completedSet.add(canon);
+                    // Apply transcript credit for that course if not present
+                    const norm = normalizeCode(canon);
+                    if (transcriptCredits[norm] === undefined && tc.units > 0) {
+                        transcriptCredits[norm] = toCreditNumber(tc.units);
+                    }
+                } catch (e) {
+                    // ignore mapping errors
+                }
+            });
+            break;
+        }
+    }
+});
 
 function normalizeCode(s) {
     return (s || "").replace(/[-\s]+(\d{3}[-\s]\d{3}|\d{4}[-\s]\d{3})$/, "").trim().toUpperCase();
@@ -210,7 +246,8 @@ function buildChoiceTables(tables) {
     const choices = new Map();
     tables.forEach(t => {
         const label = t.label || "";
-        if (!/elective/i.test(label) || !/requirement/i.test(label)) return;
+        // Treat any table that looks like an elective list as a choice table.
+        if (!/elective/i.test(label)) return;
         const options = (t.rows || [])
             .map(row => {
                 const cells = row || [];
@@ -235,7 +272,8 @@ function choiceRequirementKey(text) {
 
 function findChoiceRequirement(first, choiceTables) {
     const key = choiceRequirementKey(first);
-    if (/^select\s+one\b/i.test(first || "")) {
+    // Accept any "Select ..." phrasing (one, two, up to N) as a choice indicator.
+    if (/^select\s+\w+/i.test(first || "")) {
         if (choiceTables.has(key)) return choiceTables.get(key);
 
         for (const [choiceKeyValue, choice] of choiceTables.entries()) {
