@@ -1,6 +1,7 @@
 import argparse
 import html
 import json
+import logging
 import os
 import re
 import sys
@@ -12,6 +13,8 @@ from typing import Optional
 
 import requests
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 BASE = "https://bulletins.nyu.edu/class-search/api/"
 HEADERS = {
@@ -27,6 +30,9 @@ HEADERS = {
 # Persistent session — reuses TCP connections across the many API calls in scrape_all_schools_for_term
 _SESSION = requests.Session()
 _SESSION.headers.update(HEADERS)
+
+MAX_RETRIES = 3
+RETRY_BACKOFF_SECONDS = 2
 
 # ── School → `coll` filter value (pass directly to API) ────────────────────────
 SCHOOL_CODES = {
