@@ -6,7 +6,7 @@ def test_extract_rows_from_text_keeps_crosslisted_header_with_primary_code():
         "\n".join(
             [
                 "CORE-UA 1 | CORE-UA 9001 Complexities: Oceans",
-                "We inhabit a world of complex systems. less description for CORE-UA 1 | CORE-UA 9001 «",
+                "We inhabit a world of complex systems. less description for CORE-UA 1 | CORE-UA 9001",
                 "School:",
                 "College of Arts and Science",
                 "Term: Fall 2026",
