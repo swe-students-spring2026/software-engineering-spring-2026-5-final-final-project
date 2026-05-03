@@ -29,8 +29,16 @@
                 <p>{{ event.location }} @ {{ event.date|format_time }}</p>
                 <p>{{ event.details }}</p>
                 <span class="invite-actions">
-                    <button class="accept-button"><img src="../icons/checkmark.circle.svg" alt="Accept" color="#e693ff"></button>
-                    <button class="decline-button"><img src="../icons/x.circle.svg" alt="Decline" color="#e693ff"></button>
+                    <a href="{{ url_for('accept_event', event_id=event._id) }}">
+                        <button class="accept-button">
+                            <img src="{{ url_for('static', filename='icons/checkmark.circle.svg') }}" alt="Accept">
+                        </button>
+                    </a>
+                    <a href="{{ url_for('decline_event', event_id=event._id) }}">
+                        <button class="decline-button">
+                            <img src="{{ url_for('static', filename='icons/x.circle.svg') }}" alt="Decline">
+                        </button>
+                    </a>
                 </span>
             </li>
             {% endfor %}
