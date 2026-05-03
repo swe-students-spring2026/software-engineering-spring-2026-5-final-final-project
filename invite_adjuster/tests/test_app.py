@@ -1,9 +1,11 @@
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import pytest
 from app.main import app
 
 @pytest.fixture
 def client():
-    from app.main import app
     app.config["TESTING"] = True
     with app.test_client() as test_client:
         yield test_client
@@ -21,10 +23,20 @@ def test_lateness_penalty(client, monkeypatch):
         def update_one(self, query, update, upsert=False):
             pass
 
-    monkeypatch.setattr(app_module, "get_users_collection", lambda: FakeUsersCollection())
+    monkeypatch.setattr(app_module, "get_db", lambda: FakeDB(FakeUsersCollection()))
 
     response = client.get(f"/lateness_penalty/{USER_ID}")
     data = response.get_json()
 
     expected = sum(LATENESS_VALUES[-5:]) / len(LATENESS_VALUES[-5:])
     assert data["lateness_penalty"] == expected
+
+# mock database
+class FakeDB:
+    def __init__(self, users_collection):
+        self.users_collection = users_collection
+
+    def __getitem__(self, name):
+        if name == "users":
+            return self.users_collection
+        return None
