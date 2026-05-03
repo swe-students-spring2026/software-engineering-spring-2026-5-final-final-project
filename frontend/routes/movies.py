@@ -1,13 +1,16 @@
 from flask import Blueprint, render_template, request
 from services.search_router import handle_search
-from services.api_client import get_movie_details
+from services.api_client import get_movie_details, get_favorites, recommend_movies
 
 movies_bp = Blueprint("movies", __name__)
 
 
 @movies_bp.route("/")
 def home():
-    return render_template("home.html")
+    favorites = get_favorites()
+    favorite_ids = [m["id"] for m in favorites]
+    recommendations = recommend_movies(favorite_ids) if favorite_ids else []
+    return render_template("home.html", favorites=favorites, recommendations=recommendations)
 
 
 @movies_bp.route("/search")
