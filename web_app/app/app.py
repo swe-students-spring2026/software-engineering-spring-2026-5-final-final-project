@@ -275,6 +275,9 @@ def home_upcoming():
 @app.route("/invites")
 @login_required
 def invites():
+    # sort order
+    sort_order = request.args.get("sort", "asc")
+
     # get current user
     users_collection = get_users_collection()
     user = users_collection.find_one({"_id": ObjectId(current_user.id)})
@@ -321,9 +324,13 @@ def invites():
                 })
 
     # we have to sort the events by the most recent first
-    invited_events.sort(key=lambda x: x["date"])
+    # we have to sort the events by the filter setting
+    if (sort_order == "asc"):
+        invited_events.sort(key=lambda x: x["date"])
+    else:
+        invited_events.sort(key=lambda x: x["date"], reverse=True)
 
-    return render_template("invites.html", invited_events=invited_events)
+    return render_template("invites.html", invited_events=invited_events, sort_order=sort_order)
 
 
 @app.route("/host-events")
