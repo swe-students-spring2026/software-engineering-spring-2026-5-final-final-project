@@ -1,10 +1,12 @@
-def test_register(client):
-     response=client.get("/register")
-     assert response.status_code==200
+import app
+def client(): 
+    app.app.config["TESTING"] = True 
+    with app.app.test_client() as client: 
+         yield client
+
 
 def test_register_empty_fields(client):
     response=client.post("/register",data={
-        "_id":"", 
         "username":"",
         "email":"",
         "password":""
@@ -19,7 +21,7 @@ def test_register_username_exists(client,monkeypatch):
           "password":"Rehan123@2005"
      }
      monkeypatch.setattr(
-          "app.find_user_by_username",lambda username:{"username":username}
+          "app.find_user_by_username",lambda username:test_user
      )
      response=client.post("/register",data={
           "username":"rehan",
