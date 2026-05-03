@@ -7,6 +7,7 @@ name = "pypi"
 flask-login = "*"
 requests = "*"
 flask = {extras = ["async"], version = "*"}
+pymongo = "*"
 
 [dev-packages]
 
