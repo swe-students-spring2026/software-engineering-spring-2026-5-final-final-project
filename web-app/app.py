@@ -97,7 +97,7 @@ def create_app(test_config=None):
             db.users.update_one(
                 {"_id": ObjectId(session["user_id"])},
                 {"$set": {
-                    "age": int(request.form.get("age")),
+                    "age": int(request.form.get("age") or 0),
                     "gender": request.form.get("gender"),
                     "profile_pic": request.form.get("profile_pic", ""),
                     "contact_info": request.form.get("contact_info", ""),
