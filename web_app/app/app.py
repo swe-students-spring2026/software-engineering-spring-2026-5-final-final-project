@@ -138,7 +138,8 @@ def create_account():
 
 @app.template_filter('format_time')
 def format_time(date):
-
+    if date is None:
+        return "No time set"
     # make sure there is no 0 before the hour
     hour = date.hour % 12
     if hour == 0:
@@ -294,7 +295,10 @@ def invites():
                         invitee_info = invitee
                         break
                 
-                display_time = invitee_info.get("suggested_arrival_time") if invitee_info else event_datetime
+                display_time = event_datetime
+
+                if invitee_info and invitee_info.get("suggested_arrival_time"):
+                    display_time = invitee_info["suggested_arrival_time"]
 
                 invited_events.append({
                     "_id": event.get("_id"),
@@ -464,7 +468,7 @@ def edit_host_event(event_id):
             invitee_id = str(invitee_user["_id"])
             new_invitee_ids.append(invitee_id)
 
-            lateness_penalty = max(calculate_lateness_penalty(invitee_user), 0)
+            lateness_penalty = max(get_lateness_penalty(invitee_user), 0)
             suggested_arrival = event_datetime - timedelta(minutes=lateness_penalty)
 
             new_invitees_list.append({
