@@ -43,6 +43,32 @@ def test_extract_rows_from_text_keeps_crosslisted_header_with_primary_code():
     assert docs[1]["term"] == "Fall 2026"
 
 
+def test_rows_to_documents_normalizes_numeric_term_code_to_label():
+    rows = [
+        {
+            "code": "CSCI-UA 101",
+            "section": "001",
+            "crn": "12345",
+            "status": "Open",
+            "source_row": [
+                "CSCI-UA 101 Introduction to Computer Science",
+                "School:",
+                "College of Arts and Science",
+                "CSCI-UA 101 | 4 units",
+                "Class#: 12345",
+                "Section: 001",
+                "Class Status: Open",
+                "Component: Lecture",
+                "Visit the Bookstore",
+            ],
+        }
+    ]
+
+    docs = rows_to_documents(rows, term_code="1266", source_url="test")
+
+    assert docs[0]["term"] == "Summer 2026"
+
+
 def test_extract_rows_from_text_keeps_crosslisted_header_with_secondary_code():
     rows = extract_rows_from_text(
         "\n".join(

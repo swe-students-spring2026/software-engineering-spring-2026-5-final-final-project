@@ -56,8 +56,10 @@ except ImportError:
 
 try:
     from scrapers.scraper import make_id, school_for_subject, split_code
+    from apis.app.services.terms import albert_term_label
 except ModuleNotFoundError:
     from scraper import make_id, school_for_subject, split_code
+    from app.services.terms import albert_term_label
 
 try:
     from scrapers.course_text import (
@@ -1441,8 +1443,8 @@ def extract_term_label(row: dict[str, Any], *, fallback: str = "") -> str:
             text = clean_text(line)
             term = find_first(r"^term:\s*(.+)$", text, flags=re.I)
             if term:
-                return sanitize_albert_text(term)
-    return sanitize_albert_text(fallback)
+                return albert_term_label(sanitize_albert_text(term))
+    return albert_term_label(sanitize_albert_text(fallback))
 
 
 def extract_topic(row: dict[str, Any]) -> str:
