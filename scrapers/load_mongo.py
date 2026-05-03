@@ -17,6 +17,11 @@ from typing import Any
 from dotenv import load_dotenv
 from pymongo import MongoClient
 
+try:
+    from scrapers.course_text import normalize_topic_title_fields
+except ModuleNotFoundError:
+    from course_text import normalize_topic_title_fields
+
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 MONGO_URI = os.getenv("MONGO_URI")
@@ -68,6 +73,7 @@ def prepare(doc: dict) -> dict:
     topic = extract_topic(out)
     if topic:
         out["topic"] = topic
+    normalize_topic_title_fields(out)
     if is_unit_title(out.get("title", "")):
         out["title"] = ""
     if "scraped_at" in out:
@@ -120,7 +126,13 @@ def extract_topic(doc: dict) -> str:
 
 
 def is_unit_title(value: object) -> bool:
-    return bool(re.match(r"^\|\s*[\d.-]+\s+units?$", str(value or "").strip(), re.I))
+    return bool(
+        re.match(
+            r"^(?:\|\s*)?\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?\s+units?$",
+            str(value or "").strip(),
+            re.I,
+        )
+    )
 
 
 def dedupe_docs(docs: list[dict]) -> list[dict]:
@@ -197,7 +209,7 @@ def create_class_indexes(collection) -> None:
     collection.create_index("code")
     collection.create_index("crn")
     collection.create_index("instructor")
-    collection.create_index([("title", "text"), ("code", "text"), ("description", "text")])
+    collection.create_index([("title", "text"), ("topic", "text"), ("code", "text"), ("description", "text")])
 
 
 def replace_classes_collection(db, docs: list[dict]) -> None:
