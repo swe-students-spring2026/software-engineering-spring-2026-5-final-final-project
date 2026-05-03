@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Profile Setup | Question Match{% endblock %}
+
+{% block content %}
+<section class="content-header">
+  <p class="eyebrow">Profile setup</p>
+  <h1>Build your question set</h1>
+  <p class="muted">Answers are capped at 10 characters for the first version.</p>
+</section>
+
+<form method="post" class="form wide-form">
+  <div class="grid two">
+    <label>
+      Age
+      <input name="age" type="number" min="18" required>
+    </label>
+    <label>
+      Gender
+      <input name="gender" required>
+    </label>
+    <label>
+      Profile picture URL
+      <input name="profile_pic" type="url" placeholder="https://...">
+    </label>
+    <label>
+      Contact info
+      <input name="contact_info" placeholder="Email, Discord, phone, etc.">
+    </label>
+  </div>
+
+  <div class="question-list">
+    {% set questions = [
+      "Favorite music genre?",
+      "Dream travel spot?",
+      "Favorite hobby?",
+      "Favorite food?",
+      "Favorite movie type?",
+      "Best school subject?",
+      "Morning or night?",
+      "Favorite season?",
+      "Coffee or tea?",
+      "Favorite game?"
+    ] %}
+    {% for question in questions %}
+      <label>
+        {{ loop.index }}. {{ question }}
+        <input name="answer_{{ loop.index }}" maxlength="10" required>
+      </label>
+    {% endfor %}
+  </div>
+
+  <button class="button primary" type="submit">Save profile</button>
+</form>
+{% endblock %}
