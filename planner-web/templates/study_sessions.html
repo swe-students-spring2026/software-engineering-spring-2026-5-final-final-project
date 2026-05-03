@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyCast - Study Sessions</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div id="redAlertOverlay"></div>
+<div class="container">
+
+    <div class="page-header">
+        <h1>StudyCast</h1>
+        {% if session.user_name %}
+            <span class="user-info">{{ session.user_name }} &nbsp;·&nbsp; <a href="/logout">Log out</a></span>
+        {% endif %}
+    </div>
+
+    <div class="nav">
+        <a href="/dashboard">Dashboard</a>
+        <a href="/exams">Exams</a>
+        <a href="/preparations">Preparations</a>
+        <a href="/calendar">Calendar</a>
+        <a href="/study-sessions" class="active">Study Sessions</a>
+        <a href="/todos">To-Do</a>
+    </div>
+
+    <div class="card">
+        <h2>Study Session</h2>
+        {% if service_error %}
+            <p class="form-error">{{ service_error }}</p>
+        {% else %}
+            <p class="empty">Service status: {{ service_status.status }}</p>
+        {% endif %}
+
+        <div class="form-group">
+            <div class="duration-row">
+                <div class="form-row compact-input">
+                    <label>Hours</label>
+                    <input type="number" id="sessionHours" min="0" max="24" value="0">
+                </div>
+                <div class="form-row compact-input">
+                    <label>Minutes</label>
+                    <input type="number" id="sessionMinutes" min="0" max="59" value="20">
+                </div>
+            </div>
+            <p class="empty">Session length: 1 minute minimum, 24 hours maximum.</p>
+            <div><button type="button" id="sessionToggle">Start Session</button></div>
+            <p id="sessionHint" class="empty">No study session is running.</p>
+            <p id="sessionTimer" class="service-result">Timer: --:--</p>
+            <p id="sessionSummary" class="service-result"></p>
+        </div>
+
+        {% if session_result %}
+            {% if session_result.error %}
+                <p class="form-error">{{ session_result.error }}</p>
+            {% else %}
+                <p class="service-result">Session started: {{ session_result.session_id }}</p>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h2>Focus Check</h2>
+        <div class="focus-grid">
+            <video id="focusVideo" autoplay muted playsinline></video>
+            <div class="focus-panel">
+                <p id="focusStatus" class="service-result">Camera idle</p>
+                <p id="focusScore" class="empty">Score: --</p>
+            </div>
+        </div>
+
+        {% if detection_result %}
+            {% if detection_result.error %}
+                <p class="form-error">{{ detection_result.error }}</p>
+            {% else %}
+                <p class="service-result">Status: {{ detection_result.status }} · Score: {{ detection_result.score }}</p>
+            {% endif %}
+        {% endif %}
+    </div>
+
+</div>
+<script type="module">
+import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3";
+
+const video = document.getElementById("focusVideo");
+const statusEl = document.getElementById("focusStatus");
+const scoreEl = document.getElementById("focusScore");
+const sessionToggle = document.getElementById("sessionToggle");
+const sessionHint = document.getElementById("sessionHint");
+const sessionSummary = document.getElementById("sessionSummary");
+const sessionHours = document.getElementById("sessionHours");
+const sessionMinutes = document.getElementById("sessionMinutes");
+const sessionTimer = document.getElementById("sessionTimer");
+const redAlertOverlay = document.getElementById("redAlertOverlay");
+
+let redAlertTimeout = null;
+let landmarker = null;
+let stream = null;
+let running = false;
+let activeSessionId = null;
+let distractionCount = 0;
+let inDistraction = false;
+let distractedSince = null;
+let cameraStartedAt = 0;
+let sessionEndsAt = null;
+let timerHandle = null;
+let endingSession = false;
+let lastBeep = 0;
+let lastSent = 0;
+let audioContext = null;
+
+function secureStudySessionUrl() {
+    const path = `${window.location.pathname}${window.location.search}`;
+    if (/^\d+\.\d+\.\d+\.\d+$/.test(window.location.hostname)) {
+        return `https://${window.location.hostname}.sslip.io${path}`;
+    }
+    return `https://${window.location.hostname}${path}`;
+}
+
+function setCameraError(message) {
+    statusEl.textContent = message;
+    sessionHint.textContent = message;
+}
+
+async function loadLandmarker() {
+    if (landmarker) return landmarker;
+    const fileset = await FilesetResolver.forVisionTasks(
+        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
+    );
+    landmarker = await FaceLandmarker.createFromOptions(fileset, {
+        baseOptions: {
+            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task",
+            delegate: "CPU"
+        },
+        runningMode: "VIDEO",
+        numFaces: 1
+    });
+    return landmarker;
+}
+
+function isLookingAway(face) {
+    const leftEye = face[33];
+    const rightEye = face[263];
+    const nose = face[1];
+    if (!leftEye || !rightEye || !nose) return false;
+    const eyeSpan = Math.abs(rightEye.x - leftEye.x) || 0.01;
+    const centerX = (leftEye.x + rightEye.x) / 2;
+    return Math.abs((nose.x - centerX) / eyeSpan) > 0.18;
+}
+
+function beep() {
+    const now = Date.now();
+    if (now - lastBeep < 1000) return;
+    lastBeep = now;
+    audioContext = audioContext || new AudioContext();
+    const osc = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    osc.frequency.value = 880;
+    gain.gain.value = 0.08;
+    osc.connect(gain).connect(audioContext.destination);
+    osc.start();
+    osc.stop(audioContext.currentTime + 0.25);
+}
+
+function triggerRedAlert() {
+    redAlertOverlay.classList.add("active");
+
+    const startTime = Date.now();
+
+    const beepInterval = setInterval(() => {
+        beep();
+
+        if (Date.now() - startTime > 3000) {
+            clearInterval(beepInterval);
+        }
+    }, 100); // beep every 0.4 sec (adjust if too fast/slow)
+
+    if (redAlertTimeout) clearTimeout(redAlertTimeout);
+
+    redAlertTimeout = setTimeout(() => {
+        redAlertOverlay.classList.remove("active");
+    }, 3000);
+}
+
+function endSound() {
+    audioContext = audioContext || new AudioContext();
+    [392.00, 493.88, 587.33, 783.99].forEach((frequency, index) => {
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        osc.type = "sine";
+        osc.frequency.value = frequency;
+        gain.gain.setValueAtTime(0.001, audioContext.currentTime + index * 0.18);
+        gain.gain.exponentialRampToValueAtTime(0.045, audioContext.currentTime + index * 0.18 + 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + index * 0.18 + 0.45);
+        osc.connect(gain).connect(audioContext.destination);
+        osc.start(audioContext.currentTime + index * 0.18);
+        osc.stop(audioContext.currentTime + index * 0.18 + 0.5);
+    });
+}
+
+function getSessionDurationMs() {
+    const hours = Math.min(24, Math.max(0, Number(sessionHours.value) || 0));
+    const minutes = Math.min(59, Math.max(0, Number(sessionMinutes.value) || 0));
+    const totalMinutes = Math.min(1440, Math.max(1, hours * 60 + minutes));
+    sessionHours.value = Math.floor(totalMinutes / 60);
+    sessionMinutes.value = totalMinutes % 60;
+    return totalMinutes * 60 * 1000;
+}
+
+function formatRemaining(ms) {
+    const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+    const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, "0");
+    const seconds = (totalSeconds % 60).toString().padStart(2, "0");
+    return `${minutes}:${seconds}`;
+}
+
+function updateTimer() {
+    if (!activeSessionId || !sessionEndsAt) {
+        sessionTimer.textContent = "Timer: --:--";
+        return;
+    }
+    const remaining = sessionEndsAt - Date.now();
+    sessionTimer.textContent = `Timer: ${formatRemaining(remaining)}`;
+    if (remaining <= 0) {
+        endSound();
+        endSession();
+    }
+}
+
+async function score(facePresent, lookingAway) {
+    const response = await fetch("/study-sessions/detect-json", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ face_present: facePresent, looking_away: lookingAway })
+    });
+    return response.json();
+}
+
+async function startSession() {
+    const response = await fetch("/study-sessions/start-json", { method: "POST" });
+    const result = await response.json();
+    if (result.error) {
+        sessionHint.textContent = result.error;
+        return;
+    }
+    activeSessionId = result.session_id;
+    distractionCount = 0;
+    inDistraction = false;
+    sessionEndsAt = Date.now() + getSessionDurationMs();
+    sessionToggle.textContent = "End Session";
+    sessionHint.textContent = "Study session in progress. Keep the camera on for focus reminders.";
+    sessionSummary.textContent = "";
+    updateTimer();
+    timerHandle = setInterval(updateTimer, 1000);
+}
+
+async function endSession() {
+    if (!activeSessionId || endingSession) return;
+    endingSession = true;
+    const endingSessionId = activeSessionId;
+    const endingDistractionCount = distractionCount;
+    activeSessionId = null;
+    if (timerHandle) clearInterval(timerHandle);
+    timerHandle = null;
+    const response = await fetch("/study-sessions/end-json", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            session_id: endingSessionId,
+            distraction_count: endingDistractionCount
+        })
+    });
+    const result = await response.json();
+    sessionToggle.textContent = "Start Session";
+    sessionHint.textContent = "No study session is running.";
+    if (result.error) {
+        sessionSummary.textContent = result.error;
+    } else {
+        sessionSummary.textContent = `Session ended. Distraction reminders: ${result.distraction_count ?? endingDistractionCount}.`;
+    }
+    if (running) stopCamera();
+    sessionEndsAt = null;
+    inDistraction = false;
+    endingSession = false;
+    updateTimer();
+}
+
+async function loop() {
+    if (!running || video.readyState < 2) {
+        if (running) requestAnimationFrame(loop);
+        return;
+    }
+
+    const result = landmarker.detectForVideo(video, performance.now());
+    const face = result.faceLandmarks[0];
+    const facePresent = Boolean(face);
+    const lookingAway = facePresent && isLookingAway(face);
+    const distracted = !facePresent || lookingAway;
+
+    if (distracted) {
+        distractedSince = distractedSince || Date.now();
+        if (activeSessionId && Date.now() - cameraStartedAt > 5000 && Date.now() - distractedSince > 3000) beep();
+    } else {
+        distractedSince = null;
+    }
+
+    if (Date.now() - lastSent > 1000) {
+        lastSent = Date.now();
+        const scored = await score(facePresent, lookingAway);
+        if (scored.error) {
+            statusEl.textContent = scored.error;
+            scoreEl.textContent = "Score: --";
+        } else {
+            statusEl.textContent = `Status: ${scored.status}`;
+            scoreEl.textContent = `Score: ${scored.score}`;
+            if (activeSessionId && running && Date.now() - cameraStartedAt > 5000 && scored.status !== "focused") {
+                if (!inDistraction) {
+                    distractionCount += 1;
+                    inDistraction = true;
+                }
+                triggerRedAlert();
+            } else {
+                inDistraction = false;
+            }
+        }
+    }
+
+    requestAnimationFrame(loop);
+}
+
+async function startCamera() {
+    if (!window.isSecureContext) {
+        throw new Error(`Camera access requires HTTPS. Open ${secureStudySessionUrl()}`);
+    }
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("This browser does not support camera access.");
+    }
+
+    statusEl.textContent = "Loading detector...";
+    await loadLandmarker();
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    } catch (error) {
+        if (error && error.name === "NotAllowedError") {
+            throw new Error("Camera permission was blocked. Allow camera access in the browser and try again.");
+        }
+        if (error && error.name === "NotFoundError") {
+            throw new Error("No camera was found on this device.");
+        }
+        throw new Error("Could not start the camera. Check browser permissions and try again.");
+    }
+    video.srcObject = stream;
+    running = true;
+    cameraStartedAt = Date.now();
+    distractedSince = null;
+    inDistraction = false;
+    statusEl.textContent = "Camera active";
+    loop();
+}
+
+function stopCamera() {
+    running = false;
+    if (stream) stream.getTracks().forEach((track) => track.stop());
+    stream = null;
+    video.srcObject = null;    
+    statusEl.textContent = "Camera idle";
+    scoreEl.textContent = "Score: --";
+    distractedSince = null;
+    inDistraction = false;
+}
+
+sessionToggle.addEventListener("click", async () => {
+    try {
+        if (activeSessionId) {
+            await endSession();
+        } else {
+            if (!running) {
+                await startCamera();
+            }
+            await startSession();
+        }
+    } catch (error) {
+        setCameraError(error.message || "Camera could not be started.");
+    }
+});
+
+updateTimer();
+</script>
+</body>
+</html>

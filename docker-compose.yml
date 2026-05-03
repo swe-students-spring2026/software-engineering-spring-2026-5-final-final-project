@@ -1,0 +1,48 @@
+services:
+  mongodb:
+    build: ./mongodb
+    image: cheology/studycast-mongodb:latest
+    expose:
+      - "27017"
+    volumes:
+      - mongo-data:/data/db
+
+  planner-web:
+    build: ./planner-web
+    image: cheology/studycast-planner-web:latest
+    environment:
+      MONGO_URI: mongodb://mongodb:27017/
+      MONGO_DB: studycast
+      STUDY_SESSION_SERVICE_URL: http://study-session-service:5002
+    ports:
+      - "5001:5001"
+    depends_on:
+      - mongodb
+
+  study-session-service:
+    build: ./study-session-service
+    image: cheology/studycast-study-session-service:latest
+    environment:
+      MONGO_URI: mongodb://mongodb:27017/
+      MONGO_DB: studycast
+    expose:
+      - "5002"
+    depends_on:
+      - mongodb
+
+  caddy:
+    image: caddy:2.8
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - planner-web
+
+volumes:
+  mongo-data:
+  caddy-data:
+  caddy-config:

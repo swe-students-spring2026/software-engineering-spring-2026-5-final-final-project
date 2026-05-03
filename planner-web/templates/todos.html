@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyCast — To-Do</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="container">
+
+    <div class="page-header">
+        <h1>StudyCast</h1>
+        {% if session.user_name %}
+            <span class="user-info">{{ session.user_name }} &nbsp;·&nbsp; <a href="/logout">Log out</a></span>
+        {% endif %}
+    </div>
+
+    <div class="nav">
+        <a href="/dashboard">Dashboard</a>
+        <a href="/exams">Exams</a>
+        <a href="/preparations">Preparations</a>
+        <a href="/calendar">Calendar</a>
+        <a href="/study-sessions">Study Sessions</a>
+        <a href="/todos" class="active">To-Do</a>
+    </div>
+
+    <!-- Add Task -->
+    <div class="card">
+        <h2>Add Task</h2>
+        <form action="/add-todo" method="POST" class="form-group">
+            <div class="form-grid">
+                <div class="form-row">
+                    <label>Task</label>
+                    <input type="text" name="task" placeholder="What needs to get done?" required>
+                </div>
+                <div class="form-row">
+                    <label>Type</label>
+                    <select name="type">
+                        <option value="today">short-term</option>
+                        <option value="long-term">Long Term</option>
+                    </select>
+                </div>
+            </div>
+            <div><button type="submit">Add Task</button></div>
+        </form>
+    </div>
+
+    <!-- Today -->
+    <div class="card">
+        <h2>Short Term</h2>
+
+        {% if today_todos %}
+            <ul>
+                {% for todo in today_todos %}
+                    <li class="exam-item">
+                        <div class="exam-info">
+                            {% if todo.completed %}
+                                <span class="status-done">{{ todo.task }}</span>
+                            {% else %}
+                                {{ todo.task }}
+                            {% endif %}
+                        </div>
+                        <div class="exam-actions">
+                            {% if not todo.completed %}
+                                <form action="/complete-todo/{{ todo._id }}" method="POST" class="inline-form">
+                                    <button type="submit" class="btn-outline btn-sm">Done</button>
+                                </form>
+                            {% endif %}
+                            <form action="/delete-todo/{{ todo._id }}" method="POST" class="inline-form"
+                                  onsubmit="return confirm('Delete this task?')">
+                                <button type="submit" class="btn-outline btn-sm">Delete</button>
+                            </form>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="empty">Nothing for short term.</p>
+        {% endif %}
+    </div>
+
+    <!-- Long Term -->
+    <div class="card">
+        <h2>Long Term</h2>
+
+        {% if long_term_todos %}
+            <ul>
+                {% for todo in long_term_todos %}
+                    <li class="exam-item">
+                        <div class="exam-info">
+                            {% if todo.completed %}
+                                <span class="status-done">{{ todo.task }}</span>
+                            {% else %}
+                                {{ todo.task }}
+                            {% endif %}
+                        </div>
+                        <div class="exam-actions">
+                            {% if not todo.completed %}
+                                <form action="/complete-todo/{{ todo._id }}" method="POST" class="inline-form">
+                                    <button type="submit" class="btn-outline btn-sm">Done</button>
+                                </form>
+                            {% endif %}
+                            <form action="/delete-todo/{{ todo._id }}" method="POST" class="inline-form"
+                                  onsubmit="return confirm('Delete this task?')">
+                                <button type="submit" class="btn-outline btn-sm">Delete</button>
+                            </form>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="empty">No long-term tasks.</p>
+        {% endif %}
+    </div>
+
+</div>
+</body>
+</html>
