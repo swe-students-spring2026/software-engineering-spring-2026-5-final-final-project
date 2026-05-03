@@ -2,8 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Create Host Event</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Afacad:ital,wght@0,400..700;1,400..700&display=swap"
+        rel="stylesheet">
+    <title>Create Host Event</title>
 </head>
 
 <body>
@@ -54,6 +59,16 @@
             </div>
             
         </form>
+    </section>
+
+    <section class="nav-bottom">
+        <a href="{{ url_for('home_upcoming') }}"><img src="{{ url_for('static', filename='icons/calendar.svg') }}"
+                alt="calendar"></a>
+        <a href="{{ url_for('invites') }}"><img src="{{ url_for('static', filename='icons/tray.svg') }}"
+                alt="inbox" /></a>
+        <a href="{{ url_for('host_events') }}"><img src="{{ url_for('static', filename='icons/plus.app.fill.svg') }}"
+                alt="create" /></a>
+        <a href="/user"><img src="{{ url_for('static', filename='icons/person.svg') }}" alt="user" /></a>
     </section>
 
     <script>
