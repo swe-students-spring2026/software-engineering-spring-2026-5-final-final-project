@@ -14,10 +14,12 @@ from config import (
     RAW_FACILITIES_PATH,
     PROCESSED_FACILITIES_PATH,
     FACILITIES_SOURCE_COLUMNS,
-    FACILITIES_OUTPUT_COLUMNS
+    FACILITIES_OUTPUT_COLUMNS,
 )
 
+
 def preprocess_311():
+    """Preprocess the RAW 13GB data"""
     df = pd.read_csv(
         RAW_311_PATH,
         usecols=SOURCE_COLUMNS,
@@ -29,8 +31,8 @@ def preprocess_311():
     df["Created Date"] = df["Created Date"].astype("string").str.strip()
     df["Problem"] = df["Problem"].astype("string").str.strip()
     df["Problem Detail"] = df["Problem Detail"].astype("string").str.strip()
-    df["Longitude"] = pd.to_numeric(df["Longitude"], errors="coerce")
     df["Latitude"] = pd.to_numeric(df["Latitude"], errors="coerce")
+    df["Longitude"] = pd.to_numeric(df["Longitude"], errors="coerce")
 
     df = df[OUTPUT_COLUMNS].dropna()
     df.to_csv(PROCESSED_311_PATH, index=False)
@@ -39,6 +41,7 @@ def preprocess_311():
 
 
 def preprocess_facilities():
+    """Preprocess the nyc facility dataset"""
     df = pd.read_csv(
         RAW_FACILITIES_PATH,
         usecols=FACILITIES_SOURCE_COLUMNS,
@@ -50,14 +53,15 @@ def preprocess_facilities():
     df["facsubgrp"] = df["facsubgrp"].astype("string").str.strip()
     df["factype"] = df["factype"].astype("string").str.strip()
     df["boro"] = df["boro"].astype("string").str.strip()
-    df["longitude"] = pd.to_numeric(df["longitude"], errors="coerce")
     df["latitude"] = pd.to_numeric(df["latitude"], errors="coerce")
+    df["longitude"] = pd.to_numeric(df["longitude"], errors="coerce")
 
     df = df[FACILITIES_OUTPUT_COLUMNS].dropna()
     df = df[(df["longitude"] != 0.0) & (df["latitude"] != 0.0)]
     df.to_csv(PROCESSED_FACILITIES_PATH, index=False)
 
     print(f"Cleaned dataset written to {PROCESSED_FACILITIES_PATH}")
+
 
 if __name__ == "__main__":
     preprocess_311()
