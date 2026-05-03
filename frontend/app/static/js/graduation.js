@@ -127,10 +127,34 @@ const specialRequirements = [
             return /^[A-Z]+GC-UF\s+101$/.test(normalized);
         },
     },
+    {
+        key: "language-expository",
+        label: "Language / Expository Writing",
+        match: text => /language|expository\s+writing|expos/i.test(text || ""),
+        resolve: first => {
+            const text = String(first || "");
+            const onlyNine = /(?:\bonly\s*9\b|\b9\s*only\b|EXPOS-UA\s*9\s*only)/i.test(text);
+            const fourAndNine = /(?:\b4\s*(?:and|&|\/|to)\s*9\b|EXPOS-UA\s*4.*EXPOS-UA\s*9|EXPOS-UA\s*9.*EXPOS-UA\s*4)/i.test(text);
+            const options = onlyNine
+                ? ["EXPOS-UA 9"]
+                : fourAndNine
+                    ? ["EXPOS-UA 4", "EXPOS-UA 9"]
+                    : ["EXPOS-UA 4", "EXPOS-UA 9"];
+
+            return {
+                key: "language-expository",
+                label: "Language / Expository Writing",
+                options,
+                matches: code => options.some(option => canonicalRequirementCode(code) === canonicalRequirementCode(option)),
+            };
+        },
+    },
 ];
 
 function findSpecialRequirement(first) {
-    return specialRequirements.find(req => req.match(first));
+    const req = specialRequirements.find(entry => entry.match(first));
+    if (!req) return null;
+    return typeof req.resolve === "function" ? req.resolve(first) : req;
 }
 
 function matchedSpecialRequirementCourse(req, sourceSet = completedSet) {
