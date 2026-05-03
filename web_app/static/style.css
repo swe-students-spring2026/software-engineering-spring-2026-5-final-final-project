@@ -367,3 +367,24 @@ a {
 .dashboard-signout {
     margin-top: 22px;
 }
+
+.invite-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+    justify-content: flex-end;
+}
+
+.accept-button,
+.decline-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+}
+
+.accept-button img,
+.decline-button img {
+    width: 40px;
+    height: 40px;
+}
