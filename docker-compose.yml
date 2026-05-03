@@ -2,8 +2,8 @@ services:
   mongodb:
     build: ./mongodb
     image: cheology/studycast-mongodb:latest
-    ports:
-      - "27017:27017"
+    expose:
+      - "27017"
     volumes:
       - mongo-data:/data/db
 
