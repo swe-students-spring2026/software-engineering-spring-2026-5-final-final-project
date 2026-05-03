@@ -7,17 +7,9 @@ from flask import Flask, flash, jsonify, redirect, render_template, request, ses
 from game_engine_client import evaluate_guess, create_puzzle
 from pymongo import MongoClient
 from bson.objectid import ObjectId
+from bson.errors import InvalidId
 from config import Config
 
-# generate puzzle
-
-# save answers
-
-# get answers
-
-# find matches
-
-# get matches
 
 def create_app(test_config=None):
     app = Flask(__name__)
@@ -57,6 +49,7 @@ def create_app(test_config=None):
                 flash("Invalid username or password")
                 return render_template("login.html")
 
+            session["user_id"] = str(user["_id"])
             return redirect(url_for("dashboard"))
         return render_template("login.html")
 
@@ -97,8 +90,7 @@ def create_app(test_config=None):
 
     @app.route("/setup", methods=["GET", "POST"])
     def setup():
-        user = get_current_user()
-        if not user:
+        if "user_id" not in session:
             return redirect(url_for("login"))
 
         if request.method == "POST":
@@ -185,7 +177,7 @@ def create_app(test_config=None):
     def match_detail(match_id):
         try:
             match = db.matches.find_one({"_id": ObjectId(match_id)})
-        except Exception:
+        except InvalidId:
             match = None
         if match is None:
             return render_template("404.html"), 404
