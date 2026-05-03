@@ -306,3 +306,144 @@ a {
 .solution-item.solution-active .solution-meta {
     color: #444;
 }
+
+.boards-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.boards-search-form {
+    display: flex;
+    gap: 8px;
+}
+
+.boards-search-input {
+    flex: 1;
+    width: auto;
+}
+
+.boards-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.boards-actions .sort-btns {
+    margin-bottom: 0;
+}
+
+.boards-public-btn {
+    font-size: 11px;
+    padding: 5px 12px;
+    letter-spacing: 1px;
+}
+
+.boards-count {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: #888;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+}
+
+.boards-grid {
+    margin-bottom: 32px;
+}
+
+.boards-card {
+    display: block;
+    padding: 16px;
+}
+
+.boards-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.boards-card-name {
+    font-size: 14px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    word-break: break-word;
+}
+
+.boards-card-badge {
+    font-size: 9px;
+    letter-spacing: 2px;
+    padding: 3px 6px;
+    border: 1px solid currentColor;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.boards-badge-public {
+    color: #888;
+}
+
+.boards-badge-private {
+    color: #555;
+}
+
+.boards-card:hover .boards-badge-public,
+.boards-card:hover .boards-badge-private {
+    color: #000;
+}
+
+.boards-card-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #888;
+    letter-spacing: 1px;
+}
+
+.boards-card:hover .boards-card-meta {
+    color: #444;
+}
+
+.boards-empty {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 40px 0;
+    grid-column: 1 / -1;
+    letter-spacing: 2px;
+    color: #888;
+}
+
+.boards-empty-btn {
+    align-self: flex-start;
+}
+
+.boards-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 8px;
+    border-top: 1px solid #333;
+}
+
+.boards-page-numbers {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.boards-page-num {
+    flex: none;
+    min-width: 36px;
+    text-align: center;
+    padding: 5px 8px;
+}
+
+.boards-page-ellipsis {
+    font-size: 11px;
+    color: #888;
+    padding: 0 4px;
+    letter-spacing: 2px;
+}
