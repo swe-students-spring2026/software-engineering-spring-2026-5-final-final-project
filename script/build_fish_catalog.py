@@ -17,7 +17,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = REPO_ROOT / "data"
 DATA_IMAGES_DIR = DATA_DIR / "fish_images"
@@ -484,6 +483,7 @@ FISH = [
         "description": "A ribbon-like deep-sea legend that only the luckiest kittens catch.",
     },
 ]
+
 
 def main() -> None:
     counts = {

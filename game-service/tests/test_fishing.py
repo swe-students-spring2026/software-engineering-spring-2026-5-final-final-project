@@ -3,7 +3,6 @@ from pathlib import Path
 
 from app.db.mock_repo import MockRepository
 
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
 RARITIES = {"common", "uncommon", "rare", "epic", "legendary"}
 
