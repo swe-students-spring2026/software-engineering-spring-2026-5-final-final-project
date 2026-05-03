@@ -1,7 +1,23 @@
 from flask import Flask, render_template, request
 
+import os
+from datetime import datetime
+
+from werkzeug.utils import secure_filename
+from pymongo import MongoClient
+from dotenv import load_dotenv
+
+load_dotenv()
+
 app = Flask(__name__)
 ALLOWED_EXTENSIONS = {"mp4", "mov", "avi", "mkv", "webm"}
+UPLOAD_FOLDER = "uploads"
+
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+client = MongoClient(os.getenv("MONGO_URI", "mongodb://localhost:27017/topfive"))
+db = client["topfive"]
+
 
 def allowed_video(filename): #Ensures only videos are able to be chosen 
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -9,6 +25,11 @@ def allowed_video(filename): #Ensures only videos are able to be chosen
 @app.route("/")
 def index():
     return render_template("index.html")
+
+@app.route("/test-db")
+def test_db():
+    db.test.insert_one({"msg": "hello"})
+    return "inserted into DB!"
 
 @app.route("/upload", methods=["GET", "POST"])
 def upload():
@@ -23,11 +44,21 @@ def upload():
         if not allowed_video(video.filename):
             return render_template("upload.html", error="Only video files are allowed.")
 
-        file_data = video.read()  #Temporary for now
+        filename = secure_filename(video.filename)
+        filepath = os.path.join(UPLOAD_FOLDER, filename)
+        video.save(filepath)
+
+        db.videos.insert_one({
+            "filename": filename,
+            "filepath": filepath,
+            "prompt": prompt,
+            "num_clips": num_clips,
+            "uploaded_at": datetime.utcnow()
+        })
 
         return render_template(
             "upload.html",
-            filename=video.filename,
+            filename=filename,
             prompt=prompt,
             num_clips=num_clips
         )
