@@ -836,6 +836,10 @@ init();
 // ── AI Chat ──
 let chatOpen = false;
 let contextOpen = false;
+// Conversation history for the current page session. Each entry is
+// {role: "user"|"model", text: string}. Reset on page refresh or "New chat".
+let chatHistory = [];
+const CHAT_HISTORY_LIMIT = 20; // max messages kept (10 turns)
 
 // ── Chat panel drag + side-panel docking ──
 (function () {
@@ -1041,6 +1045,44 @@ function toggleContext() {
     document.getElementById("chat-context-arrow").textContent = contextOpen ? "▾" : "▸";
 }
 
+const _THINKING_MSGS = [
+    "Searching the course catalog…",
+    "Checking prerequisites…",
+    "Looking up sections…",
+    "Comparing schedules…",
+    "Finding the best options…",
+    "Reviewing requirements…",
+    "Almost there…",
+];
+let _thinkingInterval = null;
+
+function appendTyping() {
+    const box = document.getElementById("chat-messages");
+    const div = document.createElement("div");
+    div.className = "chat-msg ai typing";
+
+    const dots = document.createElement("span");
+    dots.className = "typing-dots";
+    dots.innerHTML = "<span></span><span></span><span></span>";
+
+    const label = document.createElement("span");
+    label.className = "typing-text";
+    label.textContent = _THINKING_MSGS[0];
+
+    div.appendChild(dots);
+    div.appendChild(label);
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+
+    let i = 1;
+    _thinkingInterval = setInterval(() => {
+        label.textContent = _THINKING_MSGS[i % _THINKING_MSGS.length];
+        i++;
+    }, 2500);
+
+    return div;
+}
+
 function appendMsg(text, role) {
     const box = document.getElementById("chat-messages");
     const div = document.createElement("div");
@@ -1065,6 +1107,18 @@ function autoResizeInput() {
     el.style.height = Math.min(el.scrollHeight, 120) + "px";
 }
 
+function trimHistory() {
+    if (chatHistory.length > CHAT_HISTORY_LIMIT) {
+        chatHistory = chatHistory.slice(-CHAT_HISTORY_LIMIT);
+    }
+}
+
+function clearChatHistory() {
+    chatHistory = [];
+    const box = document.getElementById("chat-messages");
+    box.innerHTML = '<div class="chat-msg ai">Hi! I can help you find courses and plan your schedule. Ask me anything!</div>';
+}
+
 async function sendChat() {
     const input = document.getElementById("chat-input");
     const btn = document.getElementById("chat-send-btn");
@@ -1075,7 +1129,11 @@ async function sendChat() {
     input.style.height = "auto";
     btn.disabled = true;
     appendMsg(msg, "user");
-    const typing = appendMsg("Thinking…", "ai typing");
+    const typing = appendTyping();
+
+    // Snapshot history sent with THIS request — does not include the new
+    // message itself; the backend appends it as the current turn.
+    const historyForRequest = chatHistory.slice();
 
     try {
         const major = document.getElementById("chat-major").value.trim();
@@ -1086,14 +1144,30 @@ async function sendChat() {
         const res = await fetch("/api/chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message: msg, major, completed_courses }),
+            body: JSON.stringify({
+                message: msg,
+                major,
+                completed_courses,
+                history: historyForRequest,
+            }),
         });
         const data = await res.json();
         const reply = data.reply || data.error || "Something went wrong.";
+        clearInterval(_thinkingInterval);
         typing.classList.remove("typing");
+        typing.classList.add("fade-in");
         renderMarkdown(typing, reply);
         document.getElementById("chat-messages").scrollTop = 999999;
+
+        // Persist this turn into history only after a successful round-trip.
+        // If the request failed we don't pollute history with a half-turn.
+        if (data.reply) {
+            chatHistory.push({ role: "user", text: msg });
+            chatHistory.push({ role: "model", text: data.reply });
+            trimHistory();
+        }
     } catch {
+        clearInterval(_thinkingInterval);
         typing.textContent = "Network error. Please try again.";
         typing.classList.remove("typing");
     } finally {

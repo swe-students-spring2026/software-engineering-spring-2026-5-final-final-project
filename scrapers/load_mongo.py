@@ -83,6 +83,14 @@ def prepare(doc: dict) -> dict:
     # Backfill meeting_times for older Albert docs that lack it
     if not out.get("meeting_times") and out.get("meets_human"):
         out["meeting_times"] = _parse_meets_human(out["meets_human"])
+    # Extract course_location from raw_row if not already set
+    if not out.get("course_location"):
+        source_row = (out.get("source") or {}).get("raw_row", [])
+        for cell in (source_row if isinstance(source_row, list) else []):
+            m = re.match(r"^Course Location:\s*(.+)$", str(cell or "").strip())
+            if m:
+                out["course_location"] = m.group(1).strip()
+                break
     stable_id = make_stable_class_id(out)
     if stable_id:
         out["_id"] = stable_id

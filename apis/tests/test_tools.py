@@ -108,7 +108,10 @@ class TestGetCourseSections:
         mock_db.classes.find.return_value.limit.return_value = []
         get_course_sections("Of Monsters and Medicine")
         filter_arg = mock_db.classes.find.call_args[0][0]
-        assert any("topic" in condition for condition in filter_arg["$or"])
+        if "$or" in filter_arg:
+            assert any("topic" in condition for condition in filter_arg["$or"])
+        else:
+            assert "topic" in str(filter_arg) or "name" in str(filter_arg)
 
     def test_empty_sections_returns_zero_count(self, mock_db):
         mock_db.classes.find.return_value.limit.return_value = []

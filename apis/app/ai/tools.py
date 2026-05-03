@@ -17,6 +17,7 @@ except Exception:
         OBJECT = "object"
         STRING = "string"
         INTEGER = "integer"
+        BOOLEAN = "boolean"
 
     class _FallbackSchema:
         def __init__(self, **kwargs):
@@ -56,8 +57,9 @@ GEMINI_TOOL = types.Tool(
             name="search_courses",
             description=(
                 "Search the NYU course catalog for courses matching a keyword, "
-                "department/subject code, or component type. Returns matching "
-                "courses with titles, descriptions, sections, and enrollment status."
+                "department/subject code, or component type. Returns a slim list "
+                "(code, title, credits, component) by default — call "
+                "get_course_sections for full section details on the courses you pick."
             ),
             parameters=types.Schema(
                 type=types.Type.OBJECT,
@@ -80,7 +82,26 @@ GEMINI_TOOL = types.Tool(
                     ),
                     "limit": types.Schema(
                         type=types.Type.INTEGER,
-                        description="Maximum number of results to return (default 20).",
+                        description="Maximum number of results to return (default 10, hard cap 25).",
+                    ),
+                    "include_details": types.Schema(
+                        type=types.Type.BOOLEAN,
+                        description=(
+                            "Set to true ONLY when you specifically need course descriptions, "
+                            "instructor names, full notes, or professor ratings. Adds "
+                            "significant tokens — leave false for browsing/listing. "
+                            "(prerequisites and course_location are always returned.)"
+                        ),
+                    ),
+                    "include_study_away": types.Schema(
+                        type=types.Type.BOOLEAN,
+                        description=(
+                            "By default only NYC campuses (Washington Square, Brooklyn) "
+                            "are returned because students cannot register for global "
+                            "campus (London, Paris, Abu Dhabi, etc.) courses without "
+                            "applying to the program. Set true ONLY if the student "
+                            "explicitly asks about a study-away/global campus."
+                        ),
                     ),
                 },
             ),
@@ -88,10 +109,10 @@ GEMINI_TOOL = types.Tool(
         types.FunctionDeclaration(
             name="get_course_sections",
             description=(
-                "Get all available sections for a course by its code or name, "
-                "including meeting times, instructor, location, and enrollment status. "
-                "Accepts a course code like 'CSCI-UA 101' OR a course name/title "
-                "like 'Data Structures' or 'Calculus'."
+                "Get sections for a course by its code or name. Returns slim "
+                "section info (code, title, section, instructor, meets_human, "
+                "status, component) by default. Accepts a course code like "
+                "'CSCI-UA 101' OR a course name/title like 'Data Structures'."
             ),
             parameters=types.Schema(
                 type=types.Type.OBJECT,
@@ -105,8 +126,30 @@ GEMINI_TOOL = types.Tool(
                     ),
                     "term": types.Schema(
                         type=types.Type.STRING,
+                        description="Term code to filter by, e.g. '1268' for Fall 2026.",
+                    ),
+                    "limit": types.Schema(
+                        type=types.Type.INTEGER,
+                        description="Max sections to return (default 15, hard cap 30).",
+                    ),
+                    "include_details": types.Schema(
+                        type=types.Type.BOOLEAN,
                         description=(
-                            "Term code to filter by, e.g. '1268' for Fall 2026."
+                            "Set true ONLY if you need raw meeting_times, notes, prereqs, "
+                            "or instructional method. Otherwise leave false."
+                        ),
+                    ),
+                    "include_ratings": types.Schema(
+                        type=types.Type.BOOLEAN,
+                        description=(
+                            "Set true ONLY when comparing professors. Adds RMP rating data."
+                        ),
+                    ),
+                    "include_study_away": types.Schema(
+                        type=types.Type.BOOLEAN,
+                        description=(
+                            "Same semantics as on search_courses: defaults to NYC-only. "
+                            "Set true only if the student explicitly asks about global campuses."
                         ),
                     ),
                 },
@@ -166,21 +209,31 @@ GEMINI_TOOL = types.Tool(
 
 # ── Handler functions ─────────────────────────────────────────────────────────
 
+# NYC-campus locations. Anything else is study-away (London, Paris, Abu Dhabi,
+# etc.) — students can't normally register for those, so we filter them out
+# of search results by default unless include_study_away=true.
+_NYC_LOCATIONS = ["Washington Square", "Brooklyn Campus"]
+
 _SLIM_COURSE_PROJECTION = {
     "_id": 0, "code": 1, "title": 1, "credits": 1,
     "subject_code": 1, "component": 1, "term": 1, "topic": 1,
+    "course_location": 1, "prerequisites": 1,
 }
 
 _DETAILED_COURSE_PROJECTION = {
     "_id": 0, "code": 1, "title": 1, "description": 1, "credits": 1,
     "school": 1, "subject_code": 1, "component": 1, "section": 1,
     "crn": 1, "instructor": 1, "meets_human": 1, "status": 1,
-    "term": 1, "topic": 1, "prerequisites": 1,
+    "term": 1, "topic": 1, "prerequisites": 1, "course_location": 1, "notes": 1,
 }
 
 
-def _build_search_filter(query: str, department: str, term: str, component: str) -> dict:
+def _build_search_filter(
+    query: str, department: str, term: str, component: str, include_study_away: bool,
+) -> dict:
     conditions: list[dict] = []
+    if not include_study_away:
+        conditions.append({"course_location": {"$in": _NYC_LOCATIONS}})
     if term:
         conditions.append(flexible_term_filter(term))
     if component:
@@ -219,17 +272,21 @@ def search_courses(
     component: str = "",
     limit: int = 10,
     include_details: bool = False,
+    include_study_away: bool = False,
 ) -> dict[str, Any]:
     """Search course catalog in MongoDB. Uses $text index for keyword queries.
 
-    By default returns a slim payload (code, title, credits, component, term)
-    to keep the LLM context small. Pass include_details=True to also return
-    description, prerequisites, instructor, and professor ratings.
+    By default returns a slim payload (code, title, credits, component, term,
+    course_location) and EXCLUDES NYU study-away campuses (London, Paris, Abu
+    Dhabi, etc.) since students can't typically register for those without
+    applying to the program. Pass include_study_away=true if explicitly asked
+    about a global campus. Pass include_details=true for descriptions,
+    prerequisites, notes, and professor ratings.
     """
     if _db is None:
         return {"error": "Database not initialized"}
 
-    filter_query = _build_search_filter(query, department, term, component)
+    filter_query = _build_search_filter(query, department, term, component, include_study_away)
     safe_limit = max(1, min(int(limit) if limit else 10, 25))
     projection = _DETAILED_COURSE_PROJECTION if include_details else _SLIM_COURSE_PROJECTION
 
@@ -241,17 +298,21 @@ def search_courses(
     return {"courses": unique, "count": len(unique)}
 
 
+# Slim sections still include course_location + prerequisites so the model
+# can sanity-check eligibility without a second round-trip.
 _SLIM_SECTION_PROJECTION = {
     "_id": 0, "code": 1, "title": 1, "section": 1, "crn": 1,
     "instructor": 1, "meets_human": 1, "status": 1,
     "component": 1, "credits": 1, "topic": 1,
+    "course_location": 1, "prerequisites": 1,
 }
 
 _DETAILED_SECTION_PROJECTION = {
     "_id": 0, "code": 1, "title": 1, "section": 1, "crn": 1,
     "instructor": 1, "meets_human": 1, "meeting_times": 1,
     "status": 1, "component": 1, "instructional_method": 1,
-    "campus_location": 1, "credits": 1, "topic": 1, "notes": 1, "prerequisites": 1,
+    "campus_location": 1, "course_location": 1, "credits": 1, "topic": 1,
+    "notes": 1, "prerequisites": 1,
 }
 
 
@@ -261,12 +322,15 @@ def get_course_sections(
     limit: int = 15,
     include_details: bool = False,
     include_ratings: bool = False,
+    include_study_away: bool = False,
 ) -> dict[str, Any]:
     """Get sections matching a course code or title from MongoDB.
 
-    By default returns a slim payload (no raw meeting_times array, no notes,
-    no prerequisites) with up to 15 sections. Pass include_details=True for
-    full section data and include_ratings=True to attach professor ratings.
+    By default returns a slim payload (no raw meeting_times, no notes), with
+    up to 15 sections, and EXCLUDES NYU study-away campuses. Each result
+    includes course_location + prerequisites so you can verify eligibility.
+    Pass include_details=True for full section data, include_ratings=True for
+    professor ratings, include_study_away=True to allow global campuses.
     """
     if _db is None:
         return {"error": "Database not initialized"}
@@ -276,10 +340,12 @@ def get_course_sections(
         {"title": {"$regex": course_code, "$options": "i"}},
         {"topic": {"$regex": course_code, "$options": "i"}},
     ]}
+    conditions: list[dict] = [or_clause]
     if term:
-        query: dict = {"$and": [or_clause, flexible_term_filter(term)]}
-    else:
-        query = or_clause
+        conditions.append(flexible_term_filter(term))
+    if not include_study_away:
+        conditions.append({"course_location": {"$in": _NYC_LOCATIONS}})
+    query: dict = {"$and": conditions} if len(conditions) > 1 else conditions[0]
 
     safe_limit = max(1, min(int(limit) if limit else 15, 30))
     projection = _DETAILED_SECTION_PROJECTION if include_details else _SLIM_SECTION_PROJECTION

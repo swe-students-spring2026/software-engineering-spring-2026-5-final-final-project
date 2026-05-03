@@ -12,6 +12,7 @@ def chat_endpoint() -> tuple[Response, int] | Response:
     completed_courses: list[str] = data.get("completed_courses") or []
     major: str = data.get("major", "").strip()
     student_profile: dict = data.get("student_profile") or {}
+    history: list = data.get("history") or []
 
     if not message:
         return jsonify({"error": "message is required"}), 400
@@ -22,6 +23,7 @@ def chat_endpoint() -> tuple[Response, int] | Response:
             completed_courses=completed_courses,
             major=major,
             student_profile=student_profile,
+            history=history,
         )
         return jsonify({"reply": reply})
     except Exception as exc:
