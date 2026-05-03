@@ -38,7 +38,8 @@ def init_db() -> None:
                 song_id TEXT PRIMARY KEY,
                 title TEXT NOT NULL,
                 artist TEXT NOT NULL,
-                genre TEXT
+                genre TEXT,
+                tags TEXT
             );
 
             CREATE TABLE IF NOT EXISTS events (

@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+import hashlib
+from pathlib import Path
+
+import pandas as pd
+
 from app import database
 from app.models import EVENT_WEIGHTS
 
@@ -55,8 +60,8 @@ def seed() -> None:
 
     for song_id, title, artist, genre in SONGS:
         database.execute(
-            "INSERT INTO songs (song_id, title, artist, genre) VALUES (?, ?, ?, ?)",
-            (song_id, title, artist, genre),
+            "INSERT INTO songs (song_id, title, artist, genre, tags) VALUES (?, ?, ?, ?, ?)",
+            (song_id, title, artist, genre, None),
         )
 
     for user_id, song_id, event_type in EVENTS:
@@ -64,6 +69,48 @@ def seed() -> None:
             "INSERT INTO events (user_id, song_id, event_type, weight) VALUES (?, ?, ?, ?)",
             (user_id, song_id, event_type, EVENT_WEIGHTS[event_type]),
         )
+
+
+def _make_song_id(artist: str, track_name: str) -> str:
+    raw = f"{artist.lower()}::{track_name.lower()}"
+    return "lfm-" + hashlib.md5(raw.encode()).hexdigest()[:12]
+
+
+def load_lastfm_songs(limit: int = 2000, csv_path: str | None = None) -> int:
+    """
+    Load top-`limit` songs from the Last.fm dataset into the songs table.
+
+    Rows are ranked by tag_count descending (more tags = more well-known tracks),
+    then avg_rank ascending (lower rank value = higher chart position).
+    Returns the number of new rows inserted.
+    """
+    if csv_path is None:
+        csv_path = str(Path(__file__).parent / "lastfm_tracks.csv")
+
+    df = pd.read_csv(csv_path, dtype=str)
+    df = df[df["tags"].notna() & (df["tags"].str.strip() != "")].copy()
+    df["tag_count"] = pd.to_numeric(df["tag_count"], errors="coerce").fillna(0)
+    df["avg_rank"] = pd.to_numeric(df["avg_rank"], errors="coerce").fillna(999)
+    df = df.sort_values(["tag_count", "avg_rank"], ascending=[False, True]).head(limit)
+
+    inserted = 0
+    for _, row in df.iterrows():
+        song_id = _make_song_id(str(row["artist"]), str(row["track_name"]))
+        title = str(row["track_name"])
+        artist = str(row["artist"])
+        tags = str(row["tags"])
+        genre = tags.split("|")[0].strip() if tags else None
+
+        try:
+            database.execute(
+                "INSERT OR IGNORE INTO songs (song_id, title, artist, genre, tags) VALUES (?, ?, ?, ?, ?)",
+                (song_id, title, artist, genre, tags),
+            )
+            inserted += 1
+        except Exception:
+            pass
+
+    return inserted
 
 
 if __name__ == "__main__":
