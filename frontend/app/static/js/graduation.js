@@ -398,7 +398,7 @@ function renderAppliedElectiveCreditsDetails(breakdown) {
     if (breakdown.testCreditTotal > 0) {
         rows.push(`
             <tr class="elective-detail-group">
-              <td></td><td colspan="2">AP/Test Credits</td><td>${formatCredits(breakdown.testCreditTotal)}</td>
+              <td></td><td colspan="2">AP/IB/Test Credits</td><td>${formatCredits(breakdown.testCreditTotal)}</td>
             </tr>`);
         testCredits.forEach(credit => {
             rows.push(`
@@ -435,18 +435,18 @@ function renderStandaloneTestCreditsSection() {
             <tr class="row-done">
               <td><span class="status-icon status-done">&#10003;</span></td>
               <td><span class="course-code">${escapeHtml(credit.test)}</span></td>
-              <td>${escapeHtml(credit.component || "Applied test credit")}</td>
+              <td>${escapeHtml(credit.component || "Applied AP/IB/Test credit")}</td>
               <td>${formatCredits(credit.units)}</td>
             </tr>`).join("")
         : `
             <tr class="row-done">
               <td><span class="status-icon status-done">&#10003;</span></td>
               <td><span class="course-code">TEST CREDIT</span></td>
-              <td>Applied test credits from transcript</td>
+              <td>Applied AP/IB/Test credits from transcript</td>
               <td>${formatCredits(testCreditTotal)}</td>
             </tr>`;
     return {
-        label: "Applied AP/Test Credits",
+        label: "Applied AP/IB/Test Credits",
         html: `
             <table>
               <thead><tr><th style="width:28px"></th><th>Credit</th><th>For</th><th>Credits</th></tr></thead>
@@ -755,14 +755,14 @@ async function render() {
     const renderedSections = [
         ...(testCreditsSection ? [testCreditsSection] : []),
         ...renderedPrograms.flatMap(program => {
-        const prefix = `${program.selected.type === "minor" ? "Minor" : "Major"} / ${program.prog.title || programLabel(program.selected)}`;
-        return program.sections.map(sec => ({ ...sec, label: `${prefix}: ${sec.label}` }));
+            const prefix = `${program.selected.type === "minor" ? "Minor" : "Major"} / ${program.prog.title || programLabel(program.selected)}`;
+            return program.sections.map(sec => ({ ...sec, label: `${prefix}: ${sec.label}` }));
         }),
     ];
     const totalCourses = totalDone + totalCurrent + totalNeeded;
     const pct = totalCourses ? Math.round((totalDone / totalCourses) * 100) : 0;
     const selectedProgramNames = selectedPrograms.map(program => `${program.type === "minor" ? "Minor: " : ""}${programLabel(program)}`);
-    const prog = { school: selectedProgramNames.join(" Â· ") };
+    const prog = { school: selectedProgramNames.join(" · ") };
     profile.minor = "";
 
     let html = `
@@ -775,7 +775,7 @@ async function render() {
           ${totalCurrent ? `<span class="pill pill-current">→ ${totalCurrent} in progress</span>` : ""}
           <span class="pill pill-needed">○ ${totalNeeded} remaining</span>
           ${totalRequiredCredits ? `<span class="pill pill-done">${formatCredits(totalDoneCredits + totalCurrentCredits)} / ${formatCredits(totalRequiredCredits)} credits</span>` : ""}
-          ${testCreditTotal ? `<span class="pill pill-done">${formatCredits(testCreditTotal)} AP/test credits</span>` : ""}
+          ${testCreditTotal ? `<span class="pill pill-done">${formatCredits(testCreditTotal)} AP/IB/Test credits</span>` : ""}
         </div>
       </div>
       <div class="progress-bar-wrap">
