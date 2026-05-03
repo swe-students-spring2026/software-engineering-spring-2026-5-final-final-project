@@ -1101,6 +1101,172 @@ function renderMarkdown(div, text) {
     }
 }
 
+// The model emits an `add-courses` fenced block when the student asked for
+// a schedule. We strip it from the visible reply and return the parsed list
+// so sendChat can render a confirmation card.
+const _ADD_COURSES_BLOCK_RE = /```add-courses\s*([\s\S]*?)```/i;
+function extractAddCoursesBlock(text) {
+    const match = text.match(_ADD_COURSES_BLOCK_RE);
+    if (!match) return { cleanText: text, items: [] };
+    const cleanText = text.replace(_ADD_COURSES_BLOCK_RE, "").trimEnd();
+    let items = [];
+    try {
+        const parsed = JSON.parse(match[1].trim());
+        if (Array.isArray(parsed)) {
+            items = parsed
+                .map(it => ({
+                    code: String(it?.code || "").trim(),
+                    crn: String(it?.crn || "").trim(),
+                    title: String(it?.title || "").trim(),
+                    section: String(it?.section || "").trim(),
+                    meets_human: String(it?.meets_human || "").trim(),
+                    instructor: String(it?.instructor || "").trim(),
+                }))
+                .filter(it => it.code && it.crn);
+        }
+    } catch (e) {
+        console.warn("Failed to parse add-courses block:", e);
+    }
+    return { cleanText, items };
+}
+
+// Render a confirmation card in the chat showing the courses the model
+// proposed. The student must click "Add to calendar" to commit; per-row ✕
+// drops a course from the proposal before committing. Nothing happens
+// automatically — calendar is the student's, not the model's.
+function renderAddCoursesCard(items) {
+    const box = document.getElementById("chat-messages");
+    const card = document.createElement("div");
+    card.className = "chat-msg ai chat-add-card";
+    let working = items.slice();
+
+    function paint() {
+        if (!working.length) {
+            card.innerHTML = `<div class="chat-add-empty">No courses to add.</div>`;
+            return;
+        }
+        card.innerHTML = `
+            <div class="chat-add-header">Add these to your calendar?</div>
+            <div class="chat-add-list">
+                ${working.map((it, i) => `
+                    <div class="chat-add-row" data-i="${i}">
+                        <div class="chat-add-main">
+                            <div class="chat-add-code"><strong>${escapeHtml(it.code)}</strong>${it.title ? ` — ${escapeHtml(it.title)}` : ""}</div>
+                            <div class="chat-add-meta">
+                                ${it.section ? `Sec ${escapeHtml(it.section)}` : ""}
+                                ${it.meets_human ? ` · ${escapeHtml(it.meets_human)}` : ""}
+                                ${it.instructor ? ` · ${escapeHtml(it.instructor)}` : ""}
+                            </div>
+                        </div>
+                        <button class="chat-add-drop" title="Remove from proposal" data-i="${i}">✕</button>
+                    </div>
+                `).join("")}
+            </div>
+            <div class="chat-add-actions">
+                <button class="chat-add-confirm">Add ${working.length} to calendar</button>
+                <button class="chat-add-cancel">Dismiss</button>
+            </div>
+        `;
+        card.querySelectorAll(".chat-add-drop").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const i = Number(btn.dataset.i);
+                working.splice(i, 1);
+                paint();
+            });
+        });
+        card.querySelector(".chat-add-cancel").addEventListener("click", () => {
+            card.remove();
+        });
+        card.querySelector(".chat-add-confirm").addEventListener("click", async () => {
+            const confirmBtn = card.querySelector(".chat-add-confirm");
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = "Adding…";
+            const result = await addAiCoursesToSchedule(working);
+            const lines = [];
+            if (result.added) lines.push(`✓ Added ${result.added} course${result.added === 1 ? "" : "s"}.`);
+            if (result.skipped.length) lines.push(`Skipped: ${result.skipped.join("; ")}.`);
+            card.innerHTML = `<div class="chat-add-result">${lines.length ? lines.map(escapeHtml).join(" ") : "Nothing was added."}</div>`;
+        });
+    }
+
+    paint();
+    box.appendChild(card);
+    box.scrollTop = 999999;
+}
+
+async function addAiCoursesToSchedule(items) {
+    if (!items.length) return { added: 0, skipped: [] };
+    const term = document.getElementById("term")?.value || "";
+    let added = 0;
+    const skipped = [];
+
+    for (const { code, crn } of items) {
+        if (isSectionAdded(crn)) {
+            skipped.push(`${code} (already added)`);
+            continue;
+        }
+        try {
+            const params = new URLSearchParams({ code });
+            if (term) params.set("term", term);
+            const res = await fetch(`/api/classes?${params}`);
+            const data = await res.json();
+            const allSections = Array.isArray(data.classes) ? data.classes : [];
+            if (!allSections.length) {
+                skipped.push(`${code} (no sections found)`);
+                continue;
+            }
+            allSections.forEach(s => { sectionMap[s.crn] = s; });
+
+            const lecture = allSections.find(s => String(s.crn) === String(crn) && !isSecondarySection(s));
+            if (!lecture) {
+                skipped.push(`${code} CRN ${crn} (not found)`);
+                continue;
+            }
+
+            // Auto-pick the first non-conflicting recitation. The student has
+            // already approved the lecture via the confirmation card; popping
+            // a recitation modal here would re-interrupt the chat flow.
+            const rcts = recitationsForLecture(lecture.section, allSections);
+            let recitation = null;
+            if (rcts.length) {
+                recitation = rcts.find(r => detectConflicts(lecture, r).length === 0) || rcts[0];
+            }
+
+            const conflicts = detectConflicts(lecture, recitation);
+            if (conflicts.length) {
+                skipped.push(`${code} (conflicts with ${conflicts.join(", ")})`);
+                continue;
+            }
+
+            const color = COLORS[colorIdx % COLORS.length];
+            colorIdx++;
+            schedule.push({ lecture, recitation, color });
+            added++;
+        } catch (e) {
+            console.warn(`Failed to add ${code}:`, e);
+            skipped.push(`${code} (network error)`);
+        }
+    }
+
+    if (added > 0) {
+        saveSchedule();
+        renderCalendar();
+        renderSelectedList();
+        // Refresh any visible Add buttons so they flip to "Added".
+        items.forEach(({ crn }) => {
+            document.querySelectorAll(`.section-row[data-crn="${crn}"] .add-btn`).forEach(b => {
+                b.textContent = "Added";
+                b.classList.add("added");
+                b.disabled = false;
+                b.onclick = () => handleRemoveByCrn(crn);
+                b.onmouseenter = () => { b.textContent = "Remove"; };
+                b.onmouseleave = () => { b.textContent = "Added"; };
+            });
+        });
+    }
+    return { added, skipped };
+}
+
 function autoResizeInput() {
     const el = document.getElementById("chat-input");
     el.style.height = "auto";
@@ -1152,18 +1318,27 @@ async function sendChat() {
             }),
         });
         const data = await res.json();
-        const reply = data.reply || data.error || "Something went wrong.";
+        const rawReply = data.reply || data.error || "Something went wrong.";
+        const { cleanText, items } = data.reply
+            ? extractAddCoursesBlock(rawReply)
+            : { cleanText: rawReply, items: [] };
         clearInterval(_thinkingInterval);
         typing.classList.remove("typing");
         typing.classList.add("fade-in");
-        renderMarkdown(typing, reply);
+        renderMarkdown(typing, cleanText);
         document.getElementById("chat-messages").scrollTop = 999999;
+
+        if (items.length) {
+            renderAddCoursesCard(items);
+        }
 
         // Persist this turn into history only after a successful round-trip.
         // If the request failed we don't pollute history with a half-turn.
+        // Store the cleaned text so the model doesn't see its own marker block
+        // echoed back — that would invite it to repeat or compound the action.
         if (data.reply) {
             chatHistory.push({ role: "user", text: msg });
-            chatHistory.push({ role: "model", text: data.reply });
+            chatHistory.push({ role: "model", text: cleanText });
             trimHistory();
         }
     } catch {

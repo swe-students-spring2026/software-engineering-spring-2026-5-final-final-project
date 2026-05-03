@@ -10,6 +10,8 @@ Flow:
 """
 
 import json
+import re
+import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import Any
@@ -20,7 +22,7 @@ except Exception:
     types = None  # type: ignore[assignment]
 
 from app.ai.client import MODEL, client as _client
-from app.ai.tools import GEMINI_TOOL, TOOL_HANDLERS
+from app.ai.tools import GEMINI_TOOL, TOOL_HANDLERS, verify_section_crns
 
 # Exposed for tests / external callers; internal code uses _client
 client = _client
@@ -29,6 +31,7 @@ from app.config.settings import (
     GEMINI_MAX_OUTPUT_TOKENS,
     GEMINI_MAX_TOOL_CALL_ROUNDS,
     GEMINI_TEMPERATURE,
+    GEMINI_THINKING_BUDGET,
     GEMINI_TOP_P,
 )
 
@@ -41,6 +44,97 @@ class _MongoEncoder(json.JSONEncoder):
             return str(obj)
         except Exception:
             return super().default(obj)
+
+
+_JSON_PRIMITIVES = (str, int, float, bool, type(None))
+
+
+def _normalize_for_response(value: Any) -> Any:
+    """Coerce Mongo/datetime values to JSON-native types in place.
+
+    The Gemini SDK serializes the `response` dict on its own; passing it a
+    pre-stringified blob makes the model parse JSON-in-a-string and roughly
+    doubles the tokens spent on tool results. Walk the structure once and
+    convert anything that isn't a JSON primitive (datetimes, ObjectIds, etc.)
+    to its string form so the SDK can serialize it directly.
+    """
+    if isinstance(value, _JSON_PRIMITIVES):
+        return value
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if isinstance(value, dict):
+        return {str(k): _normalize_for_response(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_normalize_for_response(v) for v in value]
+    return str(value)
+
+
+# Matches the fenced block the model emits to propose calendar additions.
+# Mirrors the regex on the frontend (see _ADD_COURSES_BLOCK_RE in index.js).
+_ADD_COURSES_BLOCK_RE = re.compile(r"```add-courses\s*([\s\S]*?)```", re.IGNORECASE)
+
+
+def _entry_pair(it: Any) -> tuple[str, str]:
+    if not isinstance(it, dict):
+        return ("", "")
+    return (str(it.get("code", "")).strip(), str(it.get("crn", "")).strip())
+
+
+def _split_kept_dropped(parsed: list[Any]) -> tuple[list[Any], list[str]]:
+    pairs = [p for p in (_entry_pair(it) for it in parsed) if p[0] and p[1]]
+    valid = verify_section_crns(pairs) if pairs else set()
+    kept: list[Any] = []
+    dropped: list[str] = []
+    for it in parsed:
+        code, crn = _entry_pair(it)
+        if not code or not crn:
+            continue
+        if (code, crn) in valid:
+            kept.append(it)
+        else:
+            dropped.append(f"{code} (CRN {crn})")
+    return kept, dropped
+
+
+def _validate_add_courses_block(reply: str) -> str:
+    """Strip hallucinated entries from the model's `add-courses` block.
+
+    The model occasionally fabricates CRNs that look plausible but don't exist
+    in MongoDB. We parse the block, verify each (code, crn) pair against the
+    catalog, and rewrite the reply with only the verified entries.
+    """
+    match = _ADD_COURSES_BLOCK_RE.search(reply)
+    if not match:
+        return reply
+
+    try:
+        parsed = json.loads(match.group(1).strip())
+    except json.JSONDecodeError:
+        return _ADD_COURSES_BLOCK_RE.sub("", reply).rstrip()
+
+    if not isinstance(parsed, list):
+        return _ADD_COURSES_BLOCK_RE.sub("", reply).rstrip()
+
+    kept, dropped = _split_kept_dropped(parsed)
+
+    if not kept:
+        cleaned = _ADD_COURSES_BLOCK_RE.sub("", reply).rstrip()
+        if dropped:
+            cleaned += (
+                "\n\n_Note: I couldn't verify the section data for "
+                f"{', '.join(dropped)} against the catalog, so I didn't queue "
+                "them for your calendar. Try asking again or browse the search panel._"
+            )
+        return cleaned
+
+    new_block = "```add-courses\n" + json.dumps(kept) + "\n```"
+    cleaned = _ADD_COURSES_BLOCK_RE.sub(new_block, reply, count=1)
+    if dropped:
+        cleaned = cleaned.rstrip() + (
+            "\n\n_Note: skipped "
+            f"{', '.join(dropped)} — couldn't verify those sections against the catalog._"
+        )
+    return cleaned
 
 
 _SYSTEM_INSTRUCTION = (
@@ -88,8 +182,40 @@ _SYSTEM_INSTRUCTION = (
     "COURSE NAMES: When a student mentions a course by name ('Data Structures', "
     "'Calculus'), pass that name directly to search_courses or get_course_sections — "
     "you do not need the exact course code.\n\n"
-    "FORMATTING: Use markdown. **Bold** course names and key details. Use bullet lists "
-    "for options and numbered lists for schedules. Use ## headers to separate sections.\n\n"
+    "FORMATTING: Use markdown. **Bold** course names. Use bullet/numbered lists.\n"
+    "BREVITY (important — output budget is tight):\n"
+    "• Per recommended course, give a compact one-liner: bold course code + title, "
+    "section, meeting time, and instructor, plus ≤10 words on why it fits. "
+    "Example: '**CSCI-UA 480** Special Topics — Sec 003, MW 11:00am–12:15pm, "
+    "Prof. Smith. Covers cryptography fundamentals you wanted.'\n"
+    "• Don't recap the student's request, don't preamble with 'Here's a schedule…', "
+    "don't append a closing 'let me know if…'. Just the list.\n"
+    "• If you need to flag something (prereq gap, conflict, study-away), one short "
+    "sentence inline with the course is plenty.\n\n"
+    "ADDING TO THE STUDENT'S CALENDAR: When you have just recommended specific course "
+    "sections AND the student's request implies they want them on their schedule "
+    "(\"build me a schedule\", \"add these\", \"plan my semester\", etc.), append a "
+    "single fenced block at the very END of your reply listing the courses to add:\n\n"
+    "```add-courses\n"
+    "[\n"
+    "  {\"code\": \"CSCI-UA 102\", \"crn\": \"12345\", \"title\": \"Data Structures\", "
+    "\"section\": \"003\", \"meets_human\": \"MW 11:00am-12:15pm\", "
+    "\"instructor\": \"Joanna Klukowska\"},\n"
+    "  {\"code\": \"MATH-UA 121\", \"crn\": \"67890\", \"title\": \"Calculus I\", "
+    "\"section\": \"001\", \"meets_human\": \"TR 9:30am-10:45am\", "
+    "\"instructor\": \"Jane Doe\"}\n"
+    "]\n"
+    "```\n\n"
+    "Rules for the block:\n"
+    "• Only include courses/CRNs you actually fetched via get_course_sections in "
+    "this turn — never invent codes, CRNs, or meeting times.\n"
+    "• Each entry MUST include: code, crn, title, section, meets_human, instructor "
+    "(use \"\" if a field is genuinely missing — do not guess).\n"
+    "• Include only LECTURE sections. The frontend handles recitation/lab pairing.\n"
+    "• Omit the block entirely if the student is just browsing or asking questions. "
+    "Don't add courses unsolicited.\n"
+    "• The frontend renders this block as a confirmation card the student must "
+    "click to accept — you are NOT modifying their calendar directly.\n\n"
     "DATA INTEGRITY: Always use the provided tools to retrieve real data. Never fabricate "
     "course names, codes, meeting times, or requirements. If data is missing, say so."
 )
@@ -101,6 +227,7 @@ _config = (
         temperature=GEMINI_TEMPERATURE,
         top_p=GEMINI_TOP_P,
         max_output_tokens=GEMINI_MAX_OUTPUT_TOKENS,
+        thinking_config=types.ThinkingConfig(thinking_budget=GEMINI_THINKING_BUDGET),
     )
     if types is not None
     else None
@@ -206,41 +333,80 @@ def _execute_calls_parallel(function_calls: list[Any]) -> list[Any]:
 
 def _run_tool_loop(contents: list[Any]) -> str:
     """Drive the generate → tool-call → generate loop until a text answer."""
+    turn_start = time.perf_counter()
+    gen_total = 0.0
+    tool_total = 0.0
+    rounds = 0
+    tool_calls = 0
+
+    t0 = time.perf_counter()
     response = _client.models.generate_content(
         model=MODEL, contents=contents, config=_config,
     )
+    gen_total += time.perf_counter() - t0
+    print(f"DEBUG - AI gen #0: {(time.perf_counter() - t0):.2f}s", flush=True)
 
-    for _ in range(GEMINI_MAX_TOOL_CALL_ROUNDS):
+    for round_idx in range(GEMINI_MAX_TOOL_CALL_ROUNDS):
         if not response.function_calls:
             if response.candidates:
                 print("DEBUG - AI STOP REASON:", response.candidates[0].finish_reason, flush=True)
-            return response.text or ""
+            print(
+                f"DEBUG - AI turn done: total={time.perf_counter() - turn_start:.2f}s "
+                f"gen={gen_total:.2f}s tools={tool_total:.2f}s "
+                f"rounds={rounds} tool_calls={tool_calls}",
+                flush=True,
+            )
+            return _validate_add_courses_block(response.text or "")
 
         contents.append(response.candidates[0].content)
 
+        round_call_count = len(response.function_calls)
+        tool_calls += round_call_count
+        names = [fc.name for fc in response.function_calls]
+        t_tool = time.perf_counter()
         results = _execute_calls_parallel(response.function_calls)
+        elapsed_tool = time.perf_counter() - t_tool
+        tool_total += elapsed_tool
+        print(
+            f"DEBUG - AI tools round {round_idx + 1}: "
+            f"{round_call_count} calls in {elapsed_tool:.2f}s ({names})",
+            flush=True,
+        )
+
         result_parts = [
             types.Part.from_function_response(
                 name=name,
-                response={"result": json.dumps(result, cls=_MongoEncoder)},
+                response={"result": _normalize_for_response(result)},
             )
             for name, result in results
         ]
         contents.append(types.Content(role="user", parts=result_parts))
 
+        rounds += 1
+        t_gen = time.perf_counter()
         response = _client.models.generate_content(
             model=MODEL, contents=contents, config=_config,
         )
+        elapsed_gen = time.perf_counter() - t_gen
+        gen_total += elapsed_gen
+        print(f"DEBUG - AI gen #{round_idx + 1}: {elapsed_gen:.2f}s", flush=True)
+
+    print(
+        f"DEBUG - AI turn done (limit hit): total={time.perf_counter() - turn_start:.2f}s "
+        f"gen={gen_total:.2f}s tools={tool_total:.2f}s "
+        f"rounds={rounds} tool_calls={tool_calls}",
+        flush=True,
+    )
 
     if response.function_calls:
         return (
             "I hit a tool-calling limit while building your answer. "
             "Please try narrowing your request (for example, include a department or term)."
         )
-    
+
     if response.candidates:
         print(f"DEBUG - AI STOP REASON: {response.candidates[0].finish_reason}", flush=True)
-    return response.text or ""
+    return _validate_add_courses_block(response.text or "")
 
 
 def chat(
