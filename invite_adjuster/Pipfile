@@ -10,8 +10,10 @@ pytz = "*"
 python-dateutil = "*"
 flask = "*"
 pymongo = "*"
+pytest = "*"
 
 [dev-packages]
+pytest-cov = "*"
 
 [requires]
 python_version = "3.9"

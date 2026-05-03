@@ -3,7 +3,6 @@ import os
 from bson.errors import InvalidId
 from bson import ObjectId
 from flask import Flask, redirect, render_template, request, url_for
-# from invite_adjuster.app import compute_lateness_penalty
 from datetime import datetime, timedelta
 from flask_login import (
     LoginManager,
@@ -15,6 +14,8 @@ from flask_login import (
 )
 from pymongo import MongoClient
 from datetime import datetime
+import requests
+
 
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -50,6 +51,16 @@ class User(UserMixin):
         self.phone_number = user_data.get("phone_number", "")
 
 
+#microservice for invite-adjuster
+def get_lateness_penalty(user_id):
+    try:
+        res = requests.get(f"http://invite-adjuster:5000/lateness_penalty/{user_id}")
+        data = res.json()
+        return data.get("lateness_penalty", 0) or 0
+    except Exception as e:
+        print("Error calling invite-adjuster:", e)
+        return 0
+    
 @login_manager.user_loader
 def load_user(user_id):
     try:
@@ -127,7 +138,8 @@ def create_account():
 
 @app.template_filter('format_time')
 def format_time(date):
-
+    if date is None:
+        return "No time set"
     # make sure there is no 0 before the hour
     hour = date.hour % 12
     if hour == 0:
@@ -283,7 +295,10 @@ def invites():
                         invitee_info = invitee
                         break
                 
-                display_time = invitee_info.get("suggested_arrival_time") if invitee_info else event_datetime
+                display_time = event_datetime
+
+                if invitee_info and invitee_info.get("suggested_arrival_time"):
+                    display_time = invitee_info["suggested_arrival_time"]
 
                 invited_events.append({
                     "_id": event.get("_id"),
@@ -298,17 +313,6 @@ def invites():
 
     return render_template("invites.html", invited_events=invited_events)
 
-#mock lateness penalty:
-def calculate_lateness_penalty(user):
-    lateness_list = user.get("lateness", [])
-
-    if not lateness_list:
-        return 0
-
-    recent_lateness = lateness_list[-5:]
-    avg_penalty = sum(recent_lateness) / len(recent_lateness)
-
-    return round(avg_penalty)
 
 @app.route("/host-events")
 @login_required
@@ -372,7 +376,8 @@ def create_host_event():
                 print(f"Invitee not found: {username}")
                 continue
 
-            lateness_penalty = calculate_lateness_penalty(invitee_user)
+            lateness_penalty = get_lateness_penalty(str(invitee_user["_id"]))
+            lateness_penalty = max(lateness_penalty, 0)
             suggested_arrival = event_datetime - timedelta(minutes=lateness_penalty)
 
             invitees_list.append({
@@ -411,7 +416,136 @@ def create_host_event():
         return redirect(url_for("host_events"))
 
     return render_template("host-event-create.html", error=error)
-     
+
+@app.route("/host-events/<event_id>/edit", methods=["GET", "POST"])
+@login_required
+def edit_host_event(event_id):
+    users = get_users_collection()
+    events = get_db()["events"]
+
+    event = events.find_one({
+        "_id": ObjectId(event_id),
+        "host_id": current_user.id
+    })
+
+    if not event:
+        return redirect(url_for("host_events"))
+
+    error = None
+
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        location = request.form.get("location", "").strip()
+        date = request.form.get("date", "").strip()
+        time = request.form.get("time", "").strip()
+        details = request.form.get("details", "").strip()
+        invitee_usernames = request.form.getlist("invitee_username")
+
+        try:
+            event_datetime = datetime.strptime(f"{date} {time}", "%Y-%m-%d %H:%M")
+        except ValueError:
+            error = "Invalid date or time."
+            return render_template("host-event-edit.html", event=event, error=error)
+
+        old_invitees = event.get("invitees_list", [])
+        old_invitee_ids = [invitee["user_id"] for invitee in old_invitees]
+
+        new_invitees_list = []
+        new_invitee_ids = []
+
+        for username in invitee_usernames:
+            username = username.strip()
+
+            if not username:
+                continue
+
+            invitee_user = users.find_one({"name": username})
+
+            if not invitee_user:
+                print(f"Invitee not found: {username}")
+                continue
+
+            invitee_id = str(invitee_user["_id"])
+            new_invitee_ids.append(invitee_id)
+
+            lateness_penalty = max(get_lateness_penalty(invitee_user), 0)
+            suggested_arrival = event_datetime - timedelta(minutes=lateness_penalty)
+
+            new_invitees_list.append({
+                "user_id": invitee_id,
+                "name": invitee_user["name"],
+                "time": time,
+                "suggested_arrival_time": suggested_arrival,
+                "lateness_penalty": lateness_penalty,
+                "status": "pending"
+            })
+
+        events.update_one(
+            {"_id": ObjectId(event_id)},
+            {
+                "$set": {
+                    "name": name,
+                    "location": location,
+                    "date": event_datetime,
+                    "description": details,
+                    "invitees_list": new_invitees_list,
+                    "updated_at": datetime.now()
+                }
+            }
+        )
+
+        users.update_one(
+            {"_id": ObjectId(current_user.id)},
+            {"$set": {f"events_owned.{event_id}": event_datetime}}
+        )
+
+        for invitee_id in old_invitee_ids:
+            users.update_one(
+                {"_id": ObjectId(invitee_id)},
+                {"$unset": {f"event_invites.{event_id}": ""}}
+            )
+
+        for invitee_id in new_invitee_ids:
+            users.update_one(
+                {"_id": ObjectId(invitee_id)},
+                {"$set": {f"event_invites.{event_id}": event_datetime}}
+            )
+
+        return redirect(url_for("host_events"))
+
+    return render_template("host-event-edit.html", event=event, error=error)     
+
+@app.route("/host-events/<event_id>/delete", methods=["POST"])
+@login_required
+def delete_host_event(event_id):
+    users = get_users_collection()
+    events = get_db()["events"]
+
+    event = events.find_one({
+        "_id": ObjectId(event_id),
+        "host_id": current_user.id
+    })
+
+    if not event:
+        return redirect(url_for("host_events"))
+
+    invitees = event.get("invitees_list", [])
+
+    for invitee in invitees:
+        users.update_one(
+            {"_id": ObjectId(invitee["user_id"])},
+            {"$unset": {f"event_invites.{event_id}": ""}}
+        )
+
+    users.update_one(
+        {"_id": ObjectId(current_user.id)},
+        {"$unset": {f"events_owned.{event_id}": ""}}
+    )
+
+    events.delete_one({"_id": ObjectId(event_id)})
+
+    return redirect(url_for("host_events"))
+
 @app.route("/user", methods=["GET", "POST"])
 @login_required
 def user_dashboard():
