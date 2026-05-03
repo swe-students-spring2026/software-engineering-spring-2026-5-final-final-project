@@ -214,6 +214,9 @@ def home_past():
 @app.route("/home-upcoming")
 @login_required
 def home_upcoming():
+    # sort order
+    sort_order = request.args.get("sort", "asc")
+
     # get current user
     users_collection = get_users_collection()
     user = users_collection.find_one({"_id": ObjectId(current_user.id)})
@@ -254,10 +257,13 @@ def home_upcoming():
                     "details": event.get("description", "No description provided")
                 })
 
-    # we have to sort the events by the most recent first
-    upcoming_events.sort(key=lambda x: x["date"])
+    # we have to sort the events by the filter setting
+    if (sort_order == "asc"):
+        upcoming_events.sort(key=lambda x: x["date"])
+    else:
+        upcoming_events.sort(key=lambda x: x["date"], reverse=True)
 
-    return render_template("home-upcoming.html", upcoming_events=upcoming_events)
+    return render_template("home-upcoming.html", upcoming_events=upcoming_events, sort_order=sort_order)
 
 
 @app.route("/invites")
