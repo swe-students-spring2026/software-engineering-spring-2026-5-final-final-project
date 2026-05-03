@@ -1,4 +1,3 @@
-
 def test_register(client):
      response=client.get("/register")
      assert response.status_code==200
