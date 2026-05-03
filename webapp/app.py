@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request
-
+from werkzeug.utils import secure_filename
 import os
 from datetime import datetime
 
@@ -35,14 +35,17 @@ def test_db():
 def upload():
     if request.method == "POST":
         video = request.files.get("video")
-        prompt = request.form.get("prompt")
-        num_clips = request.form.get("num_clips")
+        prompt = request.form.get("prompt") or ""
+        num_clips = int(request.form.get("num_clips", 1))
 
         if not video or video.filename == "":
             return render_template("upload.html", error="Please upload a video.")
 
         if not allowed_video(video.filename):
             return render_template("upload.html", error="Only video files are allowed.")
+
+        if not prompt:
+            return render_template("upload.html", error="Please enter a prompt.")
 
         filename = secure_filename(video.filename)
         filepath = os.path.join(UPLOAD_FOLDER, filename)
