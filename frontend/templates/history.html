@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}History - MovieApp{% endblock %}
+
+{% block content %}
+<section class="history-section">
+  <div class="section-header">
+    <h2>Recommendation History</h2>
+    <p>Recent recommendation and search activity saved for later review.</p>
+  </div>
+
+  {% if history %}
+    <ul class="history-list">
+      {% for item in history %}
+        <li class="history-item">
+          <div>
+            <strong>{{ item.type }}</strong>
+            <p>{{ item.query }}</p>
+          </div>
+          <span class="meta">
+            {{ item.mode }} &middot; {{ item.result_count }} results &middot; {{ item.created_at }}
+          </span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="empty-state">No history yet. Run a search or generate recommendations first.</p>
+  {% endif %}
+</section>
+{% endblock %}

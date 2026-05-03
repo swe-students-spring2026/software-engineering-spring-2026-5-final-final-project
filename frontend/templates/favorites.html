@@ -1,24 +1,32 @@
 {% extends "base.html" %}
-{% block title %}Favorites — MovieApp{% endblock %}
+{% block title %}Watchlist - MovieApp{% endblock %}
 
 {% block content %}
 <section class="favorites-section">
-  <h2>Your Favorites</h2>
+  <h2>Your Watchlist</h2>
 
   {% if favorites %}
     <ul class="movie-list">
       {% for movie in favorites %}
         <li class="movie-card">
-          <a href="/movie/{{ movie.id }}">
-            <h3>{{ movie.title }}</h3>
-          </a>
-          <p>{{ movie.description }}</p>
+          <div class="movie-card-main">
+            <a href="/movie/{{ movie.id }}">
+              <h3>{{ movie.title }}</h3>
+            </a>
+            <p>{{ movie.description }}</p>
+            <span class="meta">{{ movie.genre }} &middot; {{ movie.year }} &middot; &#9733; {{ movie.rating }}</span>
+          </div>
+
+          <form action="/watchlist/toggle/{{ movie.id }}" method="post">
+            <input type="hidden" name="next" value="/watchlist" />
+            <button type="submit" class="btn-secondary">Remove</button>
+          </form>
         </li>
       {% endfor %}
     </ul>
   {% else %}
     <p class="empty-state">
-      Lorem ipsum — you haven't saved any favorites yet.
+      Your watchlist is empty. Add movies from search results or movie detail pages.
     </p>
   {% endif %}
 </section>

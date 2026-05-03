@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Analytics - MovieApp{% endblock %}
+
+{% block content %}
+<section class="analytics-section">
+  <div class="section-header">
+    <h2>Analytics Dashboard</h2>
+    <p>Simple frontend summary of recommendation, search, semantic-search, and watchlist activity.</p>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <span class="stat-label">Total Activity</span>
+      <strong>{{ stats.total_activity }}</strong>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Recommendations</span>
+      <strong>{{ stats.recommendation_count }}</strong>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Searches</span>
+      <strong>{{ stats.search_count }}</strong>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Semantic Searches</span>
+      <strong>{{ stats.semantic_count }}</strong>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Watchlist Movies</span>
+      <strong>{{ stats.watchlist_count }}</strong>
+    </div>
+  </div>
+
+  <div class="section-header recent-activity-header">
+    <h2>Recent Activity</h2>
+  </div>
+
+  {% if history %}
+    <ul class="history-list">
+      {% for item in history %}
+        <li class="history-item">
+          <div>
+            <strong>{{ item.type }}</strong>
+            <p>{{ item.query }}</p>
+          </div>
+          <span class="meta">{{ item.created_at }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="empty-state">Analytics will appear after search or recommendation activity.</p>
+  {% endif %}
+</section>
+{% endblock %}
