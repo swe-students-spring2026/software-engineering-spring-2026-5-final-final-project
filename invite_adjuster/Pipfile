@@ -10,6 +10,7 @@ pytz = "*"
 python-dateutil = "*"
 flask = "*"
 pymongo = "*"
+pytest = "*"
 
 [dev-packages]
 
