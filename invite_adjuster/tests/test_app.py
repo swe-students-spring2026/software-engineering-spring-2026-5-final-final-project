@@ -22,7 +22,7 @@ def test_lateness_penalty():
 
     time.sleep(1)
 
-    url = f"http://localhost:5000/lateness_penalty/{USER_ID}"
+    url = f"/lateness_penalty/{USER_ID}"
     response = requests.get(url)
     data = response.json()
 
