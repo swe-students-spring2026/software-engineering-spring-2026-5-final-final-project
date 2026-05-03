@@ -7,7 +7,6 @@ from fastapi.staticfiles import StaticFiles
 from app.config import settings
 from app.routers import fishing, quiz
 
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
 FISH_IMAGES_DIR = REPO_ROOT / "data" / "fish_images"
 

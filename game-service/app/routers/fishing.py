@@ -30,7 +30,6 @@ from app.models import (
     SellSmallResponse,
 )
 
-
 router = APIRouter(prefix="/fishing", tags=["fishing"])
 
 
@@ -90,14 +89,9 @@ def _roll_quality(rng: random.Random) -> str:
     return rng.choices(qualities, weights=weights, k=1)[0]
 
 
-def _pick_species(
-    species_list: list[dict], rng: random.Random
-) -> dict:
+def _pick_species(species_list: list[dict], rng: random.Random) -> dict:
     weights = [
-        float(
-            s.get("catch_probability")
-            or RARITY_DRAW_WEIGHTS.get(s["rarity"], 1.0)
-        )
+        float(s.get("catch_probability") or RARITY_DRAW_WEIGHTS.get(s["rarity"], 1.0))
         for s in species_list
     ]
     return rng.choices(species_list, weights=weights, k=1)[0]
@@ -115,7 +109,7 @@ def _build_fish(species: dict, rng: random.Random) -> dict:
     typical = float(species.get("typical_size_cm", 30.0))
     size_cm = _roll_size_cm(typical, rng)
     quality = _roll_quality(rng)
-    weight_g = WEIGHT_K * (size_cm ** 3) / 1000.0  # rough, in grams
+    weight_g = WEIGHT_K * (size_cm**3) / 1000.0  # rough, in grams
     image_pool = species.get("image_pool") or []
     image_url = rng.choice(image_pool) if image_pool else ""
     sell_value = int(species.get("sell_value", species["base_price"]))
