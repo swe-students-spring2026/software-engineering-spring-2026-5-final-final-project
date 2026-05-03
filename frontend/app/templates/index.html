@@ -33,7 +33,10 @@
           </svg>
         </span>
         <span>AI Course Assistant</span>
-        <button id="chat-close-btn" onclick="toggleChat()">✕</button>
+        <div class="chat-header-btns">
+          <button id="chat-new-btn" onclick="clearChatHistory()" title="Start a new conversation">New chat</button>
+          <button id="chat-close-btn" onclick="toggleChat()">✕</button>
+        </div>
       </div>
       <div id="chat-context">
         <button id="chat-context-toggle" onclick="toggleContext()">

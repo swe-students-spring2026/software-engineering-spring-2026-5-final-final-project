@@ -1133,6 +1133,7 @@ def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url:
                 "instructor": sanitize_albert_text(row.get("instructor", "")) or meeting_details["instructor"],
                 "meets_human": meets_human,
                 "meeting_times": parse_meets_human(meets_human),
+                "course_location": extract_course_location(row),
                 "location": meeting_details["location"] or sanitize_albert_text(row.get("location", "")),
                 "dates": sanitize_albert_text(row.get("dates", "")) or meeting_details["dates"],
                 "notes": notes,
@@ -1252,6 +1253,16 @@ def sanitize_albert_text(value: object) -> str:
     text = clean_text(value)
     text = _CLEAN_ALBERT_RE.sub("", text)
     return clean_text(text)
+
+
+def extract_course_location(row: dict[str, Any]) -> str:
+    source_row = row.get("source_row", [])
+    if isinstance(source_row, list):
+        for line in source_row:
+            m = re.match(r"^Course Location:\s*(.+)$", str(line or "").strip())
+            if m:
+                return m.group(1).strip()
+    return ""
 
 
 def extract_term_label(row: dict[str, Any], *, fallback: str = "") -> str:

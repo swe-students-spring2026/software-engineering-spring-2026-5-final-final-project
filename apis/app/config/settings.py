@@ -32,5 +32,7 @@ def _env_int(name: str, default: int) -> int:
 
 GEMINI_TEMPERATURE: float = _env_float("GEMINI_TEMPERATURE", 0.2)
 GEMINI_TOP_P: float = _env_float("GEMINI_TOP_P", 0.9)
-GEMINI_MAX_OUTPUT_TOKENS: int = _env_int("GEMINI_MAX_OUTPUT_TOKENS", 1024)
-GEMINI_MAX_TOOL_CALL_ROUNDS: int = _env_int("GEMINI_MAX_TOOL_CALL_ROUNDS", 6)
+GEMINI_MAX_OUTPUT_TOKENS: int = _env_int("GEMINI_MAX_OUTPUT_TOKENS", 4096)
+GEMINI_MAX_TOOL_CALL_ROUNDS: int = _env_int("GEMINI_MAX_TOOL_CALL_ROUNDS", 16)
+# Max prior conversation turns kept in chat context (each turn = user msg + AI reply)
+GEMINI_MAX_HISTORY_TURNS: int = _env_int("GEMINI_MAX_HISTORY_TURNS", 10)
