@@ -1,0 +1,35 @@
+services:
+  # persistent database
+  mongodb:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  # flask frontend
+  web:
+    build: ./web
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017
+    depends_on:
+      - mongodb
+
+  # opt-in service, run with --profile pipeline
+  pipeline:
+    build: ./pipeline
+    env_file:
+      - .env
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017
+    depends_on:
+      - mongodb
+    profiles:
+      - pipeline
+
+volumes:
+  mongo_data:
