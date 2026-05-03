@@ -186,6 +186,22 @@ const specialRequirements = [
         },
     },
     {
+        key: "cs-intro-waiver",
+        label: "Computer Science Introductory / Waiver",
+        match: text => /intro(?:duction)?\s+to\s+computer\s+programming|computer\s+science\s+intro|csci-ua\s*2/i.test(text || ""),
+        options: ["CSCI-UA 2", "Any CSCI-UA course (100 level or above)", "AP Computer Science A"],
+        matches: code => {
+            const normalized = canonicalRequirementCode(code);
+            if (/^CSCI-UA\s*2$/i.test(normalized)) return true;
+            const m = normalized.match(/^CSCI-UA\s+(\d+)/i);
+            if (m) {
+                const num = Number(m[1]);
+                if (!Number.isNaN(num) && num >= 100) return true;
+            }
+            return false;
+        },
+    },
+    {
         key: "first-year-seminar",
         label: "First-Year Seminar",
         match: text => /first[\s-]*year.*seminar/i.test(text || ""),
