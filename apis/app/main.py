@@ -187,7 +187,7 @@ def get_classes():
     if page_codes:
         code_filter = {"code": {"$in": page_codes}}
         section_query = {"$and": [query, code_filter]} if query else code_filter
-        cursor = collection.find(section_query, {"_id": 0, "source": 0})
+        cursor = collection.find(section_query, {"_id": 0})
         cursor_sort = getattr(cursor, "sort", None)
         if callable(cursor_sort) and not isinstance(cursor, list):
             cursor = cursor_sort([

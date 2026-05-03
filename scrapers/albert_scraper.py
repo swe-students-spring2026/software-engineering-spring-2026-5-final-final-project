@@ -52,15 +52,17 @@ except ModuleNotFoundError:
 
 try:
     from scrapers.course_text import (
+        is_title_continuation_line,
         normalize_topic_title_fields,
-        title_with_topic,
-        topic_prefix_remainder,
+        title_expects_topic,
+        title_with_topics,
     )
 except ModuleNotFoundError:
     from course_text import (
+        is_title_continuation_line,
         normalize_topic_title_fields,
-        title_with_topic,
-        topic_prefix_remainder,
+        title_expects_topic,
+        title_with_topics,
     )
 
 
@@ -1103,7 +1105,7 @@ def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url:
         meeting_details = extract_meeting_details(row)
         term = extract_term_label(row, fallback=term_code)
         topic = extract_topic(row)
-        course_text = extract_course_text(row, code, topic=topic)
+        course_text = extract_course_text(row, code)
         notes = extract_notes(row)
         prerequisites = extract_prerequisites(notes)
         title = course_text["title"] or sanitize_albert_text(row.get("title", ""))
@@ -1308,7 +1310,7 @@ def extract_topic(row: dict[str, Any]) -> str:
     return sanitize_albert_text(row.get("topic", ""))
 
 
-def extract_course_text(row: dict[str, Any], code: str, *, topic: str = "") -> dict[str, str]:
+def extract_course_text(row: dict[str, Any], code: str) -> dict[str, str]:
     details = {
         "title": "",
         "description": "",
@@ -1331,7 +1333,8 @@ def extract_course_text(row: dict[str, Any], code: str, *, topic: str = "") -> d
 
     if header_index >= 0:
         description_lines: list[str] = []
-        title_continuation = ""
+        title_continuations: list[str] = []
+        collecting_title_continuations = title_expects_topic(details["title"])
         stop_markers = (
             "school:",
             "term:",
@@ -1355,12 +1358,13 @@ def extract_course_text(row: dict[str, Any], code: str, *, topic: str = "") -> d
                 break
             if any(lower.startswith(marker) for marker in stop_markers):
                 break
-            if not title_continuation and topic_prefix_remainder(text, topic) == "":
-                title_continuation = text
+            if collecting_title_continuations and is_title_continuation_line(text):
+                title_continuations.append(text)
                 continue
+            collecting_title_continuations = False
             description_lines.append(text)
-        if title_continuation:
-            details["title"] = title_with_topic(details["title"], title_continuation)
+        if title_continuations:
+            details["title"] = title_with_topics(details["title"], title_continuations)
         details["description"] = sanitize_albert_text(" ".join(description_lines))
 
     return details
