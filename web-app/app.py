@@ -1,118 +1,198 @@
-from datetime import date
+"""Flask Web app - backend for Word Game and Matchmaking"""
 
-from flask import Flask, redirect, render_template, request, url_for
+import os
+
+from datetime import date
+from flask import Flask, flash, jsonify, redirect, render_template, request, session, url_for
+from game_engine_client import evaluate_guess, create_puzzle
+from pymongo import MongoClient
+from bson.objectid import ObjectId
+from bson.errors import InvalidId
+from config import Config
 
 
 def create_app(test_config=None):
     app = Flask(__name__)
-    app.config.from_mapping(
-        SECRET_KEY="dev",
-    )
+
 
     if test_config:
-        app.config.update(test_config)
+        if isinstance(test_config, dict):
+            app.config.update(test_config)
+        else:
+            app.config.from_object(test_config)
+    else:
+        app.config.from_object(Config)
 
-    sample_user = {
-        "username": "example_user",
-        "profile_pic": "https://placehold.co/160x160?text=Profile",
-        "age": 21,
-        "gender": "Not set",
-        "email": "example_user@example.com",
-        "questions": [
-            {"question": "Favorite music genre?", "answer": "Jazz"},
-            {"question": "Dream travel spot?", "answer": "Germany"},
-            {"question": "Favorite hobby?", "answer": "Coding"},
-        ],
-    }
+    # MongoDB
+    client = MongoClient(app.config["MONGO_URI"])
+    db = client[app.config["DB_NAME"]]
 
-    daily_candidate = {
-        "username": "morgan",
-        "profile_pic": "https://placehold.co/160x160?text=Match",
-        "age": 22,
-        "gender": "Not set",
-        "questions": [
-            {"question": "Favorite music genre?", "answer": ""},
-            {"question": "Dream travel spot?", "answer": ""},
-            {"question": "Favorite hobby?", "answer": ""},
-            {"question": "Favorite food?", "answer": ""},
-            {"question": "Favorite movie type?", "answer": ""},
-            {"question": "Best school subject?", "answer": ""},
-            {"question": "Morning or night?", "answer": ""},
-            {"question": "Favorite season?", "answer": ""},
-            {"question": "Coffee or tea?", "answer": ""},
-            {"question": "Favorite game?", "answer": ""},
-        ],
-    }
-
-    matches = [
-        {
-            "id": 1,
-            "username": "morgan",
-            "profile_pic": "https://placehold.co/128x128?text=M",
-            "age": 22,
-            "gender": "Not set",
-            "email": "morgan@example.com",
-            "questions": [
-                {"question": "Favorite music genre?", "answer": "Jazz"},
-                {"question": "Dream travel spot?", "answer": "Germany"},
-                {"question": "Favorite hobby?", "answer": "Coding"},
-            ],
-        }
-    ]
+    # current user
+    def get_current_user():
+        if "user_id" not in session:
+            return None
+        return db.users.find_one({"_id": ObjectId(session["user_id"])})
 
     @app.route("/")
     def index():
         return render_template("index.html")
 
+   # login
     @app.route("/login", methods=["GET", "POST"])
     def login():
         if request.method == "POST":
+            username = request.form.get("username")
+            password = request.form.get("password")
+
+            user = db.users.find_one({"username": username, "password": password})
+            if not user:
+                flash("Invalid username or password")
+                return render_template("login.html")
+
+            session["user_id"] = str(user["_id"])
             return redirect(url_for("dashboard"))
         return render_template("login.html")
 
+   # register
     @app.route("/register", methods=["GET", "POST"])
     def register():
         if request.method == "POST":
+            username = request.form.get("username")
+            email = request.form.get("email")
+            password = request.form.get("password")
+
+            if db.users.find_one({"username": username}):
+                flash("That username is already taken")
+                return redirect(url_for("register"))
+
+            db.users.insert_one({
+                "username": username,
+                "email": email,
+                "password": password,
+            })
+
             return redirect(url_for("setup"))
         return render_template("register.html")
 
+    #setup
+    SETUP_QUESTIONS = [
+        "Favorite music genre?",
+        "Dream travel spot?",
+        "Favorite hobby?",
+        "Favorite food?",
+        "Favorite movie type?",
+        "Best school subject?",
+        "Morning or night?",
+        "Favorite season?",
+        "Coffee or tea?",
+        "Favorite game?",
+    ]
+
     @app.route("/setup", methods=["GET", "POST"])
     def setup():
-        if request.method == "POST":
-            return redirect(url_for("dashboard"))
-        return render_template("setup.html")
+        if "user_id" not in session:
+            return redirect(url_for("login"))
 
+        if request.method == "POST":
+            db.users.update_one(
+                {"_id": ObjectId(session["user_id"])},
+                {"$set": {
+                    "age": int(request.form.get("age") or 0),
+                    "gender": request.form.get("gender"),
+                    "profile_pic": request.form.get("profile_pic", ""),
+                    "contact_info": request.form.get("contact_info", ""),
+                }}
+            )
+
+            engine_url = app.config["GAME_ENGINE_URL"]
+
+            for i, question in enumerate(SETUP_QUESTIONS, start=1):
+                answer = request.form.get(f"answer_{i}")
+                if not answer:
+                    continue
+                try:
+                    puzzle_data = create_puzzle(engine_url, question=question, answer=answer)
+                    db.puzzles.insert_one({
+                        "owner_user_id": session["user_id"],
+                        "question": puzzle_data["question"],
+                        "answer": puzzle_data["answer"],
+                        "board": puzzle_data["board"],
+                        "max_attempts": puzzle_data["max_attempts"],
+                    })
+                except Exception:
+                    pass
+
+            return redirect(url_for("dashboard"))
+        return render_template("setup.html", questions=SETUP_QUESTIONS)
+
+    # dashboard
     @app.route("/dashboard", methods=["GET", "POST"])
     def dashboard():
+        engine_url = app.config["GAME_ENGINE_URL"]
         result = None
+        candidate = next(db.users.aggregate([
+            {"$match": {"_id": {"$ne": session.get("user_id")}}},
+            {"$sample": {"size": 1}}
+        ]), None)
+            
+        puzzles = list(db.puzzles.find({"owner_user_id": str(candidate["_id"])})) if candidate else []
+
         if request.method == "POST":
+            correct_count = 0
+            for i, puzzle in enumerate(puzzles, start=1):
+                guess = request.form.get(f"answer_{i}")
+                previous_guesses = session.get(f"guesses_{i}", [])
+
+                outcome = requests.post(f"{engine_url}/guesses", json={
+                    "question": puzzle["question"],
+                    "answer": puzzle["answer"],
+                    "board": puzzle["board"],
+                    "guess": guess,
+                    "previous_guesses": previous_guesses,
+                }).json()
+
+                session.setdefault(f"guesses_{i}", []).append(guess)
+                if outcome["is_correct"]:
+                    correct_count += 1
+
             result = {
-                "score": 10,
-                "total": 10,
-                "matched": True,
+                "score": correct_count,
+                "total": len(puzzles),
+                "matched": correct_count == len(puzzles),
             }
-        return render_template(
-            "dashboard.html",
-            candidate=daily_candidate,
-            today=date.today(),
-            result=result,
-        )
+
+            if correct_count == len(puzzles) and candidate:
+                db.matches.insert_one({
+                    "solver_user_id": session.get("user_id"),
+                    "target_user_id": str(candidate["_id"]),
+                    "status": "matched",
+                    "matched_at": date.today().isoformat(),
+                })
+        return render_template("dashboard.html", candidate=candidate, today=date.today(), result=result)
 
     @app.route("/matches")
     def matches_page():
+        user_id = session.get("user_id")
+        matches = list(db.matches.find({
+            "$or": [{"solver_user_id": user_id}, {"target_user_id": user_id}]
+        }))
         return render_template("matches.html", matches=matches)
 
-    @app.route("/matches/<int:match_id>")
+    @app.route("/matches/<match_id>")
     def match_detail(match_id):
-        match = next((item for item in matches if item["id"] == match_id), None)
+        try:
+            match = db.matches.find_one({"_id": ObjectId(match_id)})
+        except InvalidId:
+            match = None
         if match is None:
             return render_template("404.html"), 404
         return render_template("match_detail.html", match=match)
 
     @app.route("/profile", methods=["GET", "POST"])
     def profile():
+        user = get_current_user() or {}
         saved = request.method == "POST"
-        return render_template("profile.html", user=sample_user, saved=saved)
+        return render_template("profile.html", user=user, saved=saved)
 
     @app.route("/settings", methods=["GET", "POST"])
     def settings():
@@ -125,9 +205,7 @@ def create_app(test_config=None):
 
     return app
 
-
 app = create_app()
 
-
 if __name__ == "__main__":
-    app.run(debug=True)
+  app.run(host="0.0.0.0", port=8000)

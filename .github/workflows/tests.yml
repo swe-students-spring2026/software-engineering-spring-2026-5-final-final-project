@@ -26,6 +26,11 @@ jobs:
   test-web-app:
     name: Web app tests
     runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
     defaults:
       run:
         working-directory: web-app
