@@ -80,6 +80,11 @@ _SYSTEM_INSTRUCTION = (
     "  ONLY when the student explicitly asks about professors or 'best instructors'.\n"
     "• If a search returns nothing, try ONE alternative (drop the term filter, or use "
     "  department-only). Don't keep retrying — explain what you found and ask the user.\n\n"
+    "CRITICAL MEMORY LIMITS: You have a strict memory limit. "
+    "NEVER call `get_course_sections` or `search_courses` more than 5 times in a single turn. "
+    "If you need to build a 4-course schedule, pick exactly 4 candidate courses and "
+    "fetch ONLY those 4. Do not fetch a massive list of backups. If you pull too much data, "
+    "the system will crash."
     "COURSE NAMES: When a student mentions a course by name ('Data Structures', "
     "'Calculus'), pass that name directly to search_courses or get_course_sections — "
     "you do not need the exact course code.\n\n"
@@ -127,6 +132,8 @@ def _build_profile_context(
 ) -> str:
     """Render the profile dict into a short prose block prepended to the message."""
     parts: list[str] = []
+    current_date = datetime.now().strftime("%B %d, %Y")
+    parts.append(f"SYSTEM NOTE: The current date is {current_date}.")
     name = str(student_profile.get("name", "")).strip()
     school = str(student_profile.get("school", "")).strip()
     profile_major = str(student_profile.get("major", "")).strip() or major_fallback
@@ -205,6 +212,8 @@ def _run_tool_loop(contents: list[Any]) -> str:
 
     for _ in range(GEMINI_MAX_TOOL_CALL_ROUNDS):
         if not response.function_calls:
+            if response.candidates:
+                print("DEBUG - AI STOP REASON:", response.candidates[0].finish_reason, flush=True)
             return response.text or ""
 
         contents.append(response.candidates[0].content)
@@ -228,6 +237,9 @@ def _run_tool_loop(contents: list[Any]) -> str:
             "I hit a tool-calling limit while building your answer. "
             "Please try narrowing your request (for example, include a department or term)."
         )
+    
+    if response.candidates:
+        print(f"DEBUG - AI STOP REASON: {response.candidates[0].finish_reason}", flush=True)
     return response.text or ""
 
 
