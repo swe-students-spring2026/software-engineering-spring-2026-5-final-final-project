@@ -3,7 +3,6 @@ import os
 from bson.errors import InvalidId
 from bson import ObjectId
 from flask import Flask, redirect, render_template, request, url_for
-# from invite_adjuster.app import compute_lateness_penalty
 from datetime import datetime, timedelta
 from flask_login import (
     LoginManager,
@@ -15,6 +14,8 @@ from flask_login import (
 )
 from pymongo import MongoClient
 from datetime import datetime
+import requests
+
 
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -50,6 +51,16 @@ class User(UserMixin):
         self.phone_number = user_data.get("phone_number", "")
 
 
+#microservice for invite-adjuster
+def get_lateness_penalty(user_id):
+    try:
+        res = requests.get(f"http://invite-adjuster:5000/lateness_penalty/{user_id}")
+        data = res.json()
+        return data.get("lateness_penalty", 0) or 0
+    except Exception as e:
+        print("Error calling invite-adjuster:", e)
+        return 0
+    
 @login_manager.user_loader
 def load_user(user_id):
     try:
@@ -298,17 +309,6 @@ def invites():
 
     return render_template("invites.html", invited_events=invited_events)
 
-#mock lateness penalty:
-def calculate_lateness_penalty(user):
-    lateness_list = user.get("lateness", [])
-
-    if not lateness_list:
-        return 0
-
-    recent_lateness = lateness_list[-5:]
-    avg_penalty = sum(recent_lateness) / len(recent_lateness)
-
-    return round(avg_penalty)
 
 @app.route("/host-events")
 @login_required
@@ -372,7 +372,8 @@ def create_host_event():
                 print(f"Invitee not found: {username}")
                 continue
 
-            lateness_penalty = calculate_lateness_penalty(invitee_user)
+            lateness_penalty = get_lateness_penalty(str(invitee_user["_id"]))
+            lateness_penalty = max(lateness_penalty, 0)
             suggested_arrival = event_datetime - timedelta(minutes=lateness_penalty)
 
             invitees_list.append({

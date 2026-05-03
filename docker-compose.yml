@@ -5,6 +5,7 @@ services:
       - "5002:5000"
     depends_on:
       - mongodb
+      - invite-adjuster
     environment:
       - MONGO_URI=mongodb://mongodb:27017/
       - MONGO_DBNAME=flakemate
