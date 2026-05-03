@@ -130,7 +130,7 @@ def create_app(test_config=None):
         ]), None)
             
         puzzles = list(db.puzzles.find({"owner_user_id": str(candidate["_id"])})) if candidate else []
-        
+
         if request.method == "POST":
             correct_count = 0
             for i, puzzle in enumerate(puzzles, start=1):
