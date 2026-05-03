@@ -159,8 +159,10 @@ def test_extract_rows_from_text_uses_header_when_recitations_come_before_lecture
     assert by_section["002"]["description"] == "Survey of the scientific study of behavior and mental processes."
     assert by_section["002"]["term"] == "Fall 2026"
     assert by_section["012"]["title"] == "Introduction to Psychology"
+    assert by_section["012"]["description"] == "Survey of the scientific study of behavior and mental processes."
     assert by_section["012"]["term"] == "Fall 2026"
     assert by_section["013"]["title"] == "Introduction to Psychology"
+    assert by_section["013"]["description"] == "Survey of the scientific study of behavior and mental processes."
     assert by_section["013"]["term"] == "Fall 2026"
 
 
@@ -216,6 +218,59 @@ def test_rows_to_documents_backfills_failed_course_metadata_without_term():
     assert failed["metadata_fallback"] == {
         "source_code": "PSYCH-UA 9001",
         "fields": ["title", "description"],
+    }
+
+
+def test_rows_to_documents_backfills_crosslisted_metadata_and_term():
+    rows = [
+        {
+            "code": "EXPOS-UY 1",
+            "section": "101",
+            "crn": "18404",
+            "status": "Open",
+            "source_row": [
+                "EXPOS-UY 1 | 4 units",
+                "Class#: 18404",
+                "Session: 1 09/02/2026 - 12/14/2026",
+                "Section: 101",
+                "Class Status: Open",
+                "Component: Lecture",
+                "09/02/2026 - 12/14/2026 Tue,Thu 8.00 AM - 9.15 AM at 2 MetroTech Center Room 827",
+                "Visit the Bookstore",
+            ],
+        },
+        {
+            "code": "EXPOS-UA 1",
+            "section": "001",
+            "crn": "15193",
+            "status": "Open",
+            "source_row": [
+                "EXPOS-UA 1 | EXPOS-UY 1 Writing as Inquiry",
+                "This foundational writing course is required for incoming undergraduates.",
+                "School:",
+                "College of Arts and Science",
+                "Term: Fall 2026",
+                "EXPOS-UA 1 | 4 units",
+                "Class#: 15193",
+                "Section: 001",
+                "Class Status: Open",
+                "Component: Lecture",
+                "Visit the Bookstore",
+            ],
+        },
+    ]
+
+    docs = rows_to_documents(rows, term_code="", source_url="test")
+    failed = docs[0]
+
+    assert failed["code"] == "EXPOS-UY 1"
+    assert failed["term"] == "Fall 2026"
+    assert failed["_id"] == "Fall2026_EXPOS-UY_1_101"
+    assert failed["title"] == "Writing as Inquiry"
+    assert failed["description"] == "This foundational writing course is required for incoming undergraduates."
+    assert failed["metadata_fallback"] == {
+        "source_code": "EXPOS-UA 1",
+        "fields": ["title", "description", "term"],
     }
 
 

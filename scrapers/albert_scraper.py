@@ -34,7 +34,9 @@ _TITLE_LIST_ITEM_RE = re.compile(
     r"^(?:[A-Z]{2,5}-[A-Z]{2,3}\s+[A-Z0-9.]+[A-Z]?\s+|[A-Z]{1,3}[.:]\s+).+"
 )
 _COURSE_METADATA_ALIASES = {
-    "PSYCH-UA 1": ("PSYCH-UA 9001",),
+    # These are one-way rescue aliases for Albert rows whose matching lecture
+    # metadata is genuinely omitted from the result stream.
+    "PSYCH-UA 1": {"sources": ("PSYCH-UA 9001",), "fill_term": False},
 }
 
 # Login-page markers — module-level avoids rebuilding the tuple each call
@@ -1096,7 +1098,14 @@ def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url:
     rows = realign_shifted_topic_rows(rows)
     # Tracks the last primary (lecture) record's title/term so secondary sections
     # (recitations, discussions) can inherit them when Albert omits the course header.
-    last_primary: dict[str, str] = {"subject_code": "", "catalog_number": "", "title": "", "term": "", "topic": ""}
+    last_primary: dict[str, str] = {
+        "subject_code": "",
+        "catalog_number": "",
+        "title": "",
+        "term": "",
+        "topic": "",
+        "description": "",
+    }
 
     for index, row in enumerate(rows, start=1):
         code = sanitize_albert_text(row.get("code", ""))
@@ -1116,6 +1125,7 @@ def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url:
         notes = extract_notes(row)
         prerequisites = extract_prerequisites(notes)
         title = course_text["title"] or sanitize_albert_text(row.get("title", ""))
+        description = course_text["description"]
 
         # Inherit title/term from the preceding lecture section when this is a
         # secondary section (recitation/discussion) that Albert omits the header for.
@@ -1128,11 +1138,13 @@ def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url:
                 term = last_primary["term"]
             if not topic:
                 topic = last_primary["topic"]
+            if not description:
+                description = last_primary["description"]
 
         normalized_text = normalize_topic_title_fields({
             "title": title,
             "topic": topic,
-            "description": course_text["description"],
+            "description": description,
         })
         title = normalized_text["title"]
         topic = normalized_text["topic"]
@@ -1145,6 +1157,7 @@ def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url:
                 "title": title,
                 "term": term,
                 "topic": topic,
+                "description": description,
             }
 
         crn = sanitize_albert_text(row.get("crn", ""))
@@ -1191,27 +1204,34 @@ def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url:
 
 
 def backfill_failed_course_metadata(docs: list[dict[str, Any]]) -> None:
-    """Fill title/description for failed Albert section rows without filling term."""
+    """Fill failed Albert section rows from real course metadata when available."""
     metadata_by_code = collect_course_metadata(docs)
 
     for doc in docs:
-        if clean_text(doc.get("term", "")):
-            continue
+        has_term = bool(clean_text(doc.get("term", "")))
         missing_fields = [
             field for field in ("title", "description")
             if not clean_text(doc.get(field, ""))
         ]
-        if not missing_fields:
+        if has_term and not missing_fields:
             continue
 
         code = clean_text(doc.get("code", ""))
         metadata = metadata_by_code.get(code)
+        allow_term_backfill = bool(metadata and metadata.get("allow_term_backfill"))
         source_code = code
-        if not metadata or not any(clean_text(metadata.get(field, "")) for field in missing_fields):
-            for alias in _COURSE_METADATA_ALIASES.get(code, ()):
+        needs_field_metadata = bool(missing_fields)
+        metadata_has_needed_fields = (
+            metadata is not None
+            and any(clean_text(metadata.get(field, "")) for field in missing_fields)
+        )
+        if not metadata or (needs_field_metadata and not metadata_has_needed_fields):
+            alias_config = _COURSE_METADATA_ALIASES.get(code, {})
+            for alias in alias_config.get("sources", ()):
                 metadata = metadata_by_code.get(alias)
                 if metadata and any(clean_text(metadata.get(field, "")) for field in missing_fields):
                     source_code = alias
+                    allow_term_backfill = bool(alias_config.get("fill_term"))
                     break
             else:
                 metadata = None
@@ -1225,15 +1245,26 @@ def backfill_failed_course_metadata(docs: list[dict[str, Any]]) -> None:
             if value:
                 doc[field] = value
                 filled_fields.append(field)
+        if not has_term and allow_term_backfill:
+            term = clean_text(metadata.get("term", ""))
+            if term:
+                doc["term"] = term
+                doc["_id"] = make_albert_id(
+                    term,
+                    clean_text(doc.get("subject_code", "")) or "unknown",
+                    clean_text(doc.get("catalog_number", "")) or "unknown",
+                    clean_text(doc.get("section", "")) or "unknown",
+                )
+                filled_fields.append("term")
         if filled_fields:
             doc["metadata_fallback"] = {
-                "source_code": source_code,
+                "source_code": clean_text(metadata.get("source_code", "")) or source_code,
                 "fields": filled_fields,
             }
 
 
-def collect_course_metadata(docs: list[dict[str, Any]]) -> dict[str, dict[str, str]]:
-    metadata_by_code: dict[str, dict[str, str]] = {}
+def collect_course_metadata(docs: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    metadata_by_code: dict[str, dict[str, Any]] = {}
     scores_by_code: dict[str, int] = {}
     for doc in docs:
         code = clean_text(doc.get("code", ""))
@@ -1242,14 +1273,48 @@ def collect_course_metadata(docs: list[dict[str, Any]]) -> dict[str, dict[str, s
         metadata = {
             "title": clean_text(doc.get("title", "")),
             "description": clean_text(doc.get("description", "")),
+            "term": clean_text(doc.get("term", "")),
+            "source_code": code,
         }
         if not metadata["title"] and not metadata["description"]:
             continue
-        score = int(bool(metadata["title"])) + 2 * int(bool(metadata["description"]))
-        if score > scores_by_code.get(code, -1):
-            metadata_by_code[code] = metadata
-            scores_by_code[code] = score
+        score = (
+            int(bool(metadata["title"]))
+            + 2 * int(bool(metadata["description"]))
+            + int(bool(metadata["term"]))
+        )
+        for metadata_code in course_metadata_codes(doc, code):
+            course_metadata = dict(metadata)
+            course_metadata["allow_term_backfill"] = metadata_code != code
+            if score > scores_by_code.get(metadata_code, -1):
+                metadata_by_code[metadata_code] = course_metadata
+                scores_by_code[metadata_code] = score
     return metadata_by_code
+
+
+def course_metadata_codes(doc: dict[str, Any], code: str) -> set[str]:
+    codes = {code}
+    source_row = doc.get("source", {}).get("raw_row", [])
+    if not isinstance(source_row, list):
+        return codes
+
+    for line in source_row:
+        text = sanitize_albert_text(line)
+        lower = text.lower()
+        if not text:
+            continue
+        if lower.startswith(("school:", "term:", "class#:", "session:", "section:")):
+            break
+        if is_any_course_units_line(text):
+            break
+        if not is_course_header_line_for_code(text, code):
+            continue
+        title = extract_title_from_header_line(text, code)
+        if not title:
+            continue
+        codes.update(find_course_codes(text))
+        break
+    return codes
 
 
 def realign_shifted_topic_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
