@@ -20,11 +20,15 @@ def lateness_penalty(user_id):
     db = get_db()
     users = db["users"]
     user = users.find_one({"_id": ObjectId(user_id)})
+    penalty = compute_lateness_penalty(user)
+
+    return jsonify({"lateness_penalty": penalty, "num_events": len(user.get("lateness", []))})
+
+def compute_lateness_penalty(user):
     if not user or "lateness" not in user or not user["lateness"]:
-        return jsonify({"lateness_penalty": None, "message": "No lateness data"})
+        return 0
     lateness_list = user["lateness"][-5:]  # last 5 entries
     avg_penalty = sum(lateness_list) / len(lateness_list)
-    return jsonify({"lateness_penalty": avg_penalty, "num_events": len(lateness_list)})
-
+    return sum(lateness_list) / len (lateness_list)
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

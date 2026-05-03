@@ -3,6 +3,8 @@ import os
 from bson.errors import InvalidId
 from bson import ObjectId
 from flask import Flask, redirect, render_template, request, url_for
+# from invite_adjuster.app import compute_lateness_penalty
+from datetime import datetime, timedelta
 from flask_login import (
     LoginManager,
     UserMixin,
@@ -274,11 +276,20 @@ def invites():
             event = events_collection.find_one({"_id": ObjectId(event_id)})
 
             if event:
+                invitee_info = None
+
+                for invitee in event.get("invitees_list", []):
+                    if invitee.get("user_id") == current_user.id:
+                        invitee_info = invitee
+                        break
+                
+                display_time = invitee_info.get("suggested_arrival_time") if invitee_info else event_datetime
+
                 invited_events.append({
                     "_id": event.get("_id"),
                     "name": event.get("name", "Untitled Event"),
                     "location": event.get("location", "No location specified"),
-                    "date": event_datetime,
+                    "date": display_time,
                     "details": event.get("description", "No description provided")
                 })
 
@@ -287,7 +298,18 @@ def invites():
 
     return render_template("invites.html", invited_events=invited_events)
 
-#TODO: create route for host and add create logic
+#mock lateness penalty:
+def calculate_lateness_penalty(user):
+    lateness_list = user.get("lateness", [])
+
+    if not lateness_list:
+        return 0
+
+    recent_lateness = lateness_list[-5:]
+    avg_penalty = sum(recent_lateness) / len(recent_lateness)
+
+    return round(avg_penalty)
+
 @app.route("/host-events")
 @login_required
 def host_events():
@@ -324,7 +346,6 @@ def create_host_event():
         details = request.form.get("details", "").strip()
 
         invitee_usernames = request.form.getlist("invitee_username")
-        invitee_times = request.form.getlist("invitee_time")
 
         if not name or not location or not date or not time:
             error = "Please fill in name, location, date, and time."
@@ -338,22 +359,28 @@ def create_host_event():
 
         invitees_list = []
 
-        for username, invitee_time in zip(invitee_usernames, invitee_times):
+        for username in invitee_usernames:
             username = username.strip()
 
             if not username:
                 continue
 
             invitee_user = users.find_one({"name": username})
+            
 
             if not invitee_user:
                 print(f"Invitee not found: {username}")
                 continue
 
+            lateness_penalty = calculate_lateness_penalty(invitee_user)
+            suggested_arrival = event_datetime - timedelta(minutes=lateness_penalty)
+
             invitees_list.append({
                 "user_id": str(invitee_user["_id"]),
                 "name": invitee_user["name"],
-                "time": invitee_time or time,
+                "time": time,
+                "suggested_arrival_time": suggested_arrival,
+                "lateness_penalty": lateness_penalty,
                 "status": "pending"
             })
 

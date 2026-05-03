@@ -43,7 +43,9 @@
                     <ul class="invitees">
                         {% for invitee in event.invitees_list %}
                         <li>
-                            <p>{{ invitee.name }} @ {{ invitee.time }}</p>
+                            <p>{{ invitee.name }}</p>
+                            <p>suggested arrival: {{invitee.suggested_arrival_time | format_time}}</p>
+                            <p>penalty: {{invitee.lateness_penalty}} min</p>
                         </li>
 
                         {% endfor %}
