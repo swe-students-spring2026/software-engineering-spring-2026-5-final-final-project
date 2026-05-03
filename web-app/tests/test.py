@@ -1,3 +1,8 @@
+def test_user_opens_app_without_login(client):
+     response=client.get("/")
+     assert response.status_code==302
+     assert "/login" in response.location
+     
 def test_register(client):
      response=client.get("/register")
      assert response.status_code==200
@@ -111,5 +116,3 @@ def test_login_successful(client,monkeypatch):
      })
      assert response.status_code == 302
      assert "/dashboard" in response.location
-
-     
