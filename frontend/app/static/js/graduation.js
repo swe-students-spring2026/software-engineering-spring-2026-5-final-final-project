@@ -200,14 +200,50 @@ function choiceRequirementKey(text) {
 }
 
 function findChoiceRequirement(first, choiceTables) {
-    if (!/^select\s+one\b/i.test(first || "")) return null;
     const key = choiceRequirementKey(first);
-    if (choiceTables.has(key)) return choiceTables.get(key);
+    if (/^select\s+one\b/i.test(first || "")) {
+        if (choiceTables.has(key)) return choiceTables.get(key);
 
-    for (const [choiceKeyValue, choice] of choiceTables.entries()) {
-        if (key.includes(choiceKeyValue) || choiceKeyValue.includes(key)) return choice;
+        for (const [choiceKeyValue, choice] of choiceTables.entries()) {
+            if (key.includes(choiceKeyValue) || choiceKeyValue.includes(key)) return choice;
+        }
     }
-    return null;
+
+    return parseInlineChoiceRequirement(first);
+}
+
+function parseInlineChoiceRequirement(first) {
+    const cleaned = (first || "").replace(/^select\s+one\s+/i, "").trim();
+    if (!cleaned) return null;
+
+    const codes = [...new Set((cleaned.match(/[A-Z]{2,5}-[A-Z]{2,3}[\s-]\d+[A-Z]?/gi) || [])
+        .map(code => extractCode(code))
+        .filter(Boolean))];
+
+    if (codes.length < 2) return null;
+
+    return {
+        label: cleaned,
+        options: codes.map(code => ({ code, display: code, title: "", credits: "" })),
+    };
+}
+
+function parseWildcardElectivePrefix(first) {
+    const cleaned = (first || "").trim();
+    const match = cleaned.match(/^([A-Z]{2,5}-[A-Z]{2,3})\s+[-_Xx•.]{2,}$/);
+    return match ? match[1].toUpperCase() : null;
+}
+
+function matchWildcardElectiveCourse(prefix, assignedCourseCodes) {
+    const isEligible = code => {
+        const normalized = canonicalRequirementCode(code);
+        return normalized.startsWith(`${prefix} `) && !assignedCourseCodes.has(normalized);
+    };
+
+    const completedMatch = [...completedSet].find(isEligible);
+    if (completedMatch) return completedMatch;
+
+    return [...currentSet].find(isEligible) || null;
 }
 
 function statusOfChoice(options) {
@@ -481,7 +517,7 @@ function renderChoiceOptions(choice) {
     </details>`;
 }
 
-function renderTable(t, choiceTables, creditedRequirementKeys) {
+function renderTable(t, choiceTables, creditedRequirementKeys, assignedElectiveCourseCodes = new Set()) {
     const rows = t.rows || [];
     let doneCnt = 0, currentCnt = 0, neededCnt = 0;
     let doneCredits = 0, currentCredits = 0, requiredCredits = 0;
@@ -543,6 +579,33 @@ function renderTable(t, choiceTables, creditedRequirementKeys) {
             const rowCls = st === "done" ? "row-done" : st === "current" ? "row-current" : "";
             tableHtml += `<tr class="${rowCls}"><td>${icon}</td><td colspan="2"><span class="choice-label">${first}</span></td><td>${cells[1] || ""}</td></tr>`;
             tableHtml += `<tr class="choice-options-row"><td></td><td colspan="3">${renderChoiceOptions(choice)}</td></tr>`;
+            return;
+        }
+        const wildcardElectivePrefix = parseWildcardElectivePrefix(first);
+        if (wildcardElectivePrefix) {
+            const matched = matchWildcardElectiveCourse(wildcardElectivePrefix, assignedElectiveCourseCodes);
+            const creditVal = cells[2] !== undefined ? cells[2] : (cells.length === 2 ? cells[1] : "");
+            const credits = matched ? creditsForCourse(matched, parseCredits(creditVal)) : parseCredits(creditVal);
+            const st = matched ? statusOf(matched) : (parseCredits(creditVal) > 0 ? "needed" : "none");
+            if (matched) {
+                assignedElectiveCourseCodes.add(canonicalRequirementCode(matched));
+                creditedRequirementKeys.add(canonicalRequirementCode(matched));
+            }
+
+            if (st === "done") doneCnt++;
+            else if (st === "current") currentCnt++;
+            else neededCnt++;
+            if (st === "done") doneCredits += credits;
+            else if (st === "current") currentCredits += credits;
+
+            const icon = st === "done" ? '<span class="status-icon status-done">✓</span>'
+                : st === "current" ? '<span class="status-icon status-current">→</span>'
+                    : '<span class="status-icon status-needed">○</span>';
+            const rowCls = st === "done" ? "row-done" : st === "current" ? "row-current" : "";
+            const codeHtml = matched ? `<span class="course-code">${escapeHtml(matched)}</span>` : `<span class="course-code">${first}</span>`;
+            const creditDisplay = matched ? displayCreditsForCourse(matched, creditVal) : creditVal;
+
+            tableHtml += `<tr class="${rowCls}"><td>${icon}</td><td>${codeHtml}</td><td>${cells[1] || ""}</td><td>${creditDisplay}</td></tr>`;
             return;
         }
         if (!isCourse && !isAlt) {
@@ -737,9 +800,10 @@ async function render() {
     let totalDoneCredits = 0, totalCurrentCredits = 0, totalRequiredCredits = 0;
     const renderedPrograms = preparedPrograms.map((item, programIndex) => {
         const creditedRequirementKeys = collectSatisfiedRequirementKeys(item.tables, item.choiceTables);
+        const assignedElectiveCourseCodes = new Set();
         let programRequiredCredits = 0;
         const sections = item.tables.map((t, tableIndex) => {
-            const r = renderTable(t, item.choiceTables, creditedRequirementKeys);
+            const r = renderTable(t, item.choiceTables, creditedRequirementKeys, assignedElectiveCourseCodes);
             totalDone += r.done;
             totalCurrent += r.current;
             totalNeeded += r.needed;
