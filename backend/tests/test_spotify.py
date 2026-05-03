@@ -288,3 +288,258 @@ class TestDisconnectSpotify:
         assert update_doc["$set"]["spotify.access_token"] is None
         assert update_doc["$set"]["spotify.refresh_token"] is None
         assert update_doc["$set"]["is_spotify_connected"] is False
+
+
+# ---------------------------------------------------------------------------
+# Pure helper unit tests (no I/O)
+# ---------------------------------------------------------------------------
+
+
+class TestExtractTopArtists:
+    def test_extracts_id_and_name(self):
+        from app.services.spotify import _extract_top_artists
+
+        raw = [
+            {"id": "a1", "name": "Artist One", "genres": ["pop"], "popularity": 80},
+            {"id": "a2", "name": "Artist Two", "genres": ["rock"], "popularity": 70},
+        ]
+        result = _extract_top_artists(raw)
+        assert result == [{"id": "a1", "name": "Artist One"}, {"id": "a2", "name": "Artist Two"}]
+
+    def test_empty_list_returns_empty(self):
+        from app.services.spotify import _extract_top_artists
+
+        assert _extract_top_artists([]) == []
+
+
+class TestExtractTopGenres:
+    def test_flattens_and_deduplicates(self):
+        from app.services.spotify import _extract_top_genres
+
+        raw = [
+            {"id": "a1", "genres": ["pop", "dance pop"]},
+            {"id": "a2", "genres": ["pop", "indie"]},   # "pop" is a duplicate
+            {"id": "a3", "genres": []},
+        ]
+        result = _extract_top_genres(raw)
+        assert result == ["pop", "dance pop", "indie"]
+
+    def test_preserves_first_seen_order(self):
+        from app.services.spotify import _extract_top_genres
+
+        raw = [
+            {"genres": ["c", "a"]},
+            {"genres": ["b", "c"]},
+        ]
+        assert _extract_top_genres(raw) == ["c", "a", "b"]
+
+    def test_empty_artists_returns_empty(self):
+        from app.services.spotify import _extract_top_genres
+
+        assert _extract_top_genres([]) == []
+
+    def test_artists_with_no_genres_key(self):
+        from app.services.spotify import _extract_top_genres
+
+        # Some artist objects may lack the 'genres' key entirely
+        raw = [{"id": "a1"}, {"id": "a2", "genres": ["jazz"]}]
+        assert _extract_top_genres(raw) == ["jazz"]
+
+
+class TestAverageAudioFeatures:
+    def test_averages_all_four_keys(self):
+        from app.services.spotify import _average_audio_features
+
+        features = [
+            {"energy": 0.8, "valence": 0.6, "danceability": 0.7, "tempo": 120.0},
+            {"energy": 0.4, "valence": 0.2, "danceability": 0.3, "tempo": 100.0},
+        ]
+        result = _average_audio_features(features)
+        assert result == {
+            "energy": 0.6,
+            "valence": 0.4,
+            "danceability": 0.5,
+            "tempo": 110.0,
+        }
+
+    def test_skips_none_entries(self):
+        from app.services.spotify import _average_audio_features
+
+        features = [
+            None,
+            {"energy": 1.0, "valence": 1.0, "danceability": 1.0, "tempo": 200.0},
+            None,
+        ]
+        result = _average_audio_features(features)
+        assert result == {"energy": 1.0, "valence": 1.0, "danceability": 1.0, "tempo": 200.0}
+
+    def test_all_none_returns_none(self):
+        from app.services.spotify import _average_audio_features
+
+        assert _average_audio_features([None, None]) is None
+
+    def test_empty_list_returns_none(self):
+        from app.services.spotify import _average_audio_features
+
+        assert _average_audio_features([]) is None
+
+
+# ---------------------------------------------------------------------------
+# pull_user_data integration tests (mocked I/O)
+# ---------------------------------------------------------------------------
+
+# Reusable fake Spotify API responses
+FAKE_ARTISTS = [
+    {"id": "art1", "name": "Alpha", "genres": ["indie", "rock"]},
+    {"id": "art2", "name": "Beta",  "genres": ["rock", "alternative"]},
+]
+
+FAKE_TRACKS = [{"id": "t1"}, {"id": "t2"}]
+
+FAKE_AUDIO_FEATURES = [
+    {"energy": 0.9, "valence": 0.7, "danceability": 0.8, "tempo": 130.0},
+    {"energy": 0.5, "valence": 0.3, "danceability": 0.4, "tempo": 90.0},
+]
+
+
+def _make_mock_sp(artists=None, tracks=None, audio_features=None):
+    """Build a MagicMock Spotify client with preset return values."""
+    mock_sp = MagicMock()
+    mock_sp.current_user_top_artists.return_value = {
+        "items": artists if artists is not None else FAKE_ARTISTS
+    }
+    mock_sp.current_user_top_tracks.return_value = {
+        "items": tracks if tracks is not None else FAKE_TRACKS
+    }
+    mock_sp.audio_features.return_value = (
+        audio_features if audio_features is not None else FAKE_AUDIO_FEATURES
+    )
+    return mock_sp
+
+
+class TestPullUserData:
+    @pytest.mark.asyncio
+    @patch("app.services.spotify.get_users_collection")
+    @patch("app.services.spotify._build_spotify_client")
+    async def test_happy_path_persists_all_fields(self, mock_build_sp, mock_get_col):
+        from app.services.spotify import pull_user_data
+
+        # DB: find_one returns a user with a token; update_one is a no-op
+        mock_col = AsyncMock()
+        mock_col.find_one.return_value = {
+            "_id": FAKE_USER_ID,
+            "spotify": {"access_token": "valid_token"},
+        }
+        mock_get_col.return_value = mock_col
+        mock_build_sp.return_value = _make_mock_sp()
+
+        await pull_user_data(user_id=FAKE_USER_ID)
+
+        mock_col.update_one.assert_awaited_once()
+        update_doc = mock_col.update_one.call_args[0][1]["$set"]
+
+        assert update_doc["spotify.top_artists"] == [
+            {"id": "art1", "name": "Alpha"},
+            {"id": "art2", "name": "Beta"},
+        ]
+        assert update_doc["spotify.top_genres"] == ["indie", "rock", "alternative"]
+        assert update_doc["spotify.audio_features"] == {
+            "energy": pytest.approx(0.7),
+            "valence": pytest.approx(0.5),
+            "danceability": pytest.approx(0.6),
+            "tempo": pytest.approx(110.0),
+        }
+        assert "spotify.last_synced" in update_doc
+
+    @pytest.mark.asyncio
+    @patch("app.services.spotify.get_users_collection")
+    async def test_raises_if_no_access_token(self, mock_get_col):
+        from app.services.spotify import pull_user_data
+
+        mock_col = AsyncMock()
+        mock_col.find_one.return_value = {
+            "_id": FAKE_USER_ID,
+            "spotify": {"access_token": None},
+        }
+        mock_get_col.return_value = mock_col
+
+        with pytest.raises(RuntimeError, match="No Spotify access token"):
+            await pull_user_data(user_id=FAKE_USER_ID)
+
+    @pytest.mark.asyncio
+    @patch("app.services.spotify.get_users_collection")
+    async def test_raises_if_user_not_found(self, mock_get_col):
+        from app.services.spotify import pull_user_data
+
+        mock_col = AsyncMock()
+        mock_col.find_one.return_value = None
+        mock_get_col.return_value = mock_col
+
+        with pytest.raises(RuntimeError, match="No Spotify access token"):
+            await pull_user_data(user_id=FAKE_USER_ID)
+
+    @pytest.mark.asyncio
+    @patch("app.services.spotify.get_users_collection")
+    @patch("app.services.spotify._build_spotify_client")
+    async def test_audio_features_none_when_no_tracks(self, mock_build_sp, mock_get_col):
+        """If the user has no top tracks, audio_features should be stored as None."""
+        from app.services.spotify import pull_user_data
+
+        mock_col = AsyncMock()
+        mock_col.find_one.return_value = {
+            "_id": FAKE_USER_ID,
+            "spotify": {"access_token": "tok"},
+        }
+        mock_get_col.return_value = mock_col
+        mock_build_sp.return_value = _make_mock_sp(tracks=[])  # empty track list
+
+        await pull_user_data(user_id=FAKE_USER_ID)
+
+        update_doc = mock_col.update_one.call_args[0][1]["$set"]
+        assert update_doc["spotify.audio_features"] is None
+
+    @pytest.mark.asyncio
+    @patch("app.services.spotify.get_users_collection")
+    @patch("app.services.spotify._build_spotify_client")
+    async def test_raises_runtime_error_on_spotify_exception(self, mock_build_sp, mock_get_col):
+        """Any Spotify API error should be wrapped in RuntimeError."""
+        from app.services.spotify import pull_user_data
+
+        mock_col = AsyncMock()
+        mock_col.find_one.return_value = {
+            "_id": FAKE_USER_ID,
+            "spotify": {"access_token": "tok"},
+        }
+        mock_get_col.return_value = mock_col
+
+        mock_sp = MagicMock()
+        mock_sp.current_user_top_artists.side_effect = Exception("Spotify 503")
+        mock_build_sp.return_value = mock_sp
+
+        with pytest.raises(RuntimeError, match="Failed to pull Spotify data"):
+            await pull_user_data(user_id=FAKE_USER_ID)
+
+    @pytest.mark.asyncio
+    @patch("app.services.spotify.get_users_collection")
+    @patch("app.services.spotify._build_spotify_client")
+    async def test_uses_correct_spotify_api_params(self, mock_build_sp, mock_get_col):
+        """Verify the correct time_range and limit are passed to Spotify."""
+        from app.services.spotify import pull_user_data
+
+        mock_col = AsyncMock()
+        mock_col.find_one.return_value = {
+            "_id": FAKE_USER_ID,
+            "spotify": {"access_token": "tok"},
+        }
+        mock_get_col.return_value = mock_col
+        mock_sp = _make_mock_sp()
+        mock_build_sp.return_value = mock_sp
+
+        await pull_user_data(user_id=FAKE_USER_ID)
+
+        mock_sp.current_user_top_artists.assert_called_once_with(
+            limit=50, time_range="long_term"
+        )
+        mock_sp.current_user_top_tracks.assert_called_once_with(
+            limit=50, time_range="medium_term"
+        )

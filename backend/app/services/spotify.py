@@ -11,6 +11,64 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
+def _build_spotify_client(access_token: str) -> spotipy.Spotify:
+    """Return an authenticated Spotify client for a given access token."""
+    return spotipy.Spotify(auth=access_token)
+
+
+def _extract_top_artists(raw_artists: list[dict]) -> list[dict]:
+    """
+    Distil the raw spotipy artist objects down to {id, name}.
+
+    Args:
+        raw_artists: Items list from spotipy current_user_top_artists().
+
+    Returns:
+        List of dicts with keys 'id' and 'name'.
+    """
+    return [{"id": a["id"], "name": a["name"]} for a in raw_artists]
+
+
+def _extract_top_genres(raw_artists: list[dict]) -> list[str]:
+    """
+    Flatten and deduplicate genre tags from all top artists.
+
+    Args:
+        raw_artists: Items list from spotipy current_user_top_artists().
+
+    Returns:
+        Deduplicated list of genre strings, preserving first-seen order.
+    """
+    seen: set[str] = set()
+    genres: list[str] = []
+    for artist in raw_artists:
+        for genre in artist.get("genres", []):
+            if genre not in seen:
+                seen.add(genre)
+                genres.append(genre)
+    return genres
+
+
+def _average_audio_features(feature_list: list[dict | None]) -> dict | None:
+    """
+    Average energy, valence, danceability, and tempo across a list of tracks.
+    Skips None entries (tracks for which Spotify returned no data).
+
+    Args:
+        feature_list: Raw list returned by spotipy audio_features().
+
+    Returns:
+        Dict with keys energy, valence, danceability, tempo (all floats),
+        or None if no valid entries exist.
+    """
+    valid = [f for f in feature_list if f is not None]
+    if not valid:
+        return None
+
+    keys = ("energy", "valence", "danceability", "tempo")
+    return {k: sum(f[k] for f in valid) / len(valid) for k in keys}
+
+
 def _get_oauth_manager(state: str | None = None) -> SpotifyOAuth:
     """Return a SpotifyOAuth instance. Optionally embed a state token."""
     return SpotifyOAuth(
@@ -109,3 +167,69 @@ async def disconnect_spotify(user_id: str) -> None:
         },
     )
     logger.info("Disconnected Spotify for user %s", user_id)
+
+
+async def pull_user_data(user_id: str, access_token: str) -> None:
+    """
+    Fetch and persist a user's Spotify music data using their stored access token.
+
+    Pulls:
+      - Top 50 artists (long_term)  → spotify.top_artists, spotify.top_genres
+      - Audio features averaged over top 50 tracks (medium_term)
+                                    → spotify.audio_features
+      - Updates spotify.last_synced
+
+    Args:
+        user_id: The MongoDB user _id string.
+
+    Raises:
+        RuntimeError: If the user has no access token or Spotify calls fail.
+    """
+    users = get_users_collection()
+    sp = _build_spotify_client(access_token)
+
+    try:
+        # ── Top artists ──────────────────────────────────────────────────────
+        artists_response = sp.current_user_top_artists(
+            limit=50, time_range="long_term"
+        )
+        raw_artists: list[dict] = artists_response.get("items", [])
+
+        top_artists = _extract_top_artists(raw_artists)
+        top_genres = _extract_top_genres(raw_artists)
+
+        # ── Audio features ───────────────────────────────────────────────────
+        tracks_response = sp.current_user_top_tracks(
+            limit=50, time_range="medium_term"
+        )
+        track_ids = [t["id"] for t in tracks_response.get("items", [])]
+
+        audio_features: dict | None = None
+        if track_ids:
+            raw_features = sp.audio_features(track_ids)   # list[dict | None]
+            audio_features = _average_audio_features(raw_features)
+
+    except Exception as exc:
+        logger.error("Spotify data pull failed for user %s: %s", user_id, exc)
+        raise RuntimeError("Failed to pull Spotify data") from exc
+
+    # ── Persist ──────────────────────────────────────────────────────────────
+    await users.update_one(
+        {"_id": user_id},
+        {
+            "$set": {
+                "spotify.top_artists": top_artists,
+                "spotify.top_genres": top_genres,
+                "spotify.audio_features": audio_features,
+                "spotify.last_synced": datetime.now(timezone.utc),
+                "updated_at": datetime.now(timezone.utc),
+            }
+        },
+    )
+
+    logger.info(
+        "Pulled Spotify data for user %s: %d artists, %d genres",
+        user_id,
+        len(top_artists),
+        len(top_genres),
+    )
