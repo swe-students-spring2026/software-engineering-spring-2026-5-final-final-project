@@ -13,7 +13,11 @@ _INCOMPLETE_TOPIC_TITLES = {
     "topic",
     "topics",
 }
-_COURSE_UNITS_RE = re.compile(r"^[A-Z]{2,5}-[A-Z]{2,3}\s+[A-Z0-9.]+[A-Z]?\s+\|\s*[\d.-]+\s+units?$", re.I)
+_COURSE_UNITS_RE = re.compile(
+    r"^[A-Z]{2,5}-[A-Z]{2,3}\s+[A-Z0-9.]+[A-Z]?\s+\|\s*"
+    r"\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?\s+units?$",
+    re.I,
+)
 _METADATA_PREFIXES = (
     "school:",
     "term:",

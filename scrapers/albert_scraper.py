@@ -29,6 +29,13 @@ _CLEAN_ALBERT_RE = re.compile(r"\b(?:more|less)\s+description\s+for\s+.*$", re.I
 _CLEAN_TOKEN_RE = re.compile(r"[^A-Za-z0-9_-]")
 _HEADER_NORMALIZE_RE = re.compile(r"[^a-z0-9& ]+")
 _DATES_LINE_RE = re.compile(r"^\d{1,2}/\d{1,2}/\d{4}\s*-\s*\d{1,2}/\d{1,2}/\d{4}\b")
+_UNITS_REMAINDER_RE = re.compile(r"^\|\s*\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?\s+units?$", re.I)
+_TITLE_LIST_ITEM_RE = re.compile(
+    r"^(?:[A-Z]{2,5}-[A-Z]{2,3}\s+[A-Z0-9.]+[A-Z]?\s+|[A-Z]{1,3}[.:]\s+).+"
+)
+_COURSE_METADATA_ALIASES = {
+    "PSYCH-UA 1": ("PSYCH-UA 9001",),
+}
 
 # Login-page markers — module-level avoids rebuilding the tuple each call
 _LOGIN_MARKERS = (
@@ -1179,7 +1186,70 @@ def rows_to_documents(rows: list[dict[str, Any]], *, term_code: str, source_url:
                 "scraped_at": datetime.now(timezone.utc),
             }
         )
+    backfill_failed_course_metadata(docs)
     return docs
+
+
+def backfill_failed_course_metadata(docs: list[dict[str, Any]]) -> None:
+    """Fill title/description for failed Albert section rows without filling term."""
+    metadata_by_code = collect_course_metadata(docs)
+
+    for doc in docs:
+        if clean_text(doc.get("term", "")):
+            continue
+        missing_fields = [
+            field for field in ("title", "description")
+            if not clean_text(doc.get(field, ""))
+        ]
+        if not missing_fields:
+            continue
+
+        code = clean_text(doc.get("code", ""))
+        metadata = metadata_by_code.get(code)
+        source_code = code
+        if not metadata or not any(clean_text(metadata.get(field, "")) for field in missing_fields):
+            for alias in _COURSE_METADATA_ALIASES.get(code, ()):
+                metadata = metadata_by_code.get(alias)
+                if metadata and any(clean_text(metadata.get(field, "")) for field in missing_fields):
+                    source_code = alias
+                    break
+            else:
+                metadata = None
+
+        if not metadata:
+            continue
+
+        filled_fields: list[str] = []
+        for field in missing_fields:
+            value = clean_text(metadata.get(field, ""))
+            if value:
+                doc[field] = value
+                filled_fields.append(field)
+        if filled_fields:
+            doc["metadata_fallback"] = {
+                "source_code": source_code,
+                "fields": filled_fields,
+            }
+
+
+def collect_course_metadata(docs: list[dict[str, Any]]) -> dict[str, dict[str, str]]:
+    metadata_by_code: dict[str, dict[str, str]] = {}
+    scores_by_code: dict[str, int] = {}
+    for doc in docs:
+        code = clean_text(doc.get("code", ""))
+        if not code or clean_text(doc.get("topic", "")):
+            continue
+        metadata = {
+            "title": clean_text(doc.get("title", "")),
+            "description": clean_text(doc.get("description", "")),
+        }
+        if not metadata["title"] and not metadata["description"]:
+            continue
+        score = int(bool(metadata["title"])) + 2 * int(bool(metadata["description"]))
+        if score > scores_by_code.get(code, -1):
+            metadata_by_code[code] = metadata
+            scores_by_code[code] = score
+    return metadata_by_code
 
 
 def realign_shifted_topic_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -1358,7 +1428,10 @@ def extract_course_text(row: dict[str, Any], code: str) -> dict[str, str]:
                 break
             if any(lower.startswith(marker) for marker in stop_markers):
                 break
-            if collecting_title_continuations and is_title_continuation_line(text):
+            if (
+                is_title_continuation_line(text)
+                and (collecting_title_continuations or is_title_list_item_line(text))
+            ):
                 title_continuations.append(text)
                 continue
             collecting_title_continuations = False
@@ -1444,7 +1517,7 @@ def extract_rows_from_text(text: str) -> list[dict[str, Any]]:
                 break
             block_lines.append(next_line)
 
-        if is_course_units_line(line, code):
+        if not extract_title_from_header_line(line, code):
             header_start = find_prior_course_header(lines, index, code)
             if header_start >= 0:
                 block_lines = lines[header_start:index] + block_lines
@@ -1469,14 +1542,22 @@ def extract_rows_from_text(text: str) -> list[dict[str, Any]]:
 def extract_title_from_header_line(line: str, code: str) -> str:
     text = sanitize_albert_text(line)
     title = sanitize_albert_text(text.replace(code, "", 1))
-    if re.match(r"^\|\s*[\d.-]+\s+units?$", title, re.I):
+    if _UNITS_REMAINDER_RE.match(title):
         return ""
     title = strip_leading_crosslisted_codes(title)
     return title
 
 
 def is_course_units_line(line: str, code: str) -> bool:
-    return bool(re.match(rf"^{re.escape(code)}\s+\|\s*[\d.-]+\s+units?$", clean_text(line), re.I))
+    text = clean_text(line)
+    if not text.startswith(code):
+        return False
+    return bool(_UNITS_REMAINDER_RE.match(text[len(code):].strip()))
+
+
+def is_any_course_units_line(line: str) -> bool:
+    code = find_course_code(line)
+    return bool(code and is_course_units_line(line, code))
 
 
 def line_starts_with_course_code(line: str, code: str) -> bool:
@@ -1488,6 +1569,10 @@ def is_course_header_line_for_code(line: str, code: str) -> bool:
     if not codes or code not in codes:
         return False
     return line_starts_with_course_code(line, codes[0])
+
+
+def is_title_list_item_line(line: str) -> bool:
+    return bool(_TITLE_LIST_ITEM_RE.match(clean_text(line)))
 
 
 def strip_leading_crosslisted_codes(value: str) -> str:
@@ -1510,19 +1595,22 @@ def strip_leading_crosslisted_codes(value: str) -> str:
 def find_prior_course_header(lines: list[str], start_index: int, code: str) -> int:
     for index in range(start_index - 1, -1, -1):
         line = lines[index]
-        # Another "| units" line means a new lecture group started; stop here.
-        if is_course_units_line(line, code):
+        lower = clean_text(line).casefold()
+        # Another section block means this header belongs to a previous result.
+        if (
+            is_any_course_units_line(line)
+            or lower.startswith("visit the bookstore")
+            or lower.startswith("class#:")
+            or lower.startswith("section:")
+            or lower.startswith("class status:")
+        ):
             break
-        line_codes = find_course_codes(line)
         if is_course_header_line_for_code(line, code):
             # Only treat as a title header if the line has actual title text after the code,
             # not a bare section marker (which would just be "MATH-UA 140" with nothing after).
             remainder = extract_title_from_header_line(line, code)
             if remainder:
                 return index
-            break
-        other_code = line_codes[0] if line_codes else ""
-        if other_code and line_starts_with_course_code(line, other_code):
             break
     return -1
 

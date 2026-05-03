@@ -126,7 +126,13 @@ def extract_topic(doc: dict) -> str:
 
 
 def is_unit_title(value: object) -> bool:
-    return bool(re.match(r"^\|\s*[\d.-]+\s+units?$", str(value or "").strip(), re.I))
+    return bool(
+        re.match(
+            r"^(?:\|\s*)?\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?\s+units?$",
+            str(value or "").strip(),
+            re.I,
+        )
+    )
 
 
 def dedupe_docs(docs: list[dict]) -> list[dict]:

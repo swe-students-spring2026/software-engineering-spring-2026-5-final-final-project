@@ -71,6 +71,235 @@ def test_extract_rows_from_text_keeps_crosslisted_header_with_secondary_code():
     assert docs[0]["term"] == "Fall 2026"
 
 
+def test_extract_rows_from_text_uses_header_for_variable_unit_sections():
+    rows = extract_rows_from_text(
+        "\n".join(
+            [
+                "ANTH-UA 903 Internship",
+                (
+                    "Opportunities for students to gain practical work experience sponsored by selected "
+                    "institutions are negotiated with the internship sponsor."
+                ),
+                "School:",
+                "College of Arts and Science",
+                "Term: Fall 2026",
+                "ANTH-UA 903 | 1 - 4 units",
+                "Class#: 8393",
+                "Session: 1 09/02/2026 - 12/14/2026",
+                "Section: 001",
+                "Class Status: Open",
+                "Component: Seminar",
+                "09/02/2026 - 12/14/2026 No Room Required",
+                "Notes: Course Repeatable for Credit.",
+                "Visit the Bookstore",
+                "ANTH-UA 903 | 1 - 4 units",
+                "Class#: 8394",
+                "Session: 1 09/02/2026 - 12/14/2026",
+                "Section: 002",
+                "Class Status: Open",
+                "Component: Seminar",
+                "09/02/2026 - 12/14/2026 No Room Required",
+                "Visit the Bookstore",
+            ]
+        )
+    )
+
+    docs = rows_to_documents(rows, term_code="", source_url="test")
+
+    assert [doc["section"] for doc in docs] == ["001", "002"]
+    assert docs[0]["title"] == "Internship"
+    assert docs[0]["description"].startswith("Opportunities for students")
+    assert docs[0]["term"] == "Fall 2026"
+    assert docs[1]["title"] == "Internship"
+    assert docs[1]["term"] == "Fall 2026"
+
+
+def test_extract_rows_from_text_uses_header_when_recitations_come_before_lecture():
+    rows = extract_rows_from_text(
+        "\n".join(
+            [
+                "PSYCH-UA 1 Introduction to Psychology",
+                "Survey of the scientific study of behavior and mental processes.",
+                "School:",
+                "College of Arts and Science",
+                "Term: Fall 2026",
+                "PSYCH-UA 1",
+                "Class#: 8997",
+                "Session: 1 09/02/2026 - 12/14/2026",
+                "Section: 002",
+                "Class Status: Open",
+                "Component: Recitation",
+                "09/02/2026 - 12/14/2026 Thu 3.30 PM - 4.45 PM at 40 W 4th St Room LC13",
+                "Visit the Bookstore",
+                "PSYCH-UA 1 | 4 units",
+                "Class#: 9007",
+                "Session: 1 09/02/2026 - 12/14/2026",
+                "Section: 012",
+                "Class Status: Wait List (26)",
+                "Component: Lecture",
+                "09/02/2026 - 12/14/2026 Mon,Wed 3.30 PM - 4.45 PM at 36 E 8th St Room 200",
+                "Visit the Bookstore",
+                "PSYCH-UA 1",
+                "Class#: 9008",
+                "Session: 1 09/02/2026 - 12/14/2026",
+                "Section: 013",
+                "Class Status: Open",
+                "Component: Recitation",
+                "09/02/2026 - 12/14/2026 Tue 8.00 AM - 9.15 AM at 7 East 12th St Room 125",
+                "Visit the Bookstore",
+            ]
+        )
+    )
+
+    docs = rows_to_documents(rows, term_code="", source_url="test")
+    by_section = {doc["section"]: doc for doc in docs}
+
+    assert [doc["section"] for doc in docs] == ["002", "012", "013"]
+    assert by_section["002"]["title"] == "Introduction to Psychology"
+    assert by_section["002"]["description"] == "Survey of the scientific study of behavior and mental processes."
+    assert by_section["002"]["term"] == "Fall 2026"
+    assert by_section["012"]["title"] == "Introduction to Psychology"
+    assert by_section["012"]["term"] == "Fall 2026"
+    assert by_section["013"]["title"] == "Introduction to Psychology"
+    assert by_section["013"]["term"] == "Fall 2026"
+
+
+def test_rows_to_documents_backfills_failed_course_metadata_without_term():
+    rows = [
+        {
+            "code": "PSYCH-UA 1",
+            "section": "002",
+            "crn": "8997",
+            "status": "Open",
+            "source_row": [
+                "PSYCH-UA 1",
+                "Class#: 8997",
+                "Session: 1 09/02/2026 - 12/14/2026",
+                "Section: 002",
+                "Class Status: Open",
+                "Component: Recitation",
+                "09/02/2026 - 12/14/2026 Thu 3.30 PM - 4.45 PM at 40 W 4th St Room LC13",
+                "Visit the Bookstore",
+            ],
+        },
+        {
+            "code": "PSYCH-UA 9001",
+            "section": "DC1",
+            "crn": "9144",
+            "status": "Open",
+            "source_row": [
+                "PSYCH-UA 9001 Intro to Psychology",
+                "Fundamental principles of psychology, with emphasis on basic research and applications.",
+                "School:",
+                "College of Arts and Science",
+                "Term: Fall 2026",
+                "PSYCH-UA 9001 | 4 units",
+                "Class#: 9144",
+                "Section: DC1",
+                "Class Status: Open",
+                "Component: Lecture",
+                "Visit the Bookstore",
+            ],
+        },
+    ]
+
+    docs = rows_to_documents(rows, term_code="", source_url="test")
+    failed = docs[0]
+
+    assert failed["code"] == "PSYCH-UA 1"
+    assert failed["term"] == ""
+    assert failed["_id"] == "PSYCH-UA_1_002"
+    assert failed["title"] == "Intro to Psychology"
+    assert failed["description"] == (
+        "Fundamental principles of psychology, with emphasis on basic research and applications."
+    )
+    assert failed["metadata_fallback"] == {
+        "source_code": "PSYCH-UA 9001",
+        "fields": ["title", "description"],
+    }
+
+
+def test_extract_rows_from_text_keeps_cbe_recitation_title_lines_before_topic_rows():
+    rows = extract_rows_from_text(
+        "\n".join(
+            [
+                "CBE-UY REC CBE Recitation (including BMS, CBE, CM subject areas)",
+                "CBE-UY 3153 CBE Thermodynamics",
+                "CBE-UY 3313 Heat and Mass Tran",
+                "CBE Recitation (including BMS, CBE, CM subject areas)",
+                "School:",
+                "Tandon School of Engineering",
+                "Term: Fall 2026",
+                "Topic: CBE-UY 3153 CBE Thermodynamics",
+                "CBE-UY REC | 0 units",
+                "Class#: 12846",
+                "Session: 1 09/02/2026 - 12/14/2026",
+                "Section: 3153",
+                "Class Status: Open",
+                "Component: Recitation",
+                "09/02/2026 - 12/14/2026 Fri 2.00 PM - 3.20 PM at Jacobs Hall Room 202",
+                "Visit the Bookstore",
+                "Topic: CBE-UY 3313 Heat and Mass Tran",
+                "CBE-UY REC | 0 units",
+                "Class#: 12847",
+                "Session: 1 09/02/2026 - 12/14/2026",
+                "Section: 3313",
+                "Class Status: Open",
+                "Component: Recitation",
+                "09/02/2026 - 12/14/2026 Fri 12.30 PM - 1.50 PM at Jacobs Hall Room 473",
+                "Visit the Bookstore",
+            ]
+        )
+    )
+
+    docs = rows_to_documents(rows, term_code="", source_url="test")
+
+    assert [doc["section"] for doc in docs] == ["3153", "3313"]
+    assert docs[0]["title"] == (
+        "CBE Recitation (including BMS, CBE, CM subject areas): "
+        "CBE-UY 3153 CBE Thermodynamics; CBE-UY 3313 Heat and Mass Tran"
+    )
+    assert docs[0]["description"] == "CBE Recitation (including BMS, CBE, CM subject areas)"
+    assert docs[0]["term"] == "Fall 2026"
+    assert docs[1]["title"] == docs[0]["title"]
+    assert docs[1]["topic"] == "CBE-UY 3313 Heat and Mass Tran"
+    assert docs[1]["term"] == "Fall 2026"
+
+
+def test_extract_rows_from_text_keeps_lettered_project_lines_in_title():
+    rows = extract_rows_from_text(
+        "\n".join(
+            [
+                "VIP-UY 300X Vertically Integrated Projects",
+                "A. Concrete Canoe",
+                "AB. NYU Robotic Design Team",
+                "BK: Metaverse for Education",
+                "School:",
+                "Tandon School of Engineering",
+                "Term: Fall 2026",
+                "Topic: A. Concrete Canoe",
+                "VIP-UY 300X | 1 - 3 units",
+                "Class#: 8077",
+                "Session: 1 09/02/2026 - 12/14/2026",
+                "Section: A",
+                "Class Status: Open",
+                "Component: Project",
+                "09/02/2026 - 12/14/2026 at No Room Required Room",
+                "Visit the Bookstore",
+            ]
+        )
+    )
+
+    docs = rows_to_documents(rows, term_code="", source_url="test")
+
+    assert docs[0]["title"] == (
+        "Vertically Integrated Projects: A. Concrete Canoe; "
+        "AB. NYU Robotic Design Team; BK: Metaverse for Education"
+    )
+    assert docs[0]["topic"] == "A. Concrete Canoe"
+    assert docs[0]["term"] == "Fall 2026"
+
+
 def test_rows_to_documents_promotes_topic_line_to_title_not_description():
     rows = [
         {
