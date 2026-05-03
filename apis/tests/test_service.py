@@ -139,7 +139,8 @@ class TestChat:
             service.chat("just a question")
         from_text_calls = service.types.Part.from_text.call_args_list
         text = from_text_calls[0].kwargs.get("text") or from_text_calls[0].args[0]
-        assert text == "just a question"
+        assert "just a question" in text
+        assert "SYSTEM NOTE" in text
 
 
 class TestMongoEncoder:
