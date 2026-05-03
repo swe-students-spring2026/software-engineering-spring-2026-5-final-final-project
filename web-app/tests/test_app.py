@@ -6,7 +6,7 @@ from app import create_app
 def client():
     app = create_app(test_config={
         "TESTING": True, 
-        "SECRET_KEY": "test"
+        "SECRET_KEY": "test",
         "MONGO_URI": "mongodb://localhost:27017/test_db"
     })
     with app.test_client() as c:
