@@ -67,3 +67,19 @@ FINAL_JSON:
   "top_disconfirming_signals": ["", "", ""]
 }
 """
+def get_api_key() -> str:
+    """Get API key from env; error if missing."""
+    key = os.getenv("OPENAI_API_KEY") or os.getenv("OPENAI_KEY")
+    if not key:
+        raise RuntimeError("Missing OPENAI_API_KEY (or OPENAI_KEY).")
+    return key
+
+
+def build_run_dirs(run_id: Optional[str]) -> Dict[str, Path]:
+    """Create run folders and return their paths."""
+    run_name = run_id or datetime.now().strftime("%Y%m%d_%H%M%S")
+    root = OUTPUT_ROOT / run_name
+    per_stock, charts, uploaded = root/"per_stock", root/"charts", root/"uploaded_file_manifest"
+    for d in (root, per_stock, charts, uploaded):
+        d.mkdir(parents=True, exist_ok=True)
+    return {"root": root, "per_stock": per_stock, "charts": charts, "uploaded": uploaded}
