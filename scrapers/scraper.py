@@ -396,7 +396,7 @@ def save_to_mongo(docs, mongo_uri, collection="classes", db_name=None):
     coll.create_index("code")
     coll.create_index("instructor")
     coll.create_index("status")
-    coll.create_index([("title", "text"), ("code", "text"), ("description", "text")])
+    coll.create_index([("title", "text"), ("topic", "text"), ("code", "text"), ("description", "text")])
 
     if not docs:
         return

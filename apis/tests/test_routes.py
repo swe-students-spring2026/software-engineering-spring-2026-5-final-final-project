@@ -47,6 +47,61 @@ class TestClassesRoute:
         assert data["classes"][0]["topic"] == "The Black Radical Tradition"
         assert "source" not in data["classes"][0]
 
+    def test_get_classes_normalizes_split_topic_title(self, client, mock_db):
+        with patch.object(mock_db.classes, "aggregate", return_value=[
+            {"total": [{"n": 1}], "page_codes": [{"_id": "ENGL-UA 59"}]}
+        ]), patch.object(mock_db.classes, "find", return_value=[
+            {
+                "code": "ENGL-UA 59",
+                "title": "Topics:",
+                "topic": "Of Monsters and Medicine",
+                "description": "Of Monsters and Medicine Topics and prerequisites vary by semester.",
+            }
+        ]):
+            res = client.get("/classes")
+
+        course = res.get_json()["classes"][0]
+        assert course["title"] == "Topics: Of Monsters and Medicine"
+        assert course["description"] == "Topics and prerequisites vary by semester."
+
+    def test_get_classes_normalizes_multi_topic_title_from_source_rows(self, client, mock_db):
+        with patch.object(mock_db.classes, "aggregate", return_value=[
+            {"total": [{"n": 1}], "page_codes": [{"_id": "ENGL-UA 252"}]}
+        ]), patch.object(mock_db.classes, "find", return_value=[
+            {
+                "code": "ENGL-UA 252",
+                "title": "Topics: Contemporary Post-Apocalypticism",
+                "topic": "Contemporary Post-Apocalypticism",
+                "description": (
+                    "Eros and Sexuality in Modern Jewish Lit Intro to medical Humanities "
+                    "Modern Chinese Fiction Since 2000: Contemporary Graphic Narratives "
+                    "The Ethics of Pastoral Writing Toward Linguistic Justice "
+                    "Various topics in English Literature"
+                ),
+                "source": {
+                    "raw_row": [
+                        "ENGL-UA 252 Topics:",
+                        "Contemporary Post-Apocalypticism",
+                        "Eros and Sexuality in Modern Jewish Lit",
+                        "Intro to medical Humanities",
+                        "Modern Chinese Fiction",
+                        "Since 2000: Contemporary Graphic Narratives",
+                        "The Ethics of Pastoral",
+                        "Writing Toward Linguistic Justice",
+                        "Various topics in English Literature",
+                        "School:",
+                    ]
+                },
+            }
+        ]):
+            res = client.get("/classes")
+
+        course = res.get_json()["classes"][0]
+        assert course["title"].startswith("Topics: Contemporary Post-Apocalypticism; Eros")
+        assert "Writing Toward Linguistic Justice" in course["title"]
+        assert course["description"] == ""
+        assert "source" not in course
+
     def test_get_classes_enriches_professor_ratings(self, client, mock_db):
         mock_db.classes.find.return_value = [{"title": "Algorithms", "instructor": "Joanna Klukowska"}]
         with patch("app.main.enrich_classes_with_professor_ratings", return_value=[
@@ -80,6 +135,7 @@ class TestClassesRoute:
         assert res.status_code == 200
         match = mock_db.classes.aggregate.call_args[0][0][0]["$match"]
         assert "$or" in match
+        assert any("topic" in condition for condition in match["$or"])
 
     def test_get_classes_with_term_and_query(self, client, mock_db):
         mock_db.classes.find.return_value = []

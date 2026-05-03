@@ -216,7 +216,7 @@ _NYC_LOCATIONS = ["Washington Square", "Brooklyn Campus"]
 
 _SLIM_COURSE_PROJECTION = {
     "_id": 0, "code": 1, "title": 1, "credits": 1,
-    "subject_code": 1, "component": 1, "term": 1,
+    "subject_code": 1, "component": 1, "term": 1, "topic": 1,
     "course_location": 1, "prerequisites": 1,
 }
 
@@ -338,6 +338,7 @@ def get_course_sections(
     or_clause = {"$or": [
         {"code": {"$regex": course_code, "$options": "i"}},
         {"title": {"$regex": course_code, "$options": "i"}},
+        {"topic": {"$regex": course_code, "$options": "i"}},
     ]}
     conditions: list[dict] = [or_clause]
     if term:
