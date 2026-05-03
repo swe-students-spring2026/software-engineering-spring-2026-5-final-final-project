@@ -1,4 +1,74 @@
-from scrapers.albert_scraper import rows_to_documents
+from scrapers.albert_scraper import extract_rows_from_text, rows_to_documents
+
+
+def test_extract_rows_from_text_keeps_crosslisted_header_with_primary_code():
+    rows = extract_rows_from_text(
+        "\n".join(
+            [
+                "CORE-UA 1 | CORE-UA 9001 Complexities: Oceans",
+                "We inhabit a world of complex systems. less description for CORE-UA 1 | CORE-UA 9001 «",
+                "School:",
+                "College of Arts and Science",
+                "Term: Fall 2026",
+                "CORE-UA 1 | 4 units",
+                "Class#: 9516",
+                "Session: 1 09/02/2026 - 12/14/2026",
+                "Section: 001",
+                "Class Status: Closed",
+                "Component: Seminar",
+                "09/02/2026 - 12/14/2026 Mon 11.00 AM - 1.30 PM at 194 Mercer St Room 202",
+                "Visit the Bookstore",
+                "CORE-UA 1 | 4 units",
+                "Class#: 9517",
+                "Session: 1 09/02/2026 - 12/14/2026",
+                "Section: 002",
+                "Class Status: Closed",
+                "Component: Seminar",
+                "09/02/2026 - 12/14/2026 Mon 11.00 AM - 1.30 PM at 31 Washington Pl Room 518",
+                "Visit the Bookstore",
+            ]
+        )
+    )
+
+    docs = rows_to_documents(rows, term_code="", source_url="test")
+
+    assert [doc["section"] for doc in docs] == ["001", "002"]
+    assert docs[0]["code"] == "CORE-UA 1"
+    assert docs[0]["title"] == "Complexities: Oceans"
+    assert docs[0]["description"] == "We inhabit a world of complex systems."
+    assert "CORE-UA 9001" not in docs[0]["description"]
+    assert "|" not in docs[0]["description"]
+    assert docs[0]["term"] == "Fall 2026"
+    assert docs[1]["title"] == "Complexities: Oceans"
+    assert docs[1]["term"] == "Fall 2026"
+
+
+def test_extract_rows_from_text_keeps_crosslisted_header_with_secondary_code():
+    rows = extract_rows_from_text(
+        "\n".join(
+            [
+                "CORE-UA 1 | CORE-UA 9001 Complexities: Oceans",
+                "We inhabit a world of complex systems.",
+                "School:",
+                "College of Arts and Science",
+                "Term: Fall 2026",
+                "CORE-UA 9001 | 4 units",
+                "Class#: 9516",
+                "Session: 1 09/02/2026 - 12/14/2026",
+                "Section: 001",
+                "Class Status: Closed",
+                "Component: Seminar",
+                "Visit the Bookstore",
+            ]
+        )
+    )
+
+    docs = rows_to_documents(rows, term_code="", source_url="test")
+
+    assert docs[0]["code"] == "CORE-UA 9001"
+    assert docs[0]["title"] == "Complexities: Oceans"
+    assert docs[0]["description"] == "We inhabit a world of complex systems."
+    assert docs[0]["term"] == "Fall 2026"
 
 
 def test_rows_to_documents_promotes_topic_line_to_title_not_description():

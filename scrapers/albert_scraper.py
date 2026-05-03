@@ -1322,12 +1322,12 @@ def extract_course_text(row: dict[str, Any], code: str) -> dict[str, str]:
     header_index = -1
     for index, line in enumerate(source_row):
         text = sanitize_albert_text(line)
-        if not text.startswith(code):
+        if not is_course_header_line_for_code(text, code):
             continue
-        remainder = sanitize_albert_text(text[len(code) :])
-        if not remainder or re.match(r"^\|\s*[\d.-]+\s+units?$", remainder, re.I):
+        title = extract_title_from_header_line(text, code)
+        if not title:
             continue
-        details["title"] = remainder
+        details["title"] = title
         header_index = index
         break
 
@@ -1444,7 +1444,7 @@ def extract_rows_from_text(text: str) -> list[dict[str, Any]]:
                 break
             block_lines.append(next_line)
 
-        if re.match(rf"^{re.escape(code)}\s+\|", line):
+        if is_course_units_line(line, code):
             header_start = find_prior_course_header(lines, index, code)
             if header_start >= 0:
                 block_lines = lines[header_start:index] + block_lines
@@ -1467,27 +1467,62 @@ def extract_rows_from_text(text: str) -> list[dict[str, Any]]:
 
 
 def extract_title_from_header_line(line: str, code: str) -> str:
-    title = sanitize_albert_text(line.replace(code, "", 1))
+    text = sanitize_albert_text(line)
+    title = sanitize_albert_text(text.replace(code, "", 1))
     if re.match(r"^\|\s*[\d.-]+\s+units?$", title, re.I):
         return ""
+    title = strip_leading_crosslisted_codes(title)
     return title
+
+
+def is_course_units_line(line: str, code: str) -> bool:
+    return bool(re.match(rf"^{re.escape(code)}\s+\|\s*[\d.-]+\s+units?$", clean_text(line), re.I))
+
+
+def line_starts_with_course_code(line: str, code: str) -> bool:
+    return bool(re.match(rf"^{re.escape(code)}(?:\s+\||\s+|$)", clean_text(line)))
+
+
+def is_course_header_line_for_code(line: str, code: str) -> bool:
+    codes = find_course_codes(line)
+    if not codes or code not in codes:
+        return False
+    return line_starts_with_course_code(line, codes[0])
+
+
+def strip_leading_crosslisted_codes(value: str) -> str:
+    title = sanitize_albert_text(value)
+    while title:
+        if title.startswith("|"):
+            title = title[1:].strip()
+            code_match = _COURSE_CODE_RE.match(title)
+            if not code_match:
+                break
+            title = title[code_match.end():].strip()
+            continue
+        code_match = _COURSE_CODE_RE.match(title)
+        if not code_match:
+            break
+        title = title[code_match.end():].strip()
+    return sanitize_albert_text(title)
 
 
 def find_prior_course_header(lines: list[str], start_index: int, code: str) -> int:
     for index in range(start_index - 1, -1, -1):
         line = lines[index]
-        # Another "| units" line means a new lecture group started — stop here.
-        if re.match(rf"^{re.escape(code)}\s+\|", line):
+        # Another "| units" line means a new lecture group started; stop here.
+        if is_course_units_line(line, code):
             break
-        if re.match(rf"^{re.escape(code)}(?:\s+|$)", line):
+        line_codes = find_course_codes(line)
+        if is_course_header_line_for_code(line, code):
             # Only treat as a title header if the line has actual title text after the code,
             # not a bare section marker (which would just be "MATH-UA 140" with nothing after).
-            remainder = line[len(code):].strip()
+            remainder = extract_title_from_header_line(line, code)
             if remainder:
                 return index
             break
-        other_code = find_course_code(line)
-        if other_code and re.match(rf"^{re.escape(other_code)}(?:\s+\||\s+|$)", line):
+        other_code = line_codes[0] if line_codes else ""
+        if other_code and line_starts_with_course_code(line, other_code):
             break
     return -1
 
@@ -1513,6 +1548,10 @@ def dedupe_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
 def find_course_code(text: str) -> str:
     m = _COURSE_CODE_RE.search(text)
     return clean_text(m.group(0)) if m else ""
+
+
+def find_course_codes(text: str) -> list[str]:
+    return [clean_text(match.group(0)) for match in _COURSE_CODE_RE.finditer(text)]
 
 
 def find_first(pattern: str, text: str, *, flags: int = 0) -> str:
