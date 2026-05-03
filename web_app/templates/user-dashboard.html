@@ -25,7 +25,7 @@
     {% endif %}
 
     {% if message %}
-    <p class="auth-error">{{ message }}</p>
+    <p class="auth-message">{{ message }}</p>
     {% endif %}
 
     <form class="dashboard-form" method="POST" action="{{ url_for('user_dashboard') }}">
