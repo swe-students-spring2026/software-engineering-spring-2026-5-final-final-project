@@ -1,4 +1,3 @@
-# Slim image keeps things lightweight — no extras we don't need
 FROM python:3.12-slim
 
 WORKDIR /app

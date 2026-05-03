@@ -1,4 +1,4 @@
-# Core packages for the Flask web service.
+# Core packages for the Flask
 Flask
 pymongo
 python-dotenv
