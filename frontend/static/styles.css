@@ -83,6 +83,27 @@ a:hover { text-decoration: underline; }
 }
 .btn-primary:hover { background: #256756; }
 
+.btn-primary[data-loading] {
+  opacity: 0.72;
+  cursor: not-allowed;
+}
+.btn-primary[data-loading]::before {
+  content: "";
+  display: inline-block;
+  vertical-align: middle;
+  width: 0.8em;
+  height: 0.8em;
+  margin-right: 0.45em;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.65s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 .btn-secondary {
   padding: 0.6rem 1rem;
   background: transparent;
@@ -288,6 +309,121 @@ a:hover { text-decoration: underline; }
 
 .empty-state { color: #858e98; font-style: italic; margin-top: 1rem; }
 
+.back-link {
+  display: inline-block;
+  color: #adb5bd;
+  font-size: 0.875rem;
+  margin-bottom: 1.25rem;
+}
+.back-link:hover { color: #eeeeec; text-decoration: none; }
+
+/* ── Watchlist removal toast ── */
+.toast {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(0.5rem);
+  background: #23262b;
+  border: 1px solid #353941;
+  border-radius: 8px;
+  padding: 0.7rem 0.85rem 0.7rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.9rem;
+  color: #eeeeec;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 200;
+  white-space: nowrap;
+}
+.toast.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+.toast-undo {
+  background: transparent;
+  border: 1px solid #f6c85f;
+  color: #f6c85f;
+  border-radius: 6px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.82rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.toast-undo:hover { background: rgba(246, 200, 95, 0.12); }
+
+/* ── Workflow split (home page) ── */
+.workflow-split {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: stretch;
+  margin-top: 0.5rem;
+}
+
+.workflow-panel {
+  background: #181a1d;
+  border: 1px solid #2a2d31;
+  border-radius: 10px;
+  padding: 2rem;
+}
+
+.workflow-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  color: #4a5260;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.panel-heading {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+}
+
+.panel-desc {
+  color: #adb5bd;
+  font-size: 0.9rem;
+  margin-bottom: 1.25rem;
+  line-height: 1.5;
+}
+
+.workflow-panel .search-form {
+  max-width: 100%;
+  margin: 0 0 0.75rem;
+}
+
+.rec-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+}
+
+.rec-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.rec-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6b7685;
+  min-width: 0.75rem;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.rec-submit { width: 100%; }
+
 @media (max-width: 760px) {
   .navbar { align-items: flex-start; flex-direction: column; padding: 1rem; }
   .nav-links { justify-content: flex-start; gap: 0.85rem; }
@@ -303,6 +439,14 @@ a:hover { text-decoration: underline; }
   .movie-grid,
   .stats-grid {
     grid-template-columns: 1fr;
+  }
+  .workflow-split {
+    grid-template-columns: 1fr;
+  }
+  .workflow-divider {
+    width: auto;
+    padding: 0.25rem 0;
+    text-align: center;
   }
   .favorites-form .btn-primary,
   .search-form .btn-primary,

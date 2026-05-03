@@ -1,4 +1,5 @@
 from datetime import datetime
+from urllib.parse import urlparse
 
 from flask import Blueprint, render_template, request, session
 
@@ -86,12 +87,25 @@ def recommendations():
 def movie_detail(movie_id):
     movie = get_movie_details(movie_id)
     similar_movies = get_similar_movies(movie_id)
+    back_url = _safe_back_url(request.args.get("back"), request.referrer)
     return render_template(
         "movie_detail.html",
         movie=movie,
         similar_movies=similar_movies,
         watchlist_ids=_watchlist_ids(),
+        back_url=back_url,
     )
+
+
+def _safe_back_url(param: str | None, referrer: str | None) -> str | None:
+    if param and param.startswith("/") and not param.startswith("//"):
+        return param
+    if referrer:
+        parsed = urlparse(referrer)
+        rel = parsed.path + (f"?{parsed.query}" if parsed.query else "")
+        if rel and rel != request.path:
+            return rel
+    return None
 
 
 def _watchlist_ids() -> set[str]:
