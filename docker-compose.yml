@@ -2,8 +2,8 @@ services:
   mongodb:
     build: ./mongodb
     image: cheology/studycast-mongodb:latest
-    ports:
-      - "27017:27017"
+    expose:
+      - "27017"
     volumes:
       - mongo-data:/data/db
 
@@ -30,5 +30,19 @@ services:
     depends_on:
       - mongodb
 
+  caddy:
+    image: caddy:2.8
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - planner-web
+
 volumes:
   mongo-data:
+  caddy-data:
+  caddy-config:

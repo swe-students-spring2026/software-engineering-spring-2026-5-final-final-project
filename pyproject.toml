@@ -7,5 +7,6 @@ pythonpath = [
   "."
 ]
 testpaths = [
-    "tests",
+    "planner-web/tests",
+    "study-session-service/tests",
 ]

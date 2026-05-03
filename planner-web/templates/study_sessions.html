@@ -111,6 +111,19 @@ let lastBeep = 0;
 let lastSent = 0;
 let audioContext = null;
 
+function secureStudySessionUrl() {
+    const path = `${window.location.pathname}${window.location.search}`;
+    if (/^\d+\.\d+\.\d+\.\d+$/.test(window.location.hostname)) {
+        return `https://${window.location.hostname}.sslip.io${path}`;
+    }
+    return `https://${window.location.hostname}${path}`;
+}
+
+function setCameraError(message) {
+    statusEl.textContent = message;
+    sessionHint.textContent = message;
+}
+
 async function loadLandmarker() {
     if (landmarker) return landmarker;
     const fileset = await FilesetResolver.forVisionTasks(
@@ -318,9 +331,27 @@ async function loop() {
 }
 
 async function startCamera() {
+    if (!window.isSecureContext) {
+        throw new Error(`Camera access requires HTTPS. Open ${secureStudySessionUrl()}`);
+    }
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("This browser does not support camera access.");
+    }
+
     statusEl.textContent = "Loading detector...";
     await loadLandmarker();
-    stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    } catch (error) {
+        if (error && error.name === "NotAllowedError") {
+            throw new Error("Camera permission was blocked. Allow camera access in the browser and try again.");
+        }
+        if (error && error.name === "NotFoundError") {
+            throw new Error("No camera was found on this device.");
+        }
+        throw new Error("Could not start the camera. Check browser permissions and try again.");
+    }
     video.srcObject = stream;
     running = true;
     cameraStartedAt = Date.now();
@@ -342,13 +373,17 @@ function stopCamera() {
 }
 
 sessionToggle.addEventListener("click", async () => {
-    if (activeSessionId) {
-        await endSession();
-    } else {
-        if (!running) {
-            await startCamera();
+    try {
+        if (activeSessionId) {
+            await endSession();
+        } else {
+            if (!running) {
+                await startCamera();
+            }
+            await startSession();
         }
-        await startSession();
+    } catch (error) {
+        setCameraError(error.message || "Camera could not be started.");
     }
 });
 

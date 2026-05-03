@@ -1,0 +1,8 @@
+http://167.99.153.128 {
+    redir https://167.99.153.128.sslip.io{uri} permanent
+}
+
+167.99.153.128.sslip.io {
+    encode gzip
+    reverse_proxy planner-web:5001
+}
