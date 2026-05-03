@@ -6,9 +6,15 @@ TOOL_HANDLERS maps each tool name to its handler.
 Call init_tools(db) once at startup to wire in the database.
 """
 
+import re
 from typing import Any
 
 from types import SimpleNamespace
+
+# A typical NYU course code looks like "CSCI-UA 101", "MATH-UA 9", "PSYCH-UA 35".
+# Used to short-circuit get_course_sections into a fast prefix-match on `code`
+# instead of falling back to a slow regex over title/topic.
+_COURSE_CODE_RE = re.compile(r"^[A-Z]{2,6}-[A-Z]{1,3}\s*\d", re.IGNORECASE)
 
 try:
     from google.genai import types
@@ -290,8 +296,12 @@ def search_courses(
     safe_limit = max(1, min(int(limit) if limit else 10, 25))
     projection = _DETAILED_COURSE_PROJECTION if include_details else _SLIM_COURSE_PROJECTION
 
-    courses = list(_db.classes.find(filter_query, projection).limit(safe_limit))
-    unique = _dedupe_by_code(courses)
+    # Catalog has multiple section rows per course code, so dedup-after-limit
+    # systematically under-counted. Fetch a buffer (cap 75 — slim projection
+    # keeps each row tiny), dedupe by code, then trim to the requested limit.
+    fetch_limit = min(safe_limit * 3, 75)
+    courses = list(_db.classes.find(filter_query, projection).limit(fetch_limit))
+    unique = _dedupe_by_code(courses)[:safe_limit]
 
     if include_details:
         unique = enrich_classes_with_professor_ratings(unique)
@@ -335,12 +345,26 @@ def get_course_sections(
     if _db is None:
         return {"error": "Database not initialized"}
 
-    or_clause = {"$or": [
-        {"code": {"$regex": course_code, "$options": "i"}},
-        {"title": {"$regex": course_code, "$options": "i"}},
-        {"topic": {"$regex": course_code, "$options": "i"}},
-    ]}
-    conditions: list[dict] = [or_clause]
+    raw = (course_code or "").strip()
+    escaped = re.escape(raw)
+
+    # Fast path: when input looks like a course code (e.g. "CSCI-UA 101"),
+    # match `code` only with an anchored regex so MongoDB can use a prefix
+    # index. The unanchored regex over code/title/topic was forcing collection
+    # scans; this avoids that for ~all model-issued lookups, which pass codes.
+    if _COURSE_CODE_RE.match(raw):
+        primary = {"code": {"$regex": f"^{escaped}", "$options": "i"}}
+    else:
+        # Fallback: keyword-style lookup over title/topic, plus an anchored
+        # `code` match in case the user passed a partial code. Still regex,
+        # but the OR is narrower than before.
+        primary = {"$or": [
+            {"code": {"$regex": f"^{escaped}", "$options": "i"}},
+            {"title": {"$regex": escaped, "$options": "i"}},
+            {"topic": {"$regex": escaped, "$options": "i"}},
+        ]}
+
+    conditions: list[dict] = [primary]
     if term:
         conditions.append(flexible_term_filter(term))
     if not include_study_away:
@@ -379,6 +403,24 @@ def get_program_requirements(url: str) -> dict[str, Any]:
     if not program:
         return {"error": f"Program not found for URL: {url}"}
     return program
+
+
+def verify_section_crns(pairs: list[tuple[str, str]]) -> set[tuple[str, str]]:
+    """Return the subset of (code, crn) pairs that actually exist in the catalog.
+
+    Used to validate the AI's `add-courses` block before sending the reply to
+    the frontend, since the model occasionally fabricates CRNs that match its
+    prose but don't exist in MongoDB.
+    """
+    if _db is None or not pairs:
+        return set()
+
+    or_clauses = [{"code": code, "crn": crn} for code, crn in pairs if code and crn]
+    if not or_clauses:
+        return set()
+
+    cursor = _db.classes.find({"$or": or_clauses}, {"_id": 0, "code": 1, "crn": 1})
+    return {(str(row.get("code", "")), str(row.get("crn", ""))) for row in cursor}
 
 
 def get_professor_profile(name: str, term: str = "") -> dict[str, Any]:

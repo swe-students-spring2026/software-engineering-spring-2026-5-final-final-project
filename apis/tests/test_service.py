@@ -164,3 +164,90 @@ class TestMongoEncoder:
         assert "fake-id-value" in result
 
 
+class TestValidateAddCoursesBlock:
+    def test_no_block_passthrough(self):
+        from app.ai.service import _validate_add_courses_block
+        reply = "Just some text, no block here."
+        assert _validate_add_courses_block(reply) == reply
+
+    def test_all_valid_kept(self, monkeypatch):
+        from app.ai import service
+        monkeypatch.setattr(
+            service, "verify_section_crns",
+            lambda pairs: {("CSCI-UA 102", "12345"), ("MATH-UA 121", "67890")},
+        )
+        reply = (
+            "Schedule:\n"
+            "```add-courses\n"
+            '[{"code":"CSCI-UA 102","crn":"12345"},'
+            '{"code":"MATH-UA 121","crn":"67890"}]\n'
+            "```"
+        )
+        out = service._validate_add_courses_block(reply)
+        assert "12345" in out
+        assert "67890" in out
+        assert "skipped" not in out.lower()
+
+    def test_hallucinated_entry_dropped_with_note(self, monkeypatch):
+        from app.ai import service
+        # Only the first pair is real; second is hallucinated.
+        monkeypatch.setattr(
+            service, "verify_section_crns",
+            lambda pairs: {("CSCI-UA 102", "12345")},
+        )
+        reply = (
+            "Schedule:\n"
+            "```add-courses\n"
+            '[{"code":"CSCI-UA 102","crn":"12345"},'
+            '{"code":"CORE-UA 750","crn":"9503"}]\n'
+            "```"
+        )
+        out = service._validate_add_courses_block(reply)
+        assert "12345" in out
+        # Bogus CRN should be gone from the JSON block...
+        # (The note line below echoes the dropped CRN — use a clearer marker.)
+        assert "CORE-UA 750" in out  # appears in the dropped-note text
+        assert "skipped" in out.lower()
+        # Only the valid entry remains in the structured block:
+        block = out.split("```add-courses")[1].split("```")[0]
+        assert "12345" in block
+        assert "9503" not in block
+
+    def test_all_invalid_strips_block_and_appends_note(self, monkeypatch):
+        from app.ai import service
+        monkeypatch.setattr(service, "verify_section_crns", lambda pairs: set())
+        reply = (
+            "Here you go:\n"
+            "```add-courses\n"
+            '[{"code":"FAKE-UA 1","crn":"99999"}]\n'
+            "```"
+        )
+        out = service._validate_add_courses_block(reply)
+        assert "```add-courses" not in out
+        assert "couldn't verify" in out
+
+    def test_malformed_json_strips_block(self, monkeypatch):
+        from app.ai import service
+        # Should never call verify_section_crns when parsing fails.
+        monkeypatch.setattr(service, "verify_section_crns", lambda pairs: set())
+        reply = (
+            "Oops:\n"
+            "```add-courses\n"
+            "{not valid json at all]\n"
+            "```"
+        )
+        out = service._validate_add_courses_block(reply)
+        assert "```add-courses" not in out
+
+    def test_non_list_json_strips_block(self, monkeypatch):
+        from app.ai import service
+        monkeypatch.setattr(service, "verify_section_crns", lambda pairs: set())
+        reply = (
+            "Bad shape:\n"
+            "```add-courses\n"
+            '{"code":"CSCI-UA 102","crn":"12345"}\n'
+            "```"
+        )
+        out = service._validate_add_courses_block(reply)
+        assert "```add-courses" not in out
+

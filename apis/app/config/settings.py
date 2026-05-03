@@ -36,3 +36,8 @@ GEMINI_MAX_OUTPUT_TOKENS: int = _env_int("GEMINI_MAX_OUTPUT_TOKENS", 4096)
 GEMINI_MAX_TOOL_CALL_ROUNDS: int = _env_int("GEMINI_MAX_TOOL_CALL_ROUNDS", 16)
 # Max prior conversation turns kept in chat context (each turn = user msg + AI reply)
 GEMINI_MAX_HISTORY_TURNS: int = _env_int("GEMINI_MAX_HISTORY_TURNS", 10)
+# Cap reasoning tokens for Gemini 2.5 thinking models. 0 disables thinking,
+# -1 lets the model decide (its default), positive caps to that many tokens.
+# 512 is a low-but-not-zero ceiling — keeps a bit of multi-step reasoning for
+# tool-call planning without paying for many seconds of hidden thought.
+GEMINI_THINKING_BUDGET: int = _env_int("GEMINI_THINKING_BUDGET", 512)
