@@ -165,6 +165,9 @@ def format_time(date):
 @app.route("/home-past")
 @login_required
 def home_past():
+    # sort order
+    sort_order = request.args.get("sort", "asc")
+
     # get current user
     users_collection = get_users_collection()
     user = users_collection.find_one({"_id": ObjectId(current_user.id)})
@@ -205,10 +208,13 @@ def home_past():
                     "details": event.get("description", "No description provided")
                 })
 
-    # we have to sort the events by the most recent first
-    past_events.sort(key=lambda x: x["date"], reverse=True)
+    # we have to sort the events by the filter setting
+    if (sort_order == "asc"):
+        past_events.sort(key=lambda x: x["date"], reverse=True)
+    else:
+        past_events.sort(key=lambda x: x["date"])
 
-    return render_template("home-past.html", past_events = past_events)
+    return render_template("home-past.html", past_events = past_events, sort_order=sort_order)
 
 
 @app.route("/home-upcoming")

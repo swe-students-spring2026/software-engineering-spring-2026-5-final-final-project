@@ -24,7 +24,13 @@
     <section class="content">
         <div class="content-header">
             <h2>past events</h2>
-            <button class="filter"><img src="{{ url_for('static', filename='icons/arrow.up.arrow.down.circle.purple.svg') }}" alt="filter"></button>
+            <a href="{{ url_for('home_past', sort='desc' if sort_order == 'asc' else 'asc') }}" class="filter">
+                {% if sort_order == 'asc' %}
+                    <img src="{{ url_for('static', filename='icons/arrow.up.arrow.down.circle.purple.svg') }}" alt="Sort furthest first">
+                {% else %}
+                    <img src="{{ url_for('static', filename='icons/arrow.up.arrow.down.circle.purple.svg') }}" alt="Sort soonest first">
+                {% endif %}
+            </a>
         </div>
         <ul class="past-events">
             {% for event in past_events %}
