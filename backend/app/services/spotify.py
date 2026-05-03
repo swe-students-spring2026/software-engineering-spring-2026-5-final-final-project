@@ -2,6 +2,7 @@ import logging
 from datetime import datetime, timezone
 
 import spotipy
+from bson import ObjectId
 from spotipy.oauth2 import SpotifyOAuth
 
 from app.config import get_settings
@@ -128,7 +129,7 @@ async def exchange_code_for_tokens(user_id: str, code: str) -> dict:
 
     users = get_users_collection()
     await users.update_one(
-        {"_id": user_id},
+        {"_id": ObjectId(user_id)},
         {
             "$set": {
                 "spotify.access_token": token_info["access_token"],
@@ -161,7 +162,7 @@ async def refresh_token(user_id: str) -> str:
     users = get_users_collection()
 
     user = await users.find_one(
-        {"_id": user_id},
+        {"_id": ObjectId(user_id)},
         {"spotify.refresh_token": 1},
     )
     stored_refresh_token = (user or {}).get("spotify", {}).get("refresh_token")
@@ -186,7 +187,7 @@ async def refresh_token(user_id: str) -> str:
     if new_refresh_token:
         update_fields["spotify.refresh_token"] = new_refresh_token
 
-    await users.update_one({"_id": user_id}, {"$set": update_fields})
+    await users.update_one({"_id": ObjectId(user_id)}, {"$set": update_fields})
     logger.info("Refreshed Spotify access token for user %s", user_id)
     return new_access_token
 
@@ -200,7 +201,7 @@ async def disconnect_spotify(user_id: str) -> None:
     """
     users = get_users_collection()
     await users.update_one(
-        {"_id": user_id},
+        {"_id": ObjectId(user_id)},
         {
             "$set": {
                 "spotify.access_token": None,
@@ -263,7 +264,7 @@ async def pull_user_data(user_id: str, access_token: str) -> None:
 
     # ── Persist ──────────────────────────────────────────────────────────────
     await users.update_one(
-        {"_id": user_id},
+        {"_id": ObjectId(user_id)},
         {
             "$set": {
                 "spotify.top_artists": top_artists,
