@@ -1,8 +1,14 @@
-import app
-def client(): 
-    app.app.config["TESTING"] = True 
-    with app.app.test_client() as client: 
-         yield client
+import app as app_file 
+import pytest
+@pytest.fixture
+def client(monkeypatch):
+    app_file.app.config["TESTING"] = True
+    app_file.app.config["SECRET_KEY"] = "test-secret"
+
+    monkeypatch.setattr("app.create_indexes", lambda: None)
+
+    with app_file.app.test_client() as client:
+        yield client
 
 
 def test_register_empty_fields(client):
