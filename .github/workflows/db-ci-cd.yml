@@ -1,0 +1,87 @@
+name: CI/CD (Database)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/db-ci-cd.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/db-ci-cd.yml"
+
+
+jobs:
+  test-db:
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:latest
+        ports:
+          - 27017:27017
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Verify required directory exists
+        run: |
+          if [ ! -d backend ]; then
+            echo "::error::Required directory 'backend' does not exist. Quitting."
+            exit 1
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip"
+
+      - name: Install dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pipenv
+          pipenv install --dev --python $(which python)
+
+      - name: Format check
+        working-directory: backend
+        run: pipenv run black --check .
+
+      - name: Lint check
+        working-directory: backend
+        run: pipenv run pylint app tests
+
+      - name: Run tests with coverage
+        working-directory: backend
+        run: pipenv run pytest --cov=app --cov-report=term-missing --cov-fail-under=80
+
+      - name: Verify Dockerfile exists
+        run: |
+          if [ ! -f backend/Dockerfile ]; then
+            echo "::error::Required Dockerfile 'backend/Dockerfile' does not exist. Quitting."
+            exit 1
+          fi
+
+      - name: Build Docker image
+        run: docker build -t project5-db:${{ github.sha }} backend
+
+      - name: Push Docker image to DockerHub
+        if: github.event_name == 'push'
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          if [ -z "$DOCKERHUB_USERNAME" ] || [ -z "$DOCKERHUB_TOKEN" ]; then
+            echo "::error::DockerHub secrets DOCKERHUB_USERNAME and DOCKERHUB_TOKEN are required to push images."
+            exit 1
+          fi
+
+          echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
+          docker tag project5-db:${{ github.sha }} "$DOCKERHUB_USERNAME/project5-db:latest"
+          docker tag project5-db:${{ github.sha }} "$DOCKERHUB_USERNAME/project5-db:${{ github.sha }}"
+          docker push "$DOCKERHUB_USERNAME/project5-db:latest"
+          docker push "$DOCKERHUB_USERNAME/project5-db:${{ github.sha }}"

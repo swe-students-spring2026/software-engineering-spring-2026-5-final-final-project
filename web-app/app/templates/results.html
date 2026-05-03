@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Results</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+  </head>
+
+  <body>
+    <div class="nav">
+      <a href="{{ url_for('main.index') }}">Home</a>
+      <a href="{{ url_for('main.gallery') }}">Gallery</a>
+    </div>
+    <h1>Meme Generator Results</h1>
+    <h2>Article Link</h2>
+    <p>[input article here]</p>
+    <h2>Summary transcript</h2>
+    <p>[input summary here]</p>
+
+    <h2>Your Memes</h2>
+    <ul>
+      <li>1</li>
+      <li>2</li>
+      <li>3</li>
+    </ul>
+  </body>
+</html>

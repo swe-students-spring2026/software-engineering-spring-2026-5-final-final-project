@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Article Meme Generator</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+  </head>
+
+  <body>
+    <div class="nav">
+      <a href="{{ url_for('main.index') }}">Home</a>
+      <a href="{{ url_for('main.gallery') }}">Gallery</a>
+    </div>
+    <h1>Article Meme Generator</h1>
+
+    <h2>
+      Too lazy to read an article? Paste the link below and view a summary
+      depicted by memes:
+    </h2>
+    <form>
+      <label for="article-link">Link:</label><br />
+      <input type="text" id="article-link" name="article-link" /><br />
+      <input type="submit" value="Submit" />
+    </form>
+  </body>
+</html>
