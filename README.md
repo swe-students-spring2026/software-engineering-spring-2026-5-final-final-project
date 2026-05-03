@@ -1,7 +1,5 @@
 # CatCh
 
-Instructions: See [instructions](./instructions.md) for details.
-
 CatCh is a gamified programming practice platform where users solve coding problems, earn fishing chances, catch fish, collect medals, trade fish, and compete on leaderboards.
 
 In this project, programmers are represented as **kittens**, teachers are represented as **cats**, and classrooms are represented as **fish ponds**. Instead of only completing coding problems for scores, users complete problems to unlock fishing chances. Each fishing chance gives the user an opportunity to catch a fish with a certain rarity level.
