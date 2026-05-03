@@ -1,16 +1,17 @@
-html {
+* {
     box-sizing: border-box;
-    background-color: white;
 }
 
+html,
 body {
     margin: 0;
-    min-height: 874px;
+    min-height: 100%;
     background: #000;
     color: white;
     font-family: "Afacad", sans-serif;
     padding: 14px 16px 95px;
-    width: 402px;}
+    width: 100%;
+}
 
 a {
     text-decoration: none;
@@ -18,32 +19,27 @@ a {
 }
 
 .header {
-    /* Auto layout */
-    display: flex;
-    flex-direction: row;
-    align-items: flex-start;
-    padding: 0px;
-    gap: 76px;
-    isolation: isolate;
-
-    width: 370px;
+    position: relative;
+    width: 100%;
+    max-width: 370px;
     height: 60px;
+    margin: 0 auto;
 
-
-    /* Inside auto layout */
-    flex: none;
-    order: 0;
-    flex-grow: 0;
-    z-index: 0;
-
+    display: flex;
+    align-items: center;
 }
 
-.logo img {
-    width: 54px;
+.logo {
+    position: absolute;
+    left: 0;
 }
 
 .header h1 {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
     margin: 0;
+
     color: #e693ff;
     font-size: 36px;
     font-weight: 700;
@@ -113,7 +109,7 @@ a {
     height: 42px;
 }
 
-.past-events, .upcoming-events, .invites, .hosting-events {
+.past-events, .upcoming-events, .invites, .hosting-events, event-form {
     list-style: none;
     padding: 0;
     margin: 0;
@@ -164,7 +160,8 @@ a {
 
 .upcoming-event p,
 .invited-event p,
-.hosting-event p {
+.hosting-event p,
+.event-form label {
     color: #e693ff;
     font-weight: 700;
     font-size: 20px;
@@ -172,7 +169,7 @@ a {
 
 }
 
-.invites li{
+.invites li, .event-form{
     color: #e693ff;
     font-weight: 700;
     border-style: solid;
@@ -180,6 +177,23 @@ a {
     padding: 10px 26px;
 }
 
+.event-form {
+    display: flex;
+    flex-direction: column;
+}
+.event-form input, .event-form textarea{
+    background: transparent;
+    color: #e693ff;
+    font-size: 16px;
+    border-radius: 10px;
+    border: 1px solid #e693ff;
+    padding: 10px 4px;
+}
+.event-form button-row {
+    flex-direction: row;
+    width: 50%;
+    justify-content: end;
+}
 .actions{
     display: flex;
     flex-direction: row;
@@ -206,13 +220,13 @@ a {
 }
 .nav-bottom {
     position: fixed;
-    margin: 0 16px;
+    left: 16px;
+    right: 16px;
     bottom: 24px;
-    width: 370px;
+
     height: 60px;
     background: rgba(184, 113, 206, 0.95);
     border-radius: 999px;
-
     display: flex;
     align-items: center;
     justify-content: space-around;

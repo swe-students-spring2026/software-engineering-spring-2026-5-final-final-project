@@ -20,7 +20,15 @@
     <section class="content">
         <div class="content-header">
             <h2>hosting</h2>
-            <button class="filter"><img src="{{ url_for('static', filename='icons/arrow.up.arrow.down.circle.purple.svg') }}" alt="filter"></button>
+            <div class="button-row">
+                <a class="create" href="{{ url_for('create_host_event') }}">
+                    <img src="{{ url_for('static', filename='/icons/plus.circle.svg') }}" alt="create">
+                </a>
+                <button class="filter"><img
+                        src="{{ url_for('static', filename='icons/arrow.up.arrow.down.circle.purple.svg') }}"
+                        alt="filter">
+                </button>
+            </div>
         </div>
         <ul class="hosting-events">
             {% for event in hosting_events %}
@@ -34,8 +42,10 @@
                     </p>
                     <ul class="invitees">
                         {% for invitee in event.invitees_list %}
-                        <li> 
-                            <p>{{ invitee.name }} @ {{ invitee.time }}</p>
+                        <li>
+                            <p>{{ invitee.name }}</p>
+                            <p>suggested arrival: {{invitee.suggested_arrival_time | format_time}}</p>
+                            <p>penalty: {{invitee.lateness_penalty}} min</p>
                         </li>
 
                         {% endfor %}
@@ -49,9 +59,12 @@
         </ul>
     </section>
     <section class="nav-bottom">
-        <a href="{{ url_for('home_upcoming') }}"><img src="{{ url_for('static', filename='icons/calendar.svg') }}" alt="calendar"></a>
-        <a href="{{ url_for('invites') }}"><img src="{{ url_for('static', filename='icons/tray.svg') }}" alt="inbox" /></a>
-        <a href="{{ url_for('host_events') }}"><img src="{{ url_for('static', filename='icons/plus.app.fill.svg') }}" alt="create" /></a>
+        <a href="{{ url_for('home_upcoming') }}"><img src="{{ url_for('static', filename='icons/calendar.svg') }}"
+                alt="calendar"></a>
+        <a href="{{ url_for('invites') }}"><img src="{{ url_for('static', filename='icons/tray.svg') }}"
+                alt="inbox" /></a>
+        <a href="{{ url_for('host_events') }}"><img src="{{ url_for('static', filename='icons/plus.app.fill.svg') }}"
+                alt="create" /></a>
         <a href="/user"><img src="{{ url_for('static', filename='icons/person.svg') }}" alt="user" /></a>
     </section>
 </body>

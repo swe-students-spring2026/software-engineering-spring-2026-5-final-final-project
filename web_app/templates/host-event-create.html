@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Afacad:ital,wght@0,400..700;1,400..700&display=swap"
+        rel="stylesheet">
+    <title>Create Host Event</title>
+</head>
+
+<body>
+    <section class="header">
+        <span class="logo">
+            <img src="{{ url_for('static', filename='icons/fm copy.svg') }}" alt="fm">
+        </span>
+        <h1>FlakeMate</h1>
+    </section>
+
+    <section class="content">
+        <div class="content-header">
+            <h2>create event</h2>
+        </div>
+
+        {% if error %}
+            <p class="error">{{ error }}</p>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('create_host_event') }}" class="event-form">
+            <label>Event name</label>
+            <input type="text" name="name" required>
+
+            <label>Location</label>
+            <input type="text" name="location" required>
+
+            <label>Date</label>
+            <input type="date" name="date" required>
+
+            <label>Time</label>
+            <input type="time" name="time" required>
+
+            <label>Details</label>
+            <textarea name="details"></textarea>
+
+            <h3>Invitees</h3>
+
+            <div id="invitees-container">
+                <div class="invitee-row">
+                    <input type="text" name="invitee_username" placeholder="username">
+                </div>
+            </div>
+
+            <div class="button-row">
+                <button type="button" onclick="addInvitee()">Add invitee</button>
+                <button type="submit">Create Event</button>
+            </div>
+            
+        </form>
+    </section>
+
+    <section class="nav-bottom">
+        <a href="{{ url_for('home_upcoming') }}"><img src="{{ url_for('static', filename='icons/calendar.svg') }}"
+                alt="calendar"></a>
+        <a href="{{ url_for('invites') }}"><img src="{{ url_for('static', filename='icons/tray.svg') }}"
+                alt="inbox" /></a>
+        <a href="{{ url_for('host_events') }}"><img src="{{ url_for('static', filename='icons/plus.app.fill.svg') }}"
+                alt="create" /></a>
+        <a href="/user"><img src="{{ url_for('static', filename='icons/person.svg') }}" alt="user" /></a>
+    </section>
+
+    <script>
+        function addInvitee() {
+            const container = document.getElementById("invitees-container");
+
+            const row = document.createElement("div");
+            row.classList.add("invitee-row");
+
+            row.innerHTML = `
+                <input type="text" name="invitee_username" placeholder="username">
+            `;
+
+            container.appendChild(row);
+        }
+    </script>
+</body>
+</html>
