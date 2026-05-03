@@ -411,7 +411,136 @@ def create_host_event():
         return redirect(url_for("host_events"))
 
     return render_template("host-event-create.html", error=error)
-     
+
+@app.route("/host-events/<event_id>/edit", methods=["GET", "POST"])
+@login_required
+def edit_host_event(event_id):
+    users = get_users_collection()
+    events = get_db()["events"]
+
+    event = events.find_one({
+        "_id": ObjectId(event_id),
+        "host_id": current_user.id
+    })
+
+    if not event:
+        return redirect(url_for("host_events"))
+
+    error = None
+
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        location = request.form.get("location", "").strip()
+        date = request.form.get("date", "").strip()
+        time = request.form.get("time", "").strip()
+        details = request.form.get("details", "").strip()
+        invitee_usernames = request.form.getlist("invitee_username")
+
+        try:
+            event_datetime = datetime.strptime(f"{date} {time}", "%Y-%m-%d %H:%M")
+        except ValueError:
+            error = "Invalid date or time."
+            return render_template("host-event-edit.html", event=event, error=error)
+
+        old_invitees = event.get("invitees_list", [])
+        old_invitee_ids = [invitee["user_id"] for invitee in old_invitees]
+
+        new_invitees_list = []
+        new_invitee_ids = []
+
+        for username in invitee_usernames:
+            username = username.strip()
+
+            if not username:
+                continue
+
+            invitee_user = users.find_one({"name": username})
+
+            if not invitee_user:
+                print(f"Invitee not found: {username}")
+                continue
+
+            invitee_id = str(invitee_user["_id"])
+            new_invitee_ids.append(invitee_id)
+
+            lateness_penalty = max(calculate_lateness_penalty(invitee_user), 0)
+            suggested_arrival = event_datetime - timedelta(minutes=lateness_penalty)
+
+            new_invitees_list.append({
+                "user_id": invitee_id,
+                "name": invitee_user["name"],
+                "time": time,
+                "suggested_arrival_time": suggested_arrival,
+                "lateness_penalty": lateness_penalty,
+                "status": "pending"
+            })
+
+        events.update_one(
+            {"_id": ObjectId(event_id)},
+            {
+                "$set": {
+                    "name": name,
+                    "location": location,
+                    "date": event_datetime,
+                    "description": details,
+                    "invitees_list": new_invitees_list,
+                    "updated_at": datetime.now()
+                }
+            }
+        )
+
+        users.update_one(
+            {"_id": ObjectId(current_user.id)},
+            {"$set": {f"events_owned.{event_id}": event_datetime}}
+        )
+
+        for invitee_id in old_invitee_ids:
+            users.update_one(
+                {"_id": ObjectId(invitee_id)},
+                {"$unset": {f"event_invites.{event_id}": ""}}
+            )
+
+        for invitee_id in new_invitee_ids:
+            users.update_one(
+                {"_id": ObjectId(invitee_id)},
+                {"$set": {f"event_invites.{event_id}": event_datetime}}
+            )
+
+        return redirect(url_for("host_events"))
+
+    return render_template("host-event-edit.html", event=event, error=error)     
+
+@app.route("/host-events/<event_id>/delete", methods=["POST"])
+@login_required
+def delete_host_event(event_id):
+    users = get_users_collection()
+    events = get_db()["events"]
+
+    event = events.find_one({
+        "_id": ObjectId(event_id),
+        "host_id": current_user.id
+    })
+
+    if not event:
+        return redirect(url_for("host_events"))
+
+    invitees = event.get("invitees_list", [])
+
+    for invitee in invitees:
+        users.update_one(
+            {"_id": ObjectId(invitee["user_id"])},
+            {"$unset": {f"event_invites.{event_id}": ""}}
+        )
+
+    users.update_one(
+        {"_id": ObjectId(current_user.id)},
+        {"$unset": {f"events_owned.{event_id}": ""}}
+    )
+
+    events.delete_one({"_id": ObjectId(event_id)})
+
+    return redirect(url_for("host_events"))
+
 @app.route("/user", methods=["GET", "POST"])
 @login_required
 def user_dashboard():
