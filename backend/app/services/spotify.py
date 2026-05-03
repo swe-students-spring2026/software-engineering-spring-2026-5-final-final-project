@@ -143,6 +143,54 @@ async def exchange_code_for_tokens(user_id: str, code: str) -> dict:
     return token_info
 
 
+
+async def refresh_token(user_id: str) -> str:
+    """
+    Use the stored refresh_token to obtain a new access_token from Spotify
+    and persist it to the database.
+
+    Args:
+        user_id: The MongoDB user _id string.
+
+    Returns:
+        The new access_token string.
+
+    Raises:
+        RuntimeError: If no refresh_token is stored, or if Spotify rejects it.
+    """
+    users = get_users_collection()
+
+    user = await users.find_one(
+        {"_id": user_id},
+        {"spotify.refresh_token": 1},
+    )
+    stored_refresh_token = (user or {}).get("spotify", {}).get("refresh_token")
+    if not stored_refresh_token:
+        raise RuntimeError(f"No refresh token found for user {user_id}")
+
+    oauth = _get_oauth_manager()
+    try:
+        token_info = oauth.refresh_access_token(stored_refresh_token)
+    except Exception as exc:
+        logger.error("Spotify token refresh failed for user %s: %s", user_id, exc)
+        raise RuntimeError("Failed to refresh Spotify access token") from exc
+
+    new_access_token: str = token_info["access_token"]
+    # Spotify may rotate the refresh token — persist the new one if present
+    new_refresh_token: str | None = token_info.get("refresh_token")
+
+    update_fields: dict = {
+        "spotify.access_token": new_access_token,
+        "updated_at": datetime.now(timezone.utc),
+    }
+    if new_refresh_token:
+        update_fields["spotify.refresh_token"] = new_refresh_token
+
+    await users.update_one({"_id": user_id}, {"$set": update_fields})
+    logger.info("Refreshed Spotify access token for user %s", user_id)
+    return new_access_token
+
+
 async def disconnect_spotify(user_id: str) -> None:
     """
     Clear Spotify tokens and mark the user as disconnected.

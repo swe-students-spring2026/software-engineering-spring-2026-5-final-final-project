@@ -543,3 +543,214 @@ class TestPullUserData:
         mock_sp.current_user_top_tracks.assert_called_once_with(
             limit=50, time_range="medium_term"
         )
+
+
+# ---------------------------------------------------------------------------
+# refresh_token tests
+# ---------------------------------------------------------------------------
+
+
+class TestRefreshToken:
+    @pytest.mark.asyncio
+    @patch("app.services.spotify.get_users_collection")
+    @patch("app.services.spotify.SpotifyOAuth")
+    async def test_happy_path_returns_new_access_token(self, mock_oauth_cls, mock_get_col):
+        from app.services.spotify import refresh_token
+
+        mock_col = AsyncMock()
+        mock_col.find_one.return_value = {
+            "_id": FAKE_USER_ID,
+            "spotify": {"refresh_token": "old_refresh"},
+        }
+        mock_get_col.return_value = mock_col
+
+        mock_oauth = MagicMock()
+        mock_oauth.refresh_access_token.return_value = {
+            "access_token": "new_access",
+            "refresh_token": None,
+        }
+        mock_oauth_cls.return_value = mock_oauth
+
+        result = await refresh_token(user_id=FAKE_USER_ID)
+
+        assert result == "new_access"
+        mock_oauth.refresh_access_token.assert_called_once_with("old_refresh")
+
+        update_doc = mock_col.update_one.call_args[0][1]["$set"]
+        assert update_doc["spotify.access_token"] == "new_access"
+        assert "spotify.refresh_token" not in update_doc  # not rotated
+
+    @pytest.mark.asyncio
+    @patch("app.services.spotify.get_users_collection")
+    @patch("app.services.spotify.SpotifyOAuth")
+    async def test_rotated_refresh_token_is_persisted(self, mock_oauth_cls, mock_get_col):
+        """If Spotify returns a new refresh_token, it should be saved."""
+        from app.services.spotify import refresh_token
+
+        mock_col = AsyncMock()
+        mock_col.find_one.return_value = {
+            "_id": FAKE_USER_ID,
+            "spotify": {"refresh_token": "old_refresh"},
+        }
+        mock_get_col.return_value = mock_col
+
+        mock_oauth = MagicMock()
+        mock_oauth.refresh_access_token.return_value = {
+            "access_token": "new_access",
+            "refresh_token": "rotated_refresh",
+        }
+        mock_oauth_cls.return_value = mock_oauth
+
+        await refresh_token(user_id=FAKE_USER_ID)
+
+        update_doc = mock_col.update_one.call_args[0][1]["$set"]
+        assert update_doc["spotify.refresh_token"] == "rotated_refresh"
+
+    @pytest.mark.asyncio
+    @patch("app.services.spotify.get_users_collection")
+    async def test_raises_if_no_refresh_token(self, mock_get_col):
+        from app.services.spotify import refresh_token
+
+        mock_col = AsyncMock()
+        mock_col.find_one.return_value = {
+            "_id": FAKE_USER_ID,
+            "spotify": {"refresh_token": None},
+        }
+        mock_get_col.return_value = mock_col
+
+        with pytest.raises(RuntimeError, match="No refresh token"):
+            await refresh_token(user_id=FAKE_USER_ID)
+
+    @pytest.mark.asyncio
+    @patch("app.services.spotify.get_users_collection")
+    async def test_raises_if_user_not_found(self, mock_get_col):
+        from app.services.spotify import refresh_token
+
+        mock_col = AsyncMock()
+        mock_col.find_one.return_value = None
+        mock_get_col.return_value = mock_col
+
+        with pytest.raises(RuntimeError, match="No refresh token"):
+            await refresh_token(user_id=FAKE_USER_ID)
+
+    @pytest.mark.asyncio
+    @patch("app.services.spotify.get_users_collection")
+    @patch("app.services.spotify.SpotifyOAuth")
+    async def test_raises_runtime_error_on_spotify_failure(self, mock_oauth_cls, mock_get_col):
+        from app.services.spotify import refresh_token
+
+        mock_col = AsyncMock()
+        mock_col.find_one.return_value = {
+            "_id": FAKE_USER_ID,
+            "spotify": {"refresh_token": "old_refresh"},
+        }
+        mock_get_col.return_value = mock_col
+
+        mock_oauth = MagicMock()
+        mock_oauth.refresh_access_token.side_effect = Exception("Spotify 401")
+        mock_oauth_cls.return_value = mock_oauth
+
+        with pytest.raises(RuntimeError, match="Failed to refresh"):
+            await refresh_token(user_id=FAKE_USER_ID)
+
+
+# ---------------------------------------------------------------------------
+# scheduler tests
+# ---------------------------------------------------------------------------
+
+
+class TestScheduler:
+    def test_start_creates_scheduler_and_adds_job(self):
+        """start_scheduler() should create an AsyncIOScheduler with the weekly job."""
+        from app.services import scheduler as sched_module
+
+        # Ensure we start from a clean state
+        sched_module._scheduler = None
+
+        with patch("app.services.scheduler.AsyncIOScheduler") as mock_cls:
+            mock_instance = MagicMock()
+            mock_cls.return_value = mock_instance
+
+            sched_module.start_scheduler()
+
+            mock_instance.add_job.assert_called_once()
+            job_kwargs = mock_instance.add_job.call_args
+            # Verify the job function and id
+            assert job_kwargs[1].get("id") == "weekly_spotify_refresh" or \
+                   job_kwargs[0][0].__name__ == "_refresh_all_users"
+            mock_instance.start.assert_called_once()
+
+            # Cleanup
+            sched_module._scheduler = None
+
+    def test_start_is_idempotent(self):
+        """Calling start_scheduler() twice should not create a second scheduler."""
+        from app.services import scheduler as sched_module
+
+        sched_module._scheduler = MagicMock()  # Simulate already-started state
+
+        with patch("app.services.scheduler.AsyncIOScheduler") as mock_cls:
+            sched_module.start_scheduler()
+            mock_cls.assert_not_called()  # Should not create a new instance
+
+        sched_module._scheduler = None
+
+    def test_stop_shuts_down_and_clears(self):
+        from app.services import scheduler as sched_module
+
+        mock_sched = MagicMock()
+        sched_module._scheduler = mock_sched
+
+        sched_module.stop_scheduler()
+
+        mock_sched.shutdown.assert_called_once_with(wait=False)
+        assert sched_module._scheduler is None
+
+    @pytest.mark.asyncio
+    @patch("app.services.scheduler.pull_user_data", new_callable=AsyncMock)
+    @patch("app.services.scheduler.refresh_token", new_callable=AsyncMock)
+    @patch("app.services.scheduler.get_users_collection")
+    async def test_refresh_all_users_calls_both_steps(
+        self, mock_get_col, mock_refresh, mock_pull
+    ):
+        """_refresh_all_users should call refresh_token then pull_user_data per user."""
+        from app.services.scheduler import _refresh_all_users
+
+        # Mock async cursor
+        mock_col = MagicMock()
+        mock_col.find.return_value.__aiter__ = AsyncMock(
+            return_value=iter([{"_id": "user1"}, {"_id": "user2"}])
+        )
+        mock_get_col.return_value = mock_col
+        mock_refresh.return_value = "fresh_token"
+
+        await _refresh_all_users()
+
+        assert mock_refresh.await_count == 2
+        assert mock_pull.await_count == 2
+        mock_pull.assert_any_await(user_id="user1", access_token="fresh_token")
+        mock_pull.assert_any_await(user_id="user2", access_token="fresh_token")
+
+    @pytest.mark.asyncio
+    @patch("app.services.scheduler.pull_user_data", new_callable=AsyncMock)
+    @patch("app.services.scheduler.refresh_token", new_callable=AsyncMock)
+    @patch("app.services.scheduler.get_users_collection")
+    async def test_single_user_failure_does_not_stop_others(
+        self, mock_get_col, mock_refresh, mock_pull
+    ):
+        """A failure on one user should not prevent processing of remaining users."""
+        from app.services.scheduler import _refresh_all_users
+
+        mock_col = MagicMock()
+        mock_col.find.return_value.__aiter__ = AsyncMock(
+            return_value=iter([{"_id": "user1"}, {"_id": "user2"}])
+        )
+        mock_get_col.return_value = mock_col
+
+        # user1's refresh fails; user2 should still be processed
+        mock_refresh.side_effect = [RuntimeError("token expired"), "fresh_token"]
+
+        await _refresh_all_users()
+
+        # user2's pull should still be called
+        mock_pull.assert_awaited_once_with(user_id="user2", access_token="fresh_token")
