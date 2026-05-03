@@ -25,8 +25,12 @@ AUTH_MESSAGE_MAP = {
     "registered": "Account created successfully. You are now signed in.",
     "logged_out": "Signed out successfully.",
     "missing_login_fields": "Enter both your email and password to sign in.",
-    "missing_register_fields": "Name, email, and password are all required to create an account.",
-    "invalid_credentials": "That email and password combination does not match our records.",
+    "missing_register_fields": (
+        "Name, email, and password are all required to create an account."
+    ),
+    "invalid_credentials": (
+        "That email and password combination does not match our records."
+    ),
     "user_exists": "An account with that email already exists. Try signing in instead.",
     "weak_password": "Use a password with at least 8 characters.",
 }
@@ -68,7 +72,9 @@ def login():
             return redirect(url_for("login", error="missing_login_fields", email=email))
 
         user_doc = users_col.find_one({"email": email})
-        if not user_doc or not check_password_hash(user_doc.get("passwordHash", ""), password):
+        if not user_doc or not check_password_hash(
+            user_doc.get("passwordHash", ""), password
+        ):
             return redirect(url_for("login", error="invalid_credentials", email=email))
 
         session["auth_user"] = build_session_user(user_doc)
@@ -121,11 +127,13 @@ def logout():
 @app.route("/health")
 def health():
     """Check MongoDB connectivity and return status."""
+    # pylint: disable=invalid-name
     try:
         client.admin.command("ping")
         return jsonify({"status": "ok", "mongo": "connected"})
     except Exception as e:  # pylint: disable=broad-exception-caught
         return jsonify({"status": "error", "mongo": str(e)}), 500
+    # pylint: enable=invalid-name
 
 
 @app.route("/settings")
