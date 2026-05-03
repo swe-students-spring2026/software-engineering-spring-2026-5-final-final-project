@@ -25,7 +25,7 @@ def create_app(test_config=None):
 
     # MongoDB
     client = MongoClient(app.config["MONGO_URI"])
-    db = client["katydid_brigade"]
+    db = client[app.config["DB_NAME"]]
 
     # current user
     def get_current_user():
@@ -95,7 +95,7 @@ def create_app(test_config=None):
 
         if request.method == "POST":
             db.users.update_one(
-                {"_id": user["_id"]},
+                {"_id": ObjectId(session["user_id"])},
                 {"$set": {
                     "age": int(request.form.get("age")),
                     "gender": request.form.get("gender"),
@@ -108,15 +108,20 @@ def create_app(test_config=None):
 
             for i, question in enumerate(SETUP_QUESTIONS, start=1):
                 answer = request.form.get(f"answer_{i}")
-                puzzle_data = create_puzzle(engine_url, question=question, answer=answer)
-                db.puzzles.insert_one({
-                    "owner_user_id": session["user_id"],
-                    "question": puzzle_data["question"],
-                    "answer": puzzle_data["answer"],
-                    "board": puzzle_data["board"],
-                    "max_attempts": puzzle_data["max_attempts"],
-                })
-\
+                if not answer:
+                    continue
+                try:
+                    puzzle_data = create_puzzle(engine_url, question=question, answer=answer)
+                    db.puzzles.insert_one({
+                        "owner_user_id": session["user_id"],
+                        "question": puzzle_data["question"],
+                        "answer": puzzle_data["answer"],
+                        "board": puzzle_data["board"],
+                        "max_attempts": puzzle_data["max_attempts"],
+                    })
+                except Exception:
+                    pass
+
             return redirect(url_for("dashboard"))
         return render_template("setup.html", questions=SETUP_QUESTIONS)
 
