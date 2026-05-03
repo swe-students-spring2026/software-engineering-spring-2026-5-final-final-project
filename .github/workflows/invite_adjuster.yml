@@ -9,7 +9,7 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - "invite_adjuster/**"
+      - "invite-adjuster/**"
       - ".github/workflows/invite_adjuster.yml"
 
 jobs:
@@ -30,6 +30,7 @@ jobs:
           python-version: "3.9"
       - run: pip install pipenv
       - run: pipenv install --dev pytest pytest-cov
-      - run: MONGO_URI=mongodb://localhost:27017/ MONGO_DBNAME=flakemate pipenv run python app/app.py &
-      - run: sleep 15
-      - run: pipenv run pytest tests/
+      - run: |
+          MONGO_URI=mongodb://localhost:27017/ MONGO_DBNAME=flakemate pipenv run python app/app.py &
+          sleep 15
+          pipenv run pytest tests/

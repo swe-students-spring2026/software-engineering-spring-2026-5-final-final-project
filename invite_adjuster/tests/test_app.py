@@ -1,30 +1,30 @@
-def test_lateness_penalty():
-    import requests
-    from pymongo import MongoClient
-    from bson import ObjectId
-    import time
-    import os
+import pytest
+from app.main import app
 
-    MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
-    DB_NAME = "flakemate"
+@pytest.fixture
+def client():
+    from app.main import app
+    app.config["TESTING"] = True
+    with app.test_client() as test_client:
+        yield test_client
+
+def test_lateness_penalty(client, monkeypatch):
+    from bson import ObjectId
+    import app.main as app_module
+
     USER_ID = "69f4a33044e301353c9f2c1c"
     LATENESS_VALUES = [15, -5, 5, 0, -3, 18]
 
-    client = MongoClient(MONGO_URI)
-    db = client[DB_NAME]
-    users = db["users"]
+    class FakeUsersCollection:
+        def find_one(self, query):
+            return {"_id": ObjectId(USER_ID), "lateness": LATENESS_VALUES}
+        def update_one(self, query, update, upsert=False):
+            pass
 
-    users.update_one(
-        {"_id": ObjectId(USER_ID)},
-        {"$set": {"lateness": LATENESS_VALUES}},
-        upsert=True
-    )
+    monkeypatch.setattr(app_module, "get_users_collection", lambda: FakeUsersCollection())
 
-    time.sleep(1)
-
-    url = f"http://localhost:5002/lateness_penalty/{USER_ID}"
-    response = requests.get(url)
-    data = response.json()
+    response = client.get(f"/lateness_penalty/{USER_ID}")
+    data = response.get_json()
 
     expected = sum(LATENESS_VALUES[-5:]) / len(LATENESS_VALUES[-5:])
     assert data["lateness_penalty"] == expected
