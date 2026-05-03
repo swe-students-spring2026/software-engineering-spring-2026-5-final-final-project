@@ -2,9 +2,10 @@ services:
   web:
     build: ./web-app
     ports:
-      - "5000:5000"
+      - "5001:5000"
     environment:
       - MONGO_URI=${MONGO_URI}
+      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY}
     volumes:
       - ./web-app/app.py:/app/app.py
       - ./web-app/templates:/app/templates
