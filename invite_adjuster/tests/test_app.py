@@ -10,6 +10,22 @@ def client():
     with app.test_client() as test_client:
         yield test_client
 
+# mock database
+class FakeDB:
+    def __init__(self, users_collection):
+        self.users_collection = users_collection
+
+    def __getitem__(self, name):
+        if name == "users":
+            return self.users_collection
+        return None
+
+
+def test_home_route(client):
+    response = client.get("/")
+    assert response.status_code == 200
+    assert response.json["message"] == "invite-adjuster is running"
+
 def test_lateness_penalty(client, monkeypatch):
     from bson import ObjectId
     import app.main as app_module
@@ -31,12 +47,39 @@ def test_lateness_penalty(client, monkeypatch):
     expected = sum(LATENESS_VALUES[-5:]) / len(LATENESS_VALUES[-5:])
     assert data["lateness_penalty"] == expected
 
-# mock database
-class FakeDB:
-    def __init__(self, users_collection):
-        self.users_collection = users_collection
+def test_lateness_penalty_no_lateness_field(client, monkeypatch):
+    from bson import ObjectId
+    import app.main as app_module
 
-    def __getitem__(self, name):
-        if name == "users":
-            return self.users_collection
-        return None
+    USER_ID = "69f4a33044e301353c9f2c1c"
+
+    class FakeUsersCollection:
+        def find_one(self, query):
+            return {"_id": ObjectId(USER_ID)}  # no lateness field
+
+    monkeypatch.setattr(app_module, "get_db", lambda: FakeDB(FakeUsersCollection()))
+
+    response = client.get(f"/lateness_penalty/{USER_ID}")
+    data = response.get_json()
+
+    assert data["lateness_penalty"] == 0
+    assert data["num_events"] == 0
+
+
+def test_lateness_penalty_empty_lateness_list(client, monkeypatch):
+    from bson import ObjectId
+    import app.main as app_module
+
+    USER_ID = "69f4a33044e301353c9f2c1c"
+
+    class FakeUsersCollection:
+        def find_one(self, query):
+            return {"_id": ObjectId(USER_ID), "lateness": []}
+
+    monkeypatch.setattr(app_module, "get_db", lambda: FakeDB(FakeUsersCollection()))
+
+    response = client.get(f"/lateness_penalty/{USER_ID}")
+    data = response.get_json()
+
+    assert data["lateness_penalty"] == 0
+    assert data["num_events"] == 0
