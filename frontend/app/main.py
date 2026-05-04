@@ -236,13 +236,15 @@ def index():
 @app.get("/schedule")
 @login_required
 def schedule():
-    return render_template("schedule.html", user=session["user"])
+    profile = _get_user_profile(session["user"]["email"])
+    return render_template("schedule.html", user=session["user"], profile=profile)
 
 
 @app.get("/programs")
 @login_required
 def programs_page():
-    return render_template("programs.html", user=session["user"])
+    profile = _get_user_profile(session["user"]["email"])
+    return render_template("programs.html", user=session["user"], profile=profile)
 
 
 @app.get("/profile")
@@ -264,9 +266,11 @@ def graduation_page():
 @app.get("/professor")
 @login_required
 def professor_page():
+    profile = _get_user_profile(session["user"]["email"])
     return render_template(
         "professor.html",
         user=session["user"],
+        profile=profile,
         professor_name=request.args.get("name", "").strip(),
     )
 

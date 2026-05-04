@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>My Schedule — NYU Course Planner</title>
   <link rel="stylesheet" href="/static/css/shared.css">
+  <link rel="stylesheet" href="/static/css/chat.css">
   <link rel="stylesheet" href="/static/css/schedule.css">
 </head>
 
@@ -41,6 +42,9 @@
     </div>
   </div>
 
+  {% include '_chat.html' %}
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="/static/js/chat.js"></script>
   <script src="/static/js/schedule.js"></script>
 </body>
 
