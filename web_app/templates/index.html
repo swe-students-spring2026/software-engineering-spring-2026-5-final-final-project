@@ -1,0 +1,63 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Reminder Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  </head>
+
+  <body>
+    <main class="container">
+      <header class="page-header">
+        <div>
+          <h1>My Reminders</h1>
+          <p class="subtitle">Track upcoming reminders and repeat schedules.</p>
+        </div>
+
+        <div class="actions">
+          <a class="button" href="{{ url_for('tasks.create_task') }}">+ Create Reminder</a>
+          <a class="link" href="{{ url_for('auth.logout') }}">Logout</a>
+        </div>
+      </header>
+
+      <section class="card">
+        {% if tasks %}
+          {% for task in tasks %}
+            <div class="task">
+              <div class="task-header">
+                <h2>{{ task.title }}</h2>
+
+                {% if task.completed %}
+                  <span class="badge completed">Completed</span>
+                {% else %}
+                  <span class="badge active">Active</span>
+                {% endif %}
+              </div>
+
+              <div class="task-details">
+                <p><strong>Email:</strong> {{ task.user_email }}</p>
+                <p><strong>Reminder enabled:</strong> {{ "Yes" if task.reminder_enabled else "No" }}</p>
+                <p><strong>Next reminder:</strong> {{ task.next_reminder_at or "Not scheduled" }}</p>
+
+                {% if task.reminder_repeat %}
+                  <p><strong>Repeats:</strong> Every {{ task.repeat_every }} {{ task.repeat_unit }}</p>
+                {% else %}
+                  <p><strong>Repeats:</strong> No</p>
+                {% endif %}
+              </div>
+
+              <form method="POST" action="{{ url_for('tasks.delete_task', task_id=task._id) }}">
+                <button class="danger" type="submit">Delete</button>
+              </form>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty-state">
+            <h2>No reminders yet</h2>
+            <p>Create your first reminder to get started.</p>
+            <a class="button" href="{{ url_for('tasks.create_task') }}">Create Reminder</a>
+          </div>
+        {% endif %}
+      </section>
+    </main>
+  </body>
+</html>

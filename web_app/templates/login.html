@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  </head>
+
+  <body>
+    <main class="container auth-container">
+      <h1>Welcome Back</h1>
+      <p class="subtitle">Log in to manage your reminders.</p>
+
+      <form class="reminder-form" method="POST">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input id="username" name="username" placeholder="Enter your username" required>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" placeholder="Enter your password" required>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit">Login</button>
+          <a class="link" href="{{ url_for('auth.register') }}">Create an account</a>
+        </div>
+      </form>
+    </main>
+  </body>
+</html>
