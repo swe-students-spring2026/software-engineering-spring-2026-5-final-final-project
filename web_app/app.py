@@ -28,7 +28,7 @@ login_manager.login_view = 'auth.login'
 
 @login_manager.user_loader
 def load_user(user_id):
-    user_data = db.users.find_one({"_id": ObjectId(user_id)})
+    user_data = auth_bp.db.users.find_one({"_id": ObjectId(user_id)})
     return User(user_data) if user_data else None
 
 if __name__ == "__main__":

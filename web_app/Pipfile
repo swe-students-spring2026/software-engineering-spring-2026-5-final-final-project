@@ -4,15 +4,17 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+flask = "*"
+python-dotenv = "*"
+pymongo = "*"
 gunicorn = "*"
 pytest = "*"
 pytest-flask = "*"
 pytest-cov = "*"
 pylint = "*"
 black = "*"
-flask = "*"
-python-dotenv = "*"
-pymongo = "*"
+flask-login = "*"
+mongomock = "*"
 
 [dev-packages]
 
