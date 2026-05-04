@@ -1,13 +1,65 @@
+/* ── Light mode (default) ── */
+:root {
+  --bg:            #FFFFFF;
+  --surface:       #FFFFFF;
+  --surface-2:     #EEE6F3;   /* 10% Violet — subtle tinted inputs/cards */
+  --text:          #000000;
+  --muted:         #6D6D6D;   /* Medium Gray 1 */
+  --muted-2:       #B8B8B8;   /* Medium Gray 2 */
+  --border:        #DBD9D6;   /* Empire Silver */
+  --border-strong: #B8B8B8;   /* Medium Gray 2 */
+  --link:          #57068C;   /* NYU Violet */
+  --accent:        #57068C;   /* NYU Violet */
+  --accent-hover:  #330662;   /* NYU Deep Violet */
+  --warning:       #8900E1;   /* NYU Ultra Violet — secondary accent */
+}
+
+/* ── Dark mode ── */
+body.dark {
+  --bg:            #0D0012;   /* near-black, violet-tinted */
+  --surface:       #1A0A2E;   /* dark violet */
+  --surface-2:     #2D1456;   /* mid dark violet */
+  --text:          #FFFFFF;
+  --muted:         #B8B8B8;   /* Medium Gray 2 */
+  --muted-2:       #6D6D6D;   /* Medium Gray 1 */
+  --border:        #404040;   /* Dark Gray */
+  --border-strong: #6D6D6D;   /* Medium Gray 1 */
+  --link:          #AB82C5;   /* 50% Violet — readable on dark */
+  --accent:        #8900E1;   /* NYU Ultra Violet */
+  --accent-hover:  #57068C;   /* NYU Violet */
+  --warning:       #AB82C5;   /* 50% Violet */
+}
+
+/* ── Optional: respect OS preference automatically ── */
+@media (prefers-color-scheme: dark) {
+  body:not(.light) {
+    --bg:            #0D0012;
+    --surface:       #1A0A2E;
+    --surface-2:     #2D1456;
+    --text:          #FFFFFF;
+    --muted:         #B8B8B8;
+    --muted-2:       #6D6D6D;
+    --border:        #404040;
+    --border-strong: #6D6D6D;
+    --link:          #AB82C5;
+    --accent:        #8900E1;
+    --accent-hover:  #57068C;
+    --warning:       #AB82C5;
+  }
+}
+
+
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: #101113;
-  color: #eeeeec;
+  background: var(--bg);
+  color: var(--text);
   line-height: 1.6;
 }
 
-a { color: #8bd3dd; text-decoration: none; }
+a { color: var(--link); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
 .navbar {
@@ -16,11 +68,11 @@ a:hover { text-decoration: underline; }
   justify-content: space-between;
   gap: 1rem;
   padding: 1rem 2rem;
-  background: #181a1d;
-  border-bottom: 1px solid #2a2d31;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
 }
 
-.nav-brand { font-size: 1.2rem; font-weight: 700; color: #f6c85f; }
+.nav-brand { font-size: 1.2rem; font-weight: 700; color: var(--warning); }
 
 .nav-links {
   display: flex;
@@ -29,13 +81,13 @@ a:hover { text-decoration: underline; }
   justify-content: flex-end;
 }
 
-.nav-links a { color: #d3d7dc; font-size: 0.95rem; }
+.nav-links a { color: var(--text); font-size: 0.95rem; }
 
 .container { max-width: 980px; margin: 0 auto; padding: 2.5rem 1.5rem; }
 
 .hero { text-align: center; padding: 2.5rem 0 2rem; }
 .hero h1 { font-size: 2.3rem; margin-bottom: 0.75rem; }
-.subtitle { color: #adb5bd; margin-bottom: 1.5rem; }
+.subtitle { color: var(--muted); margin-bottom: 1.5rem; }
 
 .search-form {
   display: flex;
@@ -50,9 +102,9 @@ a:hover { text-decoration: underline; }
   width: 100%;
   padding: 0.75rem 1rem;
   border-radius: 8px;
-  border: 1px solid #353941;
-  background: #1b1e22;
-  color: #eeeeec;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text);
   font-size: 1rem;
 }
 
@@ -60,11 +112,27 @@ a:hover { text-decoration: underline; }
 .favorites-form input:focus,
 .auth-form input:focus {
   outline: none;
-  border-color: #8bd3dd;
+  border-color: var(--link);
   box-shadow: 0 0 0 3px rgba(139, 211, 221, 0.12);
 }
 
 .search-hint { color: #838b94; font-size: 0.875rem; margin-top: 0.5rem; }
+
+.theme-toggle {
+  min-height: 38px;
+  padding: 0.45rem 0.8rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.theme-toggle:hover {
+  opacity: 0.85;
+}
 
 .btn-primary,
 .btn-secondary {
@@ -77,11 +145,11 @@ a:hover { text-decoration: underline; }
 
 .btn-primary {
   padding: 0.75rem 1.4rem;
-  background: #2e7d6b;
+  background: var(--accent);
   color: #ffffff;
   border: none;
 }
-.btn-primary:hover { background: #256756; }
+.btn-primary:hover { background: var(--accent-hover); }
 
 .btn-primary[data-loading] {
   opacity: 0.72;
@@ -107,8 +175,8 @@ a:hover { text-decoration: underline; }
 .btn-secondary {
   padding: 0.6rem 1rem;
   background: transparent;
-  color: #f6c85f;
-  border: 1px solid #f6c85f;
+  color: var(--warning);
+  border: 1px solid var(--warning);
 }
 .btn-secondary:hover { background: rgba(246, 200, 95, 0.12); text-decoration: none; }
 
@@ -128,15 +196,15 @@ a:hover { text-decoration: underline; }
   margin-bottom: 0.35rem;
   font-size: 1.45rem;
 }
-.section-header p { color: #adb5bd; }
+.section-header p { color: var(--muted); }
 
 .favorites-form {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.75rem 1rem;
   padding: 1.25rem;
-  background: #181a1d;
-  border: 1px solid #2a2d31;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 8px;
 }
 
@@ -157,9 +225,9 @@ a:hover { text-decoration: underline; }
   font-size: 0.8rem;
   margin-bottom: 1.5rem;
 }
-.mode-badge.intent { background: rgba(139, 211, 221, 0.12); color: #8bd3dd; }
+.mode-badge.intent { background: rgba(139, 211, 221, 0.12); color: var(--link); }
 .mode-badge.direct { background: rgba(81, 183, 135, 0.14); color: #79d6a3; }
-.mode-badge.recommendation { background: rgba(246, 200, 95, 0.14); color: #f6c85f; }
+.mode-badge.recommendation { background: rgba(246, 200, 95, 0.14); color: var(--warning); }
 
 .movie-list,
 .history-list {
@@ -179,8 +247,8 @@ a:hover { text-decoration: underline; }
 .movie-card,
 .history-item,
 .stat-card {
-  background: #181a1d;
-  border: 1px solid #2a2d31;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 8px;
 }
 
@@ -194,8 +262,8 @@ a:hover { text-decoration: underline; }
 .movie-card h3 { margin-bottom: 0.4rem; font-size: 1.1rem; }
 .movie-card p { color: #b8c0c8; font-size: 0.92rem; margin-bottom: 0.5rem; }
 .movie-card-main { min-width: 0; }
-.match-reason { color: #f6c85f; }
-.meta { color: #858e98; font-size: 0.82rem; }
+.match-reason { color: var(--warning); }
+.meta { color: var(--muted-2); font-size: 0.82rem; }
 
 .movie-detail-header {
   display: flex;
@@ -303,19 +371,19 @@ a:hover { text-decoration: underline; }
   margin-bottom: 2rem;
 }
 .stat-card { padding: 1rem; }
-.stat-card strong { display: block; font-size: 2rem; color: #f6c85f; line-height: 1.1; }
-.stat-label { color: #adb5bd; font-size: 0.85rem; }
+.stat-card strong { display: block; font-size: 2rem; color: var(--warning); line-height: 1.1; }
+.stat-label { color: var(--muted); font-size: 0.85rem; }
 .recent-activity-header { margin-top: 1rem; }
 
-.empty-state { color: #858e98; font-style: italic; margin-top: 1rem; }
+.empty-state { color: var(--muted-2); font-style: italic; margin-top: 1rem; }
 
 .back-link {
   display: inline-block;
-  color: #adb5bd;
+  color: var(--muted);
   font-size: 0.875rem;
   margin-bottom: 1.25rem;
 }
-.back-link:hover { color: #eeeeec; text-decoration: none; }
+.back-link:hover { color: var(--text); text-decoration: none; }
 
 /* ── Watchlist removal toast ── */
 .toast {
@@ -324,14 +392,14 @@ a:hover { text-decoration: underline; }
   left: 50%;
   transform: translateX(-50%) translateY(0.5rem);
   background: #23262b;
-  border: 1px solid #353941;
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   padding: 0.7rem 0.85rem 0.7rem 1rem;
   display: flex;
   align-items: center;
   gap: 1rem;
   font-size: 0.9rem;
-  color: #eeeeec;
+  color: var(--text);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   opacity: 0;
   pointer-events: none;
@@ -346,8 +414,8 @@ a:hover { text-decoration: underline; }
 }
 .toast-undo {
   background: transparent;
-  border: 1px solid #f6c85f;
-  color: #f6c85f;
+  border: 1px solid var(--warning);
+  color: var(--warning);
   border-radius: 6px;
   padding: 0.2rem 0.6rem;
   font-size: 0.82rem;
@@ -365,8 +433,8 @@ a:hover { text-decoration: underline; }
 }
 
 .workflow-panel {
-  background: #181a1d;
-  border: 1px solid #2a2d31;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 2rem;
 }
@@ -389,7 +457,7 @@ a:hover { text-decoration: underline; }
 }
 
 .panel-desc {
-  color: #adb5bd;
+  color: var(--muted);
   font-size: 0.9rem;
   margin-bottom: 1.25rem;
   line-height: 1.5;
