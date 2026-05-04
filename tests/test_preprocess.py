@@ -49,3 +49,55 @@ def test_bad_coordinates_become_missing():
 
     assert pd.isna(data.loc[0, "Longitude"])
     assert data.loc[0, "Latitude"] == 40.7484
+
+
+def test_multiple_rows_strip_spaces():
+    data = pd.DataFrame({
+        "Problem": [" Noise ", " Parking ", " Trash "],
+        "Problem Detail": [" Loud music ", " Blocked driveway ", " Garbage outside "],
+    })
+
+    data["Problem"] = data["Problem"].astype("string").str.strip()
+    data["Problem Detail"] = data["Problem Detail"].astype("string").str.strip()
+
+    assert data.loc[0, "Problem"] == "Noise"
+    assert data.loc[1, "Problem"] == "Parking"
+    assert data.loc[2, "Problem Detail"] == "Garbage outside"
+
+
+def test_coordinate_strings_with_spaces_convert_correctly():
+    data = pd.DataFrame({
+        "Longitude": [" -73.9857 "],
+        "Latitude": [" 40.7484 "],
+    })
+
+    data["Longitude"] = pd.to_numeric(data["Longitude"], errors="coerce")
+    data["Latitude"] = pd.to_numeric(data["Latitude"], errors="coerce")
+
+    assert data.loc[0, "Longitude"] == -73.9857
+    assert data.loc[0, "Latitude"] == 40.7484
+
+
+def test_missing_coordinate_row_is_dropped():
+    data = pd.DataFrame({
+        "Created Date": ["2026-04-28", "2026-04-29"],
+        "Problem": ["Noise", "Parking"],
+        "Problem Detail": ["Loud music", "Blocked driveway"],
+        "Longitude": [-73.9857, None],
+        "Latitude": [40.7484, 40.7000],
+    })
+
+    cleaned = data.dropna()
+
+    assert len(cleaned) == 1
+    assert cleaned.iloc[0]["Problem"] == "Noise"
+
+
+def test_empty_problem_detail_after_strip():
+    data = pd.DataFrame({
+        "Problem Detail": ["   "],
+    })
+
+    data["Problem Detail"] = data["Problem Detail"].astype("string").str.strip()
+
+    assert data.loc[0, "Problem Detail"] == ""

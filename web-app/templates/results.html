@@ -1,61 +1,94 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Results – NYC 311 Smart Spot Finder</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Results</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
-  <div class="container">
-    <header>
-      <h1>NYC 311 Smart Spot Finder</h1>
-      <a href="/" class="back-link">← New search</a>
-    </header>
+    <div class="container">
+        <div class="header">
+            <h1>Search Results</h1>
 
-    <div class="query-summary">
-      <p>Showing spots that avoid <strong>{{ query_311 }}</strong> complaints near <strong>{{ query_facilities }}</strong> facilities.</p>
-    </div>
+            <div class="summary">
+                <strong>Your search:</strong> {{ user_query }}<br>
+                <strong>Place type detected:</strong> {{ place_type }}<br>
+                <strong>Complaint category to avoid:</strong> {{ reversed_attribute }}
+            </div>
 
-    {% if clusters %}
-      {% for cluster in clusters %}
-      <div class="cluster-card">
-        <div class="cluster-header">
-          <span class="cluster-location">{{ cluster.latitude | round(4) }}, {{ cluster.longitude | round(4) }}</span>
-          <span class="cluster-ratio {{ 'good' if cluster.complaint_ratio < 0.2 else 'warn' if cluster.complaint_ratio < 0.5 else 'bad' }}">
-            Complaint match rate: {{ (cluster.complaint_ratio * 100) | round(1) }}%
-          </span>
+            <a class="back-link" href="/">Search again</a>
         </div>
 
-        {% if cluster.facilities %}
-        <table class="facility-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Type</th>
-              <th>Group</th>
-              <th>Borough</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for f in cluster.facilities %}
-            <tr>
-              <td>{{ f.name }}</td>
-              <td>{{ f.type }}</td>
-              <td>{{ f.group }}</td>
-              <td>{{ f.borough }}</td>
-            </tr>
+        {% if results and results|length > 0 %}
+            {% for result in results %}
+                <div class="result-card">
+                    <div class="facility-name">
+                        {{ result.facility_name }}
+                    </div>
+
+                    <div class="facility-type">
+                        {{ result.facility_group }} /
+                        {{ result.facility_subgroup }} /
+                        {{ result.facility_type }}
+                    </div>
+
+                    <div class="details">
+                        <div class="detail-box">
+                            <span class="detail-label">Borough</span>
+                            {{ result.borough }}
+                        </div>
+
+                        <div class="detail-box">
+                            <span class="detail-label">Facility Match Score</span>
+                            {% if result.score is not none %}
+                                {{ result.score }}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </div>
+
+                        <div class="detail-box">
+                            <span class="detail-label">Facility Location</span>
+                            {% if result.latitude and result.longitude %}
+                                {{ result.latitude }}, {{ result.longitude }}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </div>
+
+                        <div class="detail-box">
+                            <span class="detail-label">Cluster Center</span>
+                            {{ result.cluster_latitude }}, {{ result.cluster_longitude }}
+                        </div>
+
+                        <div class="detail-box">
+                            <span class="detail-label">Complaint Ratio</span>
+                            {{ result.complaint_ratio }}
+                        </div>
+
+                        <div class="detail-box">
+                            <span class="detail-label">Matched / Total Complaints</span>
+                            {{ result.matched_complaints }} / {{ result.total_complaints }}
+                        </div>
+
+                        <div class="detail-box">
+                            <span class="detail-label">Cluster Rank</span>
+                            {{ result.cluster_rank }}
+                        </div>
+                    </div>
+                </div>
             {% endfor %}
-          </tbody>
-        </table>
         {% else %}
-        <p class="no-facilities">No matching facilities in this area.</p>
+            <div class="no-results">
+                <h2>No results found</h2>
+                <p>
+                    Try using a broader search, such as "a safe place to study"
+                    or "a quiet public place."
+                </p>
+            </div>
         {% endif %}
-      </div>
-      {% endfor %}
-    {% else %}
-      <p class="no-results">No results found. Try different search terms.</p>
-    {% endif %}
-  </div>
+    </div>
 </body>
 </html>

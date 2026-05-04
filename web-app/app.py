@@ -15,31 +15,33 @@ def index():
 
 @app.route("/search", methods=["POST"])
 def search():
-    query_311 = request.form.get("query_311", "").strip()
-    query_facilities = request.form.get("query_facilities", "").strip()
+    user_query = request.form.get("query", "").strip()
 
-    if not query_311 or not query_facilities:
-        error = "Must enter both a complaint and facility type."
-        return render_template("index.html", error=error)
+    if not user_query:
+        return render_template("index.html", error="Please enter a search query.")
 
     try:
         response = requests.post(
             f"{ML_API_URL}/recommend",
-            json={"query_311": query_311, "query_facilities": query_facilities},
+            json={"query": user_query},
             timeout=120,
         )
         response.raise_for_status()
-        cluster_results = response.json()
+        data = response.json()
 
         return render_template(
             "results.html",
-            query_311=query_311,
-            query_facilities=query_facilities,
-            clusters=cluster_results,
+            user_query=user_query,
+            reversed_attribute=data.get("reversed_attribute", ""),
+            place_type=data.get("place_type", ""),
+            results=data.get("results", []),
+            from_cache=False,
         )
     except Exception as e:
-        error = f"Something went wrong while processing your search: {e}"
-        return render_template("index.html", error=error)
+        return render_template(
+            "index.html",
+            error=f"Something went wrong while processing your search: {e}",
+        )
 
 
 @app.route("/health", methods=["GET"])

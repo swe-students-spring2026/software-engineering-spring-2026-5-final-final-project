@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request
 
-from filter import filter_clusters
+from filter import filter_clusters, further_filter
+from split import split_query
 
 app = Flask(__name__)
 
@@ -13,40 +14,48 @@ def health():
 @app.route("/recommend", methods=["POST"])
 def recommend():
     data = request.get_json()
-    query_311 = (data.get("query_311") or "").strip()
-    query_facilities = (data.get("query_facilities") or "").strip()
+    query = (data.get("query") or "").strip()
 
-    if not query_311 or not query_facilities:
-        return jsonify({"error": "Both query_311 and query_facilities are required"}), 400
+    if not query:
+        return jsonify({"error": "query is required"}), 400
 
-    clusters = filter_clusters(query_311, query_facilities)
+    reversed_attribute, place_type = split_query(query)
 
-    result = []
+    clusters = filter_clusters(reversed_attribute, place_type)
+    clusters = further_filter(clusters, place_type)
+
+    results = []
     for cluster in clusters:
-        facilities = []
         for facility in cluster.facilities:
-            facilities.append({
-                "name": facility[0] if len(facility) > 0 else "Unknown",
-                "group": facility[1] if len(facility) > 1 else "Unknown",
-                "subgroup": facility[2] if len(facility) > 2 else "Unknown",
-                "type": facility[3] if len(facility) > 3 else "Unknown",
+            if len(facility) == 0:
+                continue
+            results.append({
+                "facility_name": facility[0] if len(facility) > 0 else "Unknown",
+                "facility_group": facility[1] if len(facility) > 1 else "Unknown",
+                "facility_subgroup": facility[2] if len(facility) > 2 else "Unknown",
+                "facility_type": facility[3] if len(facility) > 3 else "Unknown",
                 "borough": facility[4] if len(facility) > 4 else "Unknown",
+                "latitude": facility[5] if len(facility) > 5 else None,
+                "longitude": facility[6] if len(facility) > 6 else None,
+                "score": round(float(facility[-1]), 4) if len(facility) > 7 else None,
+                "cluster_latitude": cluster.center[0],
+                "cluster_longitude": cluster.center[1],
+                "complaint_ratio": round(cluster.ratio, 4),
+                "matched_complaints": cluster.matched_complaint,
+                "total_complaints": cluster.total_complaint,
+                "cluster_rank": cluster.rank + 1,
             })
 
-        total = cluster.total_complaint
-        matched = cluster.matched_complaint
-        complaint_ratio = matched / total if total > 0 else 0
+    results.sort(
+        key=lambda x: x["score"] if x["score"] is not None else 0,
+        reverse=True,
+    )
 
-        result.append({
-            "longitude": cluster.center[0],
-            "latitude": cluster.center[1],
-            "matched_complaints": matched,
-            "total_complaints": total,
-            "complaint_ratio": round(complaint_ratio, 4),
-            "facilities": facilities,
-        })
-
-    return jsonify(result)
+    return jsonify({
+        "reversed_attribute": reversed_attribute,
+        "place_type": place_type,
+        "results": results,
+    })
 
 
 if __name__ == "__main__":
