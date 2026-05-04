@@ -7,3 +7,4 @@ pytest-flask
 pytest-cov
 pylint
 black
+flask-login
