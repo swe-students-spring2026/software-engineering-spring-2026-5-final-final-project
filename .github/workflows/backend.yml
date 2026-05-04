@@ -1,0 +1,70 @@
+name: Backend CI/CD
+
+on:
+  push:
+    branches: [main]
+    paths: ["backend/**", ".github/workflows/backend.yml"]
+  pull_request:
+    branches: [main]
+    paths: ["backend/**", ".github/workflows/backend.yml"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      MONGODB_URI: mongodb://localhost:27017/vibe_test
+      JWT_SECRET: test-secret
+      JWT_EXPIRY_DAYS: 7
+      SPOTIFY_CLIENT_ID: fake
+      SPOTIFY_CLIENT_SECRET: fake
+      SPOTIFY_REDIRECT_URI: http://localhost:8000/api/spotify/callback
+      CLOUDINARY_CLOUD_NAME: fake
+      CLOUDINARY_API_KEY: fake
+      CLOUDINARY_API_SECRET: fake
+      FRONTEND_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: pytest --cov=app --cov-fail-under=80
+
+  build-push:
+    needs: test
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/vibe-backend:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/vibe-backend:latest
+
+  deploy:
+    needs: build-push
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Digital Ocean
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DO_HOST }}
+          username: ${{ secrets.DO_USER }}
+          key: ${{ secrets.DO_SSH_KEY }}
+          script: |
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/vibe-backend:latest
+            docker stop vibe-backend || true
+            docker rm vibe-backend || true
+            docker run -d --name vibe-backend --env-file /opt/vibe/.env \
+              -p 8000:8000 ${{ secrets.DOCKERHUB_USERNAME }}/vibe-backend:latest
