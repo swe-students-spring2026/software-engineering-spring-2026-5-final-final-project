@@ -1,14 +1,17 @@
 import pytest
 import mongomock
 from werkzeug.security import generate_password_hash
-from app import app  # Imports your main Flask app
+from app import app  
+import app as app_module  # ADD THIS: Import the module to overwrite its variables
 from routes.auth import auth_bp
 
 @pytest.fixture
 def client():
     app.config['TESTING'] = True
     mock_db = mongomock.MongoClient().db
+    
     auth_bp.db = mock_db
+    app_module.db = mock_db 
     
     mock_db.users.insert_one({
         "username": "testuser",

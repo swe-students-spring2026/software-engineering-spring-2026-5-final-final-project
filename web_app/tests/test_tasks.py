@@ -11,12 +11,12 @@ from routes.tasks import tasks_bp, to_object_id, parse_datetime_local_to_utc
 @pytest.fixture
 def client():
     app.config['TESTING'] = True
-    
     mock_db = mongomock.MongoClient().db
     
-    tasks_bp.db = mock_db
-    auth_bp.db = mock_db
-    app_module.db = mock_db
+    tasks_bp.db = mock_db   
+    auth_bp.db = mock_db    
+    
+    app_module.db = mock_db 
     
     user_id_str = "507f1f77bcf86cd799439011"
     mock_db.users.insert_one({
