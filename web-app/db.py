@@ -1,4 +1,5 @@
 import os
+import certifi
 from datetime import datetime, timezone
 from pymongo import MongoClient
 from pymongo.collection import Collection
@@ -16,7 +17,10 @@ def get_db_name() -> str:
     return os.getenv("MONGODB_DB_NAME", "prioritymanager")
 
 def get_client() -> MongoClient:
-    return MongoClient(get_mongo_uri())
+    return MongoClient(
+        get_mongo_uri(),
+        tlsCAFile=certifi.where()
+    )
 
 def get_database() -> Database:
     client = get_client()
@@ -73,7 +77,17 @@ def insert_task(user_id: str, title: str, description: str, priority: str) -> st
     return str(result.inserted_id)
 
 def get_tasks_for_user(user_id: str) -> list:
-    return list(tasks_collection().find({"user_id": ObjectId(user_id)}))
+    tasks = list(tasks_collection().find({"user_id": ObjectId(user_id)}))
+
+    priority_order = {
+        "High": 1,
+        "Medium": 2,
+        "Low": 3
+    }
+
+    tasks.sort(key=lambda task: priority_order.get(task.get("priority"), 99))
+
+    return tasks
 
 def mark_task_complete(task_id: str, user_id: str) -> bool:
     result = tasks_collection().update_one(
