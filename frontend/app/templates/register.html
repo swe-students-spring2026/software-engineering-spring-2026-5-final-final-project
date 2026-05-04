@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}vibe — create account{% endblock %}
+{% block body %}
+<div class="page page--auth">
+  <div class="auth-logo"><span class="logo">vibe</span></div>
+  <p class="auth-tagline">match through music.</p>
+
+  <div class="auth-card">
+    {% if error %}
+    <div class="error-msg">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('main.register') }}">
+      <div class="form-group">
+        <label class="form-label" for="display_name">Name</label>
+        <input type="text" id="display_name" name="display_name"
+               placeholder="How you'll appear to others"
+               value="{{ form.display_name if form else '' }}" required autofocus />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="email">Email</label>
+        <input type="email" id="email" name="email"
+               placeholder="you@example.com"
+               value="{{ form.email if form else '' }}" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <input type="password" id="password" name="password"
+               placeholder="At least 8 characters" minlength="8" required />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="age">Age</label>
+          <input type="number" id="age" name="age"
+                 placeholder="22" min="18" max="99"
+                 value="{{ form.age if form else '' }}" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="city">City</label>
+          <input type="text" id="city" name="city"
+                 placeholder="New York"
+                 value="{{ form.city if form else '' }}" required />
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-full" style="margin-top:8px;">Create account</button>
+    </form>
+  </div>
+
+  <p class="auth-footer">
+    Already have an account? <a href="{{ url_for('main.login') }}">Sign in</a>
+  </p>
+</div>
+{% endblock %}

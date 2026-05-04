@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}vibe — {{ profile.display_name if profile else 'profile' }}{% endblock %}
+{% block body %}
+
+<div class="page">
+  <div style="padding-top:16px;">
+    <a href="javascript:history.back()" class="back-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+      Back
+    </a>
+  </div>
+
+  {% if not profile %}
+    <div class="empty-state">
+      <h3>Profile not found</h3>
+      <p>This person may have left the app.</p>
+    </div>
+  {% else %}
+    <div class="profile-header">
+      {% if profile.photo_url %}
+        <img class="profile-photo-lg" src="{{ profile.photo_url }}" alt="{{ profile.display_name }}" />
+      {% else %}
+        <div class="profile-vinyl-lg">
+          <div class="vinyl-label">{{ profile.display_name[:2].upper() }}</div>
+        </div>
+      {% endif %}
+      <div class="profile-name-lg">{{ profile.display_name }}, {{ profile.age }}</div>
+      <div class="profile-meta-lg">{{ profile.city }}</div>
+    </div>
+
+    {% if profile.bio %}
+    <div class="section-block">
+      <h3>Bio</h3>
+      <p>{{ profile.bio }}</p>
+    </div>
+    {% endif %}
+
+    {% if profile.top_genres %}
+    <div class="section-block">
+      <h3>Genres</h3>
+      <div class="genre-list" style="margin-top:4px;">
+        {% for g in profile.top_genres %}<span class="genre-tag">{{ g }}</span>{% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if profile.top_artists %}
+    <div class="section-block">
+      <h3>Artists</h3>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px;">
+        {% for a in profile.top_artists %}
+        <div style="font-size:0.9rem;color:var(--text-muted);">{{ a.name }}</div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if profile.contact_info and (profile.contact_info.get('instagram') or profile.contact_info.get('phone')) %}
+    <div class="section-block">
+      <h3>Contact</h3>
+      <div class="contact-row" style="margin-top:4px;flex-wrap:wrap;">
+        {% if profile.contact_info.instagram %}
+        <span class="contact-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/>
+            <circle cx="17.5" cy="6.5" r="1" fill="currentColor"/>
+          </svg>
+          @{{ profile.contact_info.instagram }}
+        </span>
+        {% endif %}
+        {% if profile.contact_info.phone %}
+        <span class="contact-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.59 3.53 2 2 0 0 1 3.56 1.35h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9a16 16 0 0 0 6 6l1.27-.73a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7a2 2 0 0 1 1.72 2.03z"/>
+          </svg>
+          {{ profile.contact_info.phone }}
+        </span>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  {% endif %}
+</div>
+
+<nav class="tab-bar">
+  <a class="tab-item" href="{{ url_for('main.feed') }}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+    </svg>
+    Feed
+  </a>
+  <a class="tab-item" href="{{ url_for('main.matches') }}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+    </svg>
+    Matches
+  </a>
+  <a class="tab-item" href="{{ url_for('main.settings') }}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+    </svg>
+    Profile
+  </a>
+</nav>
+
+{% endblock %}
