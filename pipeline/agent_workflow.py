@@ -67,6 +67,57 @@ FINAL_JSON:
   "top_disconfirming_signals": ["", "", ""]
 }
 """
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run per-ticker analyst agents.")
+    parser.add_argument(
+        "--start-rank",
+        type=int,
+        default=1,
+        help="Starting screener rank to analyze.",
+    )
+    parser.add_argument(
+        "--end-rank",
+        type=int,
+        default=5,
+        help="Ending screener rank to analyze.",
+    )
+    parser.add_argument("--max-workers", type=int, default=2, help="Concurrent per-ticker agent calls.")
+    parser.add_argument("--model", type=str, default=os.getenv("OPENAI_MODEL", "gpt-5.4-mini"))
+    parser.add_argument("--reasoning-effort", type=str, default="low", choices=["low", "medium", "high"])
+    parser.add_argument(
+        "--web-tool-type",
+        type=str,
+        default=os.getenv("OPENAI_WEB_TOOL_TYPE", "web_search_preview"),
+        help="Responses web search tool type.",
+    )
+    parser.add_argument("--run-id", type=str, default=None, help="Optional run id override.")
+    parser.add_argument("--user-id", type=str, default="local-user", help="Application user id for session storage.")
+    parser.add_argument("--user-email", type=str, default="", help="Optional user email for session storage.")
+    parser.add_argument(
+        "--include-feather",
+        action="store_true",
+        help="Include .feather files in uploaded package files (off by default).",
+    )
+    parser.add_argument(
+        "--max-sec-html-files",
+        type=int,
+        default=4,
+        help="Maximum number of SEC filing HTML files to include per ticker.",
+    )
+    parser.add_argument(
+        "--max-file-size-mb",
+        type=float,
+        default=1.5,
+        help="Skip files larger than this size in MB to reduce context overflows.",
+    )
+    parser.add_argument(
+        "--skip-tickers",
+        type=str,
+        default="",
+        help="Comma-separated tickers to exclude (e.g., CMTV,ALMS,THM,HYMC,ASA).",
+    )
+    return parser.parse_args()
+
 def get_api_key() -> str:
     """Get API key from env; error if missing."""
     key = os.getenv("OPENAI_API_KEY") or os.getenv("OPENAI_KEY")
