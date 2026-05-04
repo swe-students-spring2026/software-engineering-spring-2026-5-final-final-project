@@ -21,7 +21,7 @@ movies_bp = Blueprint("movies", __name__)
 def home():
     favorites = get_favorites()
     favorite_ids = [m["id"] for m in favorites]
-    recommendations = recommend_movies(favorite_ids) if favorite_ids else []
+    recommendations = recommend_from_favorites([m["title"] for m in favorites]) if favorite_ids else []
     return render_template("home.html", favorites=favorites, recommendations=recommendations)
 
 
