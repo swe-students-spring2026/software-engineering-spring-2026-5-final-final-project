@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Results</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Search Results</h1>
+
+            <div class="summary">
+                <strong>Your search:</strong> {{ user_query }}<br>
+                <strong>Place type detected:</strong> {{ place_type }}<br>
+                <strong>Complaint category to avoid:</strong> {{ reversed_attribute }}
+            </div>
+
+            <a class="back-link" href="/">Search again</a>
+        </div>
+
+        {% if results and results|length > 0 %}
+            {% for result in results %}
+                <div class="result-card">
+                    <div class="facility-name">
+                        {{ result.facility_name }}
+                    </div>
+
+                    <div class="facility-type">
+                        {{ result.facility_group }} /
+                        {{ result.facility_subgroup }} /
+                        {{ result.facility_type }}
+                    </div>
+
+                    <div class="details">
+                        <div class="detail-box">
+                            <span class="detail-label">Borough</span>
+                            {{ result.borough }}
+                        </div>
+
+                        <div class="detail-box">
+                            <span class="detail-label">Facility Match Score</span>
+                            {% if result.score is not none %}
+                                {{ result.score }}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </div>
+
+                        <div class="detail-box">
+                            <span class="detail-label">Facility Location</span>
+                            {% if result.latitude and result.longitude %}
+                                {{ result.latitude }}, {{ result.longitude }}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </div>
+
+                        <div class="detail-box">
+                            <span class="detail-label">Cluster Center</span>
+                            {{ result.cluster_latitude }}, {{ result.cluster_longitude }}
+                        </div>
+
+                        <div class="detail-box">
+                            <span class="detail-label">Complaint Ratio</span>
+                            {{ result.complaint_ratio }}
+                        </div>
+
+                        <div class="detail-box">
+                            <span class="detail-label">Matched / Total Complaints</span>
+                            {{ result.matched_complaints }} / {{ result.total_complaints }}
+                        </div>
+
+                        <div class="detail-box">
+                            <span class="detail-label">Cluster Rank</span>
+                            {{ result.cluster_rank }}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="no-results">
+                <h2>No results found</h2>
+                <p>
+                    Try using a broader search, such as “a safe place to study”
+                    or “a quiet public place.”
+                </p>
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>
