@@ -1,22 +1,64 @@
 <!doctype html>
 <html>
+  <head>
+    <title>Create Reminder</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  </head>
+
   <body>
-    <h1>Create Reminder</h1>
+    <main class="container">
+      <header class="page-header">
+        <div>
+          <h1>Create Reminder</h1>
+          <p class="subtitle">Add a reminder and choose when it should repeat.</p>
+        </div>
+      </header>
 
-    <form method="POST">
-      <input name="title" placeholder="Title" required>
-      <input name="date" type="date" required>
+      <form class="reminder-form" method="POST">
+        <div class="form-group">
+          <label for="title">Reminder title</label>
+          <input id="title" type="text" name="title" placeholder="Do homework" required>
+        </div>
 
-      <select name="reminder_frequency">
-        <option value="none">No Reminder</option>
-        <option value="hourly">Hourly</option>
-        <option value="daily">Daily</option>
-        <option value="weekly">Weekly</option>
-      </select>
+        <div class="form-group">
+          <label for="next_reminder_at">Next reminder time</label>
+          <input id="next_reminder_at" type="datetime-local" name="next_reminder_at" required>
+        </div>
 
-      <button type="submit">Create</button>
-    </form>
+        <div class="checkbox-row">
+          <label>
+            <input type="checkbox" name="reminder_enabled" checked>
+            Enable reminder
+          </label>
 
-    <a href="{{ url_for('tasks.show_tasks') }}">Back</a>
+          <label>
+            <input type="checkbox" name="reminder_repeat">
+            Repeat reminder
+          </label>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="repeat_every">Repeat every</label>
+            <input id="repeat_every" type="number" name="repeat_every" min="1" value="1">
+          </div>
+
+          <div class="form-group">
+            <label for="repeat_unit">Repeat unit</label>
+            <select id="repeat_unit" name="repeat_unit">
+              <option value="minutes">Minutes</option>
+              <option value="hours">Hours</option>
+              <option value="days">Days</option>
+              <option value="weeks">Weeks</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit">Create Reminder</button>
+          <a class="link" href="{{ url_for('tasks.show_tasks') }}">Back to reminders</a>
+        </div>
+      </form>
+    </main>
   </body>
 </html>
