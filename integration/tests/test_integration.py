@@ -1,13 +1,19 @@
 """Tests for the CatCh integration router."""
 
-from fastapi import FastAPI
+import importlib.util
+import sys
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 
-from app.routers.integration import router
+MODULE_PATH = Path(__file__).resolve().parents[1] / "app" / "main.py"
+SERVICE_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(SERVICE_ROOT))
+spec = importlib.util.spec_from_file_location("integration_main", MODULE_PATH)
+integration_main = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(integration_main)
 
-application = FastAPI()
-application.include_router(router)
-client = TestClient(application)
+client = TestClient(integration_main.app)
 
 
 def test_health():

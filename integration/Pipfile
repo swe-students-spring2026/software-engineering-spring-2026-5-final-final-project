@@ -9,6 +9,8 @@ fastapi = "==0.104.1"
 pydantic = "==2.5.0"
 
 [dev-packages]
+pytest = "*"
+httpx = "==0.25.2"
 black = "*"
 pylint = "*"
 
