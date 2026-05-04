@@ -8,10 +8,9 @@ from datetime import datetime, timezone
 from bson.objectid import ObjectId
 import pymongo
 from config import Config
-from mongo_wrapper import MongoWrapper
 import requests
 
-mongo = MongoWrapper()
+mongo = Config.connect_to_db()
 ML_SERVICE_URL = "http://ml-client:5002/analyze"
 app = Flask(__name__)
 logger = logging.getLogger(__name__)
@@ -26,7 +25,7 @@ class User(UserMixin):
 
 @login_manager.user_loader
 def user_loader(user_email):
-    user_doc = mongo.db.users.find_one({"user_email": user_email})
+    user_doc = mongo.users.find_one({"user_email": user_email})
     if not user_doc:
         return None
     user = User()
@@ -38,7 +37,7 @@ def request_loader(request):
     user_email = request.form.get('username')
     if not user_email:
         return None
-    user_doc = mongo.db.users.find_one({"user_email": user_email})
+    user_doc = mongo.users.find_one({"user_email": user_email})
     if not user_doc:
         return None
     user = User()
@@ -66,8 +65,8 @@ def compute_status(due_date):
 def index():
     user = current_user.id
 
-    non_completed = add_id(list(mongo.db.assignments.find({"user_email": user, "status": {"$ne": "completed"}})))
-    completed = add_id(list(mongo.db.assignments.find({"user_email": user, "status": "completed"})))
+    non_completed = add_id(list(mongo.assignments.find({"user_email": user, "status": {"$ne": "completed"}})))
+    completed = add_id(list(mongo.assignments.find({"user_email": user, "status": "completed"})))
 
     priority_order = {"high": 0, "medium": 1, "low": 2}
 
@@ -110,7 +109,7 @@ def submit_new_task():
         })
         ml_data = ml_response.json()
 
-        mongo.db.assignments.insert_one({
+        mongo.assignments.insert_one({
             "user_email": current_user.id,
             "title": data.get("title"),
             "course": data.get("course"),
@@ -143,7 +142,7 @@ def login():
     username = request.form.get('username')
     password = request.form.get('password')
 
-    user_doc = mongo.db.users.find_one({"user_email": username})
+    user_doc = mongo.users.find_one({"user_email": username})
     if not user_doc or user_doc['password'] != password:
         return """<div>wrong username or password</div>
                 <a href="/login"> go back to login </a>"""
@@ -158,16 +157,16 @@ def register():
     username = request.form.get('username')
     password = request.form.get('password')
 
-    if mongo.db.users.find_one({"user_email": username}):
+    if mongo.users.find_one({"user_email": username}):
         return """<div>username already exists</div>
                 <a href="/login"> go to login </a>"""
 
-    mongo.db.users.insert_one({"user_email": username, "password": password})
+    mongo.users.insert_one({"user_email": username, "password": password})
     return redirect('/login')
 
 @app.route('/task/<task_id>')
 def task_detail(task_id):
-    task = mongo.db.assignments.find_one({"_id": ObjectId(task_id)})
+    task = mongo.assignments.find_one({"_id": ObjectId(task_id)})
     if task is None:
         return redirect('/')
     task['id'] = str(task['_id'])
@@ -175,12 +174,12 @@ def task_detail(task_id):
 
 @app.route('/task/<task_id>/edit', methods=['GET', 'POST'])
 def edit_task(task_id):
-    task = mongo.db.assignments.find_one({"_id": ObjectId(task_id)})
+    task = mongo.assignments.find_one({"_id": ObjectId(task_id)})
     if task is None:
         return redirect('/')
 
     if request.method == 'POST':
-        mongo.db.assignments.update_one(
+        mongo.assignments.update_one(
             {"_id": ObjectId(task_id)},
             {"$set": {
                 "title": request.form.get('title'),
@@ -196,7 +195,7 @@ def edit_task(task_id):
 
 @app.route('/complete_task/<task_id>')
 def complete_task(task_id):
-    mongo.db.assignments.update_one(
+    mongo.assignments.update_one(
         {"_id": ObjectId(task_id)},
         {"$set": {
             "completed": True,
@@ -209,7 +208,7 @@ def complete_task(task_id):
 @app.route('/logout')
 def logout():
     logout_user()
-    return 'Logged out'
+    return redirect('/login')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001)
