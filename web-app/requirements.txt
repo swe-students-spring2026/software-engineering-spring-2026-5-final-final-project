@@ -1,0 +1,8 @@
+flask
+pymongo
+numpy
+pandas
+sentence-transformers
+torch
+transformers
+pytest
