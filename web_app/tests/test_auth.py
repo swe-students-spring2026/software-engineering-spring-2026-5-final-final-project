@@ -2,7 +2,8 @@ import pytest
 import mongomock
 from werkzeug.security import generate_password_hash
 from app import app  
-import app as app_module  # ADD THIS: Import the module to overwrite its variables
+import app as app_module
+import routes.auth as auth_module
 from routes.auth import auth_bp
 
 @pytest.fixture
@@ -12,6 +13,7 @@ def client():
     
     auth_bp.db = mock_db
     app_module.db = mock_db 
+    auth_module.db = mock_db 
     
     mock_db.users.insert_one({
         "username": "testuser",
