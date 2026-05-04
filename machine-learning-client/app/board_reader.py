@@ -7,13 +7,13 @@ import cv2
 import numpy as np
 
 MINO_PALETTE: dict[str, np.ndarray] = {
-    "I": np.array([90, 176, 134]),
-    "O": np.array([176, 154, 69]),
-    "T": np.array([152, 69, 150]),
-    "S": np.array([140, 178, 72]),
-    "Z": np.array([164, 61, 61]),
-    "J": np.array([75, 63, 157]),
-    "L": np.array([169, 103, 60]),
+    "I": np.array([134, 176, 90]),
+    "O": np.array([69, 154, 176]),
+    "T": np.array([150, 69, 152]),
+    "S": np.array([72, 178, 140]),
+    "Z": np.array([61, 61, 164]),
+    "J": np.array([157, 63, 75]),
+    "L": np.array([60, 103, 169]),
     "X": np.array([0, 0, 0]),
     "G": np.array([66, 66, 66]),
 }
@@ -343,6 +343,8 @@ def main():
     # board_matrix = get_board_matrix(color_matrix)
     board_matrix = extract_board(image)
 
+    print(board_matrix)
+
     reconstructed_board = visualize_board(board_matrix)
 
     if reconstructed_board is None:
@@ -351,7 +353,5 @@ def main():
         cv2.imshow("reconstructed board", reconstructed_board)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
-
-    # print(board_matrix)
 
 main()
