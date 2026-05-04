@@ -1,8 +1,19 @@
-# Final Project
+[![Tests](https://github.com/swe-students-spring2026/5-final-katydid_brigade/actions/workflows/tests.yml/badge.svg)](https://github.com/swe-students-spring2026/5-final-katydid_brigade/actions/workflows/tests.yml)
+[![Event Logger](https://github.com/swe-students-spring2026/5-final-katydid_brigade/actions/workflows/event-logger.yml/badge.svg)](https://github.com/swe-students-spring2026/5-final-katydid_brigade/actions/workflows/event-logger.yml)
 
-An exercise to put to practice software development teamwork, subsystem communication, containers, deployment, and CI/CD pipelines. See [instructions](./instructions.md) for details.
+# Most Puzzling
 
-[google docs link](https://docs.google.com/document/d/1WeUMGPfgl9XSXB4mm2ZGT3RHffOebC95FUaW_X-auVc/edit?tab=t.0)
+Most Puzzling is a boggle word game where users answer a set of questions designed by other players, and if their responses match with another user's answers, the two get connected.
+
+## Team Member
+
+[Marcus Song](https://github.com/Marclous)
+
+[Chen Chen](https://github.com/LoganHund)
+
+[Chenyu (Ginny) Jiang](https://github.com/ginny1536)
+
+[Bryce](https://github.com/blin03)
 
 ## Run the web app with Docker
 
