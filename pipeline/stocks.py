@@ -134,4 +134,162 @@ def analyze_one_stock(series: pd.Series, cfg: PipelineConfig) -> Optional[dict]:
         "quadratic_c_curvature": quadratic_c_curvature,
         "quadratic_r2": quadratic_r2,
     }
-# remove 516
+
+def _clean_colname(col: str) -> str:
+    # strip and fix unicode weirdness in column names
+    return str(col).strip().replace("\xa0", " ").replace("\n", " ").replace("\r", " ")
+
+
+def _to_float(x) -> float:
+    # turns messy strings like "$1,234" or "(5)" into a float
+    if pd.isna(x):
+        return np.nan
+    s = str(x).strip()
+    if s in {"", "-", "nan", "None"}:
+        return np.nan
+    s = s.replace("$", "").replace(",", "").replace("%", "").replace("+", "")
+    s = s.replace("(", "-").replace(")", "")
+    try:
+        return float(s)
+    except Exception:
+        return np.nan
+
+
+def _extract_trade_code(val: str) -> Optional[str]:
+    # grabs the code before the dash, e.g. "P - Purchase" -> "P"
+    if pd.isna(val):
+        return None
+    s = str(val).strip()
+    if not s:
+        return None
+    return s.split(" - ")[0].strip().upper()
+
+
+def clean_numeric_series(s: pd.Series) -> pd.Series:
+    # vectorised _to_float for a whole column
+    return pd.to_numeric(
+        s.astype(str)
+        .str.replace(",", "", regex=False)
+        .str.replace("$", "", regex=False)
+        .str.replace("+", "", regex=False)
+        .str.replace("%", "", regex=False)
+        .str.replace("(", "-", regex=False)
+        .str.replace(")", "", regex=False)
+        .str.strip(),
+        errors="coerce",
+    )
+
+
+def parse_openinsider_table_from_html(html: str, ticker: str) -> pd.DataFrame:
+    try:
+        tables = pd.read_html(io.StringIO(html))
+    except Exception:
+        return pd.DataFrame()
+    if len(tables) == 0:
+        return pd.DataFrame()
+
+    # the widest table is usualy the real trades one
+    df = max(tables, key=lambda x: x.shape[1]).copy()
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = [" ".join([str(x) for x in col if str(x) != "nan"]).strip() for col in df.columns]
+    else:
+        df.columns = [str(c) for c in df.columns]
+    df.columns = [re.sub(r"\s+", " ", str(c).replace("\xa0", " ")).strip() for c in df.columns]
+
+    # map whatever column names we got to something consistant
+    rename_map = {}
+    for c in df.columns:
+        cl = c.lower()
+        if "filing" in cl and "date" in cl:
+            rename_map[c] = "filing_date"
+        elif "trade" in cl and "date" in cl:
+            rename_map[c] = "trade_date"
+        elif cl == "ticker":
+            rename_map[c] = "Ticker"
+        elif "insider name" in cl or cl == "insider":
+            rename_map[c] = "insider_name"
+        elif "trade type" in cl or "trade code" in cl:
+            rename_map[c] = "trade_code"
+        elif cl == "title":
+            rename_map[c] = "title"
+        elif cl in {"price", "qty", "owned", "value"}:
+            rename_map[c] = cl
+    df = df.rename(columns=rename_map)
+
+    if "Ticker" not in df.columns:
+        df["Ticker"] = ticker
+    df["Ticker"] = df["Ticker"].astype(str).str.upper().str.strip()
+    df = df[df["Ticker"] == ticker.upper()].copy()
+
+    for c in ["filing_date", "trade_date"]:
+        if c in df.columns:
+            df[c] = pd.to_datetime(df[c], errors="coerce")
+    for c in ["value", "qty", "price", "owned"]:
+        if c in df.columns:
+            df[c] = clean_numeric_series(df[c])
+    if "trade_code" in df.columns:
+        df["trade_code"] = (
+            df["trade_code"].astype(str).str.replace("\xa0", " ", regex=False).str.replace(r"\s+", " ", regex=True).str.upper().str.strip()
+        )
+    if "insider_name" in df.columns:
+        df["insider_name"] = (
+            df["insider_name"].astype(str).str.replace("\xa0", " ", regex=False).str.replace(r"\s+", " ", regex=True).str.strip()
+        )
+    return df
+
+
+def fetch_openinsider_ticker_table(ticker: str, timeout: int = 20) -> pd.DataFrame:
+    # fires the request; actual parsing is done seperately
+    url = f"http://openinsider.com/search?q={ticker}"
+    headers = {"User-Agent": "Mozilla/5.0", "Accept-Language": "en-US,en;q=0.9"}
+    resp = requests.get(url, headers=headers, timeout=timeout)
+    resp.raise_for_status()
+    return parse_openinsider_table_from_html(resp.text, ticker=ticker)
+
+
+def is_purchase_row(row: pd.Series) -> bool:
+    # openinsider uses "P" prefix for outright purchases
+    if "trade_code" not in row.index or pd.isna(row["trade_code"]):
+        return False
+    return str(row["trade_code"]).upper().strip().startswith("P")
+
+
+def summarize_insider(df: pd.DataFrame, lookback_days: int, market_cap: float) -> dict:
+    base = {
+        "buy_dollars_60d": 0.0,
+        "unique_buyers_60d": 0,
+        "insider_score_60d": 0.0,
+        "n_insider_rows": 0,
+    }
+    if df is None or df.empty:
+        return base
+    date_col = "trade_date" if "trade_date" in df.columns else "filing_date"
+    if date_col not in df.columns:
+        return base
+    # only look at trades within the lookback window
+    cutoff = pd.Timestamp.now().normalize() - pd.Timedelta(days=lookback_days)
+    df = df[df[date_col] >= cutoff].copy()
+    if df.empty:
+        return base
+
+    buys = df[df.apply(is_purchase_row, axis=1)].copy() if "trade_code" in df.columns else pd.DataFrame(columns=df.columns)
+    if "value" in buys.columns:
+        buys["value"] = pd.to_numeric(buys["value"], errors="coerce").fillna(0)
+        buy_dollars = float(buys["value"].sum())
+    else:
+        buy_dollars = 0.0
+    if "insider_name" in buys.columns:
+        unique_buyers = int(buys["insider_name"].dropna().astype(str).str.strip().nunique())
+    else:
+        unique_buyers = 0
+    # This is a homemade score, not a finance-standard metric. It rewards more dollars
+    # and more distinct buyers, but uses log1p so one giant trade does not dominate everything.
+    insider_score = math.log1p(max(buy_dollars, 0)) * (1 + 0.25 * unique_buyers)
+    return {
+        "buy_dollars_60d": buy_dollars,
+        "unique_buyers_60d": unique_buyers,
+        "insider_score_60d": float(insider_score),
+        "n_insider_rows": int(len(df)),
+    }
+# remove 665
+
