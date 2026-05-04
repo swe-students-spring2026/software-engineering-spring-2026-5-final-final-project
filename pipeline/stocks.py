@@ -105,6 +105,7 @@ def _throttled_get(url: str, timeout: int, limiter: dict, headers: Optional[dict
     return resp
 
 
+# trims the raw SEC filings list down to just the handful we actually care about
 def _select_recent_filings(df_recent: pd.DataFrame, cfg: PipelineConfig) -> pd.DataFrame:
     if df_recent.empty:
         return df_recent
@@ -219,7 +220,7 @@ def build_agents_data_packages(
 
             package_asof = _to_ts(existing_meta.get("package_asof_date"))
             package_age_days = (today - package_asof).days if package_asof is not None else 99999
-            is_package_fresh = package_age_days <= cfg.package_refresh_days
+            is_package_fresh = package_age_days <= cfg.package_refresh_days  # treat missing as ancient
 
             cik_10 = sec_ticker_to_cik.get(ticker)
             out["cik_10"] = cik_10
@@ -313,7 +314,7 @@ def build_agents_data_packages(
                             with open(filings_dir / save_name, "wb") as fw:
                                 fw.write(content)
                         except Exception:
-                            continue
+                            continue  # one bad filing shouldn't blow up the rest
 
             latest_10k = None
             latest_10q = None
@@ -348,6 +349,7 @@ def build_agents_data_packages(
             return out
 
     results = []
+    # cap workers so we don't hammer the SEC or Yahoo with too many parallel connections
     worker_count = min(max(1, cfg.package_max_workers), max(1, len(final_df)))
     with ThreadPoolExecutor(max_workers=worker_count) as executor:
         futures = [executor.submit(_build_one, row) for _, row in final_df.iterrows()]
@@ -410,4 +412,172 @@ def parse_args() -> argparse.Namespace:
     )
     return parser.parse_args()
 
-#remove 1450
+def main() -> None:
+    args = parse_args()
+    cfg = PipelineConfig()
+    if args.metadata_refresh_days is not None and args.metadata_refresh_days >= 0:
+        cfg.metadata_refresh_days = int(args.metadata_refresh_days)
+    ensure_dirs()
+
+    print("1) Building universe and metadata...")
+    raw_universe = build_us_common_stock_universe()
+    meta = update_metadata_cache(raw_universe, cfg, force_refresh=bool(args.refresh_metadata))
+    universe_meta = raw_universe.merge(meta, on="Ticker", how="left")
+    universe_meta = universe_meta[universe_meta["quoteType"] == "EQUITY"].copy()
+    universe_meta = universe_meta[
+        (universe_meta["market_cap_num"] >= cfg.universe_min_market_cap)
+        & (universe_meta["market_cap_num"] <= cfg.universe_max_market_cap)
+    ].copy()
+    universe_meta = universe_meta.reset_index(drop=True)
+    print(f"Universe size (100M-50B): {len(universe_meta)}")
+
+    print("2) Refreshing cached price data...")
+    price_long = update_price_cache(universe_meta, cfg)
+    print(f"Price rows: {len(price_long)}")
+    price_wide = price_long.pivot(index="date", columns="Ticker", values="close").sort_index()
+
+    print("3) Running insider pipeline first (all candidate tickers)...")
+    # Insider is run on the broad candidate set before the technical filter so the final
+    # union can still include names that are interesting only because of insider activity.
+    candidate_tickers = sorted(set(price_wide.columns).intersection(set(universe_meta["Ticker"])))
+    market_cap_map = universe_meta.set_index("Ticker")["market_cap_num"].to_dict()
+    insider_ranked_df, insider_raw = update_insider_cache(
+        candidate_tickers,
+        cfg,
+        market_cap_map=market_cap_map,
+        force_refresh=bool(args.refresh_insider),
+    )
+    print(f"Insider summary rows: {len(insider_ranked_df)}")
+
+    print("4) Running technical screen second...")
+    technical_df, _ = build_screen(universe_meta, price_long, cfg)
+    print(f"Technical pass rows: {len(technical_df)}")
+
+    print("5) Building combined ranking (technical + insider)...")
+    combined_df = merge_insider_data(technical_df, insider_ranked_df)
+    # if insider coverage is sparse the combined score is basically meaningless, so fail loud
+    validate_insider_coverage(combined_df, cfg.min_insider_coverage_ratio)
+    combined_df = add_normalized_scores(combined_df)
+    combined_df = combined_df.sort_values(
+        by=["combined_score", "technical_score", "recent_r2", "recent_log_slope"],
+        ascending=False,
+    ).reset_index(drop=True)
+
+    print("6) Building final deduped screening union...")
+    final_df = build_screening_union_df(
+        technical_df=combined_df,
+        insider_ranked_df=insider_ranked_df,
+        universe_meta=universe_meta,
+        insider_threshold=cfg.insider_score_threshold,
+    )
+    final_df = rank_screening_df(final_df)
+    chart_start_rank, chart_end_rank = resolve_rank_bounds(
+        len(final_df),
+        args.chart_start_rank,
+        args.chart_end_rank,
+        label="Chart range",
+    )
+    package_start_rank, package_end_rank = resolve_rank_bounds(
+        len(final_df),
+        args.package_start_rank,
+        args.package_end_rank,
+        label="Package range",
+    )
+    package_df = select_rank_range(final_df, start_rank=package_start_rank, end_rank=package_end_rank)
+
+    insider_ranked_path = SCREENING_OUTPUT_DIR / "insider_ranked.csv"
+    combined_ranked_path = SCREENING_OUTPUT_DIR / "combined_ranked.csv"
+    feather_path = SCREENING_OUTPUT_DIR / "final_screening_union.feather"
+    csv_path = SCREENING_OUTPUT_DIR / "final_screening_union.csv"
+    pdf_path = SCREENING_OUTPUT_DIR / "final_screening_charts.pdf"
+    chart_manifest_path = SCREENING_OUTPUT_DIR / "chart_manifest.csv"
+
+    insider_ranked_df.to_csv(insider_ranked_path, index=False)
+    combined_df.to_csv(combined_ranked_path, index=False)
+    save_feather(final_df, feather_path)
+    final_df.to_csv(csv_path, index=False)
+
+    print("7) Generating chart artifacts for screening names...")
+    chart_manifest_df = build_chart_images_for_screening(final_df, price_wide, cfg, CHART_IMAGES_DIR)
+    chart_manifest_df.to_csv(chart_manifest_path, index=False)
+    selected_chart_rows = build_chart_pdf_for_screening(
+        final_df,
+        price_wide,
+        cfg,
+        pdf_path,
+        start_rank=chart_start_rank,
+        end_rank=chart_end_rank,
+    )
+
+    print("8) Building per-ticker agent data packages (Yahoo + SEC)...")
+    package_manifest_df = build_agents_data_packages(package_df, price_wide, universe_meta, cfg)
+    package_manifest_path = SCREENING_OUTPUT_DIR / "agents_data_package_manifest.csv"
+    package_manifest_df.to_csv(package_manifest_path, index=False)
+
+    mongo = get_mongo_store()
+    screening_run_id = datetime.now().strftime("%Y%m%d_%H%M%S")  # used as a unique key for this run
+    if mongo is not None:
+        mongo.upsert_global_cache(
+            "latest_screening_snapshot",
+            {
+                "screening_run_id": screening_run_id,
+                "universe_size": int(len(universe_meta)),
+                "technical_rows": int(len(technical_df)),
+                "final_rows": int(len(final_df)),
+                "latest_market_day": str(get_latest_market_trading_day().date()),
+                "final_ranked_stocks": final_df.to_dict(orient="records"),
+                "chart_manifest": chart_manifest_df.to_dict(orient="records"),
+                "artifact_paths": {
+                    "final_feather": str(feather_path),
+                    "final_csv": str(csv_path),
+                    "chart_manifest_csv": str(chart_manifest_path),
+                    "screening_pdf": str(pdf_path),
+                    "package_manifest_csv": str(package_manifest_path),
+                },
+                "selected_package_tickers": package_df[["Ticker", "screen_rank"]].to_dict(orient="records"),
+            },
+        )
+        mongo.upsert_screening_run(
+            screening_run_id,
+            {
+                "created_at": datetime.utcnow().isoformat(),
+                "config": vars(cfg),
+                "chart_range": {
+                    "start_rank": int(chart_start_rank),
+                    "end_rank": int(chart_end_rank),
+                },
+                "package_range": {
+                    "start_rank": int(package_start_rank),
+                    "end_rank": int(package_end_rank),
+                },
+                "technical_rows": int(len(technical_df)),
+                "final_rows": int(len(final_df)),
+                "selected_chart_tickers": selected_chart_rows.to_dict(orient="records"),
+                "selected_package_tickers": package_df[["Ticker", "screen_rank"]].to_dict(orient="records"),
+                "final_ranked_stocks": final_df.to_dict(orient="records"),
+                "artifact_paths": {
+                    "final_feather": str(feather_path),
+                    "final_csv": str(csv_path),
+                    "screening_pdf": str(pdf_path),
+                    "chart_manifest_csv": str(chart_manifest_path),
+                    "package_manifest_csv": str(package_manifest_path),
+                },
+            },
+        )
+
+    print("Done.")
+    print(f"Technical rows: {len(technical_df)}")
+    print(f"Insider rows with score > {cfg.insider_score_threshold}: {(insider_ranked_df['insider_score_60d'] > cfg.insider_score_threshold).sum()}")
+    print(f"Saved insider ranking: {insider_ranked_path}")
+    print(f"Saved combined ranking: {combined_ranked_path}")
+    print(f"Final deduped rows: {len(final_df)}")
+    print(f"Saved final feather: {feather_path}")
+    print(f"Saved final csv: {csv_path}")
+    print(f"Saved chart manifest: {chart_manifest_path}")
+    print(f"Saved charts pdf: {pdf_path}")
+    print(f"Saved data package manifest: {package_manifest_path}")
+    print(f"Saved data packages root: {AGENTS_DATA_PACKAGE_DIR}")
+
+
+if __name__ == "__main__":
+    main()
