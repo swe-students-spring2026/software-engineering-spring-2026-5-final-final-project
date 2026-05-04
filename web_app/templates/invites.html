@@ -19,7 +19,7 @@
     </section>
     <section class="content">
         <div class="content-header">
-            <h2>upcoming events</h2>
+            <h2>invites</h2>
             <a href="{{ url_for('invites', sort='desc' if sort_order == 'asc' else 'asc') }}" class="filter">
                 {% if sort_order == 'asc' %}
                     <img src="{{ url_for('static', filename='icons/arrow.up.arrow.down.circle.purple.svg') }}" alt="Sort furthest first">
