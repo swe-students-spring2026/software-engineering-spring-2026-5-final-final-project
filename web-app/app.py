@@ -19,6 +19,8 @@ from db import (
     mark_task_complete,
     delete_task,
     find_user_by_id,
+    update_user_profile,
+    delete_user_profile,
 )
 from dotenv import load_dotenv
 load_dotenv()
@@ -132,6 +134,40 @@ def logout():
 def dashboard():
     tasks = get_tasks_for_user(current_user.id)
     return render_template("dashboard.html", tasks=tasks)
+
+@app.route("/profile", methods=["GET", "POST"])
+@login_required
+def profile():
+    user_doc = find_user_by_id(current_user.id)
+
+    if request.method == "GET":
+        return render_template("profile.html", user=user_doc)
+
+    username = request.form.get("username", "").strip()
+    email = request.form.get("email", "").strip().lower()
+
+    if not username or not email:
+        flash("Username and email are required.")
+        return redirect(url_for("profile"))
+
+    existing_user = find_user_by_username(username)
+
+    if existing_user and str(existing_user["_id"]) != current_user.id:
+        flash("That username is already taken.")
+        return redirect(url_for("profile"))
+
+    update_user_profile(current_user.id, username, email)
+    flash("Profile updated.")
+    return redirect(url_for("profile"))
+
+
+@app.route("/profile/delete", methods=["POST"])
+@login_required
+def delete_profile():
+    delete_user_profile(current_user.id)
+    logout_user()
+    flash("Your profile has been deleted.")
+    return redirect(url_for("login"))
 
 # Create task route (GET to show form, POST to handle creation)
 @app.route("/create", methods=["GET", "POST"])

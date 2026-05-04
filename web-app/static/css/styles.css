@@ -295,3 +295,45 @@ a:hover {
 .divider span {
     margin: 0 10px;
 }
+
+.full-width {
+    width: 100%;
+    text-align: center;
+    margin-top: 8px;
+}
+
+.secondary {
+    background: #eeeeee;
+    color: var(--text);
+}
+
+.secondary:hover {
+    background: #dddddd;
+}
+
+.danger {
+    background: #b42318;
+    color: white;
+}
+
+.danger:hover {
+    background: #8f1d14;
+}
+
+.page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 48px 20px;
+}
+
+.center {
+    min-height: 85vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.narrow {
+    max-width: 460px;
+    width: 100%;
+}
