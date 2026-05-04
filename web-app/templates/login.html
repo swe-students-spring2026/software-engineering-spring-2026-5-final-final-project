@@ -1,28 +1,40 @@
-<!-- login.html -->
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
-    <!-- You can add your CSS file here -->
+    <title>Login | PriorityManager</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body>
-    <h1>Login</h1>
-    <form method="POST">
-        <!-- Username Field -->
-        <label for="username">Username:</label>
-        <input type="text" id="username" name="username" required><br><br>
+    <main class="page center">
+        <section class="card narrow">
+            <p class="eyebrow">PriorityManager</p>
+            <h1>Welcome back</h1>
+            <p class="muted">Log in to view and prioritize your tasks.</p>
 
-        <!-- Password Field -->
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required><br><br>
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    {% for message in messages %}
+                        <p style="color: red;">{{ message }}</p>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
 
-        <!-- Submit Button -->
-        <button type="submit">Login</button>
-    </form>
+            <form method="POST" class="form">
+                <label>Username</label>
+                <input type="text" name="username" placeholder="Enter your username" required>
 
-    <!-- Link to registration page (if needed) -->
-    <p>Don't have an account? <a href="{{ url_for('register') }}">Register here</a></p>
+                <label>Password</label>
+                <input type="password" name="password" placeholder="Enter your password" required>
+
+                <button type="submit">Login</button>
+            </form>
+
+            <p class="muted">
+                Don’t have an account?
+                <a href="{{ url_for('register') }}">Register</a>
+            </p>
+        </section>
+    </main>
 </body>
 </html>

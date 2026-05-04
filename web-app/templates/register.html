@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Register | PriorityManager</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <main class="page center">
+        <section class="card narrow">
+            <p class="eyebrow">PriorityManager</p>
+            <h1>Create account</h1>
+            <p class="muted">Start organizing your assignments by priority.</p>
+
+            <form method="POST" class="form">
+                <label>Username</label>
+                <input type="text" name="username" required>
+
+                <label>Email</label>
+                <input type="email" name="email" required>
+
+                <label>Password</label>
+                <input type="password" name="password" required>
+
+                <button type="submit">Register</button>
+            </form>
+
+            <p class="muted">Already have an account? <a href="{{ url_for('login') }}">Login</a></p>
+        </section>
+    </main>
+</body>
+</html>
