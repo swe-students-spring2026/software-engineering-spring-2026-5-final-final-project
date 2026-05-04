@@ -611,7 +611,7 @@ def edit_host_event(event_id):
 
     return render_template("host-event-edit.html", event=event, error=error)     
 
-@app.route("/host-events/<event_id>/delete", methods=["POST"])
+@app.route("/host-events/<event_id>/delete", methods=["GET", "POST"])
 @login_required
 def delete_host_event(event_id):
     users = get_users_collection()
