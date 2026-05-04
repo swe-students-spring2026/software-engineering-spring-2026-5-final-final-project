@@ -24,10 +24,13 @@
                 <a class="create" href="{{ url_for('create_host_event') }}">
                     <img src="{{ url_for('static', filename='/icons/plus.circle.svg') }}" alt="create">
                 </a>
-                <button class="filter"><img
-                        src="{{ url_for('static', filename='icons/arrow.up.arrow.down.circle.purple.svg') }}"
-                        alt="filter">
-                </button>
+                <a href="{{ url_for('host_events', sort='desc' if sort_order == 'asc' else 'asc') }}" class="filter">
+                    {% if sort_order == 'asc' %}
+                        <img src="{{ url_for('static', filename='icons/arrow.up.arrow.down.circle.purple.svg') }}" alt="Sort furthest first">
+                    {% else %}
+                        <img src="{{ url_for('static', filename='icons/arrow.up.arrow.down.circle.purple.svg') }}" alt="Sort soonest first">
+                    {% endif %}
+                </a>
             </div>
         </div>
         <ul class="hosting-events">

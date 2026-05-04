@@ -323,7 +323,6 @@ def invites():
                     "details": event.get("description", "No description provided")
                 })
 
-    # we have to sort the events by the most recent first
     # we have to sort the events by the filter setting
     if (sort_order == "asc"):
         invited_events.sort(key=lambda x: x["date"])
@@ -336,6 +335,9 @@ def invites():
 @app.route("/host-events")
 @login_required
 def host_events():
+    # sort order
+    sort_order = request.args.get("sort", "asc")
+
     users = get_users_collection()
     events = get_db()["events"]
     user = users.find_one({"_id": ObjectId(current_user.id)})
@@ -351,7 +353,13 @@ def host_events():
                 "details": event.get("description", "No description provided"),
                 "invitees_list": event.get("invitees_list", [])
             })
-    return render_template("host-events.html", hosting_events=hosting_events)
+    
+    # we have to sort the events by the filter setting
+    if (sort_order == "asc"):
+        hosting_events.sort(key=lambda x: x["date"])
+    else:
+        hosting_events.sort(key=lambda x: x["date"], reverse=True)
+    return render_template("host-events.html", hosting_events=hosting_events, sort_order=sort_order)
 
 @app.route("/host-events/create", methods=["GET", "POST"])
 @login_required
