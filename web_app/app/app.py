@@ -331,6 +331,75 @@ def invites():
 
     return render_template("invites.html", invited_events=invited_events, sort_order=sort_order)
 
+# a user accepts an event
+@app.route("/invites/<event_id>/accept", methods=["GET", "POST"])
+@login_required
+def accept_event(event_id):
+    user_id = current_user.get_id()
+    db = get_db()
+    users = db["users"]
+    events = db["events"]
+    
+    # check if event exists
+    event = events.find_one({"_id": ObjectId(event_id)})
+    if not event:
+        return redirect(url_for("invites"))
+    
+    # delete event from user's invites
+    users.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$unset": {f"event_invites.{event_id}": ""}}
+    )
+
+    # get the user's time for the event
+    invitee = next(
+        (inv for inv in event.get("invitees_list", []) if inv.get("user_id") == user_id),
+        None
+    )
+
+    suggested_arrival_time = invitee.get("suggested_arrival_time")
+
+    # add to user's events
+    users.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$set": {f"events_accepted.{event_id}": suggested_arrival_time}}
+    )
+
+    # mark user as accepted in event
+    events.update_one(
+        {"_id": ObjectId(event_id), "invitees_list.user_id": user_id},
+        {"$set": {"invitees_list.$.status": "accepted"}}
+    )
+    
+    return redirect(url_for("invites"))
+
+# user declines an event
+@app.route("/invites/<event_id>/decline", methods=["GET", "POST"])
+@login_required
+def decline_event(event_id):
+    user_id = current_user.get_id()
+    db = get_db()
+    users = db["users"]
+    events = db["events"]
+    
+    # check if event exists
+    event = events.find_one({"_id": ObjectId(event_id)})
+    if not event:
+        return redirect(url_for("invites"))
+    
+    # delete event from user's invites
+    users.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$unset": {f"event_invites.{event_id}": ""}}
+    )
+
+    # mark user as declined in event
+    events.update_one(
+        {"_id": ObjectId(event_id), "invitees_list.user_id": user_id},
+        {"$set": {"invitees_list.$.status": "declined"}}
+    )
+    
+    return redirect(url_for("invites"))
 
 @app.route("/host-events")
 @login_required
@@ -613,13 +682,11 @@ def user_dashboard():
         message=message,
     )
 
-
 @app.route("/sign-out")
 @login_required
 def sign_out():
     logout_user()
     return redirect(url_for("sign_in"))
-
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
