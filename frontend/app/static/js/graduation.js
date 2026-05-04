@@ -188,7 +188,7 @@ const specialRequirements = [
     {
         key: "cs-intro-waiver",
         label: "Computer Science Introductory / Waiver",
-        match: text => /intro(?:duction)?\s+to\s+computer\s+programming|computer\s+science\s+intro|csci-ua\s*2/i.test(text || ""),
+        match: text => /intro(?:duction)?\s+to\s+computer\s+programming|computer\s+science\s+intro|csci-ua\s*2(?!\d)/i.test(text || ""),
         options: ["CSCI-UA 2", "Any CSCI-UA course (100 level or above)", "AP Computer Science A"],
         matches: code => {
             const normalized = canonicalRequirementCode(code);
