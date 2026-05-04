@@ -1,3 +1,7 @@
+ML/data/
+*.npy
+pytest-cache-files-*/
+
 # mac junk
 .DS_Store
 
