@@ -11,10 +11,16 @@ import string
 
 import httpx
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 GAME_SERVICE_URL = os.getenv("GAME_SERVICE_URL", "http://localhost:8000")
 AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL", "http://localhost:8002")
+ALLOWED_ORIGINS = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://localhost:5173,http://localhost:5174,"
+    "http://localhost:5175,http://localhost:3000",
+)
 MAX_PROBLEMS_PER_POND = 100
 
 PondVisibility = Literal["public", "private"]
@@ -85,6 +91,13 @@ app = FastAPI(
     title="Teacher Service",
     description="CatCh cat-facing classroom and fish pond management templates",
     version="0.2.0",
+)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[origin.strip() for origin in ALLOWED_ORIGINS.split(",")],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -160,7 +173,7 @@ async def create_pond(payload: CreatePondRequest):
             or f"pond_{payload.name.lower().replace(' ', '_')}"
         )
     except HTTPException as exc:
-        if exc.status_code != 502:
+        if exc.status_code not in {404, 502}:
             raise
         pond_id = f"pond_{payload.name.lower().replace(' ', '_')}"
 
@@ -189,7 +202,7 @@ async def add_problem(pond_id: str, payload: AddProblemRequest):
             "POST", f"/ponds/{pond_id}/problems", forward_payload
         )
     except HTTPException as exc:
-        if exc.status_code != 502:
+        if exc.status_code not in {404, 502}:
             raise
         return {
             "status": "queued_template",
@@ -215,7 +228,7 @@ async def create_assignment(pond_id: str, payload: AssignmentRequest):
             "POST", f"/ponds/{pond_id}/assignments", payload.model_dump()
         )
     except HTTPException as exc:
-        if exc.status_code != 502:
+        if exc.status_code not in {404, 502}:
             raise
         return {"status": "queued_template", "assignment": payload.model_dump()}
 

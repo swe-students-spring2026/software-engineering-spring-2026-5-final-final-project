@@ -10,32 +10,47 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from typing import Literal, Optional
 import os
+import re
 import secrets
 import smtplib
 
 import jwt
 from fastapi import FastAPI, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr, Field
+from pymongo import MongoClient
 
 SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 SENDER_EMAIL = os.getenv("SENDER_EMAIL", "your-email@gmail.com")
-SENDER_PASSWORD = os.getenv("SENDER_PASSWORD", "")
+SENDER_PASSWORD = os.getenv("SENDER_PASSWORD", "").replace(" ", "")
+AUTH_DEMO_MODE = os.getenv("AUTH_DEMO_MODE", "false").lower() == "true"
+MONGO_URL = os.getenv("MONGO_URL", "")
+MONGO_DB = os.getenv("MONGO_DB", "fish_likes_cat")
 
 JWT_SECRET = os.getenv("JWT_SECRET", "your-super-secret-key-change-in-production")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 JWT_EXPIRY_HOURS = int(os.getenv("JWT_EXPIRY_HOURS", "24"))
+ALLOWED_ORIGINS = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://localhost:5173,http://localhost:5174,"
+    "http://localhost:5175,http://localhost:3000",
+)
 
 UserRole = Literal["kitten", "cat"]
 
 # In-memory template store. Replace with Redis or MongoDB TTL collection later.
 verification_codes: dict[str, dict] = {}
+mongo_client = (
+    MongoClient(MONGO_URL, serverSelectionTimeoutMS=5000) if MONGO_URL else None
+)
 
 
 class SendVerificationEmailRequest(BaseModel):
     """Request body for creating and sending a verification code."""
 
     email: EmailStr
+    username: str = Field(default="", max_length=40)
     role: UserRole = Field(default="kitten")
 
 
@@ -44,6 +59,7 @@ class VerifyEmailRequest(BaseModel):
 
     email: EmailStr
     code: str = Field(min_length=6, max_length=6)
+    username: str = Field(default="", max_length=40)
     role: UserRole = Field(default="kitten")
 
 
@@ -52,6 +68,7 @@ class AuthResponse(BaseModel):
 
     token: str
     user_id: str
+    username: str
     email: EmailStr
     role: UserRole
     expires_at: str
@@ -76,6 +93,7 @@ class TokenValidationResponse(BaseModel):
 
     valid: bool
     user_id: Optional[str] = None
+    username: Optional[str] = None
     email: Optional[EmailStr] = None
     role: Optional[UserRole] = None
     expires_at: Optional[str] = None
@@ -110,6 +128,68 @@ def token_system_enabled(role: UserRole) -> bool:
     """Return whether a CatCh role participates in Cat Can Tokens."""
 
     return role == "kitten"
+
+
+def users_collection():
+    """Return the shared users collection when Mongo is configured."""
+
+    if mongo_client is None:
+        return None
+    return mongo_client[MONGO_DB].users
+
+
+def normalize_username(username: str, email: str) -> str:
+    """Create a display-safe username from input or the email prefix."""
+
+    source = username.strip() or email.split("@")[0]
+    cleaned = re.sub(r"[^A-Za-z0-9_-]+", "_", source).strip("_")
+    return cleaned[:40] or "catch_user"
+
+
+def find_or_create_user(email: str, role: UserRole, username: str) -> dict:
+    """Return a stable user profile and persist it in Mongo when configured."""
+
+    display_name = normalize_username(username, email)
+    collection = users_collection()
+    if collection is None:
+        user_id = f"{role}_{display_name.lower()}"
+        return {
+            "user_id": user_id,
+            "username": display_name,
+            "email": email,
+            "role": role,
+        }
+
+    existing = collection.find_one({"email": email, "role": role})
+    if existing:
+        collection.update_one(
+            {"_id": existing["_id"]},
+            {"$set": {"username": display_name, "last_login_at": datetime.utcnow()}},
+        )
+        return {
+            "user_id": existing["_id"],
+            "username": display_name,
+            "email": existing["email"],
+            "role": existing["role"],
+        }
+
+    user_id = f"{role}_{int(datetime.utcnow().timestamp() * 1000)}"
+    profile = {
+        "_id": user_id,
+        "user_id": user_id,
+        "username": display_name,
+        "email": email,
+        "role": role,
+        "created_at": datetime.utcnow(),
+        "last_login_at": datetime.utcnow(),
+    }
+    collection.insert_one(profile)
+    return {
+        "user_id": user_id,
+        "username": display_name,
+        "email": email,
+        "role": role,
+    }
 
 
 def send_verification_email(
@@ -149,12 +229,17 @@ def send_verification_email(
             server.login(SENDER_EMAIL, SENDER_PASSWORD)
             server.sendmail(SENDER_EMAIL, to_email, msg.as_string())
         return True
-    except smtplib.SMTPException as exc:
+    except (OSError, smtplib.SMTPException) as exc:
         print(f"SMTP error: {exc}")
         return False
 
 
-def create_jwt_token(user_id: str, email: str, role: UserRole) -> tuple[str, datetime]:
+def create_jwt_token(
+    user_id: str,
+    email: str,
+    role: UserRole,
+    username: str,
+) -> tuple[str, datetime]:
     """Create a role-aware JWT and return it with its expiration time."""
 
     now = datetime.utcnow()
@@ -162,6 +247,7 @@ def create_jwt_token(user_id: str, email: str, role: UserRole) -> tuple[str, dat
     payload = {
         "sub": user_id,
         "email": email,
+        "username": username,
         "role": role,
         "token_system_enabled": token_system_enabled(role),
         "permissions": permissions_for_role(role),
@@ -186,6 +272,13 @@ app = FastAPI(
     title="Auth Service",
     description="CatCh email verification and role-aware JWT generation",
     version="0.2.0",
+)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[origin.strip() for origin in ALLOWED_ORIGINS.split(",")],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -225,18 +318,22 @@ def send_verification_email_endpoint(request: SendVerificationEmailRequest):
     verification_codes[str(request.email)] = {
         "code": code,
         "role": request.role,
+        "username": request.username,
         "created_at": datetime.utcnow(),
         "expires_at": expiry,
         "attempts": 0,
     }
 
     email_sent = send_verification_email(str(request.email), code, request.role)
-    return {
+    response = {
         "success": True,
         "email_sent": email_sent,
         "message": "Verification code created. Configure SMTP to send real email.",
         "role": request.role,
     }
+    if not email_sent and AUTH_DEMO_MODE:
+        response["development_code"] = code
+    return response
 
 
 @app.post("/auth/verify-email", response_model=AuthResponse, tags=["auth"])
@@ -273,13 +370,23 @@ def verify_email_endpoint(request: VerifyEmailRequest):
         )
 
     role: UserRole = stored.get("role", request.role)
-    user_id = f"{role}_{int(datetime.utcnow().timestamp() * 1000)}"
-    token, expiry = create_jwt_token(user_id, email, role)
+    profile = find_or_create_user(
+        email,
+        role,
+        request.username or stored.get("username", ""),
+    )
+    token, expiry = create_jwt_token(
+        profile["user_id"],
+        email,
+        role,
+        profile["username"],
+    )
     del verification_codes[email]
 
     return AuthResponse(
         token=token,
-        user_id=user_id,
+        user_id=profile["user_id"],
+        username=profile["username"],
         email=request.email,
         role=role,
         expires_at=expiry.isoformat(),
@@ -303,6 +410,7 @@ def verify_token_endpoint(request: VerifyTokenRequest):
     return TokenValidationResponse(
         valid=True,
         user_id=payload.get("sub"),
+        username=payload.get("username"),
         email=payload.get("email"),
         role=role,
         expires_at=expiry_dt.isoformat() if expiry_dt else None,
@@ -323,10 +431,17 @@ def refresh_token_endpoint(request: TokenRefreshRequest):
         )
 
     role = payload.get("role", "kitten")
-    token, expiry = create_jwt_token(payload["sub"], payload["email"], role)
+    username = payload.get("username", payload["sub"])
+    token, expiry = create_jwt_token(
+        payload["sub"],
+        payload["email"],
+        role,
+        username,
+    )
     return AuthResponse(
         token=token,
         user_id=payload["sub"],
+        username=username,
         email=payload["email"],
         role=role,
         expires_at=expiry.isoformat(),
