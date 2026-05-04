@@ -15,7 +15,7 @@ This repository is organized as a monorepo. The `web_app` directory contains the
 ## Container Images
 
 - [web-app](https://hub.docker.com/r/chasecvitale/web-app)
-- [invite-adjuster](hhttps://hub.docker.com/r/chasecvitale/invite-adjuster)
+- [invite-adjuster](https://hub.docker.com/r/chasecvitale/invite-adjuster)
 
 ## Team Members
 
@@ -68,7 +68,8 @@ docker compose version
 From the root of the repository, run:
 
 ```bash
-docker compose build
+docker pull chasecvitale/web-app:latest
+docker pull chasecvitale/invite-adjuster:latest
 docker compose up
 
 ```
