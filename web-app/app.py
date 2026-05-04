@@ -69,6 +69,8 @@ def index():
     non_completed = add_id(list(mongo.db.assignments.find({"user_email": user, "status": {"$ne": "completed"}})))
     completed = add_id(list(mongo.db.assignments.find({"user_email": user, "status": "completed"})))
 
+    priority_order = {"high": 0, "medium": 1, "low": 2}
+
     overdue, due_soon, upcoming = [], [], []
     for task in non_completed:
         status = compute_status(task['due_date'])
@@ -78,6 +80,13 @@ def index():
             due_soon.append(task)
         else:
             upcoming.append(task)
+
+    def priority_key(task):
+        return priority_order.get(task.get('priority'), 3)
+
+    overdue.sort(key=priority_key)
+    due_soon.sort(key=priority_key)
+    upcoming.sort(key=priority_key)
 
     return render_template(
         'index.html',
