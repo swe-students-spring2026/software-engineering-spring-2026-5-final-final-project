@@ -208,10 +208,15 @@ a:hover { text-decoration: underline; }
   border-radius: 8px;
 }
 
-.favorites-form label,
-.auth-form label {
+.favorites-form label{
   align-self: end;
   color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.auth-form label {
+  align-self: self-start;
+  color: var(--text);
   font-size: 0.9rem;
 }
 
