@@ -13,19 +13,33 @@
             <p class="muted">Start organizing your assignments by priority.</p>
 
             <form method="POST" class="form">
-                <label>Username</label>
-                <input type="text" name="username" required>
 
-                <label>Email</label>
-                <input type="email" name="email" required>
+                <div class="field">
+                    <label for="username">Username</label>
+                    <input id="username" type="text" name="username" placeholder="Choose a username" required>
+                </div>
 
-                <label>Password</label>
-                <input type="password" name="password" required>
+                <div class="field">
+                    <label for="email">Email</label>
+                    <input id="email" type="email" name="email" placeholder="Enter your email" required>
+                </div>
+
+                <div class="field">
+                    <label for="password">Password</label>
+                    <input id="password" type="password" name="password" placeholder="Create a password" required>
+                </div>
 
                 <button type="submit">Register</button>
             </form>
 
-            <p class="muted">Already have an account? <a href="{{ url_for('login') }}">Login</a></p>
+            <div class="divider">
+                <span>or</span>
+            </div>
+
+            <p class="muted">
+                Already have an account?
+                <a href="{{ url_for('login') }}">Login</a>
+            </p>
         </section>
     </main>
 </body>
