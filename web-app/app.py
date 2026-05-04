@@ -50,15 +50,34 @@ def add_id(tasks):
         task['id'] = str(task['_id'])
     return tasks
 
+def compute_status(due_date):
+    if isinstance(due_date, str):
+        due_date = datetime.strptime(due_date, "%Y-%m-%d")
+    delta = (due_date - datetime.now()).days
+    if delta < 0:
+        return "overdue"
+    elif delta <= 3:
+        return "due_soon"
+    else:
+        return "upcoming"
+
 @app.route('/')
 @login_required
 def index():
     user = current_user.id
 
-    overdue = add_id(list(mongo.db.assignments.find({"user_email": user, "status": "overdue"})))
-    due_soon = add_id(list(mongo.db.assignments.find({"user_email": user, "status": "due_soon"})))
-    upcoming = add_id(list(mongo.db.assignments.find({"user_email": user, "status": "upcoming"})))
+    non_completed = add_id(list(mongo.db.assignments.find({"user_email": user, "status": {"$ne": "completed"}})))
     completed = add_id(list(mongo.db.assignments.find({"user_email": user, "status": "completed"})))
+
+    overdue, due_soon, upcoming = [], [], []
+    for task in non_completed:
+        status = compute_status(task['due_date'])
+        if status == "overdue":
+            overdue.append(task)
+        elif status == "due_soon":
+            due_soon.append(task)
+        else:
+            upcoming.append(task)
 
     return render_template(
         'index.html',
@@ -91,7 +110,7 @@ def submit_new_task():
             "estimated_hours": ml_data.get("estimated_hours"),
             "difficulty": ml_data.get("difficulty"),
             "priority": ml_data.get("priority"),
-            "status": "upcoming",
+            "status": compute_status(data.get("date")),
             "completed": False,
             "created_at": datetime.now(timezone.utc),
             "updated_at": datetime.now(timezone.utc),
