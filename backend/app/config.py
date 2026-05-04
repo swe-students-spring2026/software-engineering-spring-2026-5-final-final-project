@@ -1,22 +1,25 @@
+from functools import lru_cache
+
+from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    MONGODB_URI: str
-    JWT_SECRET: str
-    JWT_EXPIRY_DAYS: int = 7
-    SPOTIFY_CLIENT_ID: str
-    SPOTIFY_CLIENT_SECRET: str
-    SPOTIFY_REDIRECT_URI: str
-    CLOUDINARY_CLOUD_NAME: str = ""
-    CLOUDINARY_API_KEY: str = ""
-    CLOUDINARY_API_SECRET: str = ""
-    BACKEND_URL: str = "http://localhost:8000"
-    FRONTEND_URL: str = "http://localhost:3000"
+    model_config = ConfigDict(env_file=".env", extra="ignore")
 
-    class Config:
-        env_file = ".env"
-        extra = "ignore"
+    mongodb_uri: str = "mongodb://localhost:27017/vibe"
+    jwt_secret: str = "changeme"
+    jwt_expiry_days: int = 7
+    spotify_client_id: str = ""
+    spotify_client_secret: str = ""
+    spotify_redirect_uri: str = "http://localhost:8000/api/spotify/callback"
+    cloudinary_cloud_name: str = ""
+    cloudinary_api_key: str = ""
+    cloudinary_api_secret: str = ""
+    backend_url: str = "http://localhost:8000"
+    frontend_url: str = "http://localhost:3000"
 
 
-settings = Settings()
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
