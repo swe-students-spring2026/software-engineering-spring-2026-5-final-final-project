@@ -24,7 +24,7 @@ jobs:
       - name: Run tests with coverage
         env:
           MONGO_URI: "mongodb://localhost:27017" 
-          MONGO_DBNAME: "test_db" 
+          DB_NAME: "test_db" 
           SECRET_KEY: "test_secret"
         if: ${{ hashFiles('web_app/**/*.py') != '' }}
         run: |
