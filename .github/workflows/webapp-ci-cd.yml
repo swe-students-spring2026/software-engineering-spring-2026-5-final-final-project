@@ -3,14 +3,8 @@ name: CI/CD (Web App)
 on:
   push:
     branches: [main]
-    paths:
-      - "web-app/**"
-      - ".github/workflows/webapp-ci-cd.yml"
   pull_request:
     branches: [main]
-    paths:
-      - "web-app/**"
-      - ".github/workflows/webapp-ci-cd.yml"
 
 
 jobs:

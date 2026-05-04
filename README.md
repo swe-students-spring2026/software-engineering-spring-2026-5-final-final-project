@@ -1,19 +1,105 @@
 [![CI/CD (Web App)](https://github.com/swe-students-spring2026/5-final-vaquita_porposies/actions/workflows/webapp-ci-cd.yml/badge.svg)](https://github.com/swe-students-spring2026/5-final-vaquita_porposies/actions/workflows/webapp-ci-cd.yml)
 [![CI/CD (Machine Learning)](https://github.com/swe-students-spring2026/5-final-vaquita_porposies/actions/workflows/mi-ci-cd.yml/badge.svg)](https://github.com/swe-students-spring2026/5-final-vaquita_porposies/actions/workflows/mi-ci-cd.yml)
-[![CI/CD (Database)](https://github.com/swe-students-spring2026/5-final-vaquita_porposies/actions/workflows/db-ci-cd.yml/badge.svg)](https://github.com/swe-students-spring2026/5-final-vaquita_porposies/actions/workflows/db-ci-cd.yml)
+[![CI/CD (Database / Backend)](https://github.com/swe-students-spring2026/5-final-vaquita_porposies/actions/workflows/db-ci-cd.yml/badge.svg)](https://github.com/swe-students-spring2026/5-final-vaquita_porposies/actions/workflows/db-ci-cd.yml)
+
 # Final Project
 
+This repository contains a Python-based meme generation application built as a small monorepo. In its current state, the project has a web app, a backend/database support subsystem, a machine learning meme URL helper subsystem, and MongoDB for storing generated meme history.
+
 ## Team
+
 - [Adam S](https://github.com/adamsolimancs/)
 - [Ermuun B](https://github.com/ermuun0930/)
 - [Milan E](https://github.com/MilanEngineer)
 - [Tsengelmurun](https://github.com/murnbn)
 - [Yuliang Liu](https://github.com/yl11529)
 
-### DockerHub
-- TODO: add link to DockerHub
+## Subsystems
 
-### Intstructions for running
+- `web-app/`: Python web application code, templates, static assets, MongoDB integration, tests, and Dockerfile.
+- `backend/`: Backend/database support logic for article fetching, summary/caption assembly, storage document construction, tests, and Dockerfile.
+- `ml/`: Machine learning / meme generation helper code for building memegen image responses, tests, and Dockerfile.
+- MongoDB: Required database service used by the web application for generated meme history.
 
+## Docker Images
 
-### Environment variables / db seeding
+The CI/CD workflows publish images to Docker Hub using the configured `DOCKERHUB_USERNAME` secret:
+
+- Web app: `DOCKERHUB_USERNAME/project5-web-app`
+- Machine learning: `DOCKERHUB_USERNAME/project5-ml`
+- Backend/database: `DOCKERHUB_USERNAME/project5-db`
+
+Replace `DOCKERHUB_USERNAME` with the Docker Hub account configured in GitHub Actions.
+
+## Local Setup
+
+Install Python 3.10, Docker, and Pipenv.
+
+Create a local environment file from the example:
+
+```sh
+cp .env.example .env
+```
+
+The example contains:
+
+```sh
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_MODEL=gpt-4.1-mini
+MONGODB_URI=mongodb://localhost:27017
+MONGODB_DB_NAME=meme_generator
+MONGODB_COLLECTION_NAME=generated_memes
+```
+
+Start MongoDB locally with Docker:
+
+```sh
+docker run --rm --name project5-mongo -p 27017:27017 mongo:latest
+```
+
+Install and test each Python subsystem:
+
+```sh
+cd web-app
+pipenv install --dev --python 3.10
+pipenv run pytest --cov=app --cov-report=term-missing --cov-fail-under=80
+```
+
+```sh
+cd backend
+pipenv install --dev --python 3.10
+pipenv run pytest --cov=app --cov-report=term-missing --cov-fail-under=80
+```
+
+```sh
+cd ml
+pipenv install --dev --python 3.10
+pipenv run pytest --cov=meme --cov-report=term-missing --cov-fail-under=80
+```
+
+## Docker Builds
+
+Build the subsystem containers from the repository root:
+
+```sh
+docker build -t project5-web-app:local web-app
+docker build -t project5-ml:local ml
+docker build -t project5-db:local backend
+```
+
+## CI/CD
+
+GitHub Actions workflows live in `.github/workflows/`:
+
+- `webapp-ci-cd.yml`
+- `mi-ci-cd.yml`
+- `db-ci-cd.yml`
+
+Each workflow runs on pushes and pull requests targeting `main`. The workflows install dependencies, run tests, build Docker images, and push images to Docker Hub on pushes when these repository secrets are configured:
+
+- `DOCKERHUB_USERNAME`
+- `DOCKERHUB_TOKEN`
+
+## Database Seeding
+
+No required starter data or seed script is currently included. MongoDB collections are created as the application writes generated meme history.

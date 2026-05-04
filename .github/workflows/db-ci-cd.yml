@@ -3,14 +3,8 @@ name: CI/CD (Database)
 on:
   push:
     branches: [main]
-    paths:
-      - "backend/**"
-      - ".github/workflows/db-ci-cd.yml"
   pull_request:
     branches: [main]
-    paths:
-      - "backend/**"
-      - ".github/workflows/db-ci-cd.yml"
 
 
 jobs:
