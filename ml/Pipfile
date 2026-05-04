@@ -4,9 +4,14 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+fastapi = "*"
+uvicorn = {extras = ["standard"], version = "*"}
+openai = "*"
+pydantic = "*"
 
 [dev-packages]
 pytest = "*"
+pytest-cov = "*"
 
 [requires]
 python_version = "3.10"
