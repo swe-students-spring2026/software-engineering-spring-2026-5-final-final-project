@@ -455,3 +455,312 @@ def test_invites_shows_invited_event(client, monkeypatch):
     assert response.status_code == 200
     assert b"Birthday Invite" in response.data
     assert b"Queens" in response.data
+
+def test_report_lateness_page_shows_accepted_users(client, monkeypatch):
+    """Test report page shows only users who accepted"""
+    user_id = ObjectId()
+    event_id = ObjectId()
+    
+    fake_event = {
+        "_id": event_id,
+        "host_id": str(user_id),
+        "name": "Test Event",
+        "invitees_list": [
+            {"user_id": "user1", "name": "John", "status": "accepted"},
+            {"user_id": "user2", "name": "Jane", "status": "pending"},
+        ]
+    }
+    
+    fake_events = FakeEventsCollection(existing_event=fake_event)
+    fake_users = FakeUsersCollection(
+        existing_user={
+            "_id": user_id,
+            "events_owned": {str(event_id): datetime.now()},
+        }
+    )
+    
+    monkeypatch.setattr(app_module, "get_users_collection", lambda: fake_users)
+    monkeypatch.setattr(app_module, "get_db", lambda: FakeDB(fake_events))
+    
+    with client.session_transaction() as session:
+        session["_user_id"] = str(user_id)
+    
+    response = client.get(f"/host-events/{event_id}/report")
+    
+    assert response.status_code == 200
+    assert b"John" in response.data
+    assert b"Jane" not in response.data
+
+
+def test_submit_lateness_updates_user(client, monkeypatch):
+    # create fake ids
+    user_id = ObjectId()
+    event_id = ObjectId()
+    invitee_id = ObjectId()
+    
+    # fake event with one accepted user
+    fake_event = {
+        "_id": event_id,
+        "host_id": str(user_id),
+        "invitees_list": [{"user_id": str(invitee_id), "name": "John", "status": "accepted"}]
+    }
+    
+    # track updates
+    updated = []
+    class TrackingUsers(FakeUsersCollection):
+        def update_one(self, query, update):
+            updated.append(update)
+    
+    fake_users = TrackingUsers(existing_user={"_id": user_id, "lateness": []})
+    fake_events = FakeEventsCollection(existing_event=fake_event)
+    monkeypatch.setattr(app_module, "get_users_collection", lambda: fake_users)
+    monkeypatch.setattr(app_module, "get_db", lambda: FakeDB(fake_events))
+    
+    # login the user
+    with client.session_transaction() as session:
+        session["_user_id"] = str(user_id)
+    
+    # submit lateness report
+    response = client.post(f"/host-events/{event_id}/report/submit", 
+                          data={f"lateness_{invitee_id}": "15"})
+    
+    # check redirect worked
+    assert response.status_code == 302
+    
+    # make sure that the lateness was added to array
+    assert any("$push" in u and u["$push"].get("lateness") == 15 for u in updated)
+
+def test_report_page_loads(client, monkeypatch):
+    # make fake user and event
+    user_id = ObjectId()
+    event_id = ObjectId()
+    
+    # fake event with accepted user
+    fake_event = {
+        "_id": event_id,
+        "host_id": str(user_id),
+        "name": "Test Event",
+        "invitees_list": [{"user_id": "123", "name": "John", "status": "accepted"}]
+    }
+    
+    # fake user
+    fake_users = FakeUsersCollection(
+        existing_user={"_id": user_id, "events_owned": {str(event_id): datetime.now()}}
+    )
+    fake_events = FakeEventsCollection(existing_event=fake_event)
+    
+    monkeypatch.setattr(app_module, "get_users_collection", lambda: fake_users)
+    monkeypatch.setattr(app_module, "get_db", lambda: FakeDB(fake_events))
+    
+    # login
+    with client.session_transaction() as session:
+        session["_user_id"] = str(user_id)
+    
+    # test report page loads
+    response = client.get(f"/host-events/{event_id}/report")
+    assert response.status_code == 200
+
+def test_create_host_event_success(client, monkeypatch):
+    user_id = ObjectId()
+    
+    # mock users
+    fake_users = FakeUsersCollection(
+        existing_user={
+            "_id": user_id,
+            "name": "Host",
+            "events_owned": {}
+        }
+    )
+    
+    # mock event insert
+    inserted_events = []
+    class FakeEvents:
+        def insert_one(self, doc):
+            inserted_events.append(doc)
+            return type('obj', (object,), {'inserted_id': ObjectId()})()
+        def find_one(self, query):
+            return None
+    
+    fake_events = FakeEvents()
+    
+    def mock_get_db():
+        return type('db', (object,), {'__getitem__': lambda self, x: fake_events if x == "events" else None})()
+    
+    monkeypatch.setattr(app_module, "get_users_collection", lambda: fake_users)
+    monkeypatch.setattr(app_module, "get_db", mock_get_db)
+    monkeypatch.setattr(app_module, "get_lateness_penalty", lambda x: 0)
+    
+    with client.session_transaction() as session:
+        session["_user_id"] = str(user_id)
+    
+    response = client.post("/host-events/create", data={
+        "name": "Party",
+        "location": "NYC",
+        "date": "2026-12-31",
+        "time": "20:00",
+        "details": "Fun party",
+        "invitee_username": ["friend1", "friend2"]
+    })
+    
+    assert response.status_code == 302
+    assert len(inserted_events) == 1
+
+def test_delete_host_event(client, monkeypatch):
+    # make fake ids
+    user_id = ObjectId()
+    event_id = ObjectId()
+    invitee_id = ObjectId()
+    
+    # fake event
+    fake_event = {
+        "_id": event_id,
+        "host_id": str(user_id),
+        "invitees_list": [{"user_id": str(invitee_id)}]
+    }
+    
+    # custom class with delete_one method
+    class FakeEventsWithDelete:
+        def __init__(self):
+            self.event = fake_event
+            self.deleted = False
+            self.called = 0
+            
+        def find_one(self, query):
+            self.called += 1
+            return self.event
+            
+        def delete_one(self, query):
+            self.deleted = True
+    
+    # create instance
+    fake_events = FakeEventsWithDelete()
+    
+    # custom db
+    class CustomDB:
+        def __getitem__(self, name):
+            if name == "events":
+                return fake_events
+            elif name == "users":
+                return FakeUsersCollection(existing_user={"_id": user_id})
+            raise KeyError(name)
+    
+    monkeypatch.setattr(app_module, "get_users_collection", lambda: FakeUsersCollection(existing_user={"_id": user_id, "events_owned": {str(event_id): datetime.now()}}))
+    monkeypatch.setattr(app_module, "get_db", lambda: CustomDB())
+    
+    # login
+    with client.session_transaction() as session:
+        session["_user_id"] = str(user_id)
+    
+    # delete
+    response = client.get(f"/host-events/{event_id}/delete")
+    
+    # check
+    assert response.status_code == 302
+    assert fake_events.deleted == True
+
+def test_edit_host_event_get(client, monkeypatch):
+    user_id = ObjectId()
+    event_id = ObjectId()
+    
+    fake_event = {
+        "_id": event_id,
+        "host_id": str(user_id),
+        "name": "Old Name",
+        "date": datetime(2026, 12, 31, 20, 0),
+        "invitees_list": []
+    }
+    
+    fake_users = FakeUsersCollection(existing_user={"_id": user_id})
+    fake_events = FakeEventsCollection(existing_event=fake_event)
+    
+    monkeypatch.setattr(app_module, "get_users_collection", lambda: fake_users)
+    monkeypatch.setattr(app_module, "get_db", lambda: FakeDB(fake_events))
+    
+    with client.session_transaction() as session:
+        session["_user_id"] = str(user_id)
+    
+    response = client.get(f"/host-events/{event_id}/edit")
+    
+    assert response.status_code == 200
+
+def test_accept_event(client, monkeypatch):
+    # make fake ids
+    user_id = ObjectId()
+    event_id = ObjectId()
+    
+    # fake event
+    fake_event = {
+        "_id": event_id,
+        "invitees_list": [{"user_id": str(user_id), "suggested_arrival_time": datetime.now()}]
+    }
+    
+    # track updates
+    updated_users = []
+    
+    # fake users that tracks updates
+    class FakeUsersWithUpdate:
+        def __init__(self):
+            self.updated = []
+            
+        def find_one(self, query):
+            return {"_id": user_id}
+            
+        def update_one(self, query, update):
+            self.updated.append(update)
+    
+    fake_users = FakeUsersWithUpdate()
+    
+    # fake events
+    class FakeEventsWithFind:
+        def find_one(self, query):
+            return fake_event
+            
+        def update_one(self, query, update):
+            pass
+    
+    fake_events = FakeEventsWithFind()
+    
+    # fake db with both collections
+    class FakeDBWithBoth:
+        def __getitem__(self, name):
+            if name == "events":
+                return fake_events
+            elif name == "users":
+                return fake_users
+            raise KeyError(name)
+    
+    # mock the database
+    monkeypatch.setattr(app_module, "get_db", lambda: FakeDBWithBoth())
+    monkeypatch.setattr(app_module, "get_users_collection", lambda: fake_users)
+    
+    # login
+    with client.session_transaction() as session:
+        session["_user_id"] = str(user_id)
+    
+    # accept the invite
+    response = client.get(f"/invites/{event_id}/accept")
+    
+    # check redirect worked
+    assert response.status_code == 302
+
+def test_create_host_event_page_loads(client, monkeypatch):
+    # make fake user
+    user_id = ObjectId()
+    
+    fake_users = FakeUsersCollection(existing_user={"_id": user_id})
+    
+    # mock get_db to return a fake db
+    class FakeDB:
+        def __getitem__(self, name):
+            return None
+    
+    monkeypatch.setattr(app_module, "get_users_collection", lambda: fake_users)
+    monkeypatch.setattr(app_module, "get_db", lambda: FakeDB())
+    
+    # login
+    with client.session_transaction() as session:
+        session["_user_id"] = str(user_id)
+    
+    # test page loads
+    response = client.get("/host-events/create")
+    assert response.status_code == 200

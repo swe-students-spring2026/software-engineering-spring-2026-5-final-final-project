@@ -65,9 +65,20 @@
                             <img src="{{ url_for('static', filename='icons/trash.circle.svg') }}" alt="Delete">
                         </button>
                     </a>
+                    <a href="{{ url_for('report_lateness', event_id=event._id) }}">
+                        <button class="report-button">
+                            <img src="{{ url_for('static', filename='icons/exclamationmark.bubble.svg') }}" alt="Report">
+                        </button>
+                    </a>
                 </span>
             </li>
             {% endfor %}
+
+            {% if not hosting_events %}
+                <label class="content-header">
+                    <h3 style="font-size: 28px; margin: 0; color: #e693ff;">no hosted events...</h3>
+                </label>
+            {% endif %}
         </ul>
     </section>
     <section class="nav-bottom">

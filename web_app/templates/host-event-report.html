@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Afacad:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet">
+    <title>Report Lateness</title>
+</head>
+
+<body>
+    <section class="header">
+        <span class="logo">
+            <img src="{{ url_for('static', filename='icons/fm copy.svg') }}" alt="fm">
+        </span>
+        <h1>FlakeMate</h1>
+    </section>
+
+    <section class="content">
+        <div class="content-header">
+            <h2>lateness report</h2>
+        </div>
+    </section>
+
+    <form class="dashboard-form" method="POST" action="{{ url_for('submit_lateness', event_id=event._id) }}">
+        {% for user in users %}
+            <div>
+                <label class="content-header">
+                    <h3 style="font-size: 34px; margin: 0; color: #e693ff;">{{ user.name }}</h3>
+                </label>
+                <input class="auth-input" type="number" name="lateness_{{ user.user_id }}" placeholder="# minutes late">
+            </div>
+        {% endfor %}
+
+        {% if users %}
+            <button class="dashboard-button" type="submit">submit</button>
+        {% else %}
+            <label class="content-header">
+                <h3 style="font-size: 28px; margin: 0; color: #e693ff;">no confirmed attendees...</h3>
+            </label>
+        {% endif %}
+    </form>
+
+    <section class="nav-bottom">
+        <a href="{{ url_for('home_upcoming') }}">
+            <img src="{{ url_for('static', filename='icons/calendar.svg') }}" alt="calendar">
+        </a>
+        <a href="{{ url_for('invites') }}">
+            <img src="{{ url_for('static', filename='icons/tray.svg') }}" alt="inbox">
+        </a>
+        <a href="{{ url_for('host_events') }}">
+            <img src="{{ url_for('static', filename='icons/plus.app.fill.svg') }}" alt="create">
+        </a>
+        <a href="{{ url_for('user_dashboard') }}">
+            <img src="{{ url_for('static', filename='icons/person.svg') }}" alt="user">
+        </a>
+    </section>
+</body>
+</html>
