@@ -48,6 +48,12 @@
                 </span>
             </li>
             {% endfor %}
+
+            {% if not invited_events %}
+                <label class="content-header">
+                    <h3 style="font-size: 28px; margin: 0; color: #e693ff;">no invites yet...</h3>
+                </label>
+            {% endif %}
         </ul>
     </section>
     <section class="nav-bottom">

@@ -642,6 +642,53 @@ def delete_host_event(event_id):
 
     return redirect(url_for("host_events"))
 
+@app.route('/host-events/<event_id>/report', methods=['GET'])
+@login_required
+def report_lateness(event_id):
+    # get event
+    db = get_db()
+    events = db["events"]
+    event = events.find_one({"_id": ObjectId(event_id), "host_id": current_user.id})
+    
+    # get invitees
+    users_list = []
+    for invitee in event.get("invitees_list", []):
+        # only people who accepted event
+        if invitee.get("status") == "accepted":
+            users_list.append({
+                'user_id': invitee['user_id'],
+                'name': invitee.get('name', 'Unknown')
+            })
+    
+    return render_template('host-event-report.html', users=users_list, event=event)
+
+@app.route('/host-events/<event_id>/report/submit', methods=['POST'])
+@login_required
+def submit_lateness(event_id):
+    db = get_db()
+    events = db["events"]
+    users = get_users_collection()
+    event = events.find_one({"_id": ObjectId(event_id), "host_id": current_user.id})
+    
+    # update lateness for each user
+    for key, value in request.form.items():
+        if key.startswith('lateness_') and value:
+            # get user id
+            user_id = key.replace('lateness_', '')
+            lateness_minutes = int(value)
+                
+            # update the user's lateness
+            users.update_one(
+                {"_id": ObjectId(user_id)},
+                {
+                    "$push": {
+                        "lateness": lateness_minutes
+                    }
+                }
+            )
+    
+    return redirect(url_for("host_events"))
+
 @app.route("/user", methods=["GET", "POST"])
 @login_required
 def user_dashboard():

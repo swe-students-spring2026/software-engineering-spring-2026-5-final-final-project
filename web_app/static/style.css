@@ -390,7 +390,8 @@ a {
 }
 
 .edit-button,
-.delete-button {
+.delete-button,
+.report-button {
     background: none;
     border: none;
     cursor: pointer;
@@ -398,7 +399,19 @@ a {
 }
 
 .edit-button img,
-.delete-button img {
+.delete-button img,
+.report-button img {
     width: 40px;
     height: 40px;
+}
+
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type=number] {
+    -moz-appearance: textfield;
+    appearance: textfield;
 }
