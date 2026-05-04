@@ -2,6 +2,7 @@ from flask import Flask, render_template, request
 
 from filter import filter_clusters, further_filter
 from split import split_query
+from db import get_cached_result, save_cached_result, health_check
 
 
 app = Flask(__name__)
@@ -23,6 +24,20 @@ def search():
         )
 
     try:
+        cache_type = "natural_language"
+
+        cached = get_cached_result(user_query, cache_type)
+
+        if cached is not None:
+            return render_template(
+                "results.html",
+                user_query=cached["user_query"],
+                reversed_attribute=cached["reversed_attribute"],
+                place_type=cached["place_type"],
+                results=cached["results"],
+                from_cache=True,
+            )
+
         reversed_attribute, place_type = split_query(user_query, debug=False)
 
         clusters = filter_clusters(
@@ -68,12 +83,22 @@ def search():
             reverse=True,
         )
 
+        cache_payload = {
+            "user_query": user_query,
+            "reversed_attribute": reversed_attribute,
+            "place_type": place_type,
+            "results": results,
+        }
+
+        save_cached_result(user_query, cache_type, cache_payload)
+
         return render_template(
             "results.html",
             user_query=user_query,
             reversed_attribute=reversed_attribute,
             place_type=place_type,
             results=results,
+            from_cache=False,
         )
 
     except Exception as e:
@@ -85,7 +110,10 @@ def search():
 
 @app.route("/health", methods=["GET"])
 def health():
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "mongo": "ok" if health_check() else "unavailable",
+    }
 
 
 if __name__ == "__main__":

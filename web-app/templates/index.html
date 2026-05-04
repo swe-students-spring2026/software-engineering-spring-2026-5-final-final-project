@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, intial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NYC Safe Place Finder</title>
 
    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-   
+
 </head>
 
 <body>
@@ -21,7 +21,7 @@
             <div class="error">
                 {{ error }}
             </div>
-        {% end if %}
+        {% endif %}
 
         <form action="/search" method="POST">
             <label for="query"> What are you looking for? </label>
@@ -34,7 +34,7 @@
                 required
             >
 
-            <button type="submit"></Search></button>
+            <button type="submit">Search</button>
         </form>
 
         <div class="examples">
