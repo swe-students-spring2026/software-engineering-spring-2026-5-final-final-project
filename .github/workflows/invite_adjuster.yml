@@ -2,7 +2,7 @@ name: invite_adjuster CI
 
 on:
   push:
-    branches: [main]
+    branches: ["*"]
     paths:
       - "invite-adjuster/**"
       - ".github/workflows/invite_adjuster.yml"
@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       mongodb:
-        image: mongo:4.4
+        image: mongo:7
         ports:
           - 27017:27017
     defaults:
