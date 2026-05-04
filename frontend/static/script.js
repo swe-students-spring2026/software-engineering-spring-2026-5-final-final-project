@@ -1,4 +1,34 @@
 document.addEventListener("DOMContentLoaded", () => {
+    const themeToggle = document.getElementById("theme-toggle");
+
+  const savedTheme = localStorage.getItem("theme") || "dark";
+
+  if (savedTheme === "dark") {
+    document.body.classList.add("dark");
+  }
+
+  updateThemeButton();
+
+  if (themeToggle) {
+    themeToggle.addEventListener("click", () => {
+      document.body.classList.toggle("dark");
+
+      const currentTheme = document.body.classList.contains("dark")
+        ? "dark"
+        : "light";
+
+      localStorage.setItem("theme", currentTheme);
+      updateThemeButton();
+    });
+  }
+
+  function updateThemeButton() {
+    if (!themeToggle) return;
+
+    const isDark = document.body.classList.contains("dark");
+    themeToggle.textContent = isDark ? "Light Mode" : "Dark Mode";
+  }
+  
   const firstFavoriteInput = document.querySelector("#favorite_1");
   if (firstFavoriteInput) firstFavoriteInput.focus();
 
