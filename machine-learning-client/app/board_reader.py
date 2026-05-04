@@ -340,7 +340,7 @@ def extract_board(image: np.ndarray) -> Optional[list[list[str]]]:
 
 def main():
     """testing the functions"""
-    image = cv2.imread("images/test4.png")
+    # image = cv2.imread("images/test4.png")
 
     # cropped = crop_board(image)
 
@@ -357,18 +357,22 @@ def main():
     # cv2.waitKey(0)
 
     # board_matrix = get_board_matrix(color_matrix)
-    board_matrix = extract_board(image)
+    # board_matrix = extract_board(image)
 
-    print(board_matrix)
+    # print(board_matrix)
 
-    reconstructed_board = visualize_board(board_matrix)
+    # reconstructed_board = visualize_board(board_matrix)
 
-    if reconstructed_board is None:
-        print("board extraction failed")
-    else:
-        cv2.imshow("reconstructed board", reconstructed_board)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+    # if reconstructed_board is None:
+        # print("board extraction failed")
+    # else:
+        # cv2.imshow("reconstructed board", reconstructed_board)
+        # cv2.waitKey(0)
+        # cv2.destroyAllWindows()
 
+<<<<<<< HEAD
 
 main()
+=======
+# main()
+>>>>>>> ee8bc9f66d96e8f5b575199b8431b9ebee2bf44f
