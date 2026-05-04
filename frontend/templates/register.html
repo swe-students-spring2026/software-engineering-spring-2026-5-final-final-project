@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Register - CineMatch{% endblock %}
+
+{% block content %}
+<section class="auth-section">
+  <h2>Create Account</h2>
+
+  {% if error %}
+  <p class="auth-error">{{ error }}</p>
+  {% endif %}
+
+  <form class="auth-form" action="/register" method="post">
+    <label for="username">Username</label>
+    <input type="text" id="username" name="username" placeholder="yourname" required />
+
+    <label for="email">Email</label>
+    <input type="email" id="email" name="email" placeholder="you@example.com" required />
+
+    <label for="password">Password</label>
+    <input type="password" id="password" name="password" placeholder="At least 6 characters" required />
+
+    <button type="submit" class="btn-primary">Create Account</button>
+  </form>
+
+  <p class="auth-note">Already have an account? <a href="/login">Sign in</a></p>
+</section>
+{% endblock %}
