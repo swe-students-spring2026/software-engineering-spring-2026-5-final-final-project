@@ -2,7 +2,7 @@
 
 > AI-powered video clipping. User uploads a long video + a natural-language prompt + N. System returns the top-N moments from the video that match the prompt.
 
-**Status:** in progress. Web app skeleton exists; MongoDB and AI service are unbuilt.
+**Status:** in progress. Webapp + MongoDB integration shipped to `main`. AI service skeleton (FastAPI + mocks + tests) shipped to `main`. Real Whisper/Claude/ffmpeg, the webapp→ai-service wire, Dockerfiles, and CI/CD still to do.
 
 ---
 
@@ -48,39 +48,50 @@ Three subsystems (assignment minimum):
 
 ### 2.1 `webapp/` — Flask user interface (custom subsystem #1)
 
-**Already partially built.**
+**Built.** Mongo integration on `main`. Two-step UX (upload, then prompt). The webapp→ai-service POST is the next missing wire.
 
-- Routes:
+- Routes (current, on `main`):
   - `GET /` — upload page (drag-and-drop video)
-  - `GET|POST /upload` — prompt + clip-count form, kicks off a job
-  - `GET /jobs/<job_id>` *(new)* — job status + clip results page
-  - `GET /clips/<clip_id>` *(new)* — serve clip file (or redirect to storage)
+  - `POST /upload-video` — saves the file to `webapp/uploads/`, inserts a `videos` doc into Mongo, redirects to the prompt page
+  - `POST /generate-clips` — accepts prompt + num_clips, updates the `videos` doc with prompt info
+  - `GET /test-db` — debug-only Mongo ping (remove before deploy)
+- Routes still to build:
+  - **In `/generate-clips`: create a `jobs` doc and POST to `ai-service /jobs`** — currently missing; this is the wire that actually kicks off processing
+  - `GET /jobs/<job_id>` — job status + clip results page (poll Mongo)
+  - `GET /clips/<clip_id>` — serve clip file from the shared volume
 - Talks to:
-  - **MongoDB**: writes the new `Job` document, polls for status
-  - **ai-service**: enqueues a job (HTTP POST to `/jobs`)
-- Stack: Python 3.11+, Flask, pymongo, requests
-- Container: `Dockerfile` + image on Docker Hub
+  - **MongoDB**: writes the `videos` doc on upload; will write `jobs` and read clip status
+  - **ai-service**: enqueues a job via `POST /jobs` (not wired yet — `requests` dep needed)
+- Stack: Python 3.11+, Flask, pymongo, python-dotenv, werkzeug; `requests` to add for ai-service call
+- Container: `Dockerfile` + image on Docker Hub *(to add)*
 - Deployed: Digital Ocean (the only public-facing service)
 
 ### 2.2 `ai-service/` — Clip ranking worker (custom subsystem #2)
 
-**To be built.**
+**Skeleton built and on `main`.** FastAPI app with `/healthz` and `POST /jobs`. Pure-logic (windowing, top-N selection) implemented and tested. Three external steps (transcribe, score, cut) are mocks that need to be replaced with real implementations.
 
-- Stack: Python 3.11+, FastAPI (or Flask), `ffmpeg-python`, `faster-whisper`, an LLM SDK (`anthropic` or `openai`), pymongo
-- Endpoints:
-  - `POST /jobs` — accepts `{job_id, video_path_or_bytes, prompt, num_clips}`. Returns 202 Accepted; processes async via background task.
-  - `GET /healthz` — liveness
-- Pipeline (per job):
-  1. Save the uploaded video to local/temp storage
-  2. Extract audio with `ffmpeg`
-  3. Transcribe with `faster-whisper` → list of `(start, end, text)` segments
-  4. Group segments into ~30s windows
-  5. Send windows + prompt to the LLM → score each window 0–10 against the prompt
-  6. Pick top-N non-overlapping windows
-  7. `ffmpeg` cuts each window into a clip file
-  8. Write clip metadata + file path/URL into MongoDB; update job status
-- Container: `Dockerfile` + image on Docker Hub. **Must include `ffmpeg`** in the image.
-- Deployed: Digital Ocean droplet (or kept private depending on cost — see Open Questions)
+- Module layout (flat, no `app/` subdir):
+  - [ai-service/main.py](ai-service/main.py) — FastAPI app, routes, `BackgroundTasks` orchestration
+  - [ai-service/pipeline.py](ai-service/pipeline.py) — `Segment`/`Window`/`ScoredWindow` dataclasses, `pack_windows`, `select_top_n`, plus mocks `transcribe_mock`, `score_windows_mock`, `cut_clip_mock`
+  - [ai-service/db.py](ai-service/db.py) — Mongo client + `set_job_status`, `insert_clip`
+  - [ai-service/env.example](ai-service/env.example) — env-var template
+  - `ai-service/tests/` — `test_main.py` (FastAPI TestClient), `test_pipeline.py` (pure-logic)
+- Stack: Python 3.11, FastAPI, uvicorn, pymongo, python-dotenv, pydantic, `ffmpeg-python`, `faster-whisper`, `anthropic`
+- Endpoints (current):
+  - `POST /jobs` — accepts `{job_id, video_path, prompt, num_clips, video_id?}`. Validates `1 ≤ num_clips ≤ 10` and non-empty prompt. Returns 202; processes async via `BackgroundTasks`.
+  - `GET /healthz` — liveness, returns `{ok: true}`
+- Pipeline (per job, current — mocks marked `*`):
+  1. Save the uploaded video to the shared volume *(handled by webapp)*
+  2. Extract audio with `ffmpeg` *(to add)*
+  3. Transcribe with `faster-whisper` → `[Segment(start, end, text), ...]` *(currently `transcribe_mock`)*
+  4. Group segments into ~30s windows via `pack_windows` (real)
+  5. Send windows + prompt to Claude → score each window 0–10 *(currently `score_windows_mock`)*
+  6. Pick top-N non-overlapping windows via `select_top_n` (real)
+  7. `ffmpeg` cuts each window into a clip file *(currently `cut_clip_mock`)*
+  8. Write clip metadata + file path into MongoDB; update job status (real)
+- Replacement plan: add `transcribe_real`, `score_windows_real`, `cut_clip_real` alongside the mocks. Use `USE_MOCKS` env flag (already in [env.example](ai-service/env.example)) to switch. Keeps the test suite stable while real implementations land.
+- Container: `Dockerfile` + image on Docker Hub *(to add — must apt-install `ffmpeg`)*
+- Deployed: Digital Ocean droplet
 
 ### 2.3 `mongodb/` — Database (subsystem #3)
 
@@ -95,18 +106,20 @@ Three subsystems (assignment minimum):
 All collections in a single database `topfive`.
 
 ### `videos`
+Currently written by webapp [`/upload-video`](webapp/app.py#L32). The webapp adds `prompt` and `num_clips` later via `/generate-clips`. Plan: move `prompt` + `num_clips` to the `jobs` doc when the webapp→ai-service wire goes in.
 ```jsonc
 {
   "_id": ObjectId,
   "filename": "podcast-ep42.mp4",
-  "size_bytes": 524288000,
-  "duration_sec": 7200.0,
+  "filepath": "uploads/podcast-ep42.mp4",  // current — will become "/data/videos/<id>.mp4" after shared-volume migration
   "uploaded_at": ISODate,
-  "storage_path": "/data/videos/<id>.mp4"
+  "prompt": "...",       // currently set on this doc; will move to jobs
+  "num_clips": 5         // currently set on this doc; will move to jobs
 }
 ```
 
 ### `jobs`
+Currently NOT written — will be added when webapp posts to ai-service. The ai-service's `set_job_status` already expects this shape ([ai-service/db.py:13-19](ai-service/db.py#L13-L19)).
 ```jsonc
 {
   "_id": ObjectId,
@@ -122,17 +135,18 @@ All collections in a single database `topfive`.
 ```
 
 ### `clips`
+Already written by ai-service ([ai-service/db.py:22-49](ai-service/db.py#L22-L49)).
 ```jsonc
 {
   "_id": ObjectId,
   "job_id": ObjectId,
-  "video_id": ObjectId,
+  "video_id": ObjectId | null,
   "rank": 1,
   "score": 8.7,
   "start_sec": 1234.5,
   "end_sec": 1264.5,
   "transcript": "...the segment's transcript text...",
-  "storage_path": "/data/clips/<clip_id>.mp4",
+  "storage_path": "/data/clips/<job_id>_<rank>.mp4",
   "caption": null  // optional, future
 }
 ```
@@ -162,10 +176,16 @@ The ai-service updates `jobs.status` in MongoDB as it progresses; the webapp pol
 
 **Decision: shared Docker volume** mounted at `/data` in both containers.
 
-- `/data/videos/<video_id>.mp4` — uploaded source videos
-- `/data/clips/<clip_id>.mp4` — generated clips
+- `/data/videos/<video_id>.<ext>` — uploaded source videos
+- `/data/clips/<job_id>_<rank>.mp4` — generated clips
 
 MongoDB holds metadata only (paths, timestamps, scores, prompts). Videos are too large for Mongo documents (16MB cap) and a poor fit for GridFS at this scale.
+
+**Current state (drift from this decision):** webapp saves to `webapp/uploads/`, ai-service expects `./data/`. This works while both run locally but breaks once containerized. **Action:**
+1. Webapp's `UPLOAD_FOLDER` becomes `STORAGE_DIR/videos` (default `/data/videos`, env-driven).
+2. Webapp passes the absolute path to ai-service's `POST /jobs` — ai-service reads it as-is.
+3. ai-service writes clips to `STORAGE_DIR/clips`.
+4. `docker-compose.yml` mounts the same named volume into both at `/data`.
 
 In production on Digital Ocean, the volume is a persistent block storage volume attached to the droplet. If we ever need to scale beyond one droplet, swap to DO Spaces / S3 — but that's not v1.
 
@@ -175,8 +195,10 @@ In production on Digital Ocean, the volume is a persistent block storage volume 
 
 | Layer | Choice |
 |---|---|
-| Language | Python 3.11+ |
-| Web framework | Flask (webapp), FastAPI or Flask (ai-service) |
+| Language | Python 3.11 |
+| Web framework | Flask (webapp), FastAPI (ai-service) |
+| Env loading | `python-dotenv` (both subsystems) |
+| File handling | `werkzeug.utils.secure_filename` (webapp) |
 | DB | MongoDB 7, accessed via `pymongo` |
 | Video tooling | `ffmpeg` (CLI) + `ffmpeg-python` |
 | Transcription | `faster-whisper` (CPU-friendly, no API key) |
@@ -184,8 +206,8 @@ In production on Digital Ocean, the volume is a persistent block storage volume 
 | Containers | Docker, images on Docker Hub |
 | CI/CD | GitHub Actions (one workflow per subsystem) |
 | Hosting | Digital Ocean (webapp + ai-service); Mongo via DO managed or Atlas |
-| Tests | `pytest` + `pytest-cov` (≥80% coverage per subsystem) |
-| Local orchestration | `docker-compose.yml` at repo root |
+| Tests | `pytest` + `pytest-cov` (≥80% coverage per subsystem); `httpx` for FastAPI TestClient |
+| Local orchestration | `docker-compose.yml` at repo root *(to add)* |
 
 ---
 
@@ -315,14 +337,16 @@ Still open:
 
 ## 11. Milestones
 
-1. **M1 — Schema + skeletons**: docker-compose with all 3 services, MongoDB connected from webapp, ai-service `/healthz` reachable from webapp.
-2. **M2 — End-to-end happy path with mocks**: webapp creates a job → ai-service receives it → returns canned clips → webapp displays them. No real Whisper or LLM yet.
-3. **M3 — Real transcription**: swap mock for `faster-whisper`.
-4. **M4 — Real LLM ranking**: swap mock for Claude/OpenAI call.
-5. **M5 — Real ffmpeg cuts**: swap clip-stub for actual cut files served from storage.
-6. **M6 — CI/CD green**: workflows passing, ≥80% coverage, images on Docker Hub.
-7. **M7 — Deployed**: webapp live on Digital Ocean.
-8. **M8 — README polish**: badges, setup instructions, teammate links.
+1. ~~**M1 — Schema + skeletons**~~: ✅ webapp + Mongo on `main`, ai-service skeleton + tests on `main`. Outstanding: docker-compose to actually run them together.
+2. **M2 — End-to-end happy path with mocks** *(current focus)*: wire `/generate-clips` to create a `jobs` doc and `POST` to ai-service `/jobs`. Add a `GET /jobs/<id>` page to webapp. Confirm a job moves through `queued → transcribing → ranking → cutting → done` end-to-end on mocks.
+3. **M3 — Shared volume**: align webapp upload dir and ai-service storage dir under a single `STORAGE_DIR` env var. Mount one named volume into both containers via `docker-compose.yml`.
+4. **M4 — Real transcription**: add `transcribe_real` using `faster-whisper`. Gate on `USE_MOCKS` env flag.
+5. **M5 — Real LLM ranking**: add `score_windows_real` using `anthropic` SDK with prompt caching (see §9). Gate on `USE_MOCKS`.
+6. **M6 — Real ffmpeg cuts**: add `cut_clip_real` using `ffmpeg-python`.
+7. **M7 — Containerization**: `Dockerfile` for webapp and ai-service (latter must apt-install `ffmpeg`). Push to Docker Hub.
+8. **M8 — CI/CD green**: GitHub Actions per subsystem; build + test + push image; coverage ≥ 80% gate.
+9. **M9 — Deployed**: webapp live on Digital Ocean droplet behind the ai-service.
+10. **M10 — README polish**: badges, setup instructions, teammate links.
 
 ---
 
