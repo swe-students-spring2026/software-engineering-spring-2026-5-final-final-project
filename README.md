@@ -1,6 +1,7 @@
 # NYC 311 Smart Spot Finder
 
-[![CI](https://github.com/swe-students-spring2026/5-final-rove_beetle_crew/actions/workflows/test.yml/badge.svg)](https://github.com/swe-students-spring2026/5-final-rove_beetle_crew/actions/workflows/test.yml)
+[![ML Service CI/CD](https://github.com/swe-students-spring2026/5-final-rove_beetle_crew/actions/workflows/ml.yml/badge.svg)](https://github.com/swe-students-spring2026/5-final-rove_beetle_crew/actions/workflows/ml.yml)
+[![Web App CI/CD](https://github.com/swe-students-spring2026/5-final-rove_beetle_crew/actions/workflows/webapp.yml/badge.svg)](https://github.com/swe-students-spring2026/5-final-rove_beetle_crew/actions/workflows/webapp.yml)
 
 ---
 
@@ -14,32 +15,36 @@ Under the hood, the app uses the open-source [NYC 311 Service Requests dataset](
 
 ## Architecture
 
-The project is a monorepo composed of **2 subsystems**:
+The project is a monorepo composed of **2 containerized subsystems**:
 
 ```
 
                           Monorepo
 
-             
-     web-app/              ML/
-    (Flask frontend        (ML Engine —
-     + ML integration)     Python library)
+     web-app/                    ML/
+    (Flask frontend)   →   (ML REST API)
+     Port 5000              Port 8000
 
-
-    Planned: Docker Hub + Digital Ocean deployment
+    Docker Hub              Docker Hub
+    + Digital Ocean         + Digital Ocean
 
 ```
 
 | Subsystem | Description |
 |-----------|-------------|
-| `web-app/` | User-facing Flask web application. Accepts natural-language prompts and displays recommended spots on a map. The ML engine (`ML/src/`) is imported directly into this service. |
-| `ML/` | Python ML library that processes 311 and Facilities data, scores locations via semantic search and custom clustering, and returns ranked recommendations. |
+| `web-app/` | User-facing Flask web application. Accepts natural-language prompts and displays recommended spots on a map. Calls the ML service via REST API. |
+| `ML/` | Python ML service that processes 311 and Facilities data, scores locations via semantic search and custom clustering, and serves recommendations via a REST API (`POST /recommend`). |
 
 ---
 
 ## Container Images
 
-> **TODO:** Docker image builds and Docker Hub publishing are planned but not yet configured. The `web-app/Dockerfile` is a placeholder.
+| Subsystem | Docker Hub Image |
+|-----------|-----------------|
+| Web App   | `your-dockerhub-username/spot-finder-webapp:latest` |
+| ML Service | `your-dockerhub-username/spot-finder-ml:latest` |
+
+> **TODO:** Replace `your-dockerhub-username` with your actual Docker Hub username in the CI/CD workflows under `.github/workflows/`.
 
 ---
 
@@ -59,9 +64,10 @@ The project is a monorepo composed of **2 subsystems**:
 
 ### Prerequisites
 
-- Python 3.10+
+- [Docker](https://docs.docker.com/get-docker/) (v24+)
+- [Docker Compose](https://docs.docker.com/compose/install/) (v2+)
 - [Git](https://git-scm.com/)
-- [Docker](https://docs.docker.com/get-docker/) (v24+) *(planned for containerized deployment)*
+- Python 3.10+ *(only needed if running services outside Docker)*
 
 ---
 
@@ -74,11 +80,13 @@ cd 5-final-rove_beetle_crew
 
 ---
 
-### 2. Install Dependencies
+### 2. Configure Environment Variables
 
 ```bash
-pip install -r requirement.txt
+cp env.example .env
 ```
+
+Open `.env` and fill in your values. See the [Environment Variables](#environment-variables) section below.
 
 ---
 
@@ -113,7 +121,7 @@ ML/
 3. Run the preprocessing script:
 
 ```bash
-pip install -r requirement.txt
+pip install -r ML/requirements.txt
 python ML/src/preprocess.py
 ```
 
@@ -121,25 +129,28 @@ Output files will be written to `ML/data/processed/`.
 
 ---
 
-### 4. Run the Web App
-
-The web app imports the ML engine directly, so `ML/src/` must be on the Python path:
+### 4. Run the Application
 
 ```bash
-PYTHONPATH=ML/src python web-app/app.py
+docker compose up --build
 ```
 
 | Service    | URL                       |
 |------------|---------------------------|
 | Web App    | http://localhost:5000     |
+| ML API     | http://localhost:8000     |
 
-> **Note:** Docker Compose support is planned but not yet available.
+To stop all services:
+
+```bash
+docker compose down
+```
 
 ---
 
-### 5. Test the ML Engine Locally
+### 5. Test the ML Service Locally (Without Docker)
 
-You can test the ML recommendation engine directly by editing the query inside the `main()` function in `ML/src/main.py`:
+You can test the ML recommendation engine directly by editing the query in `ML/src/main.py`:
 
 ```python
 # ML/src/main.py — modify this to test different prompts
@@ -149,10 +160,24 @@ query = "a quiet place to study where it's also safe"
 Then run:
 
 ```bash
-pip install -r requirement.txt
+pip install -r ML/requirements.txt
 cd ML/src
 python main.py
 ```
+
+---
+
+## Environment Variables
+
+Copy `env.example` to `.env` and fill in the values below before starting the app.
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `ML_API_URL` | Internal URL of the ML service (used by web-app) | `http://ml:8000` |
+| `SECRET_KEY` | Flask secret key — make this a long random string | `change-me-to-something-random` |
+| `FLASK_ENV` | Flask environment mode | `development` or `production` |
+
+> **Never commit your `.env` file.** It is listed in `.gitignore`. The file `env.example` in the repo root serves as the canonical template with dummy values.
 
 ---
 
@@ -160,14 +185,16 @@ python main.py
 
 ```
 .
- web-app/                    # Flask frontend + ML integration
+ web-app/                    # Flask frontend
     app.py
     templates/
     static/
-    Dockerfile               # Placeholder — not yet configured
+    Dockerfile
+    requirements.txt
 
- ML/                         # ML recommendation engine (Python library)
+ ML/                         # ML REST API + recommendation engine
     src/
+        api.py              # Flask REST API entry point
         main.py             # Entry point for local testing
         preprocess.py       # Data preprocessing script
         clustering.py       # Custom k-means clustering over 311 data
@@ -179,6 +206,8 @@ python main.py
     data/
        raw/                # Raw downloaded CSVs (not committed)
        processed/          # Preprocessed data (see setup above)
+    Dockerfile
+    requirements.txt
 
  tests/                      # Test suite
     test_basic.py
@@ -186,10 +215,13 @@ python main.py
 
  .github/
     workflows/
-        test.yml            # CI pipeline (runs pytest)
+        webapp.yml          # CI/CD pipeline for web-app
+        ml.yml              # CI/CD pipeline for ML service
+        test.yml            # General test runner
 
+ docker-compose.yml
+ env.example                 # Template — copy to .env and fill in values
  pyproject.toml              # Pytest configuration
- requirement.txt             # Python dependencies
  README.md
 ```
 
@@ -198,7 +230,7 @@ python main.py
 ## Running Tests
 
 ```bash
-pip install -r requirement.txt
+pip install pytest pandas pytest-cov
 pytest
 ```
 
@@ -206,25 +238,38 @@ The `pyproject.toml` configures pytest to discover tests under the `tests/` dire
 
 ---
 
-## CI/CD Pipeline
+## CI/CD Pipelines
 
-The project uses a single GitHub Actions workflow (`.github/workflows/test.yml`), triggered on every push or pull request to `main`.
+Each subsystem has its own GitHub Actions workflow under `.github/workflows/`, triggered on pushes or pull requests to `main` that touch the relevant directory.
 
-| Workflow File | Trigger                     |
-|---------------|-----------------------------|
-| `test.yml`    | Push or PR to `main`        |
+| Subsystem  | Workflow File  | Trigger                              |
+|------------|----------------|--------------------------------------|
+| Web App    | `webapp.yml`   | Push or PR to `main` (web-app files) |
+| ML Service | `ml.yml`       | Push or PR to `main` (ML files)      |
 
-The workflow:
-1. Installs Python and test dependencies (`pytest`, `pandas`, `pytest-cov`)
-2. Runs the full test suite with `pytest`
+Each workflow:
+1. Runs the test suite with `pytest` *(on every push and pull request to `main`)*
+2. Builds the Docker image *(on push to `main` only, after tests pass)*
+3. Pushes the image to Docker Hub *(on push to `main` only)*
+4. Deploys to Digital Ocean App Platform *(on push to `main` only, after image is pushed)*
 
-> **Planned:** Docker image builds, Docker Hub publishing, and Digital Ocean deployment are not yet configured.
+### Required GitHub Repository Secrets
+
+Add these under **Settings → Secrets and variables → Actions** in your GitHub repo:
+
+| Secret | Description |
+|--------|-------------|
+| `DOCKERHUB_USERNAME` | Your Docker Hub username |
+| `DOCKERHUB_TOKEN` | Docker Hub access token (not your password) |
+| `DIGITAL_OCEAN_ACCESS_TOKEN` | Digital Ocean API token |
+| `DIGITAL_OCEAN_WEBAPP_ID` | Digital Ocean App Platform app ID for the web-app |
+| `DIGITAL_OCEAN_ML_ID` | Digital Ocean App Platform app ID for the ML service |
 
 ---
 
 ## Live Deployment
 
-> **Coming soon.** Deployment to Digital Ocean is planned once Docker images are configured.
+The application is deployed to **Digital Ocean** automatically on every push to `main`.
 
 - **Web App**: *(update once deployed)*
 - **ML Service**: *(update once deployed)*
@@ -237,9 +282,11 @@ The workflow:
 |-------|-----------|
 | Frontend | Flask, Jinja2, HTML/CSS/JS |
 | ML Engine | Python, sentence-transformers, NumPy, pandas |
-| Data Sources | NYC Open Data - 311 Service Requests & Facilities Database |
-| Containerization | Docker *(planned)* |
+| Data Sources | NYC Open Data — 311 Service Requests & Facilities Database |
+| Containerization | Docker, Docker Compose |
 | CI/CD | GitHub Actions |
+| Container Registry | Docker Hub |
+| Cloud Deployment | Digital Ocean |
 
 ---
 
@@ -247,4 +294,4 @@ The workflow:
 
 - Raw dataset files are **not committed** to this repository due to file size. See [Load the Dataset](#3-load-the-dataset) for setup instructions.
 - The `ML/data/processed/` directory must be populated before the app will function. Use the Google Drive link (Option A) for the fastest setup.
-- MongoDB and Docker Compose support are planned but not yet implemented in the current codebase.
+- `.env` is excluded from version control. Use `env.example` as the template.
