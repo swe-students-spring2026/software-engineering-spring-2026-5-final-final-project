@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Graduation Progress — NYU Course Planner</title>
   <link rel="stylesheet" href="/static/css/shared.css">
+  <link rel="stylesheet" href="/static/css/chat.css">
   <link rel="stylesheet" href="/static/css/graduation.css">
 </head>
 
@@ -25,7 +26,10 @@
     <div class="loading">Loading your graduation progress…</div>
   </div>
 
+  {% include '_chat.html' %}
   <script type="application/json" id="profile-data">{{ profile | tojson }}</script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="/static/js/chat.js"></script>
   <script src="/static/js/graduation.js"></script>
 </body>
 

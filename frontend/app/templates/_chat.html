@@ -1,0 +1,48 @@
+<!-- AI Chat panel + trigger bubble — included on every page.
+     Profile fields are pre-filled from Jinja when available; the backend
+     always fetches the authoritative profile on each /api/chat request. -->
+
+<div id="chat-panel">
+  <div id="chat-panel-header">
+    <span id="chat-drag-handle" aria-hidden="true">
+      <svg width="12" height="20" viewBox="0 0 12 20" fill="currentColor" opacity="0.6">
+        <circle cx="3" cy="4" r="1.5" />
+        <circle cx="9" cy="4" r="1.5" />
+        <circle cx="3" cy="10" r="1.5" />
+        <circle cx="9" cy="10" r="1.5" />
+        <circle cx="3" cy="16" r="1.5" />
+        <circle cx="9" cy="16" r="1.5" />
+      </svg>
+    </span>
+    <span>AI Course Assistant</span>
+    <div class="chat-header-btns">
+      <button id="chat-new-btn" onclick="clearChatHistory()" title="Start a new conversation">New chat</button>
+      <button id="chat-close-btn" onclick="toggleChat()">✕</button>
+    </div>
+  </div>
+  <div id="chat-context">
+    <button id="chat-context-toggle" onclick="toggleContext()">
+      <span id="chat-context-arrow">▸</span> Student context (optional)
+    </button>
+    <div id="chat-context-fields" style="display:none">
+      <label for="chat-major">Intended major</label>
+      <input id="chat-major" type="text" placeholder="e.g. Computer Science"
+        value="{{ (profile.major if profile is defined else '') or '' }}" />
+      <label for="chat-courses">Completed courses (comma-separated)</label>
+      <textarea id="chat-courses" rows="2"
+        placeholder="e.g. CSCI-UA 101">{{ ((profile.completed_courses if profile is defined else []) or []) | join(', ') }}</textarea>
+    </div>
+  </div>
+  <div id="chat-messages">
+    <div class="chat-msg ai">Hi! I can help you find courses and plan your schedule. Ask me anything!</div>
+  </div>
+  <div id="chat-input-row">
+    <textarea id="chat-input" rows="1" placeholder="Ask about courses… (Shift+Enter for new line)"></textarea>
+    <button id="chat-send-btn" onclick="sendChat()">Send</button>
+  </div>
+</div>
+
+<button id="chat-bubble" onclick="toggleChat()" title="AI Course Assistant" aria-label="Open AI Course Assistant">
+  <span class="chat-bubble-icon">✦</span>
+  <span class="chat-bubble-text">AI Assistant</span>
+</button>

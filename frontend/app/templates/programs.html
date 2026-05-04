@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <title>Programs — NYU Course Planner</title>
   <link rel="stylesheet" href="/static/css/shared.css">
+  <link rel="stylesheet" href="/static/css/chat.css">
   <link rel="stylesheet" href="/static/css/programs.css">
 </head>
 
@@ -31,6 +32,9 @@
     </div>
   </div>
 
+  {% include '_chat.html' %}
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="/static/js/chat.js"></script>
   <script src="/static/js/programs.js"></script>
 </body>
 

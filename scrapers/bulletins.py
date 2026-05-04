@@ -10,7 +10,7 @@ from typing import Any
 from urllib.parse import urljoin, urlparse
 
 import requests
-from bs4 import BeautifulSoup, Tag
+from bs4 import BeautifulSoup, NavigableString, Tag
 from dotenv import load_dotenv
 from pymongo import MongoClient, UpdateOne
 
@@ -211,14 +211,35 @@ class NYUBulletinScraper:
         for table in soup.select("table"):
             rows: list[list[str]] = []
             for row in table.select("tr"):
-                cells = [self._clean_text(cell.get_text(" ", strip=True)) for cell in row.select("th, td")]
-                if any(cells):
-                    rows.append(cells)
+                # Skip <tfoot> rows — these are footnote/legend rows, not requirements
+                if row.find_parent("tfoot") is not None:
+                    continue
+                cells = [self._cell_text(cell) for cell in row.select("th, td")]
+                if not any(cells):
+                    continue
+                # Skip rows whose first cell is just a bare footnote marker (e.g. "1", "2", "*")
+                if re.fullmatch(r"[\d*†‡§¶]{1,3}", cells[0].strip()):
+                    continue
+                rows.append(cells)
             if not rows:
                 continue
             label = self._find_preceding_heading(table)
             tables.append({"label": label, "rows": rows})
         return tables
+
+    def _cell_text(self, cell: Tag) -> str:
+        """Extract cell text, stripping footnote superscripts (<sup> with only digits/symbols)."""
+        def _parts(node: Any):
+            if isinstance(node, NavigableString):
+                yield str(node)
+            elif isinstance(node, Tag):
+                # Drop <sup> elements that are purely footnote markers
+                if node.name == "sup" and re.fullmatch(r"[\d*†‡§¶]+", node.get_text(strip=True)):
+                    return
+                for child in node.children:
+                    yield from _parts(child)
+
+        return self._clean_text(" ".join(_parts(cell)))
 
     def _find_preceding_heading(self, element: Tag) -> str:
         """Return the text of the nearest h2/h3/h4 that precedes this element."""
