@@ -60,3 +60,83 @@ def create_app() -> Flask:
         if not user_id or not mongo_ready():
             return None
         return users_col().find_one({"user_id": user_id})
+    def login_required():
+        if "user_id" not in session:
+            return redirect(url_for("login"))
+        return None
+
+    def mongo_or_config_page():
+        if mongo_ready():
+            return None
+        return render_template("config_error.html")
+
+    def get_job_or_404(job_id: str) -> dict:
+        doc = jobs_col().find_one({"job_id": job_id})
+        if not doc:
+            abort(404)
+        if doc.get("user_id") != session.get("user_id"):
+            abort(403)
+        return infer_job_status(doc)
+    
+    def infer_job_status(job: dict) -> dict:
+        run_id = str(job.get("run_id", ""))
+        run_root = BASE_DIR / "output" / "agent_runs" / run_id
+        combined_path = run_root / "combined_per_stock_reports.txt"
+        manifest_path = run_root / "run_manifest.json"
+        current_status = str(job.get("status", "unknown"))
+
+        analysis_doc = analysis_sessions_col().find_one({"session_key": run_id}) if mongo_ready() else None
+        inferred_status = current_status
+
+        if analysis_doc and str(analysis_doc.get("status", "")) == "completed":
+            inferred_status = "completed"
+        elif combined_path.exists() and manifest_path.exists():
+            inferred_status = "completed"
+        elif current_status == "running" and not process_is_running(job.get("pid")):
+            inferred_status = "completed" if combined_path.exists() else "error"
+
+        if inferred_status != current_status:
+            updates = {
+                "status": inferred_status,
+                "updated_at": datetime.utcnow().isoformat(),
+            }
+            if manifest_path.exists():
+                updates["manifest_path"] = str(manifest_path)
+            if combined_path.exists():
+                updates["combined_reports_path"] = str(combined_path)
+            if analysis_doc:
+                updates["analysis_session_id"] = str(analysis_doc.get("_id"))
+            jobs_col().update_one({"job_id": job["job_id"]}, {"$set": updates})
+            refreshed = jobs_col().find_one({"job_id": job["job_id"]})
+            if refreshed:
+                return refreshed
+            return {**job, **updates}
+
+        return job
+
+    def read_text_file(path_str: str) -> str:
+        if not path_str:
+            return ""
+        path = Path(path_str)
+        if not path.exists() or not path.is_file():
+            return ""
+        return path.read_text(encoding="utf-8", errors="replace")
+
+    def rel_to_base(path_str: str) -> str:
+        if not path_str:
+            return ""
+        try:
+            return str(Path(path_str).resolve().relative_to(BASE_DIR.resolve()))
+        except Exception:
+            return ""
+
+    def process_is_running(pid: Optional[int]) -> bool:
+        if not pid:
+            return False
+        try:
+            os.kill(int(pid), 0)
+            return True
+        except OSError:
+            return False
+    
+    
