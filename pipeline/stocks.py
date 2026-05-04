@@ -91,6 +91,7 @@ def _sec_headers() -> dict:
     return {"User-Agent": user_agent, "Accept-Encoding": "gzip, deflate"}
 
 
+# politely wait between requests so we don't get rate-limited or banned
 def _throttled_get(url: str, timeout: int, limiter: dict, headers: Optional[dict] = None) -> requests.Response:
     headers = headers or {}
     with limiter["lock"]:
@@ -179,11 +180,13 @@ def build_agents_data_packages(
     ]
 
     def _save_df(df_obj: pd.DataFrame, csv_path: Path) -> None:
+        # skip silently if there's nothing to write
         if df_obj is None or df_obj.empty:
             return
         csv_path.parent.mkdir(parents=True, exist_ok=True)
         df_obj.to_csv(csv_path, index=True)
 
+    # normalize anything date-like into a midnight Timestamp, or None if unparseable
     def _to_ts(val) -> Optional[pd.Timestamp]:
         if val is None:
             return None
@@ -193,4 +196,218 @@ def build_agents_data_packages(
         return pd.Timestamp(ts).normalize()
 
     today = pd.Timestamp.now().normalize()
-#remove 1238
+
+    # builds the full data folder for a single ticker — Yahoo + SEC filings
+    def _build_one(row: pd.Series) -> dict:
+        ticker = str(row["Ticker"]).upper()
+        pkg_dir = AGENTS_DATA_PACKAGE_DIR / _safe_filename(ticker)
+        yahoo_dir = pkg_dir / "yahoo"
+        sec_dir = pkg_dir / "sec"
+        filings_dir = sec_dir / "filings_html"
+        package_meta_path = pkg_dir / "package_meta.json"
+        for d in [pkg_dir, yahoo_dir, sec_dir, filings_dir]:
+            d.mkdir(parents=True, exist_ok=True)
+
+        out = {"Ticker": ticker, "package_dir": str(pkg_dir), "package_status": "ok", "package_error": "", "cache_hit": False}
+        try:
+            existing_meta = {}
+            if package_meta_path.exists():
+                try:
+                    existing_meta = json.loads(package_meta_path.read_text(encoding="utf-8"))
+                except Exception:
+                    existing_meta = {}
+
+            package_asof = _to_ts(existing_meta.get("package_asof_date"))
+            package_age_days = (today - package_asof).days if package_asof is not None else 99999
+            is_package_fresh = package_age_days <= cfg.package_refresh_days
+
+            cik_10 = sec_ticker_to_cik.get(ticker)
+            out["cik_10"] = cik_10
+
+            sec_has_new = True
+            latest_selected_df = pd.DataFrame()
+            latest_sec_filing_date = None
+            if cik_10:
+                # Cheap freshness check first: if SEC has not posted anything newer than what
+                # we already packaged, we can skip rebuilding the whole folder.
+                try:
+                    submissions_url = f"https://data.sec.gov/submissions/CIK{cik_10}.json"
+                    submissions = _throttled_get(submissions_url, cfg.sec_timeout_sec, limiter, headers=sec_headers).json()
+                    recent = submissions.get("filings", {}).get("recent", {})
+                    df_recent = pd.DataFrame(recent) if isinstance(recent, dict) else pd.DataFrame()
+                    latest_selected_df = _select_recent_filings(df_recent, cfg) if not df_recent.empty else pd.DataFrame()
+                    if not latest_selected_df.empty and "filingDate" in latest_selected_df.columns:
+                        latest_sec_filing_date = pd.to_datetime(latest_selected_df["filingDate"], errors="coerce").max()
+                        latest_sec_filing_date = None if pd.isna(latest_sec_filing_date) else pd.Timestamp(latest_sec_filing_date).normalize()
+                    prev_last = _to_ts(existing_meta.get("last_sec_filing_date"))
+                    sec_has_new = True if prev_last is None or latest_sec_filing_date is None else (latest_sec_filing_date > prev_last)
+                except Exception:
+                    sec_has_new = False if is_package_fresh else True
+
+            if is_package_fresh and (not sec_has_new):
+                out["package_status"] = "cached"
+                out["cache_hit"] = True
+                return out
+
+            summary = {k: _json_safe(v) for k, v in row.to_dict().items()}
+            summary.update(meta_map.get(ticker, {}))
+            with open(pkg_dir / "screening_snapshot.json", "w", encoding="utf-8") as f:
+                json.dump(summary, f, indent=2, default=str)
+
+            if ticker in price_wide.columns:
+                s = price_wide[ticker].dropna().to_frame("close").reset_index()
+                s.columns = ["date", "close"]
+                s.to_feather(pkg_dir / "price_history.feather")
+                s.to_csv(pkg_dir / "price_history.csv", index=False)
+
+            tk = yf.Ticker(ticker)
+            fast_info = {}
+            try:
+                fi = getattr(tk, "fast_info", {})
+                fast_info = dict(fi) if fi is not None else {}
+            except Exception:
+                fast_info = {}
+            with open(yahoo_dir / "fast_info.json", "w", encoding="utf-8") as f:
+                json.dump({k: _json_safe(v) for k, v in fast_info.items()}, f, indent=2, default=str)
+
+            info = {}
+            try:
+                info = tk.info or {}
+            except Exception:
+                info = {}
+            info_subset = {k: _json_safe(info.get(k, None)) for k in wanted_fields}
+            with open(yahoo_dir / "info_selected.json", "w", encoding="utf-8") as f:
+                json.dump(info_subset, f, indent=2, default=str)
+
+            _save_df(getattr(tk, "financials", pd.DataFrame()), yahoo_dir / "financials.csv")
+            _save_df(getattr(tk, "balance_sheet", pd.DataFrame()), yahoo_dir / "balance_sheet.csv")
+            _save_df(getattr(tk, "cashflow", pd.DataFrame()), yahoo_dir / "cashflow.csv")
+            _save_df(getattr(tk, "quarterly_financials", pd.DataFrame()), yahoo_dir / "quarterly_financials.csv")
+            _save_df(getattr(tk, "quarterly_balance_sheet", pd.DataFrame()), yahoo_dir / "quarterly_balance_sheet.csv")
+            _save_df(getattr(tk, "quarterly_cashflow", pd.DataFrame()), yahoo_dir / "quarterly_cashflow.csv")
+
+            if cik_10:
+                if latest_selected_df.empty:
+                    try:
+                        submissions_url = f"https://data.sec.gov/submissions/CIK{cik_10}.json"
+                        submissions = _throttled_get(submissions_url, cfg.sec_timeout_sec, limiter, headers=sec_headers).json()
+                        recent = submissions.get("filings", {}).get("recent", {})
+                        df_recent = pd.DataFrame(recent) if isinstance(recent, dict) else pd.DataFrame()
+                        latest_selected_df = _select_recent_filings(df_recent, cfg) if not df_recent.empty else pd.DataFrame()
+                    except Exception:
+                        latest_selected_df = pd.DataFrame()
+                if not latest_selected_df.empty:
+                    latest_selected_df.to_csv(sec_dir / "selected_filings.csv", index=False)
+                    if filings_dir.exists():
+                        shutil.rmtree(filings_dir, ignore_errors=True)
+                    filings_dir.mkdir(parents=True, exist_ok=True)
+                    for _, frow in latest_selected_df.iterrows():
+                        acc = str(frow.get("accessionNumber", "")).strip()
+                        doc = str(frow.get("primaryDocument", "")).strip()
+                        if not acc or not doc:
+                            continue
+                        doc_url = _build_sec_doc_url(cik_10, acc, doc)
+                        try:
+                            content = _throttled_get(doc_url, 60, limiter, headers=sec_headers).content
+                            save_name = _safe_filename(f"{acc}_{doc}")
+                            with open(filings_dir / save_name, "wb") as fw:
+                                fw.write(content)
+                        except Exception:
+                            continue
+
+            latest_10k = None
+            latest_10q = None
+            latest_8k = None
+            if not latest_selected_df.empty and "form" in latest_selected_df.columns and "filingDate" in latest_selected_df.columns:
+                tmp = latest_selected_df.copy()
+                tmp["form"] = tmp["form"].astype(str).str.upper()
+                tmp["filingDate"] = pd.to_datetime(tmp["filingDate"], errors="coerce")
+                if not tmp[tmp["form"] == "10-K"].empty:
+                    latest_10k = str(tmp[tmp["form"] == "10-K"]["filingDate"].max().date())
+                if not tmp[tmp["form"] == "10-Q"].empty:
+                    latest_10q = str(tmp[tmp["form"] == "10-Q"]["filingDate"].max().date())
+                if not tmp[tmp["form"] == "8-K"].empty:
+                    latest_8k = str(tmp[tmp["form"] == "8-K"]["filingDate"].max().date())
+
+            package_meta = {
+                "ticker": ticker,
+                "package_asof_date": str(today.date()),
+                "package_age_days": 0,
+                "cik_10": cik_10,
+                "last_sec_filing_date": str(latest_sec_filing_date.date()) if latest_sec_filing_date is not None else existing_meta.get("last_sec_filing_date"),
+                "last_10k_date": latest_10k,
+                "last_10q_date": latest_10q,
+                "last_8k_date": latest_8k,
+                "refreshed_due_to_new_sec": bool(sec_has_new),
+            }
+            package_meta_path.write_text(json.dumps(package_meta, indent=2), encoding="utf-8")
+            return out
+        except Exception as exc:
+            out["package_status"] = "error"
+            out["package_error"] = str(exc)
+            return out
+
+    results = []
+    worker_count = min(max(1, cfg.package_max_workers), max(1, len(final_df)))
+    with ThreadPoolExecutor(max_workers=worker_count) as executor:
+        futures = [executor.submit(_build_one, row) for _, row in final_df.iterrows()]
+        with tqdm(total=len(futures), desc="Building agent data packages", unit="ticker") as pbar:
+            for future in as_completed(futures):
+                results.append(future.result())
+                pbar.update(1)
+    return pd.DataFrame(results).sort_values("Ticker").reset_index(drop=True)
+
+# make sure all output folders exist before anything tries to write to them
+def ensure_dirs() -> None:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    SCREENING_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    AGENTS_DATA_PACKAGE_DIR.mkdir(parents=True, exist_ok=True)
+    CHART_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+
+# all the knobs you can tweak from the command line without touching the code
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Stock screening and data package pipeline")
+    parser.add_argument(
+        "--refresh-metadata",
+        action="store_true",
+        help="Force full metadata refresh from Yahoo (ignore metadata cache age).",
+    )
+    parser.add_argument(
+        "--metadata-refresh-days",
+        type=int,
+        default=None,
+        help="Override metadata cache TTL in days (default: 7).",
+    )
+    parser.add_argument(
+        "--refresh-insider",
+        action="store_true",
+        help="Force insider cache refresh (ignore insider cache freshness).",
+    )
+    parser.add_argument(
+        "--chart-start-rank",
+        type=int,
+        default=1,
+        help="Start rank for the screening chart PDF bundle.",
+    )
+    parser.add_argument(
+        "--chart-end-rank",
+        type=int,
+        default=50,
+        help="End rank for the screening chart PDF bundle.",
+    )
+    parser.add_argument(
+        "--package-start-rank",
+        type=int,
+        default=1,
+        help="Start rank for building per-ticker agent data packages.",
+    )
+    parser.add_argument(
+        "--package-end-rank",
+        type=int,
+        default=None,
+        help="End rank for building per-ticker agent data packages. Defaults to all screened names.",
+    )
+    return parser.parse_args()
+
+#remove 1450
