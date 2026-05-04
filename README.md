@@ -14,8 +14,8 @@ This repository is organized as a monorepo. The `web_app` directory contains the
 
 ## Container Images
 
-- [web_app](https://hub.docker.com/repository/docker/chasecvitale/web-app/general)
-- [invite_adjuster](https://hub.docker.com/repository/docker/chasecvitale/invite-adjuster/general)
+- [web-app](https://hub.docker.com/repository/docker/chasecvitale/web-app/general)
+- [invite-adjuster](https://hub.docker.com/repository/docker/chasecvitale/invite-adjuster/general)
 
 ## Team Members
 
