@@ -14,14 +14,17 @@
 
 <form method="post" class="form wide-form" enctype="multipart/form-data">
   <section class="profile-strip">
-    {% if profile_image_url(user) %}
-      <img src="{{ profile_image_url(user) }}" alt="{{ user.username }} profile picture">
-    {% else %}
-      <div class="profile-placeholder gear-placeholder" aria-hidden="true">&#9881;</div>
-    {% endif %}
+    <label class="profile-upload" aria-label="Choose profile image">
+      {% if profile_image_url(user) %}
+        <img src="{{ profile_image_url(user) }}" alt="{{ user.username }} profile picture">
+      {% else %}
+        <span class="profile-placeholder gear-placeholder" aria-hidden="true">&#9881;</span>
+      {% endif %}
+      <input name="profile_image" type="file" accept="image/*">
+    </label>
     <div>
       <h2>{{ user.username | default("Your account") }}</h2>
-      <p class="muted">Upload a profile image or use the default settings icon.</p>
+      <p class="muted">Click the circle to update your profile image.</p>
     </div>
   </section>
 
@@ -51,23 +54,18 @@
       </select>
     </label>
     <label>
-      Profile image
-      <input name="profile_image" type="file" accept="image/*">
-    </label>
-    <label>
       Contact info
       <input name="contact_info" value="{{ user.contact_info | default('') }}">
     </label>
   </div>
 
   <div class="grid two">
-    <label>
+    <label class="password-label">
       New password
-      <input name="new_password" type="password" autocomplete="new-password">
-    </label>
-    <label>
-      Confirm new password
-      <input name="confirm_password" type="password" autocomplete="new-password">
+      <span class="password-control">
+        <input id="new-password" name="new_password" type="password" autocomplete="new-password">
+        <button class="button password-toggle" type="button" data-password-toggle="new-password">Show</button>
+      </span>
     </label>
   </div>
 
@@ -77,4 +75,16 @@
     <a class="button danger" href="{{ url_for('logout') }}">Log out</a>
   </div>
 </form>
+
+<script>
+  const passwordToggle = document.querySelector("[data-password-toggle]");
+  if (passwordToggle) {
+    passwordToggle.addEventListener("click", () => {
+      const input = document.getElementById(passwordToggle.dataset.passwordToggle);
+      const shouldShow = input.type === "password";
+      input.type = shouldShow ? "text" : "password";
+      passwordToggle.textContent = shouldShow ? "Hide" : "Show";
+    });
+  }
+</script>
 {% endblock %}

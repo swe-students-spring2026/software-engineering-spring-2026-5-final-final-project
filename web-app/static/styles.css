@@ -234,6 +234,20 @@ label {
   gap: 7px;
 }
 
+.password-control {
+  display: flex;
+  gap: 8px;
+}
+
+.password-control input {
+  min-width: 0;
+}
+
+.password-toggle {
+  flex: 0 0 auto;
+  min-height: 44px;
+}
+
 input,
 select {
   background: #ffffff;
@@ -279,6 +293,60 @@ select:focus {
   margin: 24px 0;
 }
 
+.puzzle-panel {
+  display: grid;
+  gap: 24px;
+}
+
+.boggle-board {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(var(--board-columns), minmax(34px, 1fr));
+  max-width: min(100%, 760px);
+}
+
+.boggle-cell {
+  align-items: center;
+  aspect-ratio: 1;
+  background: #f2f5f7;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  display: flex;
+  font-size: clamp(1rem, 2.8vw, 1.8rem);
+  font-weight: 800;
+  justify-content: center;
+  text-transform: uppercase;
+}
+
+.puzzle-form {
+  align-items: end;
+  grid-template-columns: minmax(0, 1fr) auto;
+  max-width: 620px;
+}
+
+.found-words {
+  display: grid;
+  gap: 10px;
+}
+
+.found-words h2 {
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.word-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.word-list span {
+  background: #f2f5f7;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 10px;
+}
+
 .notice {
   margin-bottom: 24px;
   padding: 14px 16px;
@@ -304,6 +372,27 @@ select:focus {
   display: flex;
   gap: 20px;
   margin-bottom: 24px;
+}
+
+.profile-upload {
+  cursor: pointer;
+  display: block;
+  flex: 0 0 auto;
+  gap: 0;
+  position: relative;
+}
+
+.profile-upload input {
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  position: absolute;
+  width: 1px;
+}
+
+.profile-upload:hover img,
+.profile-upload:hover .profile-placeholder {
+  outline: 3px solid rgba(23, 107, 91, .18);
 }
 
 .profile-strip img,
@@ -404,6 +493,10 @@ select:focus {
   }
 
   .grid.two {
+    grid-template-columns: 1fr;
+  }
+
+  .puzzle-form {
     grid-template-columns: 1fr;
   }
 

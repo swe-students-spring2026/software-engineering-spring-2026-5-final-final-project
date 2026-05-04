@@ -37,6 +37,21 @@ def create_app(test_config=None):
         "Coffee or tea?",
         "Favorite game?",
     ]
+    SAMPLE_USERNAME = "sample_match"
+    # TODO DEPLOYMENT: remove this hard-coded sample user and seeded puzzle.
+    # It exists only so local development always has a puzzle-ready profile.
+    SAMPLE_ANSWERS = [
+        "melody",
+        "island",
+        "hiking",
+        "noodle",
+        "comedy",
+        "algebra",
+        "sunrise",
+        "autumn",
+        "coffee",
+        "puzzle",
+    ]
 
     # ------- shared helpers -------
     def get_current_user():
@@ -157,6 +172,72 @@ def create_app(test_config=None):
         user["questions"] = list(db.puzzles.find({"owner_user_id": str(user["_id"])}))
         return user
 
+    def puzzle_session_keys(puzzle):
+        puzzle_id = str(puzzle["_id"])
+        return f"puzzle_{puzzle_id}_correct", f"puzzle_{puzzle_id}_guesses"
+
+    def sample_question_answers():
+        return [
+            {"question": question, "answer": answer}
+            for question, answer in zip(SETUP_QUESTIONS, SAMPLE_ANSWERS)
+        ]
+
+    def fallback_sample_puzzle():
+        max_length = max(len(answer) for answer in SAMPLE_ANSWERS)
+        board = [
+            list(answer + ("e" * (max_length - len(answer))))
+            for answer in SAMPLE_ANSWERS
+        ]
+        return {
+            "question": "Combined profile puzzle",
+            "answer": None,
+            "questions": SETUP_QUESTIONS,
+            "answers": SAMPLE_ANSWERS,
+            "board": board,
+            "max_attempts": 5,
+        }
+
+    def ensure_sample_user():
+        sample_user = db.users.find_one({"username": SAMPLE_USERNAME})
+        if sample_user is None:
+            result = db.users.insert_one({
+                "username": SAMPLE_USERNAME,
+                "email": "sample@example.com",
+                "password": "password",
+                "name": "Sample Match",
+                "age": 24,
+                "gender": "female",
+                "contact_info": "sample@example.com",
+            })
+            sample_user_id = str(result.inserted_id)
+        else:
+            sample_user_id = str(sample_user["_id"])
+
+        if db.puzzles.find_one({"owner_user_id": sample_user_id}):
+            return
+
+        try:
+            puzzle_data = create_puzzle(
+                app.config["GAME_ENGINE_URL"],
+                question_answers=sample_question_answers(),
+            )
+        except Exception:
+            puzzle_data = fallback_sample_puzzle()
+
+        db.puzzles.replace_one(
+            {"owner_user_id": sample_user_id, "question": puzzle_data["question"]},
+            {
+                "owner_user_id": sample_user_id,
+                "question": puzzle_data["question"],
+                "answer": puzzle_data.get("answer"),
+                "questions": puzzle_data["questions"],
+                "answers": puzzle_data["answers"],
+                "board": puzzle_data["board"],
+                "max_attempts": puzzle_data["max_attempts"],
+            },
+            upsert=True,
+        )
+
     # ------- request hooks -------
     @app.context_processor
     def inject_template_helpers():
@@ -164,6 +245,9 @@ def create_app(test_config=None):
 
     @app.before_request
     def require_login():
+        if not app.config.get("TESTING") and request.endpoint != "static":
+            ensure_sample_user()
+
         g.current_user = None
         user_id = session.get("user_id")
         if user_id:
@@ -252,14 +336,22 @@ def create_app(test_config=None):
     def dashboard():
         engine_url = app.config["GAME_ENGINE_URL"]
         result = None
+        outcome = None
 
         current_user_id = session.get("user_id")
-        match_filter = {}
+        puzzle_owner_ids = []
+        for puzzle_owner_id in db.puzzles.distinct("owner_user_id"):
+            try:
+                puzzle_owner_ids.append(ObjectId(puzzle_owner_id))
+            except (InvalidId, TypeError):
+                continue
+
+        match_filter = {"_id": {"$in": puzzle_owner_ids}}
         if current_user_id:
             try:
-                match_filter = {"_id": {"$ne": ObjectId(current_user_id)}}
+                match_filter["_id"]["$ne"] = ObjectId(current_user_id)
             except InvalidId:
-                match_filter = {}
+                pass
 
         candidate = next(db.users.aggregate([
             {"$match": match_filter},
@@ -268,38 +360,46 @@ def create_app(test_config=None):
 
         puzzles = list(db.puzzles.find({"owner_user_id": str(candidate["_id"])})) if candidate else []
         puzzle = puzzles[0] if puzzles else None
-        if candidate and puzzle:
-            candidate["questions"] = [
-                {"question": question} for question in puzzle.get("questions", [])
-            ]
+        answers = puzzle.get("answers", []) if puzzle else []
+        correct_guesses = []
+        all_guesses = []
+        if puzzle:
+            correct_key, guesses_key = puzzle_session_keys(puzzle)
+            correct_guesses = session.get(correct_key, [])
+            all_guesses = session.get(guesses_key, [])
 
         if request.method == "POST":
-            correct_count = 0
-            answers = puzzle.get("answers", []) if puzzle else []
-            for i, _answer in enumerate(answers, start=1):
-                guess = request.form.get(f"answer_{i}")
-                previous_guesses = session.get(f"guesses_{i}", [])
-
-                outcome = evaluate_guess(
-                    engine_url,
-                    question=puzzle["question"],
-                    answer=puzzle.get("answer"),
-                    questions=puzzle.get("questions", []),
-                    answers=answers,
-                    board=puzzle["board"],
-                    guess=guess,
-                    previous_guesses=previous_guesses,
-                    max_attempts=puzzle["max_attempts"],
-                )
-
-                session.setdefault(f"guesses_{i}", []).append(guess)
-                if outcome["is_correct"]:
-                    correct_count += 1
+            guess = (request.form.get("guess") or "").strip()
+            if puzzle and guess:
+                try:
+                    outcome = evaluate_guess(
+                        engine_url,
+                        question=puzzle["question"],
+                        answer=puzzle.get("answer"),
+                        questions=puzzle.get("questions", []),
+                        answers=answers,
+                        board=puzzle["board"],
+                        guess=guess,
+                        previous_guesses=[],
+                        max_attempts=puzzle["max_attempts"],
+                    )
+                    normalized_guess = outcome["guess"]
+                    if normalized_guess not in all_guesses:
+                        all_guesses.append(normalized_guess)
+                    if outcome["is_correct"] and normalized_guess not in correct_guesses:
+                        correct_guesses.append(normalized_guess)
+                    session[guesses_key] = all_guesses
+                    session[correct_key] = correct_guesses
+                except Exception as error:
+                    outcome = {
+                        "is_correct": False,
+                        "message": str(error),
+                    }
 
             result = {
-                "score": correct_count,
+                "score": len(correct_guesses),
                 "total": len(answers),
-                "matched": bool(answers) and correct_count == len(answers),
+                "matched": bool(answers) and len(correct_guesses) == len(answers),
             }
 
             if result["matched"] and candidate:
@@ -309,7 +409,23 @@ def create_app(test_config=None):
                     "status": "matched",
                     "matched_at": date.today().isoformat(),
                 })
-        return render_template("dashboard.html", candidate=candidate, today=date.today(), result=result)
+        elif puzzle:
+            result = {
+                "score": len(correct_guesses),
+                "total": len(answers),
+                "matched": bool(answers) and len(correct_guesses) == len(answers),
+            }
+
+        return render_template(
+            "dashboard.html",
+            candidate=candidate,
+            puzzle=puzzle,
+            correct_guesses=correct_guesses,
+            all_guesses=all_guesses,
+            today=date.today(),
+            outcome=outcome,
+            result=result,
+        )
 
     # ------- matches page -------
     @app.route("/matches")

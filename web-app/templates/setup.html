@@ -19,14 +19,17 @@
 
 <form method="post" class="form wide-form" enctype="multipart/form-data">
   <section class="profile-strip">
-    {% if profile_image_url(user) %}
-      <img src="{{ profile_image_url(user) }}" alt="{{ user.username }} profile picture">
-    {% else %}
-      <div class="profile-placeholder gear-placeholder" aria-hidden="true">&#9881;</div>
-    {% endif %}
+    <label class="profile-upload" aria-label="Choose profile image">
+      {% if profile_image_url(user) %}
+        <img src="{{ profile_image_url(user) }}" alt="{{ user.username }} profile picture">
+      {% else %}
+        <span class="profile-placeholder gear-placeholder" aria-hidden="true">&#9881;</span>
+      {% endif %}
+      <input name="profile_image" type="file" accept="image/*">
+    </label>
     <div>
       <h2>{{ user.username | default("Your profile") }}</h2>
-      <p class="muted">These details appear after someone matches with you.</p>
+      <p class="muted">Click the circle to update your profile image.</p>
     </div>
   </section>
 
@@ -48,10 +51,6 @@
           <option value="male" {% if user.gender == "male" %}selected{% endif %}>Male</option>
           <option value="female" {% if user.gender == "female" %}selected{% endif %}>Female</option>
         </select>
-      </label>
-      <label>
-        Profile image
-        <input name="profile_image" type="file" accept="image/*">
       </label>
       <label>
         Contact info
