@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, intial-scale=1.0">
+    <title>NYC Safe Place Finder</title>
+
+    <style>
+        body{
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: #f4f6f8;
+            margin: 0;
+            padding: 0;
+            color: #222;
+        }
+
+        .container{
+            max-width: 800px;
+            margin: 80px auto;
+            padding: 40px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+        }
+
+        h1{
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+
+        .subtitle{
+            color: #555;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        label{
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        input[type="text"]{
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+        }
+
+        button{
+            background-color: #1f6feb;
+            color: white;
+            border: none;
+            padding: 14px 22px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        button:hover{
+            background-color: #195cc4;
+        }
+
+        .examples{
+            margin-top: 25px;
+            color: #555;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .error{
+            background-color: #ffe5e5;
+            color: 8a0000;
+            border: 1px solid #ffb3b3;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>NYC Safe Place Finder</h1>
+
+        <p class="subtitle">
+            Search for a type of study spot and a list of matching facilities in the area will be provided
+        </p>
+
+        {% if error %}
+            <div class="error">
+                {{ error }}
+            </div>
+        {% end if %}
+
+        <form action="/search" method="POST">
+            <label for="query"> What are you looking for? </label>
+
+            <input
+                type="text"
+                id="query"
+                name="query"
+                placeholder="Example: A quiet place to study where it's also safe"
+                required
+            >
+
+            <button type="submit"></Search></button>
+        </form>
+
+        <div class="examples">
+            <strong>Example searches:</strong><br>
+            A quiet place to study where it's also safe<br>
+            A clean park where I can relax<br>
+            A calm public facility near low-noise areas<br>
+        </div>
+    </div>
+</body>
+</html>
