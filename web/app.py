@@ -136,5 +136,37 @@ def create_app() -> Flask:
             return True
         except OSError:
             return False
-    
+    def wait_for_job(job_id: str, proc: subprocess.Popen, run_id: str) -> None:
+        # Here I block until the subprocess finishes and capture its exit code
+        returncode = proc.wait()
+        
+        status = "completed" if returncode == 0 else "error" # Map exit code to a human-readable status string
+        jobs_col().update_one(
+            {"job_id": job_id},
+            {   # Persist the final status, return code, and finish timestamp in the DB
+                "$set": {
+                    "status": status,
+                    "return_code": int(returncode),
+                    "finished_at": datetime.utcnow().isoformat(),
+                }
+            },
+        )
+
+        # Look up the analysis session created by the pipeline using the run_id as key:
+        analysis_doc = analysis_sessions_col().find_one({"session_key": run_id})
+        if analysis_doc:
+            jobs_col().update_one(
+                {"job_id": job_id},
+                {
+                    "$set": {
+                        "analysis_session_id": str(analysis_doc.get("_id")),
+                    }
+                },
+            )
+    @app.route("/")
+    def index():
+        if "user_id" in session:
+            return redirect(url_for("dashboard"))
+        return redirect(url_for("login"))
+
     
