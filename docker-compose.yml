@@ -4,15 +4,20 @@ services:
     image: mongo:7
     ports:
       - "27017:27017"
-    volumes:
-      - mongo_data:/data/db
-
-  # flask frontend
-  web:
+        build:
+          context: ./mongo_service/db
+        ports:
+          - "27017:27017"
+        environment:
+          - MONGO_INITDB_DATABASE=stocks_app
+          - PIPELINE_OUTPUT_DIR=/seed/pipeline
+        volumes:
+          - mongo_data:/data/db
+          - ./pipeline/output:/seed/pipeline:ro
     build: ./web
+          - ./pipeline/output:/seed/pipeline:ro
     ports:
       - "5000:5000"
-    env_file:
       - .env
     environment:
       - MONGODB_URI=mongodb://mongodb:27017

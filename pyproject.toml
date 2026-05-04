@@ -7,5 +7,5 @@ pythonpath = [
   "."
 ]
 testpaths = [
-    "tests",
+    "mongo_service/tests",
 ]
