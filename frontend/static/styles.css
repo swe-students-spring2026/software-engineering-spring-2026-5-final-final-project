@@ -1,34 +1,53 @@
+/* ── Light mode (default) ── */
 :root {
-  --bg: #f7f7f5;
-  --surface: #ffffff;
-  --surface-2: #f0f0ee;
-  --text: var(--surface);
-  --muted: #5f6873;
-  --muted-2: var(--muted-2);
-  --border: #d6d8dc;
-  --border-strong: #bcc2ca;
-  --link: #236b75;
-  --brand: #9a6a00;
-  --accent: var(--accent);
-  --accent-hover: var(--accent-hover);
-  --warning: #9a6a00;
+  --bg:            #FFFFFF;
+  --surface:       #FFFFFF;
+  --surface-2:     #EEE6F3;   /* 10% Violet — subtle tinted inputs/cards */
+  --text:          #000000;
+  --muted:         #6D6D6D;   /* Medium Gray 1 */
+  --muted-2:       #B8B8B8;   /* Medium Gray 2 */
+  --border:        #DBD9D6;   /* Empire Silver */
+  --border-strong: #B8B8B8;   /* Medium Gray 2 */
+  --link:          #57068C;   /* NYU Violet */
+  --accent:        #57068C;   /* NYU Violet */
+  --accent-hover:  #330662;   /* NYU Deep Violet */
+  --warning:       #8900E1;   /* NYU Ultra Violet — secondary accent */
 }
 
+/* ── Dark mode ── */
 body.dark {
-  --bg: var(--bg);
-  --surface: var(--surface);
-  --surface-2: var(--surface-2);
-  --text: var(--text);
-  --muted: var(--muted);
-  --muted-2: var(--muted-2);
-  --border: var(--border);
-  --border-strong: var(--border-strong);
-  --link: var(--link);
-  --brand: var(--warning);
-  --accent: var(--accent);
-  --accent-hover: var(--accent-hover);
-  --warning: var(--warning);
+  --bg:            #0D0012;   /* near-black, violet-tinted */
+  --surface:       #1A0A2E;   /* dark violet */
+  --surface-2:     #2D1456;   /* mid dark violet */
+  --text:          #FFFFFF;
+  --muted:         #B8B8B8;   /* Medium Gray 2 */
+  --muted-2:       #6D6D6D;   /* Medium Gray 1 */
+  --border:        #404040;   /* Dark Gray */
+  --border-strong: #6D6D6D;   /* Medium Gray 1 */
+  --link:          #AB82C5;   /* 50% Violet — readable on dark */
+  --accent:        #8900E1;   /* NYU Ultra Violet */
+  --accent-hover:  #57068C;   /* NYU Violet */
+  --warning:       #AB82C5;   /* 50% Violet */
 }
+
+/* ── Optional: respect OS preference automatically ── */
+@media (prefers-color-scheme: dark) {
+  body:not(.light) {
+    --bg:            #0D0012;
+    --surface:       #1A0A2E;
+    --surface-2:     #2D1456;
+    --text:          #FFFFFF;
+    --muted:         #B8B8B8;
+    --muted-2:       #6D6D6D;
+    --border:        #404040;
+    --border-strong: #6D6D6D;
+    --link:          #AB82C5;
+    --accent:        #8900E1;
+    --accent-hover:  #57068C;
+    --warning:       #AB82C5;
+  }
+}
+
 
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -62,7 +81,7 @@ a:hover { text-decoration: underline; }
   justify-content: flex-end;
 }
 
-.nav-links a { color: #d3d7dc; font-size: 0.95rem; }
+.nav-links a { color: var(--text); font-size: 0.95rem; }
 
 .container { max-width: 980px; margin: 0 auto; padding: 2.5rem 1.5rem; }
 
