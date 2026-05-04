@@ -2,8 +2,8 @@ from flask import Blueprint, request, jsonify, redirect, url_for, render_templat
 from flask_login import current_user, login_required
 from bson.objectid import ObjectId
 from bson.errors import InvalidId
+from datetime import datetime, timezone, timedelta
 
-from datetime import datetime
 tasks_bp = Blueprint("tasks", __name__)
 
 def to_object_id(task_id):
@@ -11,23 +11,63 @@ def to_object_id(task_id):
         return ObjectId(task_id)
     except (InvalidId, TypeError):
         return None
+    
+def parse_yyyy_mm_dd_to_utc(date_str):
+    if not date_str:
+        return None
+    dt = datetime.strptime(date_str, "%Y-%m-%d")
+    return dt.replace(tzinfo=timezone.utc)
+
+def frequency_to_repeat(freq):
+    if not freq or freq == "none":
+        return (False, None, None)
+
+    mapping = {
+        "hourly": (True, 1, "hours"),
+        "daily": (True, 1, "days"),
+        "weekly": (True, 1, "weeks"), # can add more
+    }
+    return mapping.get(freq, (False, None, None))
 
 @tasks_bp.post("/tasks/<task_id>/update")
 @login_required
 def update_task(task_id):
+    task_oid = to_object_id(task_id)
+    if task_oid is None:
+        return jsonify({"error": "Invalid task id"}), 400
+    
     user_id = current_user.id
     title = request.form.get("title")
-    date = request.form.get("date")
+    date_str = request.form.get("date")
     freq = request.form.get("reminder_frequency")
 
     update = {}
-    if title is not None: update["title"] = title
-    if date: update["date"] = datetime.strptime(date, "%Y-%m-%d")
-    if freq is not None: update["reminder_frequency"] = freq
+
+    if title is not None: 
+        update["title"] = title
+    if hasattr(current_user, "email") and current_user.email:
+        update["user_email"] = current_user.email
+    if date_str: 
+        next_reminder_at = parse_yyyy_mm_dd_to_utc(date_str)
+    reminder_repeat, repeat_every, repeat_unit = frequency_to_repeat(freq)
+
+    if freq is not None:
+        if freq == "none":
+            update["reminder_enabled"] = False
+            update["reminder_repeat"] = False
+            update["repeat_every"] = None
+            update["repeat_unit"] = None
+            update["next_reminder_at"] = None
+        else:
+            update["reminder_enabled"] = next_reminder_at is not None
+            update["reminder_repeat"] = reminder_repeat
+            update["repeat_every"] = repeat_every
+            update["repeat_unit"] = repeat_unit
+            update["next_reminder_at"] = next_reminder_at
 
     result = tasks_bp.db.tasks.update_one(
-        {"_id": ObjectId(task_id), "user_id": user_id},
-        {"$set": update}
+        {"_id": task_oid, "user_id": user_id},
+        {"$set": update},
     )
 
     if result.matched_count == 0:
@@ -38,10 +78,14 @@ def update_task(task_id):
 @tasks_bp.post("/tasks/<task_id>/delete")
 @login_required
 def delete_task(task_id):
+    task_oid = to_object_id(task_id)
+    if task_oid is None:
+        return jsonify({"error": "Invalid task id"}), 400
+    
     user_id = current_user.id 
 
     result = tasks_bp.db.tasks.delete_one({
-        "_id": ObjectId(task_id),
+        "_id": task_oid,
         "user_id": user_id
     })
 
