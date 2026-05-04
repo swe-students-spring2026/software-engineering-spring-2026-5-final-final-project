@@ -338,41 +338,35 @@ def extract_board(image: np.ndarray) -> Optional[list[list[str]]]:
     return get_board_matrix(color_matrix)
 
 
-def main():
-    """testing the functions"""
-    # image = cv2.imread("images/test4.png")
+# def main():
+# image = cv2.imread("images/test4.png")
 
-    # cropped = crop_board(image)
+# cropped = crop_board(image)
 
-    # cv2.imshow("original", image)
-    # cv2.waitKey(0)
+# cv2.imshow("original", image)
+# cv2.waitKey(0)
 
-    # cv2.imshow("cropped", cropped)
-    # cv2.waitKey(0)
+# cv2.imshow("cropped", cropped)
+# cv2.waitKey(0)
 
-    # color_matrix = get_color_matrix(cropped)
+# color_matrix = get_color_matrix(cropped)
 
-    # averaged_colors = visualize_matrix_avg_color(color_matrix)
-    # cv2.imshow("averaged colors", averaged_colors)
-    # cv2.waitKey(0)
+# averaged_colors = visualize_matrix_avg_color(color_matrix)
+# cv2.imshow("averaged colors", averaged_colors)
+# cv2.waitKey(0)
 
-    # board_matrix = get_board_matrix(color_matrix)
-    # board_matrix = extract_board(image)
+# board_matrix = get_board_matrix(color_matrix)
+# board_matrix = extract_board(image)
 
-    # print(board_matrix)
+# print(board_matrix)
 
-    # reconstructed_board = visualize_board(board_matrix)
+# reconstructed_board = visualize_board(board_matrix)
 
-    # if reconstructed_board is None:
-        # print("board extraction failed")
-    # else:
-        # cv2.imshow("reconstructed board", reconstructed_board)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
+# if reconstructed_board is None:
+# print("board extraction failed")
+# else:
+# cv2.imshow("reconstructed board", reconstructed_board)
+# cv2.waitKey(0)
+# cv2.destroyAllWindows()
 
-<<<<<<< HEAD
-
-main()
-=======
 # main()
->>>>>>> ee8bc9f66d96e8f5b575199b8431b9ebee2bf44f
