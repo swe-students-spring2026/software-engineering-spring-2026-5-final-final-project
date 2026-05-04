@@ -1,0 +1,41 @@
+services:
+  web-app:
+    build: ./web-app
+    container_name: priority-manager-web-app
+    ports:
+      - "5002:5000"
+    environment:
+      WEB_APP_PORT: "5000"
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key}
+      ML_CLIENT_URL: http://machine-learning-client:5001
+
+      # Falls back to the local MongoDB container if no MONGODB_URI is provided.
+      MONGODB_URI: ${MONGODB_URI:-mongodb://mongodb:27017/priority_manager}
+
+
+    depends_on:
+      - machine-learning-client
+      - mongodb
+
+  machine-learning-client:
+    build: ./machine-learning-client
+    container_name: priority-manager-ml-client
+    ports:
+      - "5001:5001"
+    environment:
+      ML_CLIENT_PORT: "5001"
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+
+    depends_on:
+      - mongodb
+
+  mongodb:
+    image: mongo:7
+    container_name: priority-manager-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+
+volumes:
+  mongodb_data:

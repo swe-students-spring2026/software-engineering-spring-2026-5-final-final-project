@@ -1,0 +1,21 @@
+<main class="container">
+    <div class="card">
+        <a href="{{ url_for('dashboard') }}" class="back">← Back</a>
+        <h1>Add Task</h1>
+
+        <form method="POST">
+            <label>Task Name</label>
+            <input name="title" required>
+
+            <label>Description</label>
+            <textarea name="description" required></textarea>
+
+            <label>Days Until Due</label>
+            <input type="number" name="days_to_complete" min="0" value="1" required>
+
+            <button type="submit">Save Task</button>
+        </form>
+    </div>
+</main>
+</body>
+</html>
