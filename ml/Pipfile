@@ -4,6 +4,11 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+fastapi = "*"
+uvicorn = "*"
+pydantic = "*"
+pymongo = "*"
+openai = "*"
 
 [dev-packages]
 pytest = "*"
@@ -11,3 +16,4 @@ pytest-cov = "*"
 
 [requires]
 python_version = "3.10"
+
