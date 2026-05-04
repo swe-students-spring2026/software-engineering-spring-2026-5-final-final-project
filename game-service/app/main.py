@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -5,10 +6,20 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
-from app.routers import fishing, quiz
+from app.routers import aquarium, fishing, leaderboard, market, ponds, quiz
 
+SERVICE_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = Path(__file__).resolve().parents[2]
-FISH_IMAGES_DIR = REPO_ROOT / "data" / "fish_images"
+DATA_DIR_CANDIDATES = [
+    Path(os.environ["DATA_DIR"]) if os.environ.get("DATA_DIR") else None,
+    SERVICE_ROOT / "data",
+    REPO_ROOT / "data",
+]
+DATA_DIR = next(
+    (path for path in DATA_DIR_CANDIDATES if path is not None and path.exists()),
+    SERVICE_ROOT / "data",
+)
+FISH_IMAGES_DIR = DATA_DIR / "fish_images"
 
 
 def create_app() -> FastAPI:
@@ -28,6 +39,10 @@ def create_app() -> FastAPI:
 
     app.include_router(quiz.router)
     app.include_router(fishing.router)
+    app.include_router(market.router)
+    app.include_router(aquarium.router)
+    app.include_router(leaderboard.router)
+    app.include_router(ponds.router)
     app.mount(
         "/fish_images",
         StaticFiles(directory=FISH_IMAGES_DIR),
