@@ -7,7 +7,7 @@ load_dotenv()
 
 app = Flask(__name__)
 app.config["MONGO_URI"] = os.getenv("MONGO_URI")
-app.secret_key = "placeholder-secret-key"
+app.secret_key = os.getenv("SECRET_KEY", "dev-secret-key")
 mongo.init_app(app)
 
 from routes.auth import auth_bp

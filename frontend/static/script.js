@@ -81,6 +81,26 @@ document.addEventListener("DOMContentLoaded", () => {
   document.addEventListener("submit", (e) => {
     const form = e.target;
 
+    // ── Empty search guard ──────────────────────────────────────────────────
+    const searchInput = form.querySelector("input[name='q']");
+    if (searchInput !== null) {
+      const errorId = "search-empty-error";
+      if (!searchInput.value.trim()) {
+        e.preventDefault();
+        let errEl = document.getElementById(errorId);
+        if (!errEl) {
+          errEl = document.createElement("p");
+          errEl.id = errorId;
+          errEl.className = "search-error";
+          form.after(errEl);
+        }
+        errEl.textContent = "Please enter a search term.";
+        searchInput.focus();
+        return;
+      }
+      document.getElementById(errorId)?.remove();
+    }
+
     // ── Page-navigating forms: show loading state on the submit button ────────
     if (!form.action?.includes("/watchlist/toggle/")) {
       const btn = form.querySelector("button");
