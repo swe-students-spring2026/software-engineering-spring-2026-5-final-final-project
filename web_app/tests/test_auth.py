@@ -1,19 +1,29 @@
 import pytest
 import mongomock
 from werkzeug.security import generate_password_hash
+from unittest.mock import patch
 from app import app  
 import app as app_module
 import routes.auth as auth_module
 from routes.auth import auth_bp
 
+@pytest.fixture(autouse=True)
+def mock_mongo():
+    with patch("pymongo.MongoClient", side_effect=mongomock.MongoClient) as mock:
+        yield mock
+
 @pytest.fixture
-def client():
+def client(mock_mongo):
     app.config['TESTING'] = True
-    mock_db = mongomock.MongoClient().db
     
-    auth_bp.db = mock_db
-    app_module.db = mock_db 
-    auth_module.db = mock_db 
+    import app as app_module
+    import routes.auth as auth_module
+    
+    mock_db = mongomock.MongoClient().test_db
+    
+    app_module.db = mock_db
+    auth_module.db = mock_db
+    auth_module.auth_bp.db = mock_db
     
     mock_db.users.insert_one({
         "username": "testuser",
@@ -23,8 +33,6 @@ def client():
 
     with app.test_client() as client:
         yield client
-
-
 def test_register_page_loads(client):
     """Test that the registration page successfully loads on a GET request"""
     response = client.get('/register')
