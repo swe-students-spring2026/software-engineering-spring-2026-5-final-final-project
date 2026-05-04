@@ -3,7 +3,9 @@ ML Image Parsing Service API
 
 Exposes image parsing functionality via HTTP.
 """
-
+import base64
+import numpy as np
+import cv2
 from flask import Flask, request, jsonify
 from app.board_reader import extract_board
 
@@ -13,12 +15,26 @@ app = Flask(__name__)
 def extract_board_route():
     """
     Handle request sent from web-app.
-    Extracts the board structure from an image and
-    return the board structure in a matrix in json.
+    Expects JSON: { "image": "<base64-encoded image string>" }
+    Returns: { "board": [[str, ...], ...] }
     """
     data = request.get_json()
-    image = data.get("image")
+    if not data or "image" not in data:
+        return jsonify({"error": "No image provided"}), 400
+
+    try:
+        img_bytes = base64.b64decode(data["image"])
+        img_array = np.frombuffer(img_bytes, np.uint8)
+        image = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+    except Exception:
+        return jsonify({"error": "Invalid image data"}), 400
+
+    if image is None:
+        return jsonify({"error": "Could not decode image"}), 400
+
     board_matrix = extract_board(image)
+    if board_matrix is None:
+        return jsonify({"error": "Could not extract board"}), 422
 
     return jsonify({"board": board_matrix})
 
