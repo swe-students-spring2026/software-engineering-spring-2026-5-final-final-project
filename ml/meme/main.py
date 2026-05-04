@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from datetime import datetime, timezone
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from .captioner import generate_caption
@@ -83,8 +83,11 @@ def history(limit: int = Query(default=20, ge=1, le=100)) -> dict[str, list[dict
     return {"items": items}
 
 @app.get("/history/{record_id}", response_model=HistoryItem)
-def history_item(record_id: str) -> dict[str, object] | None:
-    return get_meme_by_id(record_id)
+def history_item(record_id: str) -> dict[str, object]:
+    item = get_meme_by_id(record_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="Meme record not found")
+    return item
 
 @app.post("/generate", response_model=GenerateResponse)
 def generate_meme(payload: GenerateRequest) -> dict[str, str | None]:
@@ -95,3 +98,4 @@ def generate_meme(payload: GenerateRequest) -> dict[str, str | None]:
     response["article_summary"] = payload.text
     response["record_id"] = save_meme_record(build_record(payload, response))
     return response
+
