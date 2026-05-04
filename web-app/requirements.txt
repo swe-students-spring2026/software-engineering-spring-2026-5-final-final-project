@@ -3,3 +3,4 @@ flask-login
 pymongo
 python-dotenv
 requests
+pytest

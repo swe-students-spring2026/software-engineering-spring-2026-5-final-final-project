@@ -1,3 +1,4 @@
+![Web APP CI](https://github.com/swe-students-spring2026/5-final-lacewing_squad/actions/workflows/web-app.yml/badge.svg)
 ![Machine Learning Client CI](https://github.com/swe-students-spring2026/5-final-lacewing_squad/actions/workflows/ml-client.yml/badge.svg)
 
 # Lacewing — Task Tracker
