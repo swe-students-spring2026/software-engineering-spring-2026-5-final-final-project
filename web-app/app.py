@@ -1,89 +1,92 @@
 from flask import Flask, render_template, request
 
-#src directory needs to be on sys.path at runtime
-#to be handled in Dockerfile
-from filter import filter_clusters
+from filter import filter_clusters, further_filter
+from split import split_query
+
 
 app = Flask(__name__)
 
+
 @app.route("/", methods=["GET"])
 def index():
-    """
-    main search page
-    user enters a 311 complaint-related query like "dangerous" or "noisy"
-    and a facility query, like "study spot" or "library"
-    """
     return render_template("index.html")
+
 
 @app.route("/search", methods=["POST"])
 def search():
-    """
-    handles submission form from index.html
-    sends user input into filter.clusters(),
-    then passes results to results.html()
-    so front end can display
-    """
-    query_311 = request.form.get("query_311", "").strip()
-    query_facilities = request.form.get("query_facilities", "").strip()
+    user_query = request.form.get("query", "").strip()
 
-    if not query_311 or not query_facilities:
-        error = "Must enter both a complaint and facility type."
-        return render_template("index.html", error=error)
+    if not user_query:
+        return render_template(
+            "index.html",
+            error="Please enter a search query.",
+        )
+
     try:
-        clusters = filter_clusters(query_311, query_facilities)
-        #conver cluster objects into plain dictionaries
-        #easier to use in html
-        cluster_results = []
+        reversed_attribute, place_type = split_query(user_query, debug=False)
+
+        clusters = filter_clusters(
+            reversed_attribute,
+            place_type,
+            debug=False,
+        )
+
+        clusters = further_filter(
+            clusters,
+            place_type,
+            debug=False,
+        )
+
+        results = []
 
         for cluster in clusters:
-            facilities = []
-
             for facility in cluster.facilities:
+                if len(facility) == 0:
+                    continue
 
-                facility_data = {
-                    "name": facility[0] if len(facility) > 0 else "Unknown",
-                    "group": facility[1] if len(facility) > 1 else "Unknown",
-                    "subgroup": facility[2] if len(facility) > 2 else "Unknown",
-                    "type": facility[3] if len(facility) > 3 else "Unknown",
+                result = {
+                    "facility_name": facility[0] if len(facility) > 0 else "Unknown",
+                    "facility_group": facility[1] if len(facility) > 1 else "Unknown",
+                    "facility_subgroup": facility[2] if len(facility) > 2 else "Unknown",
+                    "facility_type": facility[3] if len(facility) > 3 else "Unknown",
                     "borough": facility[4] if len(facility) > 4 else "Unknown",
+                    "latitude": facility[5] if len(facility) > 5 else None,
+                    "longitude": facility[6] if len(facility) > 6 else None,
+                    "score": round(float(facility[-1]), 4) if len(facility) > 7 else None,
+                    "cluster_latitude": cluster.center[0],
+                    "cluster_longitude": cluster.center[1],
+                    "complaint_ratio": round(cluster.ratio, 4),
+                    "matched_complaints": cluster.matched_complaint,
+                    "total_complaints": cluster.total_complaint,
+                    "cluster_rank": cluster.rank + 1,
                 }
 
-                facilities.append(facility_data)
+                results.append(result)
 
-            total = cluster.total_complaint
-            matched = cluster.matched_complaint
+        results.sort(
+            key=lambda item: item["score"] if item["score"] is not None else 0,
+            reverse=True,
+        )
 
-            if total > 0:
-                complaint_ratio = matched/total
-            else:
-                complaint_ratio = 0
-
-            cluster_results.append(
-                {
-                    "longitude": cluster.center[0],
-                    "latitude": cluster.center[1],
-                    "matched_complaints": matched,
-                    "total_complaints": total,
-                    "complaint_ratio": round(complaint_ratio, 4),
-                    "facilities": facilities,
-                }
-            )
         return render_template(
             "results.html",
-            query_311=query_311,
-            query_facilities=query_facilities,
-            clusters=cluster_results,
+            user_query=user_query,
+            reversed_attribute=reversed_attribute,
+            place_type=place_type,
+            results=results,
         )
+
     except Exception as e:
-        error = f"Something went wrong while processing your search: {e}"
-        return render_template("index.html", error=error)
+        return render_template(
+            "index.html",
+            error=f"Something went wrong while processing your search: {e}",
+        )
+
 
 @app.route("/health", methods=["GET"])
 def health():
-    """
-    health check route for docker, deployment, and checking status of web app
-    """
     return {"status": "ok"}
 
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True) 
+    app.run(host="0.0.0.0", port=5000, debug=True)
