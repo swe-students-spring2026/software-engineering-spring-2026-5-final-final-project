@@ -1,15 +1,18 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from urllib.parse import urlparse
 
+from bson import ObjectId
 from flask import Blueprint, render_template, request, session
 
+from db import mongo
 from services.api_client import (
+    get_favorites,
     get_movie_details,
     get_similar_movies,
     recommend_from_favorites,
+    recommend_movies,
 )
 from services.search_router import handle_search
-from services.api_client import get_movie_details, get_favorites, recommend_movies
 
 movies_bp = Blueprint("movies", __name__)
 
@@ -108,17 +111,25 @@ def _safe_back_url(param: str | None, referrer: str | None) -> str | None:
     return None
 
 
+def _user_id():
+    uid = session.get("user_id")
+    return ObjectId(uid) if uid else None
+
+
 def _watchlist_ids() -> set[str]:
-    return set(session.get("watchlist", []))
+    user_id = _user_id()
+    if not user_id:
+        return set()
+    docs = mongo.db.watchlists.find({"user_id": user_id}, {"movie_id": 1})
+    return {doc["movie_id"] for doc in docs}
 
 
 def _append_history(entry: dict) -> None:
-    history = session.get("recommendation_history", [])
-    history.insert(
-        0,
-        {
-            **entry,
-            "created_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
-        },
-    )
-    session["recommendation_history"] = history[:20]
+    user_id = _user_id()
+    if not user_id:
+        return
+    mongo.db.history.insert_one({
+        "user_id": user_id,
+        "timestamp": datetime.now(timezone.utc),
+        **entry,
+    })

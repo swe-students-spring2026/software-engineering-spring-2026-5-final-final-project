@@ -4,18 +4,21 @@
 {% block content %}
 <section class="auth-section">
   <h2>Sign In</h2>
-  <p class="subtitle">Placeholder account access for future saved recommendations.</p>
+
+  {% if error %}
+  <p class="auth-error">{{ error }}</p>
+  {% endif %}
 
   <form class="auth-form" action="/login" method="post">
     <label for="email">Email</label>
-    <input type="email" id="email" name="email" placeholder="you@example.com" />
+    <input type="email" id="email" name="email" placeholder="you@example.com" required />
 
     <label for="password">Password</label>
-    <input type="password" id="password" name="password" placeholder="Password" />
+    <input type="password" id="password" name="password" placeholder="Password" required />
 
     <button type="submit" class="btn-primary">Sign In</button>
   </form>
 
-  <p class="auth-note">No real authentication yet; this page is a frontend placeholder.</p>
+  <p class="auth-note">Don't have an account? <a href="/register">Register</a></p>
 </section>
 {% endblock %}

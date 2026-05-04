@@ -1,25 +1,42 @@
+from bson import ObjectId
 from flask import Blueprint, render_template, session
+
+from db import mongo
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
 
+def _user_id():
+    uid = session.get("user_id")
+    return ObjectId(uid) if uid else None
+
+
+def _get_history(user_id):
+    if not user_id:
+        return []
+    docs = mongo.db.history.find(
+        {"user_id": user_id},
+        sort=[("timestamp", -1)],
+        limit=20,
+    )
+    return list(docs)
+
+
 @dashboard_bp.route("/history")
 def history():
-    return render_template(
-        "history.html",
-        history=session.get("recommendation_history", []),
-    )
+    items = _get_history(_user_id())
+    return render_template("history.html", history=items)
 
 
 @dashboard_bp.route("/analytics")
 def analytics():
-    history_items = session.get("recommendation_history", [])
-    watchlist_count = len(session.get("watchlist", []))
-    recommendation_count = sum(
-        1 for item in history_items if item.get("type") == "Recommendation"
-    )
-    search_count = sum(1 for item in history_items if item.get("type") == "Search")
-    semantic_count = sum(1 for item in history_items if item.get("mode") == "intent")
+    user_id = _user_id()
+    history_items = _get_history(user_id)
+
+    watchlist_count = mongo.db.watchlists.count_documents({"user_id": user_id}) if user_id else 0
+    recommendation_count = sum(1 for i in history_items if i.get("type") == "Recommendation")
+    search_count = sum(1 for i in history_items if i.get("type") == "Search")
+    semantic_count = sum(1 for i in history_items if i.get("mode") == "intent")
 
     stats = {
         "total_activity": len(history_items),

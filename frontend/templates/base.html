@@ -15,7 +15,12 @@
       <a href="/watchlist">Watchlist</a>
       <a href="/history">History</a>
       <a href="/analytics">Analytics</a>
-      <a href="/login">Login</a>
+      {% if session.get("user_id") %}
+        <span class="nav-user">{{ session.get("username") }}</span>
+        <a href="/logout">Logout</a>
+      {% else %}
+        <a href="/login">Login</a>
+      {% endif %}
     </div>
   </nav>
 
