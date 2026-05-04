@@ -1,4 +1,15 @@
+import pytest
 from unittest.mock import patch
+
+from app.routes.chat import _reset_rate_limit_for_testing
+
+
+@pytest.fixture(autouse=True)
+def _clear_rate_buckets():
+    """Reset in-memory rate-limit state before every test."""
+    _reset_rate_limit_for_testing()
+    yield
+    _reset_rate_limit_for_testing()
 
 
 class TestChatRoute:
@@ -47,3 +58,24 @@ class TestChatRoute:
             )
         assert res.status_code == 200
         assert mock_chat.call_args.kwargs["student_profile"]["major"] == "CS"
+
+
+class TestChatAuth:
+    """The /chat endpoint must reject requests without the internal token."""
+
+    def test_missing_token_returns_403(self, flask_app):
+        with flask_app.test_client() as c:
+            res = c.post("/chat", json={"message": "hello"})
+        assert res.status_code == 403
+        assert "forbidden" in res.get_json().get("error", "").lower()
+
+    def test_wrong_token_returns_403(self, flask_app):
+        with flask_app.test_client() as c:
+            c.environ_base["HTTP_X_INTERNAL_API_TOKEN"] = "wrong-token"
+            res = c.post("/chat", json={"message": "hello"})
+        assert res.status_code == 403
+
+    def test_correct_token_is_accepted(self, client):
+        with patch("app.routes.chat.chat", return_value="ok"):
+            res = client.post("/chat", json={"message": "hello"})
+        assert res.status_code == 200
