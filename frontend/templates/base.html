@@ -10,21 +10,29 @@
 
   <nav class="navbar">
     <a class="nav-brand" href="/">CineMatch</a>
+
     <div class="nav-links">
       <a href="/">Home</a>
       <a href="/watchlist">Watchlist</a>
       <a href="/history">History</a>
       <a href="/analytics">Analytics</a>
-      {% if session.get("user_id") %}
-        <span class="nav-user">{{ session.get("username") }}</span>
-        <a href="/logout">Logout</a>
-      {% else %}
-        <a href="/login">Login</a>
-      {% endif %}
     </div>
-    <button id="theme-toggle" class="theme-toggle" type="button">
-      Dark Mode
-    </button>
+
+    <div class="nav-controls">
+      {% if session.get("user_id") %}
+        <div class="nav-user-group" aria-label="Signed in as {{ session.get('username') }}">
+          <span class="nav-avatar" aria-hidden="true">{{ (session.get("username") or "?")[0]|upper }}</span>
+          <span class="nav-user">{{ session.get("username") }}</span>
+          <a href="/logout" class="btn-logout">Sign out</a>
+        </div>
+      {% else %}
+        <a href="/login" class="btn-signin">Sign in</a>
+      {% endif %}
+      <button id="theme-toggle" class="theme-toggle" type="button"
+              role="switch" aria-checked="false" aria-label="Toggle color theme">
+        Dark Mode
+      </button>
+    </div>
   </nav>
 
   <main class="container">
