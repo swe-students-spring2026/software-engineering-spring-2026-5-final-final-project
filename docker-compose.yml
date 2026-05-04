@@ -1,6 +1,6 @@
 services:
   web-app:
-    build: ./web_app
+    image: chasecvitale/web-app:latest
     ports:
       - "5002:5000"
     depends_on:
@@ -11,7 +11,7 @@ services:
       - MONGO_DBNAME=flakemate
 
   invite-adjuster:
-    build: ./invite_adjuster
+    image: chasecvitale/invite-adjuster:latest
     ports:
       - "5001:5000"
     depends_on:
@@ -21,7 +21,7 @@ services:
       - MONGO_DBNAME=flakemate
 
   mongodb:
-    image: mongo:latest
+    image: mongo:7
     ports:
       - "27017:27017"
     volumes:

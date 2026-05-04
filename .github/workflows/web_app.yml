@@ -2,7 +2,7 @@ name: web_app CI
 
 on:
   push:
-    branches: [main]
+    branches: ["*"]
     paths:
       - "web_app/**"
       - ".github/workflows/web_app.yml"
@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       mongodb:
-        image: mongo:4.4
+        image: mongo:7
         ports:
           - 27017:27017
     defaults:
