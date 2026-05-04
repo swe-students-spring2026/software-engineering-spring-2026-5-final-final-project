@@ -78,28 +78,51 @@ def create_app(test_config=None):
 
     def save_question_puzzles():
         engine_url = app.config["GAME_ENGINE_URL"]
+        question_answers = []
 
         for i, question in enumerate(SETUP_QUESTIONS, start=1):
-            answer = request.form.get(f"answer_{i}")
+            answer = (request.form.get(f"answer_{i}") or "").strip()
             if not answer:
                 continue
-            try:
-                puzzle_data = create_puzzle(engine_url, question=question, answer=answer)
-                db.puzzles.replace_one(
-                    {"owner_user_id": session["user_id"], "question": question},
-                    {
-                        "owner_user_id": session["user_id"],
-                        "question": puzzle_data["question"],
-                        "answer": puzzle_data["answer"],
-                        "board": puzzle_data["board"],
-                        "max_attempts": puzzle_data["max_attempts"],
-                    },
-                    upsert=True,
-                )
-            except Exception:
-                pass
+            question_answers.append({"question": question, "answer": answer})
+
+        if not question_answers:
+            return
+        if len(question_answers) != len(SETUP_QUESTIONS):
+            raise ValueError("Enter all 10 puzzle answers before saving the puzzle.")
+
+        puzzle_data = create_puzzle(
+            engine_url,
+            question_answers=question_answers,
+        )
+        db.puzzles.replace_one(
+            {"owner_user_id": session["user_id"], "question": puzzle_data["question"]},
+            {
+                "owner_user_id": session["user_id"],
+                "question": puzzle_data["question"],
+                "answer": puzzle_data.get("answer"),
+                "questions": puzzle_data["questions"],
+                "answers": puzzle_data["answers"],
+                "board": puzzle_data["board"],
+                "max_attempts": puzzle_data["max_attempts"],
+            },
+            upsert=True,
+        )
 
     def attach_profile_questions(user):
+        combined_puzzle = db.puzzles.find_one({
+            "owner_user_id": session["user_id"],
+            "questions": {"$exists": True},
+            "answers": {"$exists": True},
+        })
+        if combined_puzzle:
+            existing_answers = dict(zip(
+                combined_puzzle.get("questions", []),
+                combined_puzzle.get("answers", []),
+            ))
+        else:
+            existing_answers = {}
+
         existing_puzzles = {
             puzzle["question"]: puzzle
             for puzzle in db.puzzles.find({"owner_user_id": session["user_id"]})
@@ -107,7 +130,10 @@ def create_app(test_config=None):
         user["questions"] = [
             {
                 "question": question,
-                "answer": existing_puzzles.get(question, {}).get("answer", ""),
+                "answer": existing_answers.get(
+                    question,
+                    existing_puzzles.get(question, {}).get("answer", ""),
+                ),
             }
             for question in SETUP_QUESTIONS
         ]
@@ -202,41 +228,20 @@ def create_app(test_config=None):
     @app.route("/setup", methods=["GET", "POST"])
     def setup():
         if request.method == "POST":
-            db.users.update_one(
-                {"_id": ObjectId(session["user_id"])},
-                {"$set": {
-                    "age": int(request.form.get("age") or 0),
-                    "gender": request.form.get("gender"),
-                    "profile_pic": request.form.get("profile_pic", ""),
-                    "contact_info": request.form.get("contact_info", ""),
-                }}
-            )
-
-            engine_url = app.config["GAME_ENGINE_URL"]
-
-            question_answers = []
-            for i, question in enumerate(SETUP_QUESTIONS, start=1):
-                answer = request.form.get(f"answer_{i}")
-                if answer:
-                    question_answers.append({"question": question, "answer": answer})
-
-            if len(question_answers) == len(SETUP_QUESTIONS):
-                try:
-                    puzzle_data = create_puzzle(
-                        engine_url,
-                        question_answers=question_answers,
-                    )
-                    db.puzzles.insert_one({
-                        "owner_user_id": session["user_id"],
-                        "question": puzzle_data["question"],
-                        "answer": puzzle_data["answer"],
-                        "questions": puzzle_data["questions"],
-                        "answers": puzzle_data["answers"],
-                        "board": puzzle_data["board"],
-                        "max_attempts": puzzle_data["max_attempts"],
-                    })
-                except Exception:
-                    pass
+            save_profile_fields()
+            try:
+                save_question_puzzles()
+            except Exception as error:
+                flash(f"Puzzle could not be generated: {error}")
+                user = attach_profile_questions(get_current_user() or {})
+                user["questions"] = [
+                    {
+                        "question": question,
+                        "answer": request.form.get(f"answer_{i}") or "",
+                    }
+                    for i, question in enumerate(SETUP_QUESTIONS, start=1)
+                ]
+                return render_template("setup.html", user=user), 400
 
             return redirect(url_for("dashboard"))
         user = attach_profile_questions(get_current_user() or {})

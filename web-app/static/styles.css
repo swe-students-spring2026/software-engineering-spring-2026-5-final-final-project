@@ -292,6 +292,13 @@ select:focus {
   color: var(--success-text);
 }
 
+.notice.error {
+  background: #fff1ed;
+  border: 1px solid #f2c4b8;
+  border-radius: 8px;
+  color: #9f351c;
+}
+
 .profile-strip {
   align-items: center;
   display: flex;
