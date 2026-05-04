@@ -1,0 +1,62 @@
+[
+  {
+    "id": "leap",
+    "title": "Leap Year",
+    "function_name": "leap_year",
+    "instructions": "Determine whether a given year is a leap year in the Gregorian calendar.\n\nA leap year occurs:\n- on every year that is evenly divisible by 4\n- except every year that is evenly divisible by 100\n- unless the year is also evenly divisible by 400\n\nFor example, 1997 is not a leap year, but 1996 is. 1900 is not a leap year, but 2000 is.\n\nWrite a function `leap_year(year)` that returns `True` or `False`.",
+    "starter_code": "def leap_year(year):\n    pass\n",
+    "test_code": "import unittest\n\n\nclass LeapTest(unittest.TestCase):\n    def test_year_not_divisible_by_4_in_common_year(self):\n        self.assertIs(leap_year(2015), False)\n\n    def test_year_divisible_by_2_not_divisible_by_4_in_common_year(self):\n        self.assertIs(leap_year(1970), False)\n\n    def test_year_divisible_by_4_not_divisible_by_100_in_leap_year(self):\n        self.assertIs(leap_year(1996), True)\n\n    def test_year_divisible_by_4_and_5_is_still_a_leap_year(self):\n        self.assertIs(leap_year(1960), True)\n\n    def test_year_divisible_by_100_not_divisible_by_400_in_common_year(self):\n        self.assertIs(leap_year(2100), False)\n\n    def test_year_divisible_by_100_but_not_by_3_is_still_not_a_leap_year(self):\n        self.assertIs(leap_year(1900), False)\n\n    def test_year_divisible_by_400_is_leap_year(self):\n        self.assertIs(leap_year(2000), True)\n\n    def test_year_divisible_by_400_but_not_by_125_is_still_a_leap_year(self):\n        self.assertIs(leap_year(2400), True)\n\n    def test_year_divisible_by_200_not_divisible_by_400_in_common_year(self):\n        self.assertIs(leap_year(1800), False)\n",
+    "difficulty": "easy",
+    "fishing_reward": 1,
+    "source": "Adapted from exercism/python (MIT License)",
+    "source_url": "https://github.com/exercism/python/tree/main/exercises/practice/leap"
+  },
+  {
+    "id": "reverse-string",
+    "title": "Reverse String",
+    "function_name": "reverse",
+    "instructions": "Reverse a given string.\n\nSome examples:\n- Turn `\"stressed\"` into `\"desserts\"`.\n- Turn `\"strops\"` into `\"sports\"`.\n- Turn `\"racecar\"` into `\"racecar\"`.\n\nWrite a function `reverse(text)` that returns the reversed string.",
+    "starter_code": "def reverse(text):\n    pass\n",
+    "test_code": "import unittest\n\n\nclass ReverseStringTest(unittest.TestCase):\n    def test_an_empty_string(self):\n        self.assertEqual(reverse(\"\"), \"\")\n\n    def test_a_word(self):\n        self.assertEqual(reverse(\"robot\"), \"tobor\")\n\n    def test_a_capitalized_word(self):\n        self.assertEqual(reverse(\"Ramen\"), \"nemaR\")\n\n    def test_a_sentence_with_punctuation(self):\n        self.assertEqual(reverse(\"I'm hungry!\"), \"!yrgnuh m'I\")\n\n    def test_a_palindrome(self):\n        self.assertEqual(reverse(\"racecar\"), \"racecar\")\n\n    def test_an_even_sized_word(self):\n        self.assertEqual(reverse(\"drawer\"), \"reward\")\n\n    def test_wide_characters(self):\n        self.assertEqual(reverse(\"子猫\"), \"猫子\")\n",
+    "difficulty": "easy",
+    "fishing_reward": 1,
+    "source": "Adapted from exercism/python (MIT License)",
+    "source_url": "https://github.com/exercism/python/tree/main/exercises/practice/reverse-string"
+  },
+  {
+    "id": "two-fer",
+    "title": "Two Fer",
+    "function_name": "two_fer",
+    "instructions": "`Two-fer` or `2-fer` is short for two for one. One for you and one for me.\n\nGiven a name, return a string with the message:\n```\nOne for X, one for me.\n```\n\nWhere X is the given name.\n\nHowever, if the name is missing, return the string:\n```\nOne for you, one for me.\n```\n\nHere are some examples:\n\n| Name   | Dialogue                    |\n|--------|-----------------------------|\n| Alice  | One for Alice, one for me.  |\n| Bohdan | One for Bohdan, one for me. |\n|        | One for you, one for me.    |\n\nWrite a function `two_fer(name)` accordingly. Hint: use a default argument so the function can be called with no arguments.",
+    "starter_code": "def two_fer(name):\n    pass\n",
+    "test_code": "import unittest\n\n\nclass TwoFerTest(unittest.TestCase):\n    def test_no_name_given(self):\n        self.assertEqual(two_fer(), \"One for you, one for me.\")\n\n    def test_a_name_given(self):\n        self.assertEqual(two_fer(\"Alice\"), \"One for Alice, one for me.\")\n\n    def test_another_name_given(self):\n        self.assertEqual(two_fer(\"Bob\"), \"One for Bob, one for me.\")\n",
+    "difficulty": "easy",
+    "fishing_reward": 1,
+    "source": "Adapted from exercism/python (MIT License)",
+    "source_url": "https://github.com/exercism/python/tree/main/exercises/practice/two-fer"
+  },
+  {
+    "id": "isogram",
+    "title": "Isogram",
+    "function_name": "is_isogram",
+    "instructions": "Determine if a word or phrase is an isogram.\n\nAn isogram (also known as a \"non-pattern word\") is a word or phrase without a repeating letter, however spaces and hyphens are allowed to appear multiple times.\n\nExamples of isograms:\n- lumberjacks\n- background\n- downstream\n- six-year-old\n\nThe word `isograms`, however, is not an isogram, because the `s` repeats.\n\nWrite a function `is_isogram(string)` that returns `True` or `False`. Comparison should be case-insensitive.",
+    "starter_code": "def is_isogram(string):\n    pass\n",
+    "test_code": "import unittest\n\n\nclass IsogramTest(unittest.TestCase):\n    def test_empty_string(self):\n        self.assertIs(is_isogram(\"\"), True)\n\n    def test_isogram_with_only_lower_case_characters(self):\n        self.assertIs(is_isogram(\"isogram\"), True)\n\n    def test_word_with_one_duplicated_character(self):\n        self.assertIs(is_isogram(\"eleven\"), False)\n\n    def test_word_with_one_duplicated_character_from_the_end_of_the_alphabet(self):\n        self.assertIs(is_isogram(\"zzyzx\"), False)\n\n    def test_longest_reported_english_isogram(self):\n        self.assertIs(is_isogram(\"subdermatoglyphic\"), True)\n\n    def test_word_with_duplicated_character_in_mixed_case(self):\n        self.assertIs(is_isogram(\"Alphabet\"), False)\n\n    def test_word_with_duplicated_character_in_mixed_case_lowercase_first(self):\n        self.assertIs(is_isogram(\"alphAbet\"), False)\n\n    def test_hypothetical_isogrammic_word_with_hyphen(self):\n        self.assertIs(is_isogram(\"thumbscrew-japingly\"), True)\n\n    def test_hypothetical_word_with_duplicated_character_following_hyphen(self):\n        self.assertIs(is_isogram(\"thumbscrew-jappingly\"), False)\n\n    def test_isogram_with_duplicated_hyphen(self):\n        self.assertIs(is_isogram(\"six-year-old\"), True)\n\n    def test_made_up_name_that_is_an_isogram(self):\n        self.assertIs(is_isogram(\"Emily Jung Schwartzkopf\"), True)\n\n    def test_duplicated_character_in_the_middle(self):\n        self.assertIs(is_isogram(\"accentor\"), False)\n\n    def test_same_first_and_last_characters(self):\n        self.assertIs(is_isogram(\"angola\"), False)\n\n    def test_word_with_duplicated_character_and_with_two_hyphens(self):\n        self.assertIs(is_isogram(\"up-to-date\"), False)\n",
+    "difficulty": "easy",
+    "fishing_reward": 2,
+    "source": "Adapted from exercism/python (MIT License)",
+    "source_url": "https://github.com/exercism/python/tree/main/exercises/practice/isogram"
+  },
+  {
+    "id": "pangram",
+    "title": "Pangram",
+    "function_name": "is_pangram",
+    "instructions": "Figure out if a sentence is a pangram.\n\nA pangram is a sentence using every letter of the alphabet at least once. It is case insensitive, so it doesn't matter if a letter is lower-case (e.g. `k`) or upper-case (e.g. `K`).\n\nFor this exercise, a sentence is a pangram if it contains each of the 26 letters in the English alphabet.\n\nWrite a function `is_pangram(sentence)` that returns `True` or `False`.",
+    "starter_code": "def is_pangram(sentence):\n    pass\n",
+    "test_code": "import unittest\n\n\nclass PangramTest(unittest.TestCase):\n    def test_empty_sentence(self):\n        self.assertIs(is_pangram(\"\"), False)\n\n    def test_perfect_lower_case(self):\n        self.assertIs(is_pangram(\"abcdefghijklmnopqrstuvwxyz\"), True)\n\n    def test_only_lower_case(self):\n        self.assertIs(is_pangram(\"the quick brown fox jumps over the lazy dog\"), True)\n\n    def test_missing_the_letter_x(self):\n        self.assertIs(is_pangram(\"a quick movement of the enemy will jeopardize five gunboats\"), False)\n\n    def test_missing_the_letter_h(self):\n        self.assertIs(is_pangram(\"five boxing wizards jump quickly at it\"), False)\n\n    def test_with_underscores(self):\n        self.assertIs(is_pangram(\"the_quick_brown_fox_jumps_over_the_lazy_dog\"), True)\n\n    def test_with_numbers(self):\n        self.assertIs(is_pangram(\"the 1 quick brown fox jumps over the 2 lazy dogs\"), True)\n\n    def test_missing_letters_replaced_by_numbers(self):\n        self.assertIs(is_pangram(\"7h3 qu1ck brown fox jumps ov3r 7h3 lazy dog\"), False)\n\n    def test_mixed_case_and_punctuation(self):\n        self.assertIs(is_pangram('\"Five quacking Zephyrs jolt my wax bed.\"'), True)\n\n    def test_a_m_and_a_m_are_26_different_characters_but_not_a_pangram(self):\n        self.assertIs(is_pangram(\"abcdefghijklm ABCDEFGHIJKLM\"), False)\n",
+    "difficulty": "easy",
+    "fishing_reward": 2,
+    "source": "Adapted from exercism/python (MIT License)",
+    "source_url": "https://github.com/exercism/python/tree/main/exercises/practice/pangram"
+  }
+]
