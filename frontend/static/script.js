@@ -27,6 +27,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const isDark = document.body.classList.contains("dark");
     themeToggle.textContent = isDark ? "Light Mode" : "Dark Mode";
+    themeToggle.setAttribute("aria-checked", isDark ? "true" : "false");
+    themeToggle.setAttribute("aria-label", isDark ? "Switch to light mode" : "Switch to dark mode");
   }
   
   const firstFavoriteInput = document.querySelector("#favorite_1");
@@ -110,6 +112,8 @@ document.addEventListener("DOMContentLoaded", () => {
         btn.dataset.loading = "";
         btn.textContent = form.action?.includes("/recommendations")
           ? "Generating…"
+          : form.action?.includes("/login") || form.action?.includes("/register")
+          ? "Logging in…"
           : "Searching…";
       }
       return;
