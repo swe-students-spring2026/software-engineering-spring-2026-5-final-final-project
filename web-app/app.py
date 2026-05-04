@@ -202,8 +202,42 @@ def create_app(test_config=None):
     @app.route("/setup", methods=["GET", "POST"])
     def setup():
         if request.method == "POST":
-            save_profile_fields()
-            save_question_puzzles()
+            db.users.update_one(
+                {"_id": ObjectId(session["user_id"])},
+                {"$set": {
+                    "age": int(request.form.get("age") or 0),
+                    "gender": request.form.get("gender"),
+                    "profile_pic": request.form.get("profile_pic", ""),
+                    "contact_info": request.form.get("contact_info", ""),
+                }}
+            )
+
+            engine_url = app.config["GAME_ENGINE_URL"]
+
+            question_answers = []
+            for i, question in enumerate(SETUP_QUESTIONS, start=1):
+                answer = request.form.get(f"answer_{i}")
+                if answer:
+                    question_answers.append({"question": question, "answer": answer})
+
+            if len(question_answers) == len(SETUP_QUESTIONS):
+                try:
+                    puzzle_data = create_puzzle(
+                        engine_url,
+                        question_answers=question_answers,
+                    )
+                    db.puzzles.insert_one({
+                        "owner_user_id": session["user_id"],
+                        "question": puzzle_data["question"],
+                        "answer": puzzle_data["answer"],
+                        "questions": puzzle_data["questions"],
+                        "answers": puzzle_data["answers"],
+                        "board": puzzle_data["board"],
+                        "max_attempts": puzzle_data["max_attempts"],
+                    })
+                except Exception:
+                    pass
+
             return redirect(url_for("dashboard"))
         user = attach_profile_questions(get_current_user() or {})
         return render_template("setup.html", user=user)
@@ -228,23 +262,29 @@ def create_app(test_config=None):
         ]), None)
 
         puzzles = list(db.puzzles.find({"owner_user_id": str(candidate["_id"])})) if candidate else []
-        if candidate:
-            candidate["questions"] = puzzles
+        puzzle = puzzles[0] if puzzles else None
+        if candidate and puzzle:
+            candidate["questions"] = [
+                {"question": question} for question in puzzle.get("questions", [])
+            ]
 
         if request.method == "POST":
             correct_count = 0
-            for i, puzzle in enumerate(puzzles, start=1):
+            answers = puzzle.get("answers", []) if puzzle else []
+            for i, _answer in enumerate(answers, start=1):
                 guess = request.form.get(f"answer_{i}")
                 previous_guesses = session.get(f"guesses_{i}", [])
 
                 outcome = evaluate_guess(
                     engine_url,
                     question=puzzle["question"],
-                    answer=puzzle["answer"],
+                    answer=puzzle.get("answer"),
+                    questions=puzzle.get("questions", []),
+                    answers=answers,
                     board=puzzle["board"],
                     guess=guess,
                     previous_guesses=previous_guesses,
-                    max_attempts=puzzle.get("max_attempts", 5),
+                    max_attempts=puzzle["max_attempts"],
                 )
 
                 session.setdefault(f"guesses_{i}", []).append(guess)
@@ -253,11 +293,11 @@ def create_app(test_config=None):
 
             result = {
                 "score": correct_count,
-                "total": len(puzzles),
-                "matched": correct_count == len(puzzles),
+                "total": len(answers),
+                "matched": bool(answers) and correct_count == len(answers),
             }
 
-            if correct_count == len(puzzles) and candidate:
+            if result["matched"] and candidate:
                 db.matches.insert_one({
                     "solver_user_id": session.get("user_id"),
                     "target_user_id": str(candidate["_id"]),
