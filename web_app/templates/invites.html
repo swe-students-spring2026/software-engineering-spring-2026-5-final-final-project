@@ -20,7 +20,13 @@
     <section class="content">
         <div class="content-header">
             <h2>invites</h2>
-            <a href="{{ url_for('home_past') }}"><img src="{{ url_for('static', filename='icons/arrow.up.arrow.down.circle.purple.svg') }}" alt="filter"></a>
+            <a href="{{ url_for('invites', sort='desc' if sort_order == 'asc' else 'asc') }}" class="filter">
+                {% if sort_order == 'asc' %}
+                    <img src="{{ url_for('static', filename='icons/arrow.up.arrow.down.circle.purple.svg') }}" alt="Sort furthest first">
+                {% else %}
+                    <img src="{{ url_for('static', filename='icons/arrow.up.arrow.down.circle.purple.svg') }}" alt="Sort soonest first">
+                {% endif %}
+            </a>
         </div>
         <ul class="invites">
             {% for event in invited_events %}

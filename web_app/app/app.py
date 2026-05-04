@@ -165,6 +165,9 @@ def format_time(date):
 @app.route("/home-past")
 @login_required
 def home_past():
+    # sort order
+    sort_order = request.args.get("sort", "asc")
+
     # get current user
     users_collection = get_users_collection()
     user = users_collection.find_one({"_id": ObjectId(current_user.id)})
@@ -205,15 +208,21 @@ def home_past():
                     "details": event.get("description", "No description provided")
                 })
 
-    # we have to sort the events by the most recent first
-    past_events.sort(key=lambda x: x["date"], reverse=True)
+    # we have to sort the events by the filter setting
+    if (sort_order == "asc"):
+        past_events.sort(key=lambda x: x["date"], reverse=True)
+    else:
+        past_events.sort(key=lambda x: x["date"])
 
-    return render_template("home-past.html", past_events = past_events)
+    return render_template("home-past.html", past_events = past_events, sort_order=sort_order)
 
 
 @app.route("/home-upcoming")
 @login_required
 def home_upcoming():
+    # sort order
+    sort_order = request.args.get("sort", "asc")
+
     # get current user
     users_collection = get_users_collection()
     user = users_collection.find_one({"_id": ObjectId(current_user.id)})
@@ -254,15 +263,21 @@ def home_upcoming():
                     "details": event.get("description", "No description provided")
                 })
 
-    # we have to sort the events by the most recent first
-    upcoming_events.sort(key=lambda x: x["date"])
+    # we have to sort the events by the filter setting
+    if (sort_order == "asc"):
+        upcoming_events.sort(key=lambda x: x["date"])
+    else:
+        upcoming_events.sort(key=lambda x: x["date"], reverse=True)
 
-    return render_template("home-upcoming.html", upcoming_events=upcoming_events)
+    return render_template("home-upcoming.html", upcoming_events=upcoming_events, sort_order=sort_order)
 
 
 @app.route("/invites")
 @login_required
 def invites():
+    # sort order
+    sort_order = request.args.get("sort", "asc")
+
     # get current user
     users_collection = get_users_collection()
     user = users_collection.find_one({"_id": ObjectId(current_user.id)})
@@ -308,10 +323,13 @@ def invites():
                     "details": event.get("description", "No description provided")
                 })
 
-    # we have to sort the events by the most recent first
-    invited_events.sort(key=lambda x: x["date"])
+    # we have to sort the events by the filter setting
+    if (sort_order == "asc"):
+        invited_events.sort(key=lambda x: x["date"])
+    else:
+        invited_events.sort(key=lambda x: x["date"], reverse=True)
 
-    return render_template("invites.html", invited_events=invited_events)
+    return render_template("invites.html", invited_events=invited_events, sort_order=sort_order)
 
 # a user accepts an event
 @app.route("/invites/<event_id>/accept", methods=["GET", "POST"])
@@ -386,6 +404,9 @@ def decline_event(event_id):
 @app.route("/host-events")
 @login_required
 def host_events():
+    # sort order
+    sort_order = request.args.get("sort", "asc")
+
     users = get_users_collection()
     events = get_db()["events"]
     user = users.find_one({"_id": ObjectId(current_user.id)})
@@ -401,7 +422,13 @@ def host_events():
                 "details": event.get("description", "No description provided"),
                 "invitees_list": event.get("invitees_list", [])
             })
-    return render_template("host-events.html", hosting_events=hosting_events)
+    
+    # we have to sort the events by the filter setting
+    if (sort_order == "asc"):
+        hosting_events.sort(key=lambda x: x["date"])
+    else:
+        hosting_events.sort(key=lambda x: x["date"], reverse=True)
+    return render_template("host-events.html", hosting_events=hosting_events, sort_order=sort_order)
 
 @app.route("/host-events/create", methods=["GET", "POST"])
 @login_required
