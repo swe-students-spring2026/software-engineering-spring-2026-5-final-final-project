@@ -8,7 +8,7 @@
   </head>
   <body>
     <header class="site-header">
-      <a class="brand" href="{{ url_for('index') }}">PlaceHolder Name</a>
+      <a class="brand" href="{{ url_for('dashboard') if g.current_user else url_for('index') }}">PlaceHolder Name</a>
       <nav class="nav">
         {% if g.current_user %}
           <a href="{{ url_for('dashboard') }}">Dashboard</a>
