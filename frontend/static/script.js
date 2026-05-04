@@ -34,6 +34,65 @@ document.addEventListener("DOMContentLoaded", () => {
   const firstFavoriteInput = document.querySelector("#favorite_1");
   if (firstFavoriteInput) firstFavoriteInput.focus();
 
+  // ── Logout confirmation dialog ────────────────────────────────────────────
+  const logoutLink = document.querySelector(".btn-logout");
+  if (logoutLink) {
+    logoutLink.addEventListener("click", (e) => {
+      e.preventDefault();
+
+      const backdrop = document.createElement("div");
+      backdrop.className = "logout-dialog-backdrop";
+      backdrop.setAttribute("role", "dialog");
+      backdrop.setAttribute("aria-modal", "true");
+      backdrop.setAttribute("aria-labelledby", "logout-dialog-title");
+      backdrop.innerHTML =
+        '<div class="logout-dialog">' +
+          '<p id="logout-dialog-title" class="logout-dialog-title">Sign out of CineMatch?</p>' +
+          '<p class="logout-dialog-desc">You\'ll need to sign in again to access your watchlist and recommendations.</p>' +
+          '<div class="logout-dialog-actions">' +
+            '<button class="btn-primary logout-confirm-yes" type="button">Sign out</button>' +
+            '<button class="btn-secondary logout-confirm-no" type="button">Cancel</button>' +
+          '</div>' +
+        '</div>';
+
+      document.body.appendChild(backdrop);
+      document.body.style.overflow = "hidden";
+
+      const cancelBtn = backdrop.querySelector(".logout-confirm-no");
+      const confirmBtn = backdrop.querySelector(".logout-confirm-yes");
+
+      cancelBtn.focus();
+
+      requestAnimationFrame(() => backdrop.classList.add("visible"));
+
+      function close() {
+        backdrop.classList.remove("visible");
+        backdrop.addEventListener("transitionend", () => {
+          backdrop.remove();
+          document.body.style.overflow = "";
+          logoutLink.focus();
+        }, { once: true });
+      }
+
+      confirmBtn.addEventListener("click", () => {
+        window.location.href = logoutLink.href;
+      });
+
+      cancelBtn.addEventListener("click", close);
+
+      backdrop.addEventListener("click", (e) => {
+        if (e.target === backdrop) close();
+      });
+
+      document.addEventListener("keydown", function onEsc(e) {
+        if (e.key === "Escape") {
+          document.removeEventListener("keydown", onEsc);
+          close();
+        }
+      });
+    });
+  }
+
   // ── Watchlist toggle with toast undo ─────────────────────────────────────
 
   let toastEl = null;
