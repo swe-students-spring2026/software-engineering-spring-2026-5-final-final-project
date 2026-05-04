@@ -1,0 +1,48 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f7f4fb;
+}
+
+.container {
+  max-width: 650px;
+  margin: 40px auto;
+  background: white;
+  padding: 24px;
+  border-radius: 14px;
+}
+
+h1 {
+  color: #57068c;
+}
+
+.card {
+  margin-top: 20px;
+}
+
+.task {
+  border-left: 5px solid #57068c;
+  background: #fafafa;
+  padding: 16px;
+  margin-bottom: 14px;
+  border-radius: 10px;
+}
+
+.button,
+button {
+  background: #57068c;
+  color: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: none;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.danger {
+  background: #cc0000;
+}
+
+.link {
+  margin-left: 12px;
+}

@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+  <body>
+    <h1>Create Reminder</h1>
+
+    <form method="POST">
+      <input name="title" placeholder="Title" required>
+      <input name="date" type="date" required>
+
+      <select name="reminder_frequency">
+        <option value="none">No Reminder</option>
+        <option value="hourly">Hourly</option>
+        <option value="daily">Daily</option>
+        <option value="weekly">Weekly</option>
+      </select>
+
+      <button type="submit">Create</button>
+    </form>
+
+    <a href="{{ url_for('tasks.show_tasks') }}">Back</a>
+  </body>
+</html>

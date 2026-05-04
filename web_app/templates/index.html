@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Reminder Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  </head>
+  <body>
+    <main class="container">
+      <h1>My Reminders</h1>
+
+      <a class="button" href="{{ url_for('tasks.create_task') }}">Create Reminder</a>
+      <a class="link" href="{{ url_for('auth.logout') }}">Logout</a>
+
+      <section class="card">
+        {% if tasks %}
+          {% for task in tasks %}
+            <div class="task">
+              <h2>{{ task.title }}</h2>
+              <p>Status: {% if task.completed %}Completed{% else %}Not completed{% endif %}</p>
+              <p>Reminder enabled: {{ task.reminder_enabled }}</p>
+
+              <form method="POST" action="{{ url_for('tasks.delete_task', task_id=task._id) }}">
+                <button class="danger" type="submit">Delete</button>
+              </form>
+            </div>
+          {% endfor %}
+        {% else %}
+          <p>No reminders yet.</p>
+        {% endif %}
+      </section>
+    </main>
+  </body>
+</html>
