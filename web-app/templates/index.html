@@ -51,7 +51,7 @@
             <div class="tasks">
                 {%for task in overdue%}
                 <div class="task">
-                    <a href="/task/{{task['id']}}"><p>{{task['title']}}</p></a>
+                    <p>{{task['title']}}</p>
                     <a class="button-style done-button" href="{{ url_for('complete_task', task_id=task['id']) }}"> done</a>
                     <a class="button-style" href="{{ url_for('edit_task', task_id=task['id']) }}"> edit</a>
                     <a class="button-style" href="{{ url_for('task_detail', task_id=task['id']) }}"> see task </a>
@@ -65,7 +65,7 @@
             <div class="tasks">
                 {%for task in due_soon%}
                 <div class="task">
-                    <a href="/task/{{task['id']}}"><p>{{task['title']}}</p></a>
+                    <p>{{task['title']}}</p>
                     <a class="button-style done-button" href="{{ url_for('complete_task', task_id=task['id']) }}"> done</a>
                     <a class="button-style" href="{{ url_for('edit_task', task_id=task['id']) }}"> edit</a>
                     <a class="button-style" href="{{ url_for('task_detail', task_id=task['id']) }}"> see task </a>
@@ -79,7 +79,7 @@
             <div class="tasks">
                 {%for task in upcoming%}
                 <div class="task">
-                    <a href="/task/{{task['id']}}"><p>{{task['title']}}</p></a>
+                    <p>{{task['title']}}</p>
                     <a class="button-style done-button" href="{{ url_for('complete_task', task_id=task['id']) }}"> done</a>
                     <a class="button-style" href="{{ url_for('edit_task', task_id=task['id']) }}"> edit</a>
                     <a class="button-style" href="{{ url_for('task_detail', task_id=task['id']) }}"> see task </a>
