@@ -36,16 +36,16 @@ def test_handle_search_direct_mode():
     assert result["mode"] == "direct"
     assert result["query"] == "Gladiator"
     assert result["results"] == [{"id": "1"}]
-    mock.assert_called_once_with("Gladiator")
+    mock.assert_called_once_with("Gladiator", mode='direct')
 
 
 def test_handle_search_intent_mode():
     long_query = "a slow burn psychological thriller like Nolan films"
-    with patch("services.search_router.api_client.recommend_movies", return_value=[{"id": "2"}]) as mock:
+    with patch("services.search_router.api_client.search_movies", return_value=[{"id": "2"}]) as mock:
         result = handle_search(long_query)
     assert result["mode"] == "intent"
     assert result["results"] == [{"id": "2"}]
-    mock.assert_called_once_with(long_query)
+    mock.assert_called_once_with(long_query, mode='intent')
 
 
 def test_handle_search_strips_whitespace():
