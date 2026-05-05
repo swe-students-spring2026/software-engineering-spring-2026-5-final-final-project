@@ -246,7 +246,7 @@ def movie_detail(movie_id):
     row = store.id_to_row.get(movie_id)
     if row is None:
         return jsonify({"error": "Not found"}), 404
-    return jsonify(_metadata_to_dict(store.metadata[row]))
+    return jsonify(_metadata_to_dict(row, store.metadata[row]))
 
 
 @app.route("/movies/<movie_id>/similar")
