@@ -4,11 +4,6 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-requests = "*"
-flask = "*"
-python-dotenv = "*"
-pymongo = "*"
-bson = "*"
 
 [dev-packages]
 pytest = "*"

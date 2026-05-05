@@ -3,14 +3,8 @@ name: CI/CD (Machine Learning)
 on:
   push:
     branches: [main]
-    paths:
-      - "ml/**"
-      - ".github/workflows/mi-ci-cd.yml"
   pull_request:
     branches: [main]
-    paths:
-      - "ml/**"
-      - ".github/workflows/mi-ci-cd.yml"
 
 jobs:
   test-machine-learning-client:
@@ -40,11 +34,11 @@ jobs:
           python -m pip install pipenv pytest
           pipenv install --dev
 
-      - name: Run tests if present
+      - name: Run tests with coverage if present
         working-directory: ml
         run: |
           if [ -d tests ] && find tests -type f | grep -q .; then
-            pipenv run pytest tests
+            pipenv run pytest --cov=meme --cov-report=term-missing --cov-fail-under=80
           else
             echo "No tests found in ml/tests."
           fi
@@ -65,8 +59,10 @@ jobs:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
         run: |
-          if [ -z "$DOCKERHUB_USERNAME" ] || [ -z "$DOCKERHUB_TOKEN" ]; then
-            echo "::error::DockerHub secrets DOCKERHUB_USERNAME and DOCKERHUB_TOKEN are required to push images."
+          DOCKERHUB_USERNAME="${DOCKERHUB_USERNAME:-adamsolimannyu}"
+
+          if [ -z "$DOCKERHUB_TOKEN" ]; then
+            echo "::error::DockerHub secret DOCKERHUB_TOKEN is required to push images."
             exit 1
           fi
 

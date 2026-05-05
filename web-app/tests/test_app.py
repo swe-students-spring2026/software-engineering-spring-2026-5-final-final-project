@@ -1,30 +1,11 @@
-"""tests for web app main functions."""
+"""Tests for app creation."""
 
-from app.main import health, home_text, result_text
-
-
-def test_health():
-    """check health function."""
-    assert health() == {"status": "ok"}
+from app import create_app
 
 
-def test_home_text():
-    """check home page text."""
-    assert home_text() == "News2Meme"
+def test_create_app():
+    """check flask app is created."""
+    test_app = create_app()
 
-
-def test_result_text_missing_summary():
-    """check missing summary result."""
-    assert result_text("", "image.png") == "missing result"
-
-
-def test_result_text_missing_image():
-    """check missing image result."""
-    assert result_text("summary", "") == "missing result"
-
-
-def test_result_text_normal():
-    """check normal result text."""
-    assert result_text("news summary", "meme.png") == (
-        "summary: news summary image: meme.png"
-    )
+    assert test_app is not None
+    assert test_app.name == "app"

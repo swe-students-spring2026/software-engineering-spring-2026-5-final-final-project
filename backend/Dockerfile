@@ -8,4 +8,4 @@ RUN python -m pip install --no-cache-dir --upgrade pip pipenv \
 
 COPY . .
 
-CMD ["python", "main.py"]
+CMD ["python", "-m", "app.main"]

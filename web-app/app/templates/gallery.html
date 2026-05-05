@@ -5,7 +5,7 @@
     <title>Meme Gallery</title>
     <link
       rel="stylesheet"
-      href="{{ url_for('static', filename='style.css') }}"
+      href="{{ url_for('static', filename='styles.css') }}"
     />
   </head>
 
@@ -15,5 +15,36 @@
       <a href="{{ url_for('main.gallery') }}">Gallery</a>
     </div>
     <h1>View Memes Created by Our Community</h1>
+
+    {% if error %}
+    <p class="error">{{ error }}</p>
+
+    {% elif not memes %}
+    <p>No memes yet — be the first to generate one!</p>
+
+    {% else %}
+    <div class="gallery-grid">
+      {% for record in memes %}
+      <div class="gallery-item">
+        {% if record.meme_url %}
+        <img src="{{ record.meme_url }}" alt="meme thumbnail" />
+        {% endif %}
+
+        <p><strong>Person:</strong> {{ record.person_name or "N/A" }}</p>
+
+        <p>
+          <strong>Source:</strong>
+          {% if record.source_url %}
+          <a href="{{ record.source_url }}" target="_blank">
+            {{ record.source_url }}
+          </a>
+          {% else %} N/A {% endif %}
+        </p>
+
+        <p><strong>Summary:</strong> {{ record.article_summary or "N/A" }}</p>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
   </body>
 </html>

@@ -5,7 +5,7 @@
     <title>Article Meme Generator</title>
     <link
       rel="stylesheet"
-      href="{{ url_for('static', filename='style.css') }}"
+      href="{{ url_for('static', filename='styles.css') }}"
     />
   </head>
 
@@ -17,12 +17,19 @@
     <h1>Article Meme Generator</h1>
 
     <h2>
-      Too lazy to read an article? Paste the link below and view a summary
-      depicted by memes:
+      Too lazy to read an article? Paste the link below or copy paste the
+      contents to view a summary depicted by memes:
     </h2>
-    <form>
-      <label for="article-link">Link:</label><br />
-      <input type="text" id="article-link" name="article-link" /><br />
+    <form action="/submit" method="POST">
+      <label>Name:</label><br />
+      <input type="text" name="name" /><br /><br />
+
+      <label>Link:</label><br />
+      <input type="text" name="article-link" /><br /><br />
+
+      <label>Article Text:</label><br />
+      <input type="text" name="article-text" /><br /><br />
+
       <input type="submit" value="Submit" />
     </form>
   </body>

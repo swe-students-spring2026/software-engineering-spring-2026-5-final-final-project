@@ -1,0 +1,53 @@
+services:
+  web-app:
+    build:
+      context: ./web-app
+    image: project5-web-app:local
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-your_openai_api_key_here}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
+      MONGODB_URI: mongodb://mongodb:27017
+      MONGODB_DB_NAME: ${MONGODB_DB_NAME:-meme_generator}
+      MONGODB_COLLECTION_NAME: ${MONGODB_COLLECTION_NAME:-generated_memes}
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mongodb
+      - backend
+      - ml
+
+  backend:
+    build:
+      context: ./backend
+    image: project5-backend:local
+    command: ["sh", "-c", "python -m app.main && tail -f /dev/null"]
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-your_openai_api_key_here}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
+      MONGODB_URI: mongodb://mongodb:27017
+      MONGODB_DB_NAME: ${MONGODB_DB_NAME:-meme_generator}
+      MONGODB_COLLECTION_NAME: ${MONGODB_COLLECTION_NAME:-generated_memes}
+    depends_on:
+      - mongodb
+
+  ml:
+    build:
+      context: ./ml
+    image: project5-ml:local
+    command: ["sh", "-c", "python -m meme.main && tail -f /dev/null"]
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-your_openai_api_key_here}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
+      MONGODB_URI: mongodb://mongodb:27017
+      MONGODB_DB_NAME: ${MONGODB_DB_NAME:-meme_generator}
+      MONGODB_COLLECTION_NAME: ${MONGODB_COLLECTION_NAME:-generated_memes}
+
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+
+volumes:
+  mongodb-data:

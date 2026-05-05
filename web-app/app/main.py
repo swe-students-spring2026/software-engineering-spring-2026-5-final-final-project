@@ -1,18 +1,18 @@
-"""main web app file base (ok to change)."""
+"""Small presentation helpers for the web app."""
 
 
 def health():
-    """return web app health status."""
+    """Return web app health status."""
     return {"status": "ok"}
 
 
 def home_text():
-    """return home page text."""
+    """Return home page text."""
     return "News2Meme"
 
 
 def result_text(summary, image):
-    """return result text."""
+    """Return result text."""
     if summary == "" or image == "":
         return "missing result"
 
