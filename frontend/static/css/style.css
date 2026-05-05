@@ -16,7 +16,7 @@ html, body {
 
 .content {
     min-height: 100vh;
-    padding-bottom: 72px; /* clears the bottom nav */
+    padding-bottom: 72px;
     overflow-y: auto;
 }
 
@@ -120,24 +120,6 @@ html, body {
 
 .nav-tab.active {
     color: #111;
-}
-
-.nav-tab--add {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: #111;
-    color: #fff;
-    margin-bottom: 8px;
-}
-
-.nav-tab--add svg {
-    width: 24px;
-    height: 24px;
-}
-
-.nav-tab--add.active {
-    color: #fff;
 }
 
 /* Page header */
@@ -396,4 +378,26 @@ html, body {
 .settings-row--logout {
     text-decoration: none;
     color: #111;
+}
+
+.empty-state {
+    padding: 32px 16px;
+    text-align: center;
+}
+
+.empty-state-text {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 12px;
+}
+
+.btn-inline {
+    display: inline-block;
+    padding: 10px 20px;
+    background: #111;
+    color: #fff;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
 }

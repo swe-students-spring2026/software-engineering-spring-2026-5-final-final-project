@@ -29,7 +29,10 @@
         {% endif %}
     </div>
     {% else %}
-    <p>No friends yet. <a href="/friends/add">Add some!</a></p>
+    <div class="empty-state">
+        <p class="empty-state-text">No friends yet</p>
+        <a href="/friends/add" class="btn-inline">+ Add a friend</a>
+    </div>
     {% endfor %}
 </section>
 {% endblock %}
