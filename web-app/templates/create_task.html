@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Task | PriorityManager</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <main class="page center">
+        <section class="card narrow">
+            <a href="{{ url_for('dashboard') }}" class="back">← Back</a>
+
+            <p class="eyebrow">PriorityManager</p>
+            <h1>Add task</h1>
+            <p class="muted">Add an assignment and we’ll estimate its priority.</p>
+
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert error">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" class="form">
+                <div class="field">
+                    <label for="title">Task Name</label>
+                    <input id="title" name="title" placeholder="Example: Finish math homework" required>
+                </div>
+
+                <div class="field">
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description" rows="5" placeholder="Add details about the assignment..." required></textarea>
+                </div>
+
+                <div class="field">
+                    <label for="due_date">Due Date</label>
+                    <input id="due_date" type="date" name="due_date" required>
+                    <script>
+                        document.getElementById("due_date").min = new Date().toISOString().split("T")[0];
+                    </script>
+                </div>
+
+                <button type="submit">Save task</button>
+            </form>
+        </section>
+    </main>
+</body>
+</html>

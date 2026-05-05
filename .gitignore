@@ -1,6 +1,10 @@
 # mac junk
 .DS_Store
 
+# Ignore the .env file (sensitive data like API keys, credentials)
+.env
+**/.env
+
 # visual studio code junk
 .vscode/
 .vscode/settings.json
