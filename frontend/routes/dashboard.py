@@ -1,14 +1,9 @@
-from bson import ObjectId
-from flask import Blueprint, render_template, session
+from flask import Blueprint, render_template
 
 from db import mongo
+from utils import get_user_id
 
 dashboard_bp = Blueprint("dashboard", __name__)
-
-
-def _user_id():
-    uid = session.get("user_id")
-    return ObjectId(uid) if uid else None
 
 
 def _get_history(user_id):
@@ -24,13 +19,13 @@ def _get_history(user_id):
 
 @dashboard_bp.route("/history")
 def history():
-    items = _get_history(_user_id())
+    items = _get_history(get_user_id())
     return render_template("history.html", history=items)
 
 
 @dashboard_bp.route("/analytics")
 def analytics():
-    user_id = _user_id()
+    user_id = get_user_id()
     history_items = _get_history(user_id)
 
     watchlist_count = mongo.db.watchlists.count_documents({"user_id": user_id}) if user_id else 0
