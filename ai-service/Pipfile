@@ -1,0 +1,23 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+fastapi = "*"
+pymongo = "*"
+python-dotenv = "*"
+pydantic = "*"
+ffmpeg-python = "*"
+anthropic = "*"
+uvicorn = "*"
+faster-whisper = "*"
+requests = "*"
+
+[dev-packages]
+pytest = "*"
+pytest-cov = "*"
+httpx = "*"
+
+[requires]
+python_version = "3.11"
