@@ -67,5 +67,5 @@ jobs:
           script: |
             cd /root/5-final-lacewing_squad
             git pull
-            docker compose down -v
-            docker compose up --build -d
+            docker compose down --remove-orphans
+            docker compose up --build --force-recreate -d
