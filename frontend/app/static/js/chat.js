@@ -23,6 +23,8 @@ const CHAT_HISTORY_LIMIT = 20; // keep last 10 turns (user + model each)
 
 // ── Persistent history (survives page navigation) ─────────────────────────────
 const _HISTORY_KEY = "nyu_chat_history";
+const _SPEED_KEY   = "nyu_chat_speed";
+const _SPEED_VALID = new Set(["fast", "balanced", "smart"]);
 
 function _saveHistory() {
     try { localStorage.setItem(_HISTORY_KEY, JSON.stringify(chatHistory)); }
@@ -36,6 +38,23 @@ function _loadHistory() {
     } catch (e) {
         chatHistory = [];
     }
+}
+
+function _loadSpeed() {
+    const sel = document.getElementById("chat-speed");
+    if (!sel) return;
+    try {
+        const saved = localStorage.getItem(_SPEED_KEY);
+        if (saved && _SPEED_VALID.has(saved)) sel.value = saved;
+    } catch (e) { /* ignore */ }
+    sel.addEventListener("change", () => {
+        try { localStorage.setItem(_SPEED_KEY, sel.value); } catch (e) {}
+    });
+}
+
+function _currentSpeed() {
+    const sel = document.getElementById("chat-speed");
+    return sel && _SPEED_VALID.has(sel.value) ? sel.value : "balanced";
 }
 
 /** Rebuild the message list from chatHistory after a page load. */
@@ -139,7 +158,10 @@ function _restoreMessages() {
     }
 
     function onMouseDown(e) {
-        if (e.target.closest("#chat-close-btn")) return;
+        // Don't start a drag when the click lands on a header control —
+        // otherwise preventDefault() below blocks button clicks and stops
+        // the <select> from opening its dropdown.
+        if (e.target.closest("#chat-close-btn, #chat-new-btn, #chat-speed")) return;
         const panel = document.getElementById("chat-panel");
 
         if (isDocked()) {
@@ -461,7 +483,13 @@ async function sendChat() {
         const res = await fetch("/api/chat", {
             method:  "POST",
             headers: { "Content-Type": "application/json" },
-            body:    JSON.stringify({ message: msg, major, completed_courses, history: historyForRequest }),
+            body:    JSON.stringify({
+                message: msg,
+                major,
+                completed_courses,
+                history: historyForRequest,
+                speed: _currentSpeed(),
+            }),
         });
         const data     = await res.json();
         const rawReply = data.reply || data.error || "Something went wrong.";
@@ -497,6 +525,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Restore history from the previous session before wiring up events
     _loadHistory();
     _restoreMessages();
+    _loadSpeed();
 
     const input = document.getElementById("chat-input");
     input.addEventListener("keydown", e => {

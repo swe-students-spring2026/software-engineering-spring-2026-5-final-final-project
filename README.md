@@ -67,7 +67,8 @@ Workflows run on every push and pull request to `main`/`master`. The Docker imag
   - `MONGO_DB_NAME` = `final_project`
   - `API_INTERNAL_TOKEN` = same random token used by the frontend
   - `GEMINI_API_KEY` = your Gemini key
-  - `GEMINI_MODEL` = `gemini-2.0-flash`
+  - `GEMINI_MODEL` = `gemini-2.5-flash` (default model; used by transcript parsing and as the chat's Balanced-tier fallback)
+  - `GEMINI_MODEL_FAST` / `GEMINI_MODEL_BALANCED` / `GEMINI_MODEL_SMART` = optional per-tier overrides for the chat speed selector
 
 **Frontend**
 - Source: `kylec55/web-app:latest`
@@ -161,7 +162,10 @@ cp .env.example .env
 | `MONGO_DB_NAME` | `apis` | Database name, e.g. `final_project` |
 | `API_INTERNAL_TOKEN` | `apis`, `frontend` | Shared token the frontend sends to protected API endpoints |
 | `GEMINI_API_KEY` | `apis` | Google Gemini API key |
-| `GEMINI_MODEL` | `apis` | Model name, default `gemini-2.0-flash` |
+| `GEMINI_MODEL` | `apis` | Default model; used by transcript parsing and as the chat's Balanced-tier fallback (default `gemini-2.5-flash`) |
+| `GEMINI_MODEL_FAST` | `apis` | Override for the chat's Fast tier (default `gemini-2.5-flash-lite`) |
+| `GEMINI_MODEL_BALANCED` | `apis` | Override for the chat's Balanced tier (defaults to `GEMINI_MODEL`) |
+| `GEMINI_MODEL_SMART` | `apis` | Override for the chat's Smart tier (default `gemini-2.5-pro`) |
 | `API_URL` | `frontend` | Internal URL of the API service |
 | `API_PORT` / `API_INTERNAL_PORT` | `apis` | External / internal port (default `8000`) |
 | `FRONTEND_PORT` / `FRONTEND_INTERNAL_PORT` | `frontend` | External / internal port (default `3000`) |
@@ -171,6 +175,6 @@ cp .env.example .env
 
 - `apis/app/main.py` — API entrypoint; registers the chat blueprint and the `/classes` route.
 - `frontend/app/main.py` — Frontend entrypoint; proxies class search to the API.
-- `apis/app/ai/` — Gemini AI client, tool-calling loop, and mock tool handlers.
+- `apis/app/ai/` — Gemini AI client, tool-calling loop, and MongoDB-backed tool handlers (course search, sections, programs, professor lookups).
 - `scrapers/scraper.py` — Full scraper CLI; run with `--help` to see all options.
 - Each subsystem has its own `Dockerfile` and runtime `requirements.txt`; API and frontend tests use `requirements-dev.txt`.

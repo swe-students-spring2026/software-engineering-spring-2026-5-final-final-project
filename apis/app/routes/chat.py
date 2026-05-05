@@ -22,6 +22,7 @@ from collections import deque
 from flask import Blueprint, request, jsonify, Response
 
 from app.ai.service import chat
+from app.config.settings import GEMINI_MODEL_CHOICES
 
 chat_bp = Blueprint("chat", __name__)
 
@@ -91,6 +92,9 @@ def chat_endpoint() -> tuple[Response, int] | Response:
     major: str = data.get("major", "").strip()
     student_profile: dict = data.get("student_profile") or {}
     history: list = data.get("history") or []
+    # "fast" / "balanced" / "smart" — anything else falls back to default.
+    speed: str = str(data.get("speed", "")).strip().lower()
+    model = GEMINI_MODEL_CHOICES.get(speed)
 
     if not message:
         return jsonify({"error": "message is required"}), 400
@@ -102,6 +106,7 @@ def chat_endpoint() -> tuple[Response, int] | Response:
             major=major,
             student_profile=student_profile,
             history=history,
+            model=model,
         )
         return jsonify({"reply": reply})
     except Exception as exc:

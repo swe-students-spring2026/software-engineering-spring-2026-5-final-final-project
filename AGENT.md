@@ -93,10 +93,11 @@ Each subsystem runs in an isolated `try/except` block — one failure does not a
 
 ## 4. AI Configuration
 
-**Model:** `GEMINI_MODEL` env var (default: `gemini-2.0-flash`)
+**Default model:** `GEMINI_MODEL` env var (default: `gemini-2.5-flash`). Used by transcript parsing and as the Balanced-tier fallback.
+**Per-tier overrides:** chat requests carry a `speed` field (`fast` / `balanced` / `smart`) which the route maps to a model ID via `GEMINI_MODEL_CHOICES` in `app/config/settings.py`. Each tier reads its own env var (`GEMINI_MODEL_FAST` / `GEMINI_MODEL_BALANCED` / `GEMINI_MODEL_SMART`) with sensible defaults.
 **SDK:** `google-genai`
 
-The AI runs a synchronous tool-calling loop: it receives a system prompt + conversation history, calls tools (defined in `tools.py`) as needed, and returns a final natural-language response. Tools are MongoDB-backed; no hallucinated data is returned.
+The AI runs a synchronous tool-calling loop: it receives a system prompt + conversation history, calls tools (defined in `tools.py`) as needed, and returns a final natural-language response. Tools are MongoDB-backed; the `add-courses` block emitted for the calendar is server-validated against tool results from the same turn so hallucinated CRNs are dropped before reaching the user.
 
 ---
 
@@ -118,7 +119,10 @@ The AI runs a synchronous tool-calling loop: it receives a system prompt + conve
 | `MONGO_URI` | Yes | MongoDB Atlas connection string |
 | `MONGO_DB_NAME` | Yes | Database name |
 | `GEMINI_API_KEY` | Yes | Google Gemini API key |
-| `GEMINI_MODEL` | No | Model name (default: `gemini-2.0-flash`) |
+| `GEMINI_MODEL` | No | Default model used by transcript parsing and as the Balanced-tier fallback (default: `gemini-2.5-flash`) |
+| `GEMINI_MODEL_FAST` | No | Override for the chat's Fast tier (default: `gemini-2.5-flash-lite`) |
+| `GEMINI_MODEL_BALANCED` | No | Override for the chat's Balanced tier (default: `GEMINI_MODEL`) |
+| `GEMINI_MODEL_SMART` | No | Override for the chat's Smart tier (default: `gemini-2.5-pro`) |
 | `FLASK_SECRET_KEY` | Yes | Flask session signing key |
 | `GOOGLE_CLIENT_ID` | Yes | Google OAuth client ID |
 | `GOOGLE_CLIENT_SECRET` | Yes | Google OAuth client secret |
