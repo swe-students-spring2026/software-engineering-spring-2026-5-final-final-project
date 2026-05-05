@@ -68,7 +68,7 @@ body {
 ================================ */
 .task-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 20px;
 }
 
@@ -99,9 +99,10 @@ body {
 }
 
 .task-card:hover {
-    transform: translateY(-3px);
-    box-shadow: var(--shadow-md);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
 }
+
 
 /* ================================
    TYPOGRAPHY
@@ -177,27 +178,30 @@ button:hover,
 ================================ */
 .badge {
     display: inline-block;
-    padding: 6px 12px;
+    padding: 5px 10px;
     border-radius: 999px;
-    font-size: 13px;
-    font-weight: 600;
+    font-weight: bold;
+    color: white;
+    border: 2px solid transparent;
 }
 
-.high {
-    background: var(--danger-bg);
-    color: var(--danger-text);
+.badge.high {
+    background: #fee2e2; /* Light red background */
+    color: #991b1b;       /* Dark red text */
+    border-color: #991b1b; /* Red border */
 }
 
-.medium {
-    background: var(--warning-bg);
-    color: var(--warning-text);
+.badge.medium {
+    background: #fef3c7; /* Light yellow background */
+    color: #92400e;       /* Dark yellow text */
+    border-color: #92400e; /* Yellow border */
 }
 
-.low {
-    background: var(--success-bg);
-    color: var(--success-text);
+.badge.low {
+    background: #dcfce7; /* Light green background */
+    color: #166534;       /* Dark green text */
+    border-color: #166534; /* Green border */
 }
-
 /* ================================
    ALERT MESSAGES
 ================================ */
@@ -416,6 +420,21 @@ a:hover {
     margin-bottom: 6px;
 }
 
+.dashboard-cta a {
+    background: #2c3e50;
+    color: white;
+    padding: 12px 18px;
+    border-radius: 8px;
+    font-weight: bold;
+    text-decoration: none;
+    transition: all 0.3s;
+}
+
+.dashboard-cta a:hover {
+    background: #34495e;
+    transform: scale(1.05);
+}
+
 /* ================================
    NAVIGATION
 ================================ */
@@ -423,6 +442,19 @@ a:hover {
     display: flex;
     justify-content: flex-end;
     margin-bottom: 18px;
+}
+
+.top-nav a {
+    background: #000000;
+    padding: 10px 16px;
+    border-radius: 10px;
+    color: white;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.top-nav a:hover {
+    background: #333333;
 }
 
 /* ================================
@@ -445,4 +477,34 @@ a:hover {
         flex-direction: column;
         align-items: flex-start;
     }
+}
+
+.task-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    position: relative;
+}
+
+.task-header .button.small {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+
+.task-priority {
+    font-size: 14px;
+    font-weight: bold;
+    margin-top: 12px;
+    color: var(--primary);
+}
+
+.auth-card {
+    max-width: 420px;
+    margin: 0 auto;
+    background: var(--surface);
+    padding: 24px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
 }

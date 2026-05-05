@@ -29,40 +29,41 @@
         </section>
 
         {% if tasks %}
-            <section class="task-grid">
-                {% for task in tasks %}
-                    <article class="task-card">
-                        <div class="task-header">
-                            <h2>{{ task.title }}</h2>
-                            <span class="badge {{ task.priority|lower }}">{{ task.priority }}</span>
-                        </div>
+        <section class="task-grid">
+            {% for task in tasks %}
+                <article class="task-card">
+                    <div class="task-header">
+                        <a href="{{ url_for('edit_task', task_id=task._id) }}" class="button small">Edit</a>
+                        <h2>{{ task.title }}</h2>
+                    </div>
+                    
+                    <p class="task-priority">
+                        <span class="badge {{ task.priority|lower }}">{{ task.priority }}</span>
+                    </p>
 
-                        <p>{{ task.description }}</p>
-                        <p class="status">Status: {{ task.status }}</p>
-
-                        <div class="task-actions">
-                            {% if task.status != "Complete" %}
-                                <form action="{{ url_for('complete_task', task_id=task._id) }}" method="POST">
-                                    <button type="submit" class="small">Complete</button>
-                                </form>
-                            {% endif %}
-
-                            <!-- ✅ NEW EDIT BUTTON -->
-                            <a href="{{ url_for('edit_task', task_id=task._id) }}" class="small">Edit</a>
-
-                            <form action="{{ url_for('remove_task', task_id=task._id) }}" method="POST">
-                                <button type="submit" class="small danger">Delete</button>
+                    <p>{{ task.description }}</p>
+                    <p class="status">Status: {{ task.status }}</p>
+                
+                    <div class="task-actions">
+                        {% if task.status != "Complete" %}
+                            <form action="{{ url_for('complete_task', task_id=task._id) }}" method="POST">
+                                <button type="submit" class="small">Complete</button>
                             </form>
-                        </div>
-                    </article>
-                {% endfor %}
-            </section>
-        {% else %}
-            <section class="empty compact-empty">
-                <h2>No tasks yet</h2>
-                <p>Your assignments will appear here once you add them.</p>
-            </section>
-        {% endif %}
+                        {% endif %}
+                
+                        <form action="{{ url_for('remove_task', task_id=task._id) }}" method="POST">
+                            <button type="submit" class="small danger">Delete</button>
+                        </form>
+                    </div>
+                </article>
+            {% endfor %}
+        </section>
+    {% else %}
+        <section class="empty compact-empty">
+            <h2>No tasks yet</h2>
+            <p>Your assignments will appear here once you add them.</p>
+        </section>
+    {% endif %}
     </main>
 </body>
 </html>
