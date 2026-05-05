@@ -17,6 +17,15 @@ const kittenTabs = [
 
 const catTabs = [["teacher", "Teacher"]];
 const SESSION_VERSION = "2";
+const defaultTeacherProblem = {
+  title: "Return the larger number",
+  prompt: "Write a function solve(a, b) that returns the larger number.",
+  starter_code: "def solve(a, b):\n    pass\n",
+  reference_solution: "def solve(a, b):\n    return max(a, b)\n",
+  test_code:
+    "assert solve(1, 2) == 2\nassert solve(7, 3) == 7\nassert solve(-1, -5) == -1\n",
+  topic: "conditionals",
+};
 
 function emptyInventory(userId) {
   return {
@@ -195,32 +204,60 @@ function LoginScreen({ session, setSession }) {
 
 function QuizPanel({ userId, refreshInventory }) {
   const [channels, setChannels] = useState({ public: [], private: [] });
+  const [channelMode, setChannelMode] = useState("public");
+  const [selectedChannel, setSelectedChannel] = useState(null);
   const [problem, setProblem] = useState(null);
   const [code, setCode] = useState("");
   const [result, setResult] = useState(null);
+  const [uncaught, setUncaught] = useState([]);
+  const [uncaughtDetail, setUncaughtDetail] = useState(null);
+  const [roomCode, setRoomCode] = useState("");
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [joining, setJoining] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
-  const allProblems = [
-    ...channels.public.flatMap((channel) => channel.problems || []),
-    ...channels.private.flatMap((channel) => channel.problems || []),
-  ];
+  const visibleChannels = channels[channelMode] || [];
+  const selectedProblems = selectedChannel?.problems || [];
+  const allDone =
+    selectedProblems.length > 0 && selectedProblems.every((item) => item.completed);
 
   async function refreshChannels() {
     const data = await request(`${GAME_URL}/quiz/channels/${userId}`);
     setChannels(data);
-    return [
-      ...data.public.flatMap((channel) => channel.problems || []),
-      ...data.private.flatMap((channel) => channel.problems || []),
-    ];
+    if (selectedChannel) {
+      const current = [...data.public, ...data.private].find(
+        (channel) => channel.pond_id === selectedChannel.pond_id,
+      );
+      setSelectedChannel(current || null);
+      return current || null;
+    }
+    return null;
+  }
+
+  async function refreshUncaught() {
+    const data = await request(`${GAME_URL}/quiz/uncaught/${userId}`);
+    setUncaught(data);
+  }
+
+  function selectChannel(channel) {
+    setSelectedChannel(channel);
+    setProblem(null);
+    setUncaughtDetail(null);
+    setResult(null);
+    setMessage("");
+    setError("");
   }
 
   useEffect(() => {
     refreshChannels().catch((err) => setError(err.message));
+    refreshUncaught().catch(() => {});
   }, [userId]);
 
   async function selectProblem(problemId) {
     setResult(null);
+    setUncaughtDetail(null);
     setError("");
     try {
       const data = await request(`${GAME_URL}/quiz/problems/${problemId}`);
@@ -228,6 +265,72 @@ function QuizPanel({ userId, refreshInventory }) {
       setCode(data.starter_code);
     } catch (err) {
       setError(err.message);
+    }
+  }
+
+  async function selectUncaught(item) {
+    setResult(null);
+    setProblem(null);
+    setMessage("");
+    setError("");
+    try {
+      const data = await request(`${GAME_URL}/quiz/problems/${item.problem_id}`);
+      setUncaughtDetail({ ...item, problem: data });
+    } catch (err) {
+      setUncaughtDetail(item);
+      setError(err.message);
+    }
+  }
+
+  async function joinPrivateRoom() {
+    if (!roomCode.trim()) return;
+    setError("");
+    setMessage("");
+    setJoining(true);
+    try {
+      const joined = await request(`${GAME_URL}/ponds/private/join`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userId, room_code: roomCode }),
+      });
+      const data = await request(`${GAME_URL}/quiz/channels/${userId}`);
+      setChannels(data);
+      const channel = data.private.find((item) => item.pond_id === joined.pond_id);
+      if (channel) {
+        setChannelMode("private");
+        selectChannel(channel);
+      }
+      setRoomCode("");
+      setMessage("Private room joined.");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setJoining(false);
+    }
+  }
+
+  async function resetSelectedChannel() {
+    if (!selectedProblems.length) return;
+    setError("");
+    setMessage("");
+    setResetting(true);
+    try {
+      await request(`${GAME_URL}/quiz/reset`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: userId,
+          problem_ids: selectedProblems.map((item) => item.id),
+        }),
+      });
+      await refreshChannels();
+      setProblem(null);
+      setResult(null);
+      setMessage("Quiz reset. Start again from the list.");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setResetting(false);
     }
   }
 
@@ -243,9 +346,10 @@ function QuizPanel({ userId, refreshInventory }) {
       });
       setResult(data);
       await refreshInventory();
-      const refreshedProblems = await refreshChannels();
+      await refreshUncaught();
+      const refreshedChannel = await refreshChannels();
       if (data.passed) {
-        const nextProblem = refreshedProblems.find(
+        const nextProblem = (refreshedChannel?.problems || []).find(
           (item) => !item.completed && item.id !== problem.id,
         );
         if (nextProblem) {
@@ -262,11 +366,80 @@ function QuizPanel({ userId, refreshInventory }) {
   return (
     <section className="workbench">
       <aside className="list-pane">
-        <strong className="channel-title">Public</strong>
-        {channels.public.map((channel) => (
-          <div key={channel.pond_id}>
-            <div className="pond-label">{channel.name}</div>
-            {(channel.problems || []).map((item) => (
+        <details className="quiz-menu" open>
+          <summary>Quiz</summary>
+          <button
+            className={channelMode === "public" ? "list-item active" : "list-item"}
+            onClick={() => {
+              setChannelMode("public");
+              setSelectedChannel(null);
+              setProblem(null);
+              setUncaughtDetail(null);
+            }}
+          >
+            Public
+          </button>
+          <button
+            className={channelMode === "private" ? "list-item active" : "list-item"}
+            onClick={() => {
+              setChannelMode("private");
+              setSelectedChannel(null);
+              setProblem(null);
+              setUncaughtDetail(null);
+            }}
+          >
+            Private
+          </button>
+        </details>
+
+        {channelMode === "private" ? (
+          <div className="room-search">
+            <input
+              placeholder="Private room code"
+              value={roomCode}
+              onChange={(event) => setRoomCode(event.target.value.toUpperCase())}
+            />
+            <button disabled={joining || !roomCode.trim()} onClick={joinPrivateRoom}>
+              {joining ? "Joining..." : "Join"}
+            </button>
+          </div>
+        ) : null}
+
+        <strong className="channel-title">
+          {channelMode === "public" ? "Public Ponds" : "Private Ponds"}
+        </strong>
+        {visibleChannels.length === 0 ? (
+          <span className="muted">
+            {channelMode === "private"
+              ? "Enter a private room code to join a classroom."
+              : "No public ponds yet."}
+          </span>
+        ) : null}
+        {visibleChannels.map((channel) => (
+          <button
+            className={
+              selectedChannel?.pond_id === channel.pond_id
+                ? "pond-card active"
+                : "pond-card"
+            }
+            key={channel.pond_id}
+            onClick={() => selectChannel(channel)}
+          >
+            <strong>{channel.name}</strong>
+            <span>
+              {channel.pinned ? "system" : channel.room_code || channelMode} ·{" "}
+              {(channel.problems || []).length} problems
+            </span>
+          </button>
+        ))}
+
+        {selectedChannel ? (
+          <>
+            <strong className="channel-title">{selectedChannel.name}</strong>
+            {selectedProblems.length === 0 ? (
+              <span className="muted">No problems in this pond yet.</span>
+            ) : null}
+            {selectedProblems.map((item) => (
               <button
                 className={
                   problem?.id === item.id ? "list-item active" : "list-item"
@@ -276,6 +449,7 @@ function QuizPanel({ userId, refreshInventory }) {
               >
                 <strong>
                   {item.completed ? "✓ " : ""}
+                  {item.exhausted ? "x " : ""}
                   {item.title}
                 </strong>
                 <span>
@@ -284,35 +458,56 @@ function QuizPanel({ userId, refreshInventory }) {
                 </span>
               </button>
             ))}
-          </div>
-        ))}
-        <strong className="channel-title">Private</strong>
-        {channels.private.length === 0 ? (
-          <span className="muted">No private ponds assigned yet.</span>
+          </>
         ) : null}
-        {channels.private.map((channel) => (
-          <div key={channel.pond_id}>
-            <div className="pond-label">{channel.name}</div>
-            {(channel.problems || []).map((item) => (
-              <button
-                className={
-                  problem?.id === item.id ? "list-item active" : "list-item"
-                }
-                key={item.id}
-                onClick={() => selectProblem(item.id)}
-              >
-                <strong>
-                  {item.completed ? "✓ " : ""}
-                  {item.title}
-                </strong>
-                <span>{item.difficulty}</span>
-              </button>
-            ))}
-          </div>
-        ))}
+
+        <strong className="channel-title">Uncaught Fish</strong>
+        {uncaught.length === 0 ? (
+          <span className="muted">Wrong-answer notebook is empty.</span>
+        ) : (
+          uncaught.map((item) => (
+            <button
+              className={
+                uncaughtDetail?.problem_id === item.problem_id
+                  ? "list-item active"
+                  : "list-item"
+              }
+              key={item.problem_id}
+              onClick={() => selectUncaught(item)}
+            >
+              <strong>x {item.title}</strong>
+              <span>{item.attempts_used} attempts used</span>
+            </button>
+          ))
+        )}
       </aside>
       <section className="panel">
-        {problem ? (
+        {uncaughtDetail ? (
+          <>
+            <div className="panel-head">
+              <h2>{uncaughtDetail.title}</h2>
+              <span>{uncaughtDetail.attempts_used} failed attempts</span>
+            </div>
+            <pre className="instructions">
+              {uncaughtDetail.instructions ||
+                uncaughtDetail.problem?.instructions ||
+                "Problem prompt unavailable."}
+            </pre>
+            <h3>Correct Answer</h3>
+            <pre className="solution">{uncaughtDetail.solution_code}</pre>
+            {uncaughtDetail.solution_explanation ? (
+              <p className="subtle-text">{uncaughtDetail.solution_explanation}</p>
+            ) : null}
+          </>
+        ) : selectedChannel && allDone ? (
+          <div className="empty done-state">
+            <strong>{selectedChannel.name} complete.</strong>
+            <span>All problems are checked off.</span>
+            <button disabled={resetting} onClick={resetSelectedChannel}>
+              {resetting ? "Resetting..." : "Try again"}
+            </button>
+          </div>
+        ) : problem ? (
           <>
             <div className="panel-head">
               <h2>{problem.title}</h2>
@@ -350,10 +545,12 @@ function QuizPanel({ userId, refreshInventory }) {
           </>
         ) : (
           <div className="empty">
-            {allProblems.length ? "Select a problem to start." : "No quizzes yet."}
+            {selectedChannel
+              ? "Select a problem to start."
+              : "Choose Public or Private, then open a pond."}
           </div>
         )}
-        <Status error={error} />
+        <Status error={error} message={message} />
       </section>
     </section>
   );
@@ -374,7 +571,7 @@ function FishingPanel({ userId, inventory, refreshInventory }) {
         method: "POST",
       });
       setLastFish(data.fish);
-      setMessage(`Cast complete. ${data.remaining_chances} chances left.`);
+      setMessage(`Fishing complete. ${data.remaining_chances} chances left.`);
       await refreshInventory();
     } catch (err) {
       setError(err.message);
@@ -383,15 +580,15 @@ function FishingPanel({ userId, inventory, refreshInventory }) {
     }
   }
 
-  async function sellSmall(fishId) {
+  async function sellFish(fishId) {
     setError("");
     setMessage("");
     try {
       const data = await request(
-        `${GAME_URL}/fishing/sell-small/${fishId}?user_id=${userId}`,
+        `${GAME_URL}/fishing/sell/${fishId}?user_id=${userId}`,
         { method: "POST" },
       );
-      setMessage(`Sold small fish for ${data.tokens_earned} tokens.`);
+      setMessage(`Sold common fish for ${data.tokens_earned} tokens.`);
       await refreshInventory();
     } catch (err) {
       setError(err.message);
@@ -408,11 +605,11 @@ function FishingPanel({ userId, inventory, refreshInventory }) {
       </div>
       <div className="cast-strip">
         <button onClick={cast} disabled={!canCast}>
-          {casting ? "Casting..." : "Cast"}
+          {casting ? "Fishing..." : "Fish"}
         </button>
         <span>
           {inventory.fishing_chances > 0
-            ? "Each cast consumes 1 fishing chance and uses the fish dataset."
+            ? "Each fish attempt consumes 1 fishing chance and uses the fish dataset."
             : "Solve a quiz problem correctly to earn a fishing chance."}
         </span>
       </div>
@@ -437,8 +634,10 @@ function FishingPanel({ userId, inventory, refreshInventory }) {
             <span>
               {fish.rarity} · {fish.quality} · {fish.size_cm} cm
             </span>
-            {fish.is_small && !fish.marketplace_eligible ? (
-              <button onClick={() => sellSmall(fish.fish_id)}>Sell Small</button>
+            {fish.rarity === "common" ? (
+              <button onClick={() => sellFish(fish.fish_id)}>
+                Sell for {fish.sell_value_tokens || fish.sell_value} Tokens
+              </button>
             ) : null}
           </article>
         ))}
@@ -537,6 +736,7 @@ function MarketPanel({ inventory, userId, refreshInventory }) {
   const [listings, setListings] = useState([]);
   const [priceByFish, setPriceByFish] = useState({});
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
 
   async function refreshListings() {
     try {
@@ -548,10 +748,11 @@ function MarketPanel({ inventory, userId, refreshInventory }) {
 
   useEffect(() => {
     refreshListings();
-  }, []);
+  }, [userId]);
 
   async function listFish(fish) {
     setError("");
+    setMessage("");
     // Fall back to the fish's suggested price when the user hasn't typed a value —
     // the input shows suggested_price as a placeholder, but priceByFish is empty
     // until the user touches it. Without this fallback the request sent 1.
@@ -562,13 +763,14 @@ function MarketPanel({ inventory, userId, refreshInventory }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-        user_id: userId,
-        fish_id: fish.fish_id,
-        price,
-      }),
+          user_id: userId,
+          fish_id: fish.fish_id,
+          price,
+        }),
       });
       refreshListings();
       refreshInventory();
+      setMessage(`${fish.species_name} listed for ${price} tokens.`);
     } catch (err) {
       setError(err.message);
     }
@@ -576,6 +778,7 @@ function MarketPanel({ inventory, userId, refreshInventory }) {
 
   async function buy(listingId) {
     setError("");
+    setMessage("");
     try {
       await request(`${GAME_URL}/market/buy/${listingId}`, {
         method: "POST",
@@ -584,6 +787,7 @@ function MarketPanel({ inventory, userId, refreshInventory }) {
       });
       refreshListings();
       refreshInventory();
+      setMessage("Trade complete. The fish moved into your inventory.");
     } catch (err) {
       setError(err.message);
     }
@@ -591,6 +795,7 @@ function MarketPanel({ inventory, userId, refreshInventory }) {
 
   async function unlist(listingId) {
     setError("");
+    setMessage("");
     try {
       await request(
         `${GAME_URL}/market/listings/${listingId}?seller_id=${encodeURIComponent(userId)}`,
@@ -598,21 +803,40 @@ function MarketPanel({ inventory, userId, refreshInventory }) {
       );
       refreshListings();
       refreshInventory();
+      setMessage("Listing cancelled. Fish returned to your inventory.");
     } catch (err) {
       setError(err.message);
     }
   }
 
+  const marketFish = inventory.fish.filter((fish) => fish.rarity !== "common");
   const myListings = listings.filter((l) => l.seller_id === userId);
-  const otherListings = listings.filter((l) => l.seller_id !== userId);
 
   return (
     <section className="workbench two">
       <section className="panel">
-        <h2>Your Market Fish</h2>
-        {inventory.fish.filter((fish) => fish.marketplace_eligible).map((fish) => (
+        <div className="panel-head">
+          <h2>Your Market Fish</h2>
+          <span>{inventory.tokens} tokens</span>
+        </div>
+        <p className="market-note">
+          Only uncommon or rarer fish can be sold on the marketplace. Common fish
+          can be sold directly for their sell value.
+        </p>
+        {marketFish.length === 0 && myListings.length === 0 ? (
+          <div className="empty">
+            <span>No marketplace fish in inventory.</span>
+          </div>
+        ) : null}
+        {marketFish.map((fish) => (
           <div className="market-row" key={fish.fish_id}>
-            <span>{fish.species_name}</span>
+            <div className="market-fish">
+              <img src={imageUrl(fish.image_url)} alt={fish.species_name} />
+              <span>
+                {fish.species_name}
+                <small>{fish.rarity} · suggested {fish.suggested_price}</small>
+              </span>
+            </div>
             <input
               type="number"
               min="1"
@@ -621,32 +845,60 @@ function MarketPanel({ inventory, userId, refreshInventory }) {
                 setPriceByFish({ ...priceByFish, [fish.fish_id]: event.target.value })
               }
             />
-            <button onClick={() => listFish(fish)}>List</button>
+            <button onClick={() => listFish(fish)}>List Fish</button>
           </div>
         ))}
         {myListings.length > 0 ? (
-          <React.Fragment>
+          <>
             <h3>Your Listings</h3>
             {myListings.map((listing) => (
               <div className="market-row" key={listing.listing_id}>
-                <span>{listing.fish.species_name}</span>
+                <div className="market-fish">
+                  <img
+                    src={imageUrl(listing.fish.image_url)}
+                    alt={listing.fish.species_name}
+                  />
+                  <span>
+                    {listing.fish.species_name}
+                    <small>public listing</small>
+                  </span>
+                </div>
                 <strong>{listing.price} tokens</strong>
                 <button onClick={() => unlist(listing.listing_id)}>Cancel</button>
               </div>
             ))}
-          </React.Fragment>
+          </>
         ) : null}
       </section>
       <section className="panel">
         <h2>Listings</h2>
-        {otherListings.map((listing) => (
-          <div className="market-row" key={listing.listing_id}>
-            <span>{listing.fish.species_name}</span>
-            <strong>{listing.price} tokens</strong>
-            <button onClick={() => buy(listing.listing_id)}>Buy</button>
-          </div>
-        ))}
-        <Status error={error} />
+        {listings.length === 0 ? (
+          <p className="empty">No active fish listings yet.</p>
+        ) : null}
+        {listings.map((listing) => {
+          const isMine = listing.seller_id === userId;
+          return (
+            <div className="market-row" key={listing.listing_id}>
+              <div className="market-fish">
+                <img
+                  src={imageUrl(listing.fish.image_url)}
+                  alt={listing.fish.species_name}
+                />
+                <span>
+                  {listing.fish.species_name}
+                  <small>{isMine ? "your listing" : listing.seller_id}</small>
+                </span>
+              </div>
+              <strong>{listing.price} tokens</strong>
+              {isMine ? (
+                <button onClick={() => unlist(listing.listing_id)}>Cancel</button>
+              ) : (
+                <button onClick={() => buy(listing.listing_id)}>Buy Fish</button>
+              )}
+            </div>
+          );
+        })}
+        <Status error={error} message={message} />
       </section>
     </section>
   );
@@ -739,26 +991,49 @@ function LeaderboardPanel() {
 function TeacherPanel({ userId }) {
   const [name, setName] = useState("CS Pond");
   const [visibility, setVisibility] = useState("private");
+  const [ponds, setPonds] = useState([]);
   const [pond, setPond] = useState(null);
+  const [pondProblems, setPondProblems] = useState([]);
   const [rules, setRules] = useState(null);
-  const [problem, setProblem] = useState({
-    title: "Return the larger number",
-    prompt: "Write a function solve(a, b) that returns the larger number.",
-    starter_code: "def solve(a, b):\n    pass\n",
-    reference_solution: "def solve(a, b):\n    return max(a, b)\n",
-    test_code:
-      "assert solve(1, 2) == 2\nassert solve(7, 3) == 7\nassert solve(-1, -5) == -1\n",
-    topic: "conditionals",
-  });
+  const [problem, setProblem] = useState(defaultTeacherProblem);
+  const [selectedProblemId, setSelectedProblemId] = useState(null);
   const [problemResult, setProblemResult] = useState(null);
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     request(`${TEACHER_URL}/teacher/rules`).then(setRules).catch(() => {});
-  }, []);
+    refreshTeacherPonds().catch(() => {});
+  }, [userId]);
+
+  async function refreshTeacherPonds() {
+    const data = await request(`${TEACHER_URL}/teacher/${userId}/ponds`);
+    setPonds(data);
+    return data;
+  }
+
+  async function loadPondProblems(nextPond, resetForm = true) {
+    setPond(nextPond);
+    if (resetForm) {
+      setProblemResult(null);
+      setSelectedProblemId(null);
+      setProblem(defaultTeacherProblem);
+    }
+    setError("");
+    try {
+      const data = await request(
+        `${TEACHER_URL}/teacher/ponds/${nextPond.pond_id}/problems`,
+      );
+      setPondProblems(data);
+    } catch (err) {
+      setPondProblems([]);
+      setError(err.message);
+    }
+  }
 
   async function createPond() {
     setError("");
+    setMessage("");
     setProblemResult(null);
     try {
       const data = await request(`${TEACHER_URL}/teacher/ponds`, {
@@ -771,7 +1046,10 @@ function TeacherPanel({ userId }) {
           description: "Teacher-created fish pond",
         }),
       });
-      setPond(data);
+      setPond(null);
+      setPondProblems([]);
+      await refreshTeacherPonds();
+      setMessage(`${data.name} created. Click the classroom to add problems.`);
     } catch (err) {
       setError(err.message);
     }
@@ -783,21 +1061,75 @@ function TeacherPanel({ userId }) {
       return;
     }
     setError("");
+    setMessage("");
     try {
       const payload = {
         cat_id: userId,
-        pond_id: pond.pond_id,
         ...problem,
       };
-      const data = await request(`${TEACHER_URL}/teacher/ponds/${pond.pond_id}/problems`, {
-        method: "POST",
+      const method = selectedProblemId ? "PUT" : "POST";
+      const path = selectedProblemId
+        ? `${TEACHER_URL}/teacher/ponds/${pond.pond_id}/problems/${selectedProblemId}`
+        : `${TEACHER_URL}/teacher/ponds/${pond.pond_id}/problems`;
+      const data = await request(path, {
+        method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(
+          selectedProblemId ? payload : { ...payload, pond_id: pond.pond_id },
+        ),
       });
       setProblemResult(data);
+      if (data.problem?.id) {
+        selectTeacherProblem(data.problem);
+      }
+      await loadPondProblems(pond, false);
+      setMessage(selectedProblemId ? "Problem updated." : "Problem created.");
     } catch (err) {
       setError(err.message);
     }
+  }
+
+  async function deleteProblem() {
+    if (!pond?.pond_id || !selectedProblemId) return;
+    setError("");
+    setMessage("");
+    try {
+      await request(
+        `${TEACHER_URL}/teacher/ponds/${pond.pond_id}/problems/${selectedProblemId}` +
+          `?cat_id=${encodeURIComponent(userId)}`,
+        { method: "DELETE" },
+      );
+      setSelectedProblemId(null);
+      setProblem(defaultTeacherProblem);
+      setProblemResult(null);
+      await loadPondProblems(pond);
+      setMessage("Problem deleted.");
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  function selectTeacherProblem(item) {
+    setSelectedProblemId(item.id);
+    setProblemResult(null);
+    setMessage("");
+    setError("");
+    setProblem({
+      title: item.title || "",
+      prompt: item.instructions || "",
+      starter_code: item.starter_code || "",
+      reference_solution: item.solution_code || "",
+      test_code: item.test_code || "",
+      topic: item.topic || "",
+    });
+  }
+
+  function startNewProblem() {
+    setSelectedProblemId(null);
+    setProblem(defaultTeacherProblem);
+    setProblemResult(null);
+    setMessage("");
+    setError("");
   }
 
   function updateProblem(field, value) {
@@ -805,7 +1137,7 @@ function TeacherPanel({ userId }) {
   }
 
   return (
-    <section className="workbench two">
+    <section className={pond ? "workbench two" : "workbench"}>
       <section className="panel">
         <div className="panel-head">
           <h2>Create Fish Pond</h2>
@@ -836,70 +1168,125 @@ function TeacherPanel({ userId }) {
             </span>
           </div>
         ) : null}
-      </section>
-      <section className="panel">
-        <div className="panel-head">
-          <h2>Create Problem</h2>
-          <span>{pond?.pond_id || "create room first"}</span>
+        <div className="teacher-room-list">
+          <strong className="channel-title">My Classrooms</strong>
+          {ponds.length === 0 ? (
+            <span className="muted">Create a classroom to add questions.</span>
+          ) : null}
+          {ponds.map((item) => (
+            <button
+              className={
+                pond?.pond_id === item.pond_id ? "pond-card active" : "pond-card"
+              }
+              key={item.pond_id}
+              onClick={() => loadPondProblems(item)}
+            >
+              <strong>{item.name}</strong>
+              <span>
+                {item.visibility} · room code {item.room_code || "none"} ·{" "}
+                {(item.problem_ids || []).length} problems
+              </span>
+            </button>
+          ))}
         </div>
-        <div className="form-grid two-cols">
-          <label>
-            Title
-            <input
-              value={problem.title}
-              onChange={(event) => updateProblem("title", event.target.value)}
-            />
-          </label>
-          <label>
-            Topic
-            <input
-              value={problem.topic}
-              onChange={(event) => updateProblem("topic", event.target.value)}
-            />
-          </label>
-        </div>
-        <label>
-          Prompt
-          <textarea
-            value={problem.prompt}
-            onChange={(event) => updateProblem("prompt", event.target.value)}
-          />
-        </label>
-        <label>
-          Starter code
-          <textarea
-            className="code-box small"
-            value={problem.starter_code}
-            onChange={(event) => updateProblem("starter_code", event.target.value)}
-          />
-        </label>
-        <label>
-          Reference solution
-          <textarea
-            className="code-box small"
-            value={problem.reference_solution}
-            onChange={(event) =>
-              updateProblem("reference_solution", event.target.value)
-            }
-          />
-        </label>
-        <label>
-          Test code
-          <textarea
-            className="code-box small"
-            value={problem.test_code}
-            onChange={(event) => updateProblem("test_code", event.target.value)}
-          />
-        </label>
-        <button onClick={createProblem}>Create Problem</button>
-        {problemResult ? (
-          <div className="result pass">
-            <strong>{problem.title}</strong>
-            <span>{problemResult.status || "created"}</span>
+        {pond ? (
+          <div className="teacher-problem-list">
+            <strong className="channel-title">{pond.name} Problems</strong>
+            {pondProblems.length === 0 ? (
+              <span className="muted">No problems in this classroom yet.</span>
+            ) : null}
+            {pondProblems.map((item) => (
+              <button
+                className={
+                  selectedProblemId === item.id ? "pond-card active" : "pond-card"
+                }
+                key={item.id}
+                onClick={() => selectTeacherProblem(item)}
+              >
+                <strong>{item.title}</strong>
+                <span>{item.topic || item.difficulty}</span>
+              </button>
+            ))}
           </div>
         ) : null}
-        <Status error={error} />
+        <Status error={error} message={message} />
       </section>
+      {pond ? (
+        <section className="panel">
+          <div className="panel-head">
+            <h2>{selectedProblemId ? "Edit Problem" : "Create Problem"}</h2>
+            <button type="button" onClick={startNewProblem}>
+              New Problem
+            </button>
+          </div>
+          <div className="form-grid two-cols">
+            <label>
+              Title
+              <input
+                value={problem.title}
+                onChange={(event) => updateProblem("title", event.target.value)}
+              />
+            </label>
+            <label>
+              Topic
+              <input
+                value={problem.topic}
+                onChange={(event) => updateProblem("topic", event.target.value)}
+              />
+            </label>
+          </div>
+          <label>
+            Prompt
+            <textarea
+              value={problem.prompt}
+              onChange={(event) => updateProblem("prompt", event.target.value)}
+            />
+          </label>
+          <label>
+            Starter code
+            <textarea
+              className="code-box small"
+              value={problem.starter_code}
+              onChange={(event) => updateProblem("starter_code", event.target.value)}
+            />
+          </label>
+          <label>
+            Reference solution
+            <textarea
+              className="code-box small"
+              value={problem.reference_solution}
+              onChange={(event) =>
+                updateProblem("reference_solution", event.target.value)
+              }
+            />
+          </label>
+          <label>
+            Test code
+            <textarea
+              className="code-box small"
+              value={problem.test_code}
+              onChange={(event) => updateProblem("test_code", event.target.value)}
+            />
+          </label>
+          <div className="button-row">
+            <button onClick={createProblem}>
+              {selectedProblemId ? "Update Problem" : "Create Problem"}
+            </button>
+            {selectedProblemId ? (
+              <button className="danger-button" onClick={deleteProblem}>
+                Delete Problem
+              </button>
+            ) : null}
+          </div>
+          {problemResult ? (
+            <div className="result pass">
+              <strong>{problem.title}</strong>
+              <span>{problemResult.status || "created"}</span>
+            </div>
+          ) : null}
+          <Status error={error} />
+        </section>
+      ) : null}
     </section>
   );
 }

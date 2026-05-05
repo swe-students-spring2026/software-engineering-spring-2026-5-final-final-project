@@ -34,6 +34,10 @@ button:disabled {
   opacity: 0.45;
 }
 
+.danger-button {
+  background: #9b2f2f;
+}
+
 .login-screen {
   align-items: center;
   display: grid;
@@ -253,16 +257,76 @@ button:disabled {
   text-align: left;
 }
 
-.list-item.active {
+.list-item.active,
+.pond-card.active {
   background: #dff2ef;
   border-color: #7ab7ad;
 }
 
 .list-item span,
+.pond-card span,
 .fish-card span,
 .fish-highlight span {
   color: #5d7076;
   font-size: 13px;
+}
+
+.quiz-menu {
+  display: grid;
+  gap: 8px;
+}
+
+.quiz-menu summary {
+  color: #136f63;
+  cursor: pointer;
+  font-weight: 800;
+  list-style-position: inside;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.room-search {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr auto;
+}
+
+.pond-card {
+  background: white;
+  border: 1px solid #d4e3e5;
+  color: #15202b;
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  padding: 12px;
+  text-align: left;
+}
+
+.uncaught-item {
+  background: #fff6dd;
+  border: 1px solid #ead18a;
+  border-radius: 6px;
+  color: #604b0b;
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+}
+
+.uncaught-item span {
+  font-size: 13px;
+}
+
+.done-state {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+}
+
+.teacher-room-list,
+.teacher-problem-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
 }
 
 .instructions,
@@ -449,6 +513,44 @@ textarea {
   gap: 10px;
   grid-template-columns: 1fr 110px auto;
   padding: 10px 0;
+}
+
+.market-row span {
+  display: grid;
+  gap: 2px;
+}
+
+.market-row small {
+  color: #5d7076;
+  font-size: 12px;
+}
+
+.market-note {
+  background: #f6fbfc;
+  border: 1px solid #d4e3e5;
+  border-radius: 6px;
+  color: #5d7076;
+  font-size: 14px;
+  margin: 0 0 12px;
+  padding: 10px;
+}
+
+.market-fish {
+  align-items: center;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 46px 1fr;
+  min-width: 0;
+}
+
+.market-fish img {
+  aspect-ratio: 1;
+  background: #f6fbfc;
+  border: 1px solid #d4e3e5;
+  border-radius: 6px;
+  object-fit: contain;
+  padding: 4px;
+  width: 46px;
 }
 
 .rank-row {

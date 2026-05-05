@@ -11,6 +11,7 @@ httpx = "==0.25.2"
 
 [dev-packages]
 pytest = "*"
+pytest-cov = "*"
 black = "*"
 pylint = "*"
 

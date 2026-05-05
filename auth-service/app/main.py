@@ -5,7 +5,7 @@ authenticated user's role; gameplay permissions are enforced by downstream
 services.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from typing import Literal, Optional
@@ -138,6 +138,12 @@ def users_collection():
     return mongo_client[MONGO_DB].users
 
 
+def utc_now() -> datetime:
+    """Return an aware UTC datetime for token and code timestamps."""
+
+    return datetime.now(timezone.utc)
+
+
 def normalize_username(username: str, email: str) -> str:
     """Create a display-safe username from input or the email prefix."""
 
@@ -164,7 +170,7 @@ def find_or_create_user(email: str, role: UserRole, username: str) -> dict:
     if existing:
         collection.update_one(
             {"_id": existing["_id"]},
-            {"$set": {"username": display_name, "last_login_at": datetime.utcnow()}},
+            {"$set": {"username": display_name, "last_login_at": utc_now()}},
         )
         return {
             "user_id": existing["_id"],
@@ -173,15 +179,16 @@ def find_or_create_user(email: str, role: UserRole, username: str) -> dict:
             "role": existing["role"],
         }
 
-    user_id = f"{role}_{int(datetime.utcnow().timestamp() * 1000)}"
+    now = utc_now()
+    user_id = f"{role}_{int(now.timestamp() * 1000)}"
     profile = {
         "_id": user_id,
         "user_id": user_id,
         "username": display_name,
         "email": email,
         "role": role,
-        "created_at": datetime.utcnow(),
-        "last_login_at": datetime.utcnow(),
+        "created_at": now,
+        "last_login_at": now,
     }
     collection.insert_one(profile)
     return {
@@ -242,7 +249,7 @@ def create_jwt_token(
 ) -> tuple[str, datetime]:
     """Create a role-aware JWT and return it with its expiration time."""
 
-    now = datetime.utcnow()
+    now = utc_now()
     expiry = now + timedelta(hours=JWT_EXPIRY_HOURS)
     payload = {
         "sub": user_id,
@@ -251,8 +258,8 @@ def create_jwt_token(
         "role": role,
         "token_system_enabled": token_system_enabled(role),
         "permissions": permissions_for_role(role),
-        "iat": now.timestamp(),
-        "exp": expiry.timestamp(),
+        "iat": int(now.timestamp()),
+        "exp": int(expiry.timestamp()),
         "iss": "auth-service",
     }
     token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
@@ -314,12 +321,12 @@ def send_verification_email_endpoint(request: SendVerificationEmailRequest):
     """Create a short-lived email verification code for the requested role."""
 
     code = str(secrets.randbelow(1_000_000)).zfill(6)
-    expiry = datetime.utcnow() + timedelta(minutes=10)
+    expiry = utc_now() + timedelta(minutes=10)
     verification_codes[str(request.email)] = {
         "code": code,
         "role": request.role,
         "username": request.username,
-        "created_at": datetime.utcnow(),
+        "created_at": utc_now(),
         "expires_at": expiry,
         "attempts": 0,
     }
@@ -348,7 +355,7 @@ def verify_email_endpoint(request: VerifyEmailRequest):
             detail="No verification code found for this email",
         )
 
-    if datetime.utcnow() > stored["expires_at"]:
+    if utc_now() > stored["expires_at"]:
         del verification_codes[email]
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
