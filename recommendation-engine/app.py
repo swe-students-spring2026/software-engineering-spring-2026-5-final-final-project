@@ -101,7 +101,7 @@ def _normalize_cast(raw: Any) -> list[str]:
     return [s] if s else []
 
 
-def _metadata_to_dict(meta: dict, include_similarity: bool = False, similarity: float | None = None) -> dict:
+def _metadata_to_dict(row_idx: int, meta: dict, include_similarity: bool = False, similarity: float | None = None) -> dict:
     """Normalize a metadata record to the shape the frontend templates expect."""
     raw_rating = meta.get("vote_average") or meta.get("imdb_rating") or 0.0
     try:
