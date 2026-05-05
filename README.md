@@ -852,3 +852,11 @@ If the cat’s ponds receive too many not-support votes, the cat loses Cat Can T
 - Catching a new fish species unlocks its medal
 - Medal wall records collection progress
 - Collection progress affects the medal collection leaderboard
+
+### Aquarium and Leaderboard endpoints
+
+- `GET /aquarium/{user_id}` — returns the user's aquarium/medal collection progress.
+- `GET /leaderboard/tokens` — ranks users by token balance.
+- `GET /leaderboard/aquarium` — ranks users by fish species collection progress.
+
+These endpoints are used by the integrated frontend `frontend/app`.
