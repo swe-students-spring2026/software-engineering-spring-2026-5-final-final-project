@@ -17,6 +17,7 @@ Object.entries(profile.course_credits || {}).forEach(([code, credits]) => {
     }
 });
 const courseCatalogCredits = {};
+const courseCatalogInfo = {};
 
 const testCredits = (profile.test_credits || [])
     .map(credit => ({
@@ -136,6 +137,10 @@ function hasCatalogCredit(code) {
     return courseCatalogCredits[normalizeCode(code)] !== undefined;
 }
 
+function hasCatalogInfo(code) {
+    return courseCatalogInfo[normalizeCode(code)] !== undefined;
+}
+
 function creditsForCourse(code, fallbackCredits = 0) {
     const normalized = normalizeCode(code);
     if (transcriptCredits[normalized] !== undefined) return transcriptCredits[normalized];
@@ -148,6 +153,16 @@ function displayCreditsForCourse(code, fallbackValue = "") {
     if (transcriptCredits[normalized] !== undefined) return formatCredits(transcriptCredits[normalized]);
     if (courseCatalogCredits[normalized] !== undefined) return formatCredits(courseCatalogCredits[normalized]);
     return fallbackValue || "";
+}
+
+function catalogInfoForCourse(code) {
+    return courseCatalogInfo[normalizeCode(code)] || null;
+}
+
+function courseMatchesCatalogKeywords(code, keywords) {
+    const info = catalogInfoForCourse(code);
+    const haystack = `${info?.title || ""} ${info?.description || ""} ${info?.topic || ""}`.toLowerCase();
+    return keywords.some(keyword => haystack.includes(keyword));
 }
 
 const specialRequirements = [
@@ -209,6 +224,19 @@ const specialRequirements = [
                 if (!Number.isNaN(num) && num >= 100) return true;
             }
             return false;
+        },
+    },
+    {
+        key: "cs-electives-400",
+        label: "Computer Science Electives",
+        match: text => /computer\s+science\s+electives?/i.test(text || "") && /400\s+level/i.test(text || ""),
+        options: ["Any CSCI-UA 400-level course that matches the catalog description"],
+        matches: code => {
+            const normalized = canonicalRequirementCode(code);
+            const m = normalized.match(/^CSCI-UA\s+(\d+)/i);
+            if (!m || Number(m[1]) < 400) return false;
+            if (!hasCatalogInfo(code)) return true;
+            return courseMatchesCatalogKeywords(code, ["computer science", "elective", "csci"]);
         },
     },
     {
@@ -433,13 +461,23 @@ function collectReservedRequirementCourseCodes(tables, choiceTables, assignedCou
             const specialReq = findSpecialRequirement(first);
 
             if (specialReq) {
-                const matched = matchedSpecialRequirementCourse(specialReq, completedSet)
-                    || matchedSpecialRequirementCourse(specialReq, currentSet);
-                if (matched) {
+                const matches = [...completedSet, ...currentSet].filter(code => specialReq.matches(code));
+                matches.forEach(matched => {
                     const canon = canonicalRequirementCode(matched);
                     if (!assignedCourseCodes.has(canon)) {
                         assignedCourseCodes.add(canon);
                         reserved.add(canon);
+                    }
+                });
+                if (!matches.length) {
+                    const matched = matchedSpecialRequirementCourse(specialReq, completedSet)
+                        || matchedSpecialRequirementCourse(specialReq, currentSet);
+                    if (matched) {
+                        const canon = canonicalRequirementCode(matched);
+                        if (!assignedCourseCodes.has(canon)) {
+                            assignedCourseCodes.add(canon);
+                            reserved.add(canon);
+                        }
                     }
                 }
                 return;
@@ -518,7 +556,7 @@ function collectCourseCreditLookupCodes(tables, choiceTables) {
 }
 
 async function loadCourseCatalogCredits(codes) {
-    const missingCodes = [...codes].filter(code => code && !hasTranscriptCredit(code) && !hasCatalogCredit(code));
+    const missingCodes = [...codes].filter(code => code && (!hasTranscriptCredit(code) || !hasCatalogCredit(code) || !hasCatalogInfo(code)));
     await Promise.all(missingCodes.map(async code => {
         const credits = await fetchCourseCatalogCredits(code);
         if (credits !== null) {
@@ -537,6 +575,11 @@ async function fetchCourseCatalogCredits(code) {
             const exact = classes.find(course => canonicalRequirementCode(course.code) === canonicalRequirementCode(code))
                 || classes.find(course => normalizeCode(course.code) === normalizeCode(code));
             if (!exact) continue;
+            courseCatalogInfo[normalizeCode(code)] = {
+                title: String(exact.title || "").trim(),
+                description: String(exact.description || exact.topic || "").trim(),
+                topic: String(exact.topic || "").trim(),
+            };
             const rawCredits = exact.credits ?? exact.units ?? "";
             if (!hasExplicitCreditValue(rawCredits)) continue;
             return parseCredits(rawCredits);
