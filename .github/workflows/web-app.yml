@@ -54,3 +54,11 @@ jobs:
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         run: |
           docker push ${{ secrets.DOCKER_USERNAME || 'kylec55' }}/web-app:latest
+
+      - name: Deploy to DigitalOcean
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.DO_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            "https://api.digitalocean.com/v2/apps/${{ secrets.DO_APP_ID }}/deployments"
