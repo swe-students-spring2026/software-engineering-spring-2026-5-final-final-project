@@ -7,6 +7,7 @@ import os
 import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+from datetime import datetime, timezone
 
 from pymongo import MongoClient, ReturnDocument
 
@@ -99,8 +100,29 @@ class MongoRepository:
     def get_user_profile(self, user_id: str) -> Optional[Dict[str, Any]]:
         profile = self.db.users.find_one({"_id": user_id}, {"_id": False})
         if profile:
+            profile.setdefault("role", "kitten")
             return profile
-        return {"user_id": user_id, "username": user_id}
+        return {"user_id": user_id, "username": user_id, "role": "kitten"}
+
+    def get_user_role(self, user_id: str) -> str:
+        profile = self.db.users.find_one({"_id": user_id}, {"role": 1})
+        if profile and profile.get("role") in ("kitten", "cat"):
+            return profile["role"]
+        return "kitten"
+
+    def set_user_role(self, user_id: str, role: str) -> None:
+        if role not in ("kitten", "cat"):
+            raise ValueError(f"unknown role: {role}")
+        self.db.users.update_one(
+            {"_id": user_id},
+            {"$set": {"role": role, "user_id": user_id}},
+            upsert=True,
+        )
+
+    def list_user_ids_by_role(self, role: str) -> List[str]:
+        if role not in ("kitten", "cat"):
+            return []
+        return [doc["_id"] for doc in self.db.users.find({"role": role}, {"_id": 1})]
 
     def list_problems(self) -> List[Dict[str, Any]]:
         return list(
@@ -200,9 +222,14 @@ class MongoRepository:
         return self.db.fish_species.find_one({"id": species_id}, {"_id": False})
 
     def add_fish_to_inventory(self, user_id: str, fish: Dict[str, Any]) -> None:
+        # Strip user_id from the incoming fish dict — fish returned from
+        # remove_fish_from_inventory carries the previous owner's user_id,
+        # and `{"user_id": user_id, **fish}` would let the spread clobber it,
+        # silently re-inserting the doc under the previous owner.
+        body = {k: v for k, v in fish.items() if k != "user_id"}
         self.db.inventory.replace_one(
             {"user_id": user_id, "fish_id": fish["fish_id"]},
-            {"user_id": user_id, **fish},
+            {"user_id": user_id, **body},
             upsert=True,
         )
 
@@ -362,50 +389,134 @@ class MongoRepository:
             raise ValueError("fish not found")
         if not fish.get("marketplace_eligible", False):
             raise ValueError("fish is not marketplace eligible")
+        
+        # Move the fish out of the seller's inventory and into the listing.
+        # Keeps the aquarium and "your eligible fish" view in sync, and
+        # prevents double-listing.
+        removed = self.remove_fish_from_inventory(user_id, fish_id)
+        if removed is None:
+            raise ValueError("fish not found")
+        # Drop user_id from the inventory doc before nesting it inside the listing.
+        listing_fish = {k: v for k, v in removed.items() if k != "user_id"}
+
         listing = {
             "listing_id": str(uuid.uuid4()),
             "seller_id": user_id,
-            "fish": fish,
-            "price": price,
+            "fish": listing_fish,
+            "price": int(price),
             "status": "active",
+            "created_at": datetime.now(timezone.utc).isoformat(),
         }
         self.db.market_listings.insert_one({"_id": listing["listing_id"], **listing})
         return listing
 
-    def list_market_listings(self) -> List[Dict[str, Any]]:
-        return list(self.db.market_listings.find({"status": "active"}, {"_id": False}))
+    def list_market_listings(
+        self,
+        rarity: Optional[str] = None,
+        species_id: Optional[str] = None,
+        min_price: Optional[int] = None,
+        max_price: Optional[int] = None,
+        sort_by: str = "newest",
+    ) -> List[Dict[str, Any]]:
+        query: Dict[str, Any] = {"status": "active"}
+        if rarity is not None:
+            query["fish.rarity"] = rarity
+        if species_id is not None:
+            query["fish.species_id"] = species_id
+        if min_price is not None or max_price is not None:
+            price_query: Dict[str, Any] = {}
+            if min_price is not None:
+                price_query["$gte"] = min_price
+            if max_price is not None:
+                price_query["$lte"] = max_price
+            query["price"] = price_query
+
+        cursor = self.db.market_listings.find(query, {"_id": False})
+        results = list(cursor)
+        if sort_by == "price_asc":
+            results.sort(key=lambda r: int(r["price"]))
+        elif sort_by == "price_desc":
+            results.sort(key=lambda r: int(r["price"]), reverse=True)
+        elif sort_by == "rarity":
+            order = {
+                "common": 0,
+                "uncommon": 1,
+                "rare": 2,
+                "epic": 3,
+                "legendary": 4,
+            }
+            results.sort(key=lambda r: order.get(r["fish"].get("rarity"), 99), reverse=True)
+        else:
+            results.sort(key=lambda r: r.get("created_at", ""), reverse=True)
+        return results
+
+    def unlist_market_listing(
+        self,
+        listing_id: str,
+        seller_id: str,
+    ) -> Dict[str, Any]:
+        updated = self.db.market_listings.find_one_and_update(
+            {"listing_id": listing_id, "status": "active", "seller_id": seller_id},
+            {"$set": {"status": "cancelled"}},
+            return_document=ReturnDocument.AFTER,
+            projection={"_id": False},
+        )
+        if updated is None:
+            existing = self.db.market_listings.find_one(
+                {"listing_id": listing_id}, {"_id": False}
+            )
+            if existing is None or existing.get("status") != "active":
+                raise ValueError("listing not found")
+            raise ValueError("only the seller may unlist this fish")
+        # Return the fish to the seller — they had it before listing.
+        self.add_fish_to_inventory(seller_id, updated["fish"])
+        return updated
 
     def buy_market_listing(
         self,
         listing_id: str,
         buyer_id: str,
     ) -> Dict[str, Any]:
-        listing = self.db.market_listings.find_one(
+        # Atomically claim the listing first — only one buyer wins. If we don't
+        # win, no inventory or token state is touched.
+        claimed = self.db.market_listings.find_one_and_update(
             {"listing_id": listing_id, "status": "active"},
-            {"_id": False},
+            {"$set": {"status": "pending", "buyer_id": buyer_id}},
+            return_document=ReturnDocument.AFTER,
+            projection={"_id": False},
         )
-        if listing is None:
+        if claimed is None:
             raise ValueError("listing not found")
-        seller_id = listing["seller_id"]
-        if seller_id == buyer_id:
-            raise ValueError("buyer cannot purchase their own listing")
-        price = int(listing["price"])
-        if self.get_tokens(buyer_id) < price:
-            raise ValueError("buyer has insufficient tokens")
-        fish = self.remove_fish_from_inventory(seller_id, listing["fish"]["fish_id"])
-        if fish is None:
+
+        seller_id = claimed["seller_id"]
+        price = int(claimed["price"])
+
+        try:
+            if seller_id == buyer_id:
+                raise ValueError("buyer cannot purchase their own listing")
+            if self.get_user_role(buyer_id) != "kitten":
+                raise ValueError("only kittens can buy from the marketplace")
+            if self.get_tokens(buyer_id) < price:
+                raise ValueError("buyer has insufficient tokens")
+        except ValueError:
+            # Roll back the claim so the listing is buyable again.
             self.db.market_listings.update_one(
                 {"listing_id": listing_id},
-                {"$set": {"status": "cancelled"}},
+                {"$set": {"status": "active"}, "$unset": {"buyer_id": ""}},
             )
-            raise ValueError("listed fish is no longer available")
+            raise
+
+        # The fish already left the seller's inventory at list time, so we just
+        # transfer tokens and deliver from the listing. Bump suggested_price to
+        # the price the buyer actually paid so a future relist defaults above
+        # the buy-in instead of the original catch-time suggestion.
+        delivered = {**claimed["fish"], "suggested_price": price}
         self.add_tokens(buyer_id, -price)
         self.add_tokens(seller_id, price)
-        self.add_fish_to_inventory(buyer_id, fish)
+        self.add_fish_to_inventory(buyer_id, delivered)
         self.db.market_listings.update_one(
             {"listing_id": listing_id},
-            {"$set": {"status": "sold", "buyer_id": buyer_id}},
+            {"$set": {"status": "sold"}},
         )
-        listing["status"] = "sold"
-        listing["buyer_id"] = buyer_id
-        return listing
+        claimed["status"] = "sold"
+        return claimed

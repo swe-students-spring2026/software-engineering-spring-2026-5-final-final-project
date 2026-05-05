@@ -39,11 +39,16 @@ async def token_leaderboard(
     limit: int = 10,
     repository: Repository = Depends(repo),
 ):
-    """Return kittens ranked by Cat Can Token balance."""
+    """Return kittens ranked by Cat Can Token balance. Cats are excluded."""
 
     balances = repository.list_token_balances()
+    kitten_balances = [
+        entry
+        for entry in balances
+        if repository.get_user_role(entry["user_id"]) == "kitten"
+    ]
     leaders = sorted(
-        balances,
+        kitten_balances,
         key=lambda entry: entry["tokens"],
         reverse=True,
     )[:limit]

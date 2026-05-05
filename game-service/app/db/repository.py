@@ -25,6 +25,11 @@ class Repository(Protocol):
 
     # users
     def get_user_profile(self, user_id: str) -> Optional[Dict[str, Any]]: ...
+    def get_user_role(self, user_id: str) -> str:
+        """Return 'kitten' or 'cat'. Defaults to 'kitten' if unknown."""
+        ...
+    def set_user_role(self, user_id: str, role: str) -> None: ...
+    def list_user_ids_by_role(self, role: str) -> List[str]: ...
 
     # fishing chances
     def get_fishing_chances(self, user_id: str) -> int: ...
@@ -95,9 +100,24 @@ class Repository(Protocol):
         price: int,
     ) -> Dict[str, Any]: ...
 
-    def list_market_listings(self) -> List[Dict[str, Any]]: ...
+    def list_market_listings(
+        self,
+        rarity: Optional[str] = None,
+        species_id: Optional[str] = None,
+        min_price: Optional[int] = None,
+        max_price: Optional[int] = None,
+        sort_by: str = "newest",
+    ) -> List[Dict[str, Any]]: ...
     def buy_market_listing(
         self,
         listing_id: str,
         buyer_id: str,
     ) -> Dict[str, Any]: ...
+    def unlist_market_listing(
+        self,
+        listing_id: str,
+        seller_id: str,
+    ) -> Dict[str, Any]:
+        """Cancel an active listing. Only the original seller may cancel."""
+        ...
+
