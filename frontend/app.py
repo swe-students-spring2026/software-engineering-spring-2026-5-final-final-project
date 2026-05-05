@@ -89,11 +89,6 @@ def add_expense_post():
         error = res.json().get("error", "Something went wrong.")
         return render_template("add_expense.html", active_tab="add", friendships=friendships, error=error)
 
-@app.route("/history")
-@login_required
-def history():
-    return render_template("history.html", active_tab="history")
-
 
 @app.route("/profile")
 @login_required
