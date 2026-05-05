@@ -39,9 +39,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run tests
+      - name: Run tests with coverage
         run: |
-          PYTHONPATH=. pytest
+          PYTHONPATH=. pytest --cov=. --cov-report=term-missing --cov-fail-under=80
 
       - name: Build Docker image
         run: |
@@ -69,5 +69,3 @@ jobs:
             git pull
             docker compose down
             docker compose up --build -d
-
-            
