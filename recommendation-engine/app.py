@@ -193,7 +193,8 @@ def recommend():
 
     results = recommender.recommend(favorite_ids, k=k)
     return jsonify([
-        _metadata_to_dict(r.metadata, include_similarity=True, similarity=r.similarity)
+        _metadata_to_dict(
+            0, r.metadata, include_similarity=True, similarity=r.similarity)
         for r in results
     ])
 
@@ -255,7 +256,8 @@ def similar_movies(movie_id):
         return jsonify({"error": "Not found"}), 404
     results = recommender.recommend([movie_id], k=4)
     return jsonify([
-        _metadata_to_dict(r.metadata, include_similarity=True, similarity=r.similarity)
+        _metadata_to_dict(
+            0, r.metadata, include_similarity=True, similarity=r.similarity)
         for r in results
     ])
 

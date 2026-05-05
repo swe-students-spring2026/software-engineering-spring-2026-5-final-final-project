@@ -75,7 +75,8 @@ def get_movies_by_ids(movie_ids: list[str]) -> list[dict]:
     """Fetch movies matching the provided IDs while preserving the ID order."""
     if not movie_ids:
         return []
-    return _api_post("/movies/by-ids", {"movie_ids": movie_ids})
+    return _api_post("/movies/by-ids", {"movie_ids": list(movie_ids)})
+
 
 
 def get_favorites() -> list[dict]:
