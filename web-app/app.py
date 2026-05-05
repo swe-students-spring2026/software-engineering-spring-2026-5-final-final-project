@@ -1,0 +1,217 @@
+from flask import Flask, render_template, redirect, request
+import logging
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+import json
+import os
+import requests
+from datetime import datetime, timezone
+from bson.objectid import ObjectId
+import pymongo
+from config import Config
+import requests
+
+mongo = Config.connect_to_db()
+ML_SERVICE_URL = "http://ml-client:5002/analyze"
+app = Flask(__name__)
+logger = logging.getLogger(__name__)
+app.secret_key = 'lacewing squad'
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login_page'
+
+class User(UserMixin):
+    pass
+
+@login_manager.user_loader
+def user_loader(user_email):
+    user_doc = mongo.users.find_one({"user_email": user_email})
+    if not user_doc:
+        return None
+    user = User()
+    user.id = user_email
+    return user
+
+@login_manager.request_loader
+def request_loader(request):
+    user_email = request.form.get('username')
+    if not user_email:
+        return None
+    user_doc = mongo.users.find_one({"user_email": user_email})
+    if not user_doc:
+        return None
+    user = User()
+    user.id = user_email
+    return user
+
+def add_id(tasks):
+    for task in tasks:
+        task['id'] = str(task['_id'])
+    return tasks
+
+def compute_status(due_date):
+    if isinstance(due_date, str):
+        due_date = datetime.strptime(due_date, "%Y-%m-%d")
+    delta = (due_date - datetime.now()).days
+    if delta < 0:
+        return "overdue"
+    elif delta <= 3:
+        return "due_soon"
+    else:
+        return "upcoming"
+
+@app.route('/')
+@login_required
+def index():
+    user = current_user.id
+
+    non_completed = add_id(list(mongo.assignments.find({"user_email": user, "status": {"$ne": "completed"}})))
+    completed = add_id(list(mongo.assignments.find({"user_email": user, "status": "completed"})))
+
+    priority_order = {"high": 0, "medium": 1, "low": 2}
+
+    overdue, due_soon, upcoming = [], [], []
+    for task in non_completed:
+        status = compute_status(task['due_date'])
+        if status == "overdue":
+            overdue.append(task)
+        elif status == "due_soon":
+            due_soon.append(task)
+        else:
+            upcoming.append(task)
+
+    def priority_key(task):
+        return priority_order.get(task.get('priority'), 3)
+
+    overdue.sort(key=priority_key)
+    due_soon.sort(key=priority_key)
+    upcoming.sort(key=priority_key)
+
+    return render_template(
+        'index.html',
+        overdue=overdue,
+        due_soon=due_soon,
+        upcoming=upcoming,
+        completed=completed
+    )
+
+@app.route('/submit_new_task', methods=['POST'])
+@login_required
+def submit_new_task():
+    data = request.json
+
+    try:
+        ml_response = requests.post(ML_SERVICE_URL, json={
+            "title": data.get("title"),
+            "course": data.get("course"),
+            "description": data.get("description"),
+            "due_date": data.get("date")
+        })
+        ml_data = ml_response.json()
+
+        mongo.assignments.insert_one({
+            "user_email": current_user.id,
+            "title": data.get("title"),
+            "course": data.get("course"),
+            "description": data.get("description"),
+            "due_date": datetime.strptime(data.get("date"), "%Y-%m-%d"),
+            "estimated_hours": ml_data.get("estimated_hours"),
+            "difficulty": ml_data.get("difficulty"),
+            "priority": ml_data.get("priority"),
+            "status": compute_status(data.get("date")),
+            "completed": False,
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc),
+        })
+    except Exception as e:
+        logger.exception("ML service request failed: %s", e)
+        return json.dumps({'status': 'error', 'message': 'Failed to analyze assignment'})
+
+    return json.dumps({"status": "success"})
+
+@app.route('/login', methods=['GET', 'POST'])
+def login_page():
+    return render_template('login.html')
+
+@app.route('/register')
+def register_page():
+    return render_template('register.html')
+
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    username = request.form.get('username')
+    password = request.form.get('password')
+
+    user_doc = mongo.users.find_one({"user_email": username})
+    if not user_doc or user_doc['password'] != password:
+        return """<div>wrong username or password</div>
+                <a href="/login"> go back to login </a>"""
+
+    user = User()
+    user.id = username
+    login_user(user)
+    return redirect('/')
+
+@app.route('/api/auth/register', methods=['POST'])
+def register():
+    username = request.form.get('username')
+    password = request.form.get('password')
+
+    if mongo.users.find_one({"user_email": username}):
+        return """<div>username already exists</div>
+                <a href="/login"> go to login </a>"""
+
+    mongo.users.insert_one({"user_email": username, "password": password})
+    return redirect('/login')
+
+@app.route('/task/<task_id>')
+def task_detail(task_id):
+    task = mongo.assignments.find_one({"_id": ObjectId(task_id)})
+    if task is None:
+        return redirect('/')
+    task['id'] = str(task['_id'])
+    return render_template('detail.html', task=task)
+
+@app.route('/task/<task_id>/edit', methods=['GET', 'POST'])
+def edit_task(task_id):
+    task = mongo.assignments.find_one({"_id": ObjectId(task_id)})
+    if task is None:
+        return redirect('/')
+
+    if request.method == 'POST':
+        new_due_date = request.form.get('due_date')
+        mongo.assignments.update_one(
+            {"_id": ObjectId(task_id)},
+            {"$set": {
+                "title": request.form.get('title'),
+                "course": request.form.get('course'),
+                "description": request.form.get('description'),
+                "due_date": datetime.strptime(new_due_date, "%Y-%m-%d"),
+                "status": compute_status(new_due_date),
+                "updated_at": datetime.now(timezone.utc),
+            }}
+        )
+        return redirect(f'/task/{task_id}')
+
+    task['id'] = str(task['_id'])
+    return render_template('edit.html', task=task)
+
+@app.route('/complete_task/<task_id>')
+def complete_task(task_id):
+    mongo.assignments.update_one(
+        {"_id": ObjectId(task_id)},
+        {"$set": {
+            "completed": True,
+            "status": "completed",
+            "updated_at": datetime.now(timezone.utc),
+        }}
+    )
+    return redirect('/')
+
+@app.route('/logout')
+def logout():
+    logout_user()
+    return redirect('/login')
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5001)

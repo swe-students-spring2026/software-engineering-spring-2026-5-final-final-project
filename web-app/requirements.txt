@@ -1,0 +1,7 @@
+flask
+flask-login
+pymongo
+python-dotenv
+requests
+pytest
+pytest-cov

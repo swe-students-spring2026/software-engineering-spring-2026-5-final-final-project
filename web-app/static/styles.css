@@ -1,0 +1,80 @@
+body{
+    font-family: sans-serif;
+}
+
+.add-task{
+    border-radius: 10px;
+    border: 2px dotted black;
+    padding: 10px;
+    margin: 20px;
+    display: flex;
+    column-gap: 100px;
+}
+
+#popup-info{
+    position: fixed;
+    border: 3px solid black;
+    width: fit-content;
+    background: white;
+    top: 25%;
+    left: 25%;
+    font-size: 150%;
+    border-radius: 10px;
+    padding: 20px;
+}
+
+#popup-info div{
+    margin: 10px;
+    margin-top: 20px;
+}
+
+.show-task{
+    border-radius: 10px;
+    border: 2px solid black;
+    padding: 10px;
+    margin: 20px;
+}
+
+.hidden{
+    display: none;
+}
+
+.error{
+    color: red;
+}
+
+.tasks{
+    display: flex;
+}
+
+.task{
+    border-radius: 10px;
+    border: 2px solid black;
+    padding: 10px;
+    margin: 10px;
+    width: fit-content;
+    display:flex;
+    text-align: center;
+}
+
+.task p{
+    margin: 5px;
+    font-size: 120%;
+}
+
+.task button{
+    margin: 5px;
+}
+
+.button-style{
+    display: inline-block;
+    padding: 5px;
+    margin: 5px;
+    color: white;
+    border-radius: 6px;
+    background: #5089a5;
+}
+
+.button-style:hover{
+    background-color: #284453;
+}
