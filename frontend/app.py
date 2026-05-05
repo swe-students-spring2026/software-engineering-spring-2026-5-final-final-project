@@ -9,7 +9,6 @@ app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret-key")
 
 API_URL = os.environ.get("API_URL", "http://localhost:5001")
 
-
 def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -23,10 +22,10 @@ def login_required(f):
 @login_required
 def dashboard():
     username = session["user"]["username"]
-    
+
     friendships_res = requests.get(f"{API_URL}/api/friendships", params={"username": username})
     friendships = friendships_res.json().get("friendships", []) if friendships_res.ok else []
-    
+
     expenses_res = requests.get(f"{API_URL}/api/expenses", params={"username": username})
     expenses = expenses_res.json().get("expenses", []) if expenses_res.ok else []
 
@@ -46,11 +45,8 @@ def dashboard():
 
     total_balance = sum(balances.values())
 
-    print("FRIENDSHIPS:", friendships)
-    print("EXPENSES:", expenses)
-    print("BALANCES:", balances)
-
     return render_template("dashboard.html", active_tab="dashboard", friendships=friendships, balances=balances, total_balance=total_balance)
+
 
 @app.route("/friends")
 @login_required
@@ -67,7 +63,9 @@ def add_expense():
     friendships = res.json().get("friendships", []) if res.ok else []
     return render_template("add_expense.html", active_tab="add", friendships=friendships)
 
+
 @app.route("/add", methods=["POST"])
+@login_required
 def add_expense_post():
     debtor_username = request.form.get("debtor_username", "").strip()
     description = request.form.get("description", "").strip()
@@ -151,11 +149,15 @@ def logout():
     session.pop("user", None)
     return redirect(url_for("login"))
 
+
 @app.route("/friends/add", methods=["GET"])
+@login_required
 def add_friend():
     return render_template("add_friend.html", active_tab="friends")
 
+
 @app.route("/friends/add", methods=["POST"])
+@login_required
 def add_friend_post():
     friend_username = request.form.get("friend_username", "").strip()
     res = requests.post(f"{API_URL}/api/friendships", json={
@@ -167,6 +169,7 @@ def add_friend_post():
     else:
         error = res.json().get("error", "Oops! Something went wrong.")
         return render_template("add_friend.html", active_tab="friends", error=error)
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=3000, debug=True)

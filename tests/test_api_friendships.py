@@ -93,7 +93,29 @@ def test_create_friendship_returns_400_when_payload_is_not_object(monkeypatch):
     assert response.get_json()["error"] == "request body must be a JSON object"
 
 
-def test_create_friendship_returns_201_on_success(monkeypatch):
+def test_create_friendship_returns_400_for_self_friendship(monkeypatch):
+    client, _ = create_test_client(monkeypatch)
+    response = client.post(
+        "/api/friendships",
+        json={"username": "alice", "friend_username": "alice"},
+    )
+
+    assert response.status_code == 400
+    assert response.get_json()["error"] == "cannot create friendship with yourself"
+
+
+def test_create_friendship_returns_404_when_user_missing(monkeypatch):
+    client, _ = create_test_client(monkeypatch)
+    response = client.post(
+        "/api/friendships",
+        json={"username": "alice", "friend_username": "ghost"},
+    )
+
+    assert response.status_code == 404
+    assert response.get_json()["error"] == "both users must exist"
+
+
+def test_create_friendship_returns_201_and_accepted_status(monkeypatch):
     client, friendships = create_test_client(monkeypatch)
     response = client.post(
         "/api/friendships",
@@ -101,8 +123,12 @@ def test_create_friendship_returns_201_on_success(monkeypatch):
     )
 
     assert response.status_code == 201
-    assert response.get_json()["status"] == "pending"
+    body = response.get_json()
+    assert body["status"] == "accepted"
     assert len(friendships.docs) == 1
+    # accepted_at should be set on creation now (not None)
+    assert friendships.docs[0]["accepted_at"] is not None
+    assert friendships.docs[0]["status"] == "accepted"
 
 
 def test_create_friendship_returns_409_if_exists(monkeypatch):
@@ -127,6 +153,14 @@ def test_list_friendships_returns_400_when_username_missing(monkeypatch):
     assert response.get_json()["error"] == "username query param is required"
 
 
+def test_list_friendships_returns_404_when_user_missing(monkeypatch):
+    client, _ = create_test_client(monkeypatch)
+    response = client.get("/api/friendships?username=ghost")
+
+    assert response.status_code == 404
+    assert response.get_json()["error"] == "user not found"
+
+
 def test_list_friendships_returns_user_friendships(monkeypatch):
     client, _ = create_test_client(monkeypatch)
     client.post("/api/friendships", json={"username": "alice", "friend_username": "bob"})
@@ -141,3 +175,6 @@ def test_list_friendships_returns_user_friendships(monkeypatch):
         friendship["friend_username"] for friendship in data["friendships"]
     )
     assert friend_names == ["bob", "carol"]
+    # All listed friendships should be in accepted status
+    for friendship in data["friendships"]:
+        assert friendship["status"] == "accepted"
