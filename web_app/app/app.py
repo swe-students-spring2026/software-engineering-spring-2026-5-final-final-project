@@ -54,9 +54,20 @@ class User(UserMixin):
 #microservice for invite-adjuster
 def get_lateness_penalty(user_id):
     try:
-        res = requests.get(f"http://invite-adjuster:5000/lateness_penalty/{user_id}")
+        invite_adjuster_url = os.getenv(
+            "INVITE_ADJUSTER_URL",
+            "http://invite-adjuster:5000"
+        )
+
+        res = requests.get(
+            f"{invite_adjuster_url}/lateness_penalty/{user_id}",
+            timeout=3
+        )
+        res.raise_for_status()
+
         data = res.json()
         return data.get("lateness_penalty", 0) or 0
+
     except Exception as e:
         print("Error calling invite-adjuster:", e)
         return 0
