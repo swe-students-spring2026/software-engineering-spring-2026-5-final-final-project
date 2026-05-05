@@ -1,118 +1,112 @@
 """
-Placeholder service layer.
+HTTP client for the recommendation-engine service.
 
-Replace these functions with real backend, MongoDB, and recommendation-engine
-API calls when those services are ready. The frontend routes call this layer so
-the templates can be built and tested without backend dependencies.
+All movie data — search, recommendations, details, similar — is served by the
+recommendation-engine subsystem over HTTP. This module is the only place in
+the frontend that knows about that service; routes call these functions and
+get back plain dicts/lists, the same shape the templates already expect.
+
+User-specific data (favorites/watchlist) lives in MongoDB and is read here
+via the shared `mongo` instance, not through the rec-engine.
+
+Configuration:
+    RECOMMENDATION_API_URL   base URL of the rec-engine service
+                             (default: http://recommendation-engine:8000)
 """
 
-PLACEHOLDER_MOVIES = [
-    {
-        "id": "1",
-        "title": "Lorem Ipsum: The Movie",
-        "description": "A character drama about starting over after a public failure.",
-        "genre": "Drama",
-        "year": 2023,
-        "rating": 7.4,
-        "poster_url": "https://placehold.co/300x450/1a1a2e/a78bfa?text=Lorem+Ipsum",
-        "similarity": 0.93,
-    },
-    {
-        "id": "2",
-        "title": "Dolor Sit Amet",
-        "description": "A tense thriller built around a missing witness and one impossible alibi.",
-        "genre": "Thriller",
-        "year": 2022,
-        "rating": 8.1,
-        "poster_url": "https://placehold.co/300x450/1a1a2e/a78bfa?text=Dolor+Sit+Amet",
-        "similarity": 0.89,
-    },
-    {
-        "id": "3",
-        "title": "Consectetur Rising",
-        "description": "A fast action story about a courier caught between rival syndicates.",
-        "genre": "Action",
-        "year": 2024,
-        "rating": 6.9,
-        "similarity": 0.84,
-    },
-    {
-        "id": "4",
-        "title": "Nocturne Signal",
-        "description": "A quiet sci-fi mystery about memory, distance, and impossible messages.",
-        "genre": "Sci-Fi",
-        "year": 2021,
-        "rating": 7.8,
-        "similarity": 0.81,
-    },
-]
+import logging
+import os
+from typing import Any
+import requests
+from bson import ObjectId
+from flask import session
+from db import mongo
+
+log = logging.getLogger(__name__)
+
+API_BASE_URL = os.getenv("RECOMMENDATION_API_URL",
+                         "http://recommendation-engine:8000")
+DEFAULT_TIMEOUT = float(os.getenv("RECOMMENDATION_API_TIMEOUT", "5"))
 
 
+# ── low-level HTTP helpers ───────────────────────────────────────────────────
+def _get(path: str, params: dict | None = None) -> Any:
+    return _request("GET", path, params=params)
+
+def _post(path: str, json: dict | None = None) -> Any:
+    return _request("POST", path, json=json)
+
+def _request(method: str, path: str, **kwargs) -> Any:
+    url = f"{API_BASE_URL.rstrip('/')}{path}"
+    try:
+        response = requests.request(
+            method, url, timeout=DEFAULT_TIMEOUT, **kwargs)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as exc:
+        log.warning("recommendation-engine %s %s failed: %s",
+                    method, path, exc)
+        return None
+
+# ── public API used by routes ────────────────────────────────────────────────
 def search_movies(query: str) -> list[dict]:
-    """Standard keyword search that returns matching movies from the API."""
-    # TODO: replace with real backend API call
-    normalized_query = query.lower()
-    matches = [
-        movie
-        for movie in PLACEHOLDER_MOVIES
-        if normalized_query in movie["title"].lower()
-        or normalized_query in movie["genre"].lower()
-    ]
-    return matches or PLACEHOLDER_MOVIES
-
+    """Direct keyword search by title/genre."""
+    data = _get("/search", params={"q": query, "mode": "direct"})
+    return data.get("results", []) if data else []
 
 def recommend_movies(query: str) -> list[dict]:
-    """Natural-language recommendation search."""
-    # TODO: replace with real ML subsystem call
-    return [
-        {
-            **movie,
-            "reason": f'Matched your request: "{query}"',
-        }
-        for movie in PLACEHOLDER_MOVIES
-    ]
-
+    """Natural-language semantic recommendation search."""
+    data = _get("/search", params={"q": query, "mode": "intent"})
+    return data.get("results", []) if data else []
 
 def recommend_from_favorites(favorite_titles: list[str]) -> list[dict]:
-    """Return personalized recommendations based on four favorite movie titles."""
-    # TODO: replace with recommendation-engine cosine similarity API call
-    favorites = ", ".join(title for title in favorite_titles if title)
-    return [
-        {
-            **movie,
-            "reason": f"Cosine similarity match based on: {favorites}",
-        }
-        for movie in PLACEHOLDER_MOVIES
-    ]
-
+    """Personalized recommendations from four favorite movie titles."""
+    titles = [t for t in favorite_titles if t]
+    if not titles:
+        return []
+    data = _post("/recommend", json={"favorite_titles": titles})
+    return data.get("results", []) if data else []
 
 def get_movie_details(movie_id: str) -> dict:
-    """Fetch full details for a single movie by ID."""
-    # TODO: replace with real backend API call
-    movie = next(
-        (candidate for candidate in PLACEHOLDER_MOVIES if candidate["id"] == movie_id),
-        PLACEHOLDER_MOVIES[0],
-    )
-    return {
-        **movie,
-        "director": "Jane Doe",
-        "cast": ["Actor One", "Actor Two", "Actor Three"],
-    }
-
+    """Full details for a single movie."""
+    data = _get(f"/movies/{movie_id}")
+    return data or {}
 
 def get_similar_movies(movie_id: str) -> list[dict]:
-    """Fetch movies similar to a selected movie."""
-    # TODO: replace with real backend API call using movie_id
-    return [movie for movie in PLACEHOLDER_MOVIES if movie["id"] != movie_id][:3]
-
+    """Movies similar to the given movie."""
+    data = _get(f"/movies/{movie_id}/similar")
+    return data.get("results", []) if data else []
 
 def get_movies_by_ids(movie_ids: list[str]) -> list[dict]:
-    """Fetch movies matching the provided IDs while preserving the ID order."""
-    movies_by_id = {movie["id"]: movie for movie in PLACEHOLDER_MOVIES}
-    return [movies_by_id[movie_id] for movie_id in movie_ids if movie_id in movies_by_id]
+    """Hydrate a list of movie IDs (e.g. from a watchlist) into full movie dicts.
+
+    Preserves the order of `movie_ids` and silently drops any IDs the
+    rec-engine doesn't recognise.
+    """
+    if not movie_ids:
+        return []
+    data = _post("/movies/batch", json={"ids": movie_ids})
+    if not data:
+        return []
+    movies_by_id = {m["id"]: m for m in data.get("results", [])}
+    return [movies_by_id[mid] for mid in movie_ids if mid in movies_by_id]
 
 
 def get_favorites() -> list[dict]:
-    """Fetch the current user's saved favorites."""
-    # TODO: replace with real backend API call
-    return PLACEHOLDER_MOVIES[:2]
+    """The current user's saved favorites (a.k.a. watchlist), hydrated."""
+    user_id = _current_user_id()
+    if user_id is None:
+        return []
+
+    docs = mongo.db.watchlists.find(
+        {"user_id": user_id},
+        {"movie_id": 1},
+        sort=[("added_at", -1)],
+    )
+    movie_ids = [doc["movie_id"] for doc in docs]
+    return get_movies_by_ids(movie_ids)
+
+# ── internal ─────────────────────────────────────────────────────────────────
+def _current_user_id() -> ObjectId | None:
+    uid = session.get("user_id")
+    return ObjectId(uid) if uid else None
