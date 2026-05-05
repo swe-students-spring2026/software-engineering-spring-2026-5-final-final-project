@@ -21,6 +21,8 @@ Compose also binds MongoDB to `127.0.0.1:${MONGO_PORT:-27017}` on the host for p
 
 - [Robin Chen](https://github.com/localhost433)
 - [Minho Eune](https://github.com/minhoeune)
+- [Jaiden Xu](https://github.com/jbx202)
+- [Kyle Chen](https://github.com/KyleC55)
 
 ## Docker Hub Repositories
 
@@ -57,7 +59,11 @@ Workflows run on every push and pull request to `main`/`master`. The Docker imag
 
 ## DigitalOcean Deployment
 
-Run the stack on a Droplet with Docker Compose. Compose starts four services: `frontend`, `apis`, `scrapers`, and `mongo`. MongoDB data is stored in the named `mongo_data` volume on the Droplet, so it survives container rebuilds.
+The production app is deployed [here](https://squid-app-3b9ec.ondigitalocean.app/?term=1268&page=1)
+
+Run the stack on a Droplet with Docker Compose. Compose starts four services: `frontend`, `apis`, `scrapers`, and `mongo`.
+
+ MongoDB data is stored in the named `mongo_data` volume on the Droplet, so it survives container rebuilds.
 
 Use the local container URI in `.env`:
 
@@ -67,7 +73,11 @@ MONGO_DB_NAME=final_project
 MONGO_PORT=27017
 ```
 
-Keep `FRONTEND_PUBLIC_URL` and the Google OAuth redirect URI pointed at the public DigitalOcean domain.
+Set `FRONTEND_PUBLIC_URL` to 
+`https://squid-app-3b9ec.ondigitalocean.app`.
+
+Add this Google OAuth redirect URI in Google Cloud Console:
+`https://squid-app-3b9ec.ondigitalocean.app/auth/google/callback`
 
 ## Run Locally with Docker
 
@@ -162,6 +172,22 @@ cp .env.example .env
 | `API_PORT` / `API_INTERNAL_PORT` | `apis` | External / internal port (default `8000`) |
 | `FRONTEND_PORT` / `FRONTEND_INTERNAL_PORT` | `frontend` | External / internal port (default `3000`) |
 | `PYTHON_IMAGE_TAG` | Docker build | Python base image version, default `3.14` |
+
+## Sanity Check
+
+After deployment, verify the following:
+
+- The deployed app loads successfully at: https://squid-app-3b9ec.ondigitalocean.app/?term=1268&page=1
+- The frontend page renders without a server error.
+- Google login redirects correctly.
+- The Google OAuth callback URL is configured as: `https://squid-app-3b9ec.ondigitalocean.app/auth/google/callback`
+- The frontend can reach the backend API.
+- The API health check works.
+- MongoDB data is kept in the `mongo_data` Docker volume after containers are rebuilt or restarted.
+- The scraper service runs without crashing.
+- The scraper writes course data into MongoDB.
+- Course search returns results
+- Logs do not show missing environment variables, MongoDB connection errors, or API connection errors.
 
 ## Development Notes
 
