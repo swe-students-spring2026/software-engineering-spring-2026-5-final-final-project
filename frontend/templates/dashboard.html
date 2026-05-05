@@ -7,34 +7,29 @@
 
 <section class="balance-summary">
     <p class="balance-label">Total balance</p>
-    <p class="balance-amount">$0.00</p>
+    <p class="balance-amount">${{ "%.2f"|format(total_balance) }}</p>
 </section>
 
 <section class="friend-list">
     <h2 class="section-title">Friends</h2>
 
+    {% for f in friendships %}
+    {% set balance = balances.get(f.friend_username, 0) %}
     <div class="friend-row">
         <div class="friend-info">
-            <div class="avatar">A</div>
-            <span class="friend-name">Alice</span>
+            <div class="avatar">{{ f.friend_username[0].upper() }}</div>
+            <span class="friend-name">{{ f.friend_username }}</span>
         </div>
-        <span class="friend-balance owes">owes you $12.50</span>
-    </div>
-
-    <div class="friend-row">
-        <div class="friend-info">
-            <div class="avatar">B</div>
-            <span class="friend-name">Bob</span>
-        </div>
-        <span class="friend-balance owed">you owe $5.00</span>
-    </div>
-
-    <div class="friend-row">
-        <div class="friend-info">
-            <div class="avatar">C</div>
-            <span class="friend-name">Carol</span>
-        </div>
+        {% if balance > 0 %}
+        <span class="friend-balance owes">owes you ${{ "%.2f"|format(balance) }}</span>
+        {% elif balance < 0 %}
+        <span class="friend-balance owed">you owe ${{ "%.2f"|format(balance|abs) }}</span>
+        {% else %}
         <span class="friend-balance settled">settled up</span>
+        {% endif %}
     </div>
+    {% else %}
+    <p>No friends yet. <a href="/friends/add">Add some!</a></p>
+    {% endfor %}
 </section>
 {% endblock %}

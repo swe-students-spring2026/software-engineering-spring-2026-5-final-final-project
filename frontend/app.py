@@ -20,10 +20,36 @@ def login_required(f):
 
 
 @app.route("/")
-@login_required
 def dashboard():
-    return render_template("dashboard.html", active_tab="dashboard")
+    username = session["user"]["username"]
+    
+    friendships_res = requests.get(f"{API_URL}/api/friendships", params={"username": username})
+    friendships = friendships_res.json().get("friendships", []) if friendships_res.ok else []
+    
+    expenses_res = requests.get(f"{API_URL}/api/expenses", params={"username": username})
+    expenses = expenses_res.json().get("expenses", []) if expenses_res.ok else []
 
+    # Calculate balance per friend
+    balances = {}
+    for f in friendships:
+        balances[f["friend_username"]] = 0.0
+
+    for expense in expenses:
+        payer = expense["payer_username"]
+        debtor = expense["debtor_username"]
+        amount = expense["amount_owed"]
+        if payer == username:
+            balances[debtor] = balances.get(debtor, 0) + amount
+        elif debtor == username:
+            balances[payer] = balances.get(payer, 0) - amount
+
+    total_balance = sum(balances.values())
+
+    print("FRIENDSHIPS:", friendships)
+    print("EXPENSES:", expenses)
+    print("BALANCES:", balances)
+
+    return render_template("dashboard.html", active_tab="dashboard", friendships=friendships, balances=balances, total_balance=total_balance)
 
 @app.route("/friends")
 def friends():
@@ -33,10 +59,35 @@ def friends():
 
 
 @app.route("/add")
-@login_required
 def add_expense():
-    return render_template("add_expense.html", active_tab="add")
+    res = requests.get(f"{API_URL}/api/friendships", params={"username": session["user"]["username"]})
+    friendships = res.json().get("friendships", []) if res.ok else []
+    return render_template("add_expense.html", active_tab="add", friendships=friendships)
 
+@app.route("/add", methods=["POST"])
+def add_expense_post():
+    debtor_username = request.form.get("debtor_username", "").strip()
+    description = request.form.get("description", "").strip()
+    total_amount = request.form.get("total_amount", "").strip()
+    amount_owed = request.form.get("amount_owed", "").strip()
+    category = request.form.get("category", "general").strip()
+
+    res = requests.post(f"{API_URL}/api/expenses", json={
+        "payer_username": session["user"]["username"],
+        "debtor_username": debtor_username,
+        "description": description,
+        "total_amount": float(total_amount),
+        "amount_owed": float(amount_owed),
+        "category": category,
+    })
+
+    if res.ok:
+        return redirect("/")
+    else:
+        friendships_res = requests.get(f"{API_URL}/api/friendships", params={"username": session["user"]["username"]})
+        friendships = friendships_res.json().get("friendships", []) if friendships_res.ok else []
+        error = res.json().get("error", "Something went wrong.")
+        return render_template("add_expense.html", active_tab="add", friendships=friendships, error=error)
 
 @app.route("/history")
 @login_required

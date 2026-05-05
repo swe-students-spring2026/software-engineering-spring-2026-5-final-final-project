@@ -34,9 +34,11 @@ Living with roommates necessitates purchases for the whole room (paper towels, B
 ### Prerequisites
 
 ### With Docker Compose
-
-### Without Docker Compose
-
+```bash
+# From the repo root
+docker compose --build
+docker compose up
+```
 ## Backend Testing (Scoring-Critical)
 
 These commands verify backend unit tests and code coverage for the API and database subsystems.
