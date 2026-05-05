@@ -13,6 +13,8 @@ STORAGE_DIR = Path(os.getenv("STORAGE_DIR", "./data"))
 CLIPS_DIR = STORAGE_DIR / "clips"
 CLIPS_DIR.mkdir(parents=True, exist_ok=True)
 
+USE_MOCKS = os.getenv("USE_MOCKS", "true").lower() == "true"
+
 app = FastAPI(title="top-five ai-service")
 
 
@@ -44,7 +46,8 @@ def _run_job(req: JobRequest) -> None:
     database = db.get_db()
     try:
         db.set_job_status(database, req.job_id, "transcribing")
-        segments = pipeline.transcribe_mock(req.video_path)
+        transcribe = pipeline.transcribe_mock if USE_MOCKS else pipeline.transcribe_real
+        segments = transcribe(req.video_path)
 
         db.set_job_status(database, req.job_id, "ranking")
         windows = pipeline.pack_windows(segments)

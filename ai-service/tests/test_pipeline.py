@@ -1,3 +1,7 @@
+from types import SimpleNamespace
+from unittest.mock import MagicMock
+
+import pipeline
 from pipeline import (
     Segment,
     Window,
@@ -90,6 +94,40 @@ def test_select_top_n_results_sorted_by_start():
     ]
     top = select_top_n(scored, 3)
     assert [sw.window.start for sw in top] == [0, 20, 40]
+
+
+def test_transcribe_real_converts_whisper_segments(monkeypatch):
+    fake_segs = [
+        SimpleNamespace(start=0.0, end=5.0, text="hello"),
+        SimpleNamespace(start=5.0, end=10.0, text="world"),
+    ]
+    fake_model = MagicMock()
+    fake_model.transcribe.return_value = (iter(fake_segs), MagicMock())
+
+    monkeypatch.setattr(pipeline, "_whisper_model", None)
+    monkeypatch.setattr(pipeline, "WhisperModel", lambda *a, **k: fake_model)
+
+    result = pipeline.transcribe_real("/path/to/video.mp4")
+
+    assert result == [
+        Segment(0.0, 5.0, "hello"),
+        Segment(5.0, 10.0, "world"),
+    ]
+    fake_model.transcribe.assert_called_once_with("/path/to/video.mp4")
+
+
+def test_get_whisper_model_caches_singleton(monkeypatch):
+    fake_model = MagicMock()
+    factory = MagicMock(return_value=fake_model)
+
+    monkeypatch.setattr(pipeline, "_whisper_model", None)
+    monkeypatch.setattr(pipeline, "WhisperModel", factory)
+
+    a = pipeline._get_whisper_model()
+    b = pipeline._get_whisper_model()
+
+    assert a is b is fake_model
+    assert factory.call_count == 1
 
 
 def test_score_windows_mock_rewards_keyword_hits():
