@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}PlaceHolder Name{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div>
+    <p class="eyebrow">Daily puzzle-based matching</p>
+    <h1>Meet people by guessing what they love.</h1>
+    <p class="lede">Answer another user's puzzle to unlock a match. Find your puzzle soulmate today!</p>
+    <div class="actions">
+      <a class="button primary" href="{{ url_for('register') }}">Create account</a>
+      <a class="button" href="{{ url_for('login') }}">Log in</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

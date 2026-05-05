@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Register | PlaceHolder Name{% endblock %}
+
+{% block content %}
+<section class="auth-panel">
+  <h1>Create account</h1>
+
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      {% for message in messages %}
+        <p style="color: red;">{{ message }}</p>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <form method="post" class="form">
+    <label>
+      Username
+      <input name="username" autocomplete="username" required>
+    </label>
+    <label>
+      Email
+      <input name="email" type="email" autocomplete="email" required>
+    </label>
+    <label>
+      Password
+      <input name="password" type="password" autocomplete="new-password" required>
+    </label>
+    <button class="button primary" type="submit">Continue setup</button>
+  </form>
+</section>
+{% endblock %}
