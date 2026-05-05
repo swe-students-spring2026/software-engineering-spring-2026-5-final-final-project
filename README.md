@@ -46,10 +46,14 @@ The example contains:
 ```sh
 OPENAI_API_KEY=your_openai_api_key_here
 OPENAI_MODEL=gpt-5.4-mini
-MONGODB_URI=mongodb://localhost:27017
+WEB_APP_PORT=5001
+ML_URL=http://localhost:8000
+MONGODB_URI=mongodb+srv://username:password@cluster.example.mongodb.net/?retryWrites=true&w=majority
 MONGODB_DB_NAME=meme_generator
 MONGODB_COLLECTION_NAME=generated_memes
 ```
+
+Set `MONGODB_URI` to the live MongoDB connection string before running the Docker stack. Docker containers intentionally reject local MongoDB hosts such as `localhost`, `127.0.0.1`, `host.docker.internal`, and the old Compose service name `mongodb`.
 
 Run the full local stack from the repository root with Docker Compose:
 
@@ -57,20 +61,12 @@ Run the full local stack from the repository root with Docker Compose:
 docker compose up --build
 ```
 
-This builds and starts the web app, backend, machine learning subsystem, and MongoDB. The web app is available at `http://localhost:5000`.
-
-The `.env.example` MongoDB URI uses `localhost` for host-machine development. The Compose file overrides it inside containers with `mongodb://mongodb:27017`, which is the correct service name on the Docker Compose network.
+This builds and starts the web app, backend, and machine learning subsystem. It does not start a local MongoDB container; all Docker services use `MONGODB_URI` from `.env`. By default, Compose publishes the web app at `http://localhost:5001` to avoid macOS services that commonly bind port `5000`. Set `WEB_APP_PORT` in `.env` if you need a different host port.
 
 Stop the stack with:
 
 ```sh
 docker compose down
-```
-
-To also remove the local MongoDB volume created by Compose:
-
-```sh
-docker compose down -v
 ```
 
 Install and test each Python subsystem:
@@ -101,6 +97,12 @@ Build the subsystem containers from the repository root:
 docker build -t project5-web-app:local web-app
 docker build -t project5-ml:local ml
 docker build -t project5-db:local backend
+```
+
+The Docker images do not include a MongoDB server or a baked-in database URI. When running a pushed image from Docker Hub, pass the same live `MONGODB_URI` at runtime:
+
+```sh
+docker run --env-file .env DOCKERHUB_USERNAME/project5-web-app:latest
 ```
 
 ## CI/CD

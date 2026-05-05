@@ -9,6 +9,7 @@ uvicorn = {extras = ["standard"], version = "*"}
 pydantic = "*"
 python-dotenv = "*"
 newspaper3k = "*"
+lxml_html_clean = "*"
 openai = "*"
 pymongo = "*"
 
@@ -18,4 +19,3 @@ pytest-cov = "*"
 
 [requires]
 python_version = "3.10"
-

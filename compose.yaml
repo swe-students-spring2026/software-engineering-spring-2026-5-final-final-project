@@ -6,48 +6,36 @@ services:
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-your_openai_api_key_here}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
-      MONGODB_URI: mongodb://mongodb:27017
+      ML_URL: http://ml:8000
+      MONGODB_URI: ${MONGODB_URI:?Set MONGODB_URI in .env to the live MongoDB connection string}
       MONGODB_DB_NAME: ${MONGODB_DB_NAME:-meme_generator}
       MONGODB_COLLECTION_NAME: ${MONGODB_COLLECTION_NAME:-generated_memes}
     ports:
-      - "5000:5000"
+      - "${WEB_APP_PORT:-5001}:5000"
     depends_on:
-      - mongodb
       - backend
       - ml
 
   backend:
     build:
       context: ./backend
-    image: project5-backend:local
+    image: project5-db:local
     command: ["sh", "-c", "python -m app.main && tail -f /dev/null"]
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-your_openai_api_key_here}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
-      MONGODB_URI: mongodb://mongodb:27017
+      MONGODB_URI: ${MONGODB_URI:?Set MONGODB_URI in .env to the live MongoDB connection string}
       MONGODB_DB_NAME: ${MONGODB_DB_NAME:-meme_generator}
       MONGODB_COLLECTION_NAME: ${MONGODB_COLLECTION_NAME:-generated_memes}
-    depends_on:
-      - mongodb
 
   ml:
     build:
       context: ./ml
     image: project5-ml:local
-    command: ["sh", "-c", "python -m meme.main && tail -f /dev/null"]
+    command: ["uvicorn", "meme.main:app", "--host", "0.0.0.0", "--port", "8000"]
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-your_openai_api_key_here}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
-      MONGODB_URI: mongodb://mongodb:27017
+      MONGODB_URI: ${MONGODB_URI:?Set MONGODB_URI in .env to the live MongoDB connection string}
       MONGODB_DB_NAME: ${MONGODB_DB_NAME:-meme_generator}
       MONGODB_COLLECTION_NAME: ${MONGODB_COLLECTION_NAME:-generated_memes}
-
-  mongodb:
-    image: mongo:latest
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongodb-data:/data/db
-
-volumes:
-  mongodb-data:

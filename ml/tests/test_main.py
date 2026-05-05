@@ -7,7 +7,7 @@ from fastapi import HTTPException
 
 from meme import main
 from meme.captioner import MemeCaption
-from meme.main import GenerateRequest, build_record, generate_meme, health
+from meme.main import GenerateRequest, build_record, generate_meme, get_article_summary, health
 
 
 def test_database_status_not_configured(monkeypatch):
@@ -48,7 +48,9 @@ def test_build_record():
         "meme_url": "https://example.com/meme.png",
     }
 
-    record = build_record(payload, response)
+    response["article_summary"] = "Article summary"
+
+    record = build_record(payload, response, "Article summary")
 
     assert record["person_name"] == "Ada"
     assert record["source_url"] == "https://example.com"
@@ -92,6 +94,36 @@ def test_history_item_found(monkeypatch):
     monkeypatch.setattr(main, "get_meme_by_id", lambda _record_id: {"id": "1"})
 
     assert main.history_item("1") == {"id": "1"}
+
+
+def test_get_article_summary_from_text():
+    """Check pasted text is used directly."""
+    payload = GenerateRequest(person_name="Ada", text="Article summary")
+
+    assert get_article_summary(payload) == ("Article summary", "Article summary")
+
+
+def test_get_article_summary_from_url(monkeypatch):
+    """Check a URL is summarized when no text is provided."""
+    monkeypatch.setattr(
+        main,
+        "summarize_url",
+        lambda _url: {
+            "article_summary": "URL summary",
+            "article_text": None,
+        },
+    )
+    payload = GenerateRequest(person_name="Ada", source_url="https://example.com")
+
+    assert get_article_summary(payload) == ("URL summary", "https://example.com")
+
+
+def test_get_article_summary_requires_input():
+    """Check text or URL is required."""
+    with pytest.raises(HTTPException) as exc_info:
+        get_article_summary(GenerateRequest(person_name="Ada"))
+
+    assert exc_info.value.status_code == 400
 
 
 def test_generate_meme(monkeypatch):
