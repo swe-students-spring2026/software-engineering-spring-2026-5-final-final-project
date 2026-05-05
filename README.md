@@ -1,6 +1,6 @@
-![Subsystem 1 CI](https://github.com/[Todo])
-![Subsystem 2 CI](https://github.com/[Todo])
-![Subsystem 3 CI](https://github.com/[Todo])
+[![Frontend CI](https://github.com/swe-students-spring2026/5-final-stonefly_ring/actions/workflows/frontend.yml/badge.svg)](https://github.com/swe-students-spring2026/5-final-stonefly_ring/actions/workflows/frontend.yml)
+[![API CI](https://github.com/swe-students-spring2026/5-final-stonefly_ring/actions/workflows/api.yml/badge.svg)](https://github.com/swe-students-spring2026/5-final-stonefly_ring/actions/workflows/api.yml)
+[![Database CI](https://github.com/swe-students-spring2026/5-final-stonefly_ring/actions/workflows/database.yml/badge.svg)](https://github.com/swe-students-spring2026/5-final-stonefly_ring/actions/workflows/database.yml)
 
 # Software Engineering Final Project
 

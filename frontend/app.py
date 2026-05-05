@@ -20,6 +20,7 @@ def login_required(f):
 
 
 @app.route("/")
+@login_required
 def dashboard():
     username = session["user"]["username"]
     
@@ -52,6 +53,7 @@ def dashboard():
     return render_template("dashboard.html", active_tab="dashboard", friendships=friendships, balances=balances, total_balance=total_balance)
 
 @app.route("/friends")
+@login_required
 def friends():
     res = requests.get(f"{API_URL}/api/friendships", params={"username": session["user"]["username"]})
     friendships = res.json().get("friendships", []) if res.ok else []
@@ -59,6 +61,7 @@ def friends():
 
 
 @app.route("/add")
+@login_required
 def add_expense():
     res = requests.get(f"{API_URL}/api/friendships", params={"username": session["user"]["username"]})
     friendships = res.json().get("friendships", []) if res.ok else []
