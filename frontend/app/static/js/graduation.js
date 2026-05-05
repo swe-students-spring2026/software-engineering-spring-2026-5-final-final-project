@@ -17,6 +17,7 @@ Object.entries(profile.course_credits || {}).forEach(([code, credits]) => {
     }
 });
 const courseCatalogCredits = {};
+const courseCatalogInfo = {};
 
 const testCredits = (profile.test_credits || [])
     .map(credit => ({
@@ -91,6 +92,16 @@ function isSamplePlan(label) {
     return /sample|plan|semester|term/i.test(label || "");
 }
 
+// Return true if this table's section heading belongs to a different track than what the student selected.
+// NYU bulletin pages embed both regular and honors requirement tables on the same page.
+// We drop the "Honors Program" section for non-honors students, and non-honors sections for honors students.
+function isWrongTrackTable(label, selectedProgram) {
+    const l = (label || "").toLowerCase();
+    const programIsHonors = /honors/i.test(selectedProgram?.title || "");
+    if (!programIsHonors && /\bhonors\b/i.test(l)) return true;
+    return false;
+}
+
 function statusOf(code) {
     if (!code) return "none";
     const n = canonicalRequirementCode(code);
@@ -126,6 +137,10 @@ function hasCatalogCredit(code) {
     return courseCatalogCredits[normalizeCode(code)] !== undefined;
 }
 
+function hasCatalogInfo(code) {
+    return courseCatalogInfo[normalizeCode(code)] !== undefined;
+}
+
 function creditsForCourse(code, fallbackCredits = 0) {
     const normalized = normalizeCode(code);
     if (transcriptCredits[normalized] !== undefined) return transcriptCredits[normalized];
@@ -138,6 +153,16 @@ function displayCreditsForCourse(code, fallbackValue = "") {
     if (transcriptCredits[normalized] !== undefined) return formatCredits(transcriptCredits[normalized]);
     if (courseCatalogCredits[normalized] !== undefined) return formatCredits(courseCatalogCredits[normalized]);
     return fallbackValue || "";
+}
+
+function catalogInfoForCourse(code) {
+    return courseCatalogInfo[normalizeCode(code)] || null;
+}
+
+function courseMatchesCatalogKeywords(code, keywords) {
+    const info = catalogInfoForCourse(code);
+    const haystack = `${info?.title || ""} ${info?.description || ""} ${info?.topic || ""}`.toLowerCase();
+    return keywords.some(keyword => haystack.includes(keyword));
 }
 
 const specialRequirements = [
@@ -199,6 +224,19 @@ const specialRequirements = [
                 if (!Number.isNaN(num) && num >= 100) return true;
             }
             return false;
+        },
+    },
+    {
+        key: "cs-electives-400",
+        label: "Computer Science Electives",
+        match: text => /computer\s+science\s+electives?/i.test(text || "") && /400\s+level/i.test(text || ""),
+        options: ["Any CSCI-UA 400-level course that matches the catalog description"],
+        matches: code => {
+            const normalized = canonicalRequirementCode(code);
+            const m = normalized.match(/^CSCI-UA\s+(\d+)/i);
+            if (!m || Number(m[1]) < 400) return false;
+            if (!hasCatalogInfo(code)) return true;
+            return courseMatchesCatalogKeywords(code, ["computer science", "elective", "csci"]);
         },
     },
     {
@@ -410,6 +448,82 @@ function collectSatisfiedRequirementKeys(tables, choiceTables) {
     return keys;
 }
 
+function collectReservedRequirementCourseCodes(tables, choiceTables, assignedCourseCodes = new Set()) {
+    const reserved = new Set();
+
+    tables.forEach(t => {
+        (t.rows || []).forEach(row => {
+            const cells = row || [];
+            const first = (cells[0] || "").trim();
+            const isCourse = looksLikeCourseCode(first);
+            const isAlt = first.toLowerCase().startsWith("or ");
+            const choice = findChoiceRequirement(first, choiceTables);
+            const specialReq = findSpecialRequirement(first);
+
+            if (specialReq) {
+                const matches = [...completedSet, ...currentSet].filter(code => specialReq.matches(code));
+                matches.forEach(matched => {
+                    const canon = canonicalRequirementCode(matched);
+                    if (!assignedCourseCodes.has(canon)) {
+                        assignedCourseCodes.add(canon);
+                        reserved.add(canon);
+                    }
+                });
+                if (!matches.length) {
+                    const matched = matchedSpecialRequirementCourse(specialReq, completedSet)
+                        || matchedSpecialRequirementCourse(specialReq, currentSet);
+                    if (matched) {
+                        const canon = canonicalRequirementCode(matched);
+                        if (!assignedCourseCodes.has(canon)) {
+                            assignedCourseCodes.add(canon);
+                            reserved.add(canon);
+                        }
+                    }
+                }
+                return;
+            }
+
+            if (choice) {
+                const matched = matchedChoiceOption(choice.options);
+                if (matched && statusOf(matched.code) !== "needed") {
+                    const canon = choiceOptionKey(matched);
+                    if (!assignedCourseCodes.has(canon)) {
+                        assignedCourseCodes.add(canon);
+                        reserved.add(canon);
+                    }
+                }
+                return;
+            }
+
+            const wildcardElectivePrefix = parseWildcardElectivePrefix(first);
+            if (wildcardElectivePrefix) {
+                const matched = matchWildcardElectiveCourse(wildcardElectivePrefix, assignedCourseCodes);
+                if (matched) {
+                    const canon = canonicalRequirementCode(matched);
+                    if (!assignedCourseCodes.has(canon)) {
+                        assignedCourseCodes.add(canon);
+                        reserved.add(canon);
+                    }
+                }
+                return;
+            }
+
+            if (!isCourse && !isAlt) return;
+
+            const code = extractCode(first);
+            if (code && statusOf(code) !== "needed") {
+                const canon = canonicalRequirementCode(code);
+                if (!assignedCourseCodes.has(canon)) {
+                    assignedCourseCodes.add(canon);
+                    reserved.add(canon);
+                }
+            }
+        });
+    });
+
+    return reserved;
+}
+
 function collectCourseCreditLookupCodes(tables, choiceTables) {
     const codes = new Set();
     const maybeAdd = (code, fallbackValue = "") => {
@@ -442,7 +556,7 @@ function collectCourseCreditLookupCodes(tables, choiceTables) {
 }
 
 async function loadCourseCatalogCredits(codes) {
-    const missingCodes = [...codes].filter(code => code && !hasTranscriptCredit(code) && !hasCatalogCredit(code));
+    const missingCodes = [...codes].filter(code => code && (!hasTranscriptCredit(code) || !hasCatalogCredit(code) || !hasCatalogInfo(code)));
     await Promise.all(missingCodes.map(async code => {
         const credits = await fetchCourseCatalogCredits(code);
         if (credits !== null) {
@@ -461,6 +575,11 @@ async function fetchCourseCatalogCredits(code) {
             const exact = classes.find(course => canonicalRequirementCode(course.code) === canonicalRequirementCode(code))
                 || classes.find(course => normalizeCode(course.code) === normalizeCode(code));
             if (!exact) continue;
+            courseCatalogInfo[normalizeCode(code)] = {
+                title: String(exact.title || "").trim(),
+                description: String(exact.description || exact.topic || "").trim(),
+                topic: String(exact.topic || "").trim(),
+            };
             const rawCredits = exact.credits ?? exact.units ?? "";
             if (!hasExplicitCreditValue(rawCredits)) continue;
             return parseCredits(rawCredits);
@@ -471,8 +590,11 @@ async function fetchCourseCatalogCredits(code) {
     return null;
 }
 
-function electiveCreditBreakdown(creditedRequirementKeys) {
-    const isOutsideRequirement = code => !creditedRequirementKeys.has(canonicalRequirementCode(code));
+function electiveCreditBreakdown(creditedRequirementKeys, reservedCourseCodes = new Set()) {
+    const isOutsideRequirement = code => {
+        const canonical = canonicalRequirementCode(code);
+        return !creditedRequirementKeys.has(canonical) && !reservedCourseCodes.has(canonical);
+    };
     const completedOutside = [...completedSet].filter(isOutsideRequirement);
     const currentOutside = [...currentSet].filter(isOutsideRequirement);
     const completedCourseCredits = sumTranscriptCredits(completedOutside);
@@ -605,7 +727,7 @@ function renderChoiceOptions(choice) {
     </details>`;
 }
 
-function renderTable(t, choiceTables, creditedRequirementKeys, assignedElectiveCourseCodes = new Set()) {
+function renderTable(t, choiceTables, creditedRequirementKeys, assignedElectiveCourseCodes = new Set(), reservedCourseCodes = new Set()) {
     const rows = t.rows || [];
     let doneCnt = 0, currentCnt = 0, neededCnt = 0;
     let doneCredits = 0, currentCredits = 0, requiredCredits = 0;
@@ -699,7 +821,7 @@ function renderTable(t, choiceTables, creditedRequirementKeys, assignedElectiveC
         if (!isCourse && !isAlt) {
             // "Other Elective Credits" — count unmatched completed courses toward it
             if (/other\s+elective/i.test(first)) {
-                const breakdown = electiveCreditBreakdown(creditedRequirementKeys);
+                const breakdown = electiveCreditBreakdown(creditedRequirementKeys, reservedCourseCodes);
                 const requirementCredits = parseCredits(cells[1] || cells[2]);
                 const appliedDoneCredits = requirementCredits
                     ? Math.min(breakdown.earnedCredits, requirementCredits)
@@ -874,7 +996,9 @@ async function render() {
     }
 
     const preparedPrograms = programPayloads.map(({ selected, prog }) => {
-        const allTables = (prog.tables || []).filter(t => !isSamplePlan(t.label));
+        const allTables = (prog.tables || [])
+            .filter(t => !isSamplePlan(t.label))
+            .filter(t => !isWrongTrackTable(t.label, selected));
         const choiceTables = buildChoiceTables(allTables);
         const tables = allTables.filter(t => !isChoiceTable(t, choiceTables));
         return { selected, prog, choiceTables, tables };
@@ -884,6 +1008,10 @@ async function render() {
         collectCourseCreditLookupCodes(item.tables, item.choiceTables).forEach(code => lookupCodes.add(code));
     });
     await loadCourseCatalogCredits(lookupCodes);
+    const reservedCourseCodes = new Set();
+    preparedPrograms.forEach(item => {
+        collectReservedRequirementCourseCodes(item.tables, item.choiceTables, reservedCourseCodes);
+    });
     let totalDone = 0, totalCurrent = 0, totalNeeded = 0;
     let totalDoneCredits = 0, totalCurrentCredits = 0, totalRequiredCredits = 0;
     const renderedPrograms = preparedPrograms.map((item, programIndex) => {
@@ -891,7 +1019,7 @@ async function render() {
         const assignedElectiveCourseCodes = new Set();
         let programRequiredCredits = 0;
         const sections = item.tables.map((t, tableIndex) => {
-            const r = renderTable(t, item.choiceTables, creditedRequirementKeys, assignedElectiveCourseCodes);
+            const r = renderTable(t, item.choiceTables, creditedRequirementKeys, assignedElectiveCourseCodes, reservedCourseCodes);
             totalDone += r.done;
             totalCurrent += r.current;
             totalNeeded += r.needed;
