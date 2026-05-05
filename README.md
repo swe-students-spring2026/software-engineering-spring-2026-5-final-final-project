@@ -9,6 +9,8 @@ CineMatch is a containerized movie recommendation web application. Users can sea
 
 The recommendation engine uses cosine similarity over precomputed movie embeddings stored in a FAISS index. User accounts, watchlists, and activity history are stored in MongoDB.
 
+Demo the service at: https://cinematch.hxia.xyz/
+
 ## Team
 
 - [Laura Liu](https://github.com/lauraliu518)
