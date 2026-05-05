@@ -7,25 +7,17 @@
 </div>
 
 <section class="friend-list">
+    {% for f in friendships %}
     <div class="friend-row">
         <div class="friend-info">
-            <div class="avatar">A</div>
-            <span class="friend-name">Alice</span>
+            <div class="avatar">{{ f.friend_username[0].upper() }}</div>
+            <span class="friend-name">{{ f.friend_username }}</span>
         </div>
     </div>
-
-    <div class="friend-row">
-        <div class="friend-info">
-            <div class="avatar">B</div>
-            <span class="friend-name">Bob</span>
-        </div>
-    </div>
-
-    <div class="friend-row">
-        <div class="friend-info">
-            <div class="avatar">C</div>
-            <span class="friend-name">Carol</span>
-        </div>
-    </div>
+    {% else %}
+    <p>No friends yet. Add some!</p>
+    {% endfor %}
 </section>
 {% endblock %}
+Then rebuild:
+bashdocker compose down && docker compose up --build

@@ -26,9 +26,10 @@ def dashboard():
 
 
 @app.route("/friends")
-@login_required
 def friends():
-    return render_template("friends.html", active_tab="friends")
+    res = requests.get(f"{API_URL}/api/friendships", params={"username": session["user"]["username"]})
+    friendships = res.json().get("friendships", []) if res.ok else []
+    return render_template("friends.html", active_tab="friends", friendships=friendships)
 
 
 @app.route("/add")
