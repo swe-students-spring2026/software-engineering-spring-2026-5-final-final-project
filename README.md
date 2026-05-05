@@ -23,13 +23,11 @@ Our project contains a Python-based meme generation application built as a monor
 
 ## Docker Images
 
-The CI/CD workflows publish images to Docker Hub using the configured `DOCKERHUB_USERNAME` secret:
+The CI/CD workflows publish images to Docker Hub:
 
-- Web app: `DOCKERHUB_USERNAME/project5-web-app`
-- Machine learning: `DOCKERHUB_USERNAME/project5-ml`
-- Backend/database: `DOCKERHUB_USERNAME/project5-db`
-
-Replace `DOCKERHUB_USERNAME` with the Docker Hub account configured in GitHub Actions. (graders please see .env on discord)
+- Web app: [`adamsolimannyu/project5-web-app`](https://hub.docker.com/repository/docker/adamsolimannyu/project5-web-app/general)
+- Machine learning: [`adamsolimannyu/project5-ml`](https://hub.docker.com/repository/docker/adamsolimannyu/project5-ml/general)
+- Backend/database: [`adamsolimannyu/project5-db`](https://hub.docker.com/repository/docker/adamsolimannyu/project5-db/general)
 
 ## Local Setup
 
@@ -102,7 +100,7 @@ docker build -t project5-db:local backend
 The Docker images do not include a MongoDB server or a baked-in database URI. When running a pushed image from Docker Hub, pass the same live `MONGODB_URI` at runtime:
 
 ```sh
-docker run --env-file .env -p 8080:8080 DOCKERHUB_USERNAME/project5-web-app:latest
+docker run --env-file .env -p 8080:8080 adamsolimannyu/project5-web-app:latest
 ```
 
 The web app image listens on `PORT` when set, otherwise `8080`. For DigitalOcean
