@@ -1,0 +1,68 @@
+body {
+  background: #edf5f7;
+  color: #14262c;
+  font-family: Inter, system-ui, sans-serif;
+  margin: 0;
+}
+
+main {
+  padding: 24px;
+}
+
+header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+input {
+  border: 1px solid #bfd4d9;
+  border-radius: 6px;
+  padding: 9px 12px;
+}
+
+.panel {
+  background: white;
+  border: 1px solid #d4e3e5;
+  border-radius: 8px;
+  margin-top: 20px;
+  padding: 16px;
+}
+
+.summary {
+  align-items: baseline;
+  display: flex;
+  gap: 12px;
+}
+
+.summary strong {
+  font-size: 36px;
+}
+
+.tank {
+  background: linear-gradient(#bfe9f3, #f7fcff);
+  border: 1px solid #9ccdd8;
+  border-radius: 8px;
+  height: 390px;
+  margin-top: 16px;
+  overflow: hidden;
+  position: relative;
+}
+
+.fish {
+  animation: swim 9s linear infinite;
+  background: transparent;
+  border: 0;
+  left: -90px;
+  position: absolute;
+}
+
+.fish img {
+  width: 86px;
+}
+
+@keyframes swim {
+  to {
+    transform: translateX(calc(100vw - 110px));
+  }
+}
