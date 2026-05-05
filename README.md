@@ -18,6 +18,7 @@ A task tracker that helps students manage assignments by automatically predictin
 ## Team Members
 
 [Eddy Yue](https://github.com/YechengYueEddy)
+[Hudhaifah Rehman](https://github.com/hrehman1)
 
 ## Running the Application
 
