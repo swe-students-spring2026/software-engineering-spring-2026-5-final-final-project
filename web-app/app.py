@@ -2,6 +2,7 @@ import os
 import requests
 from flask import Flask, render_template, redirect, request, url_for, flash
 from flask_bcrypt import Bcrypt
+from datetime import datetime, date
 from flask_login import (
     LoginManager,
     UserMixin,
@@ -178,10 +179,22 @@ def create_task():
 
     title = request.form.get("title", "").strip()
     description = request.form.get("description", "").strip()
-    days_to_complete = int(request.form.get("days_to_complete", 1))
+    due_date = request.form.get("due_date", "").strip()
 
-    if not title or not description:
-        flash("Title and description are required.")
+    if not title or not description or not due_date:
+        flash("Title, description, and due date are required.")
+        return redirect(url_for("create_task"))
+
+    try:
+        due = datetime.strptime(due_date, "%Y-%m-%d").date()
+
+        if due < date.today():
+            flash("Due date cannot be in the past.")
+            return redirect(url_for("create_task"))
+
+        days_to_complete = (due - date.today()).days
+    except ValueError:
+        flash("Invalid due date.")
         return redirect(url_for("create_task"))
 
     priority = get_priority_from_ml_client(title, description, days_to_complete)

@@ -7,6 +7,10 @@
 </head>
 <body>
     <main class="page">
+        <nav class="top-nav">
+            <a class="button secondary" href="{{ url_for('profile') }}">Profile</a>
+        </nav>
+    
         <section class="dashboard-header">
             <div>
                 <p class="eyebrow">PriorityManager</p>
@@ -14,9 +18,15 @@
                 <p class="muted">Sorted by priority: High, Medium, Low.</p>
             </div>
 
-            <div class="actions">
-                <a class="button secondary" href="{{ url_for('profile') }}">Profile</a>
+        </section>
+
+        <section class="dashboard-cta">
+            <div>
+                <h2>Add a new assignment</h2>
+                <p class="muted">Create a task and let the priority system rank it for you.</p>
             </div>
+
+            <a class="button" href="{{ url_for('create_task') }}">Add task</a>
         </section>
 
         {% if tasks %}
@@ -46,10 +56,9 @@
                 {% endfor %}
             </section>
         {% else %}
-            <section class="empty">
+            <section class="empty compact-empty">
                 <h2>No tasks yet</h2>
-                <p>Add your first assignment to get a priority recommendation.</p>
-                <a class="button" href="{{ url_for('create_task') }}">Add task</a>
+                <p>Your assignments will appear here once you add them.</p>
             </section>
         {% endif %}
     </main>
