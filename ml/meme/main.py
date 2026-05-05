@@ -1,9 +1,9 @@
 from __future__ import annotations
+
+import json
 import os
-import re
 from datetime import datetime, timezone
-from textwrap import shorten
-from typing import Any
+from typing import Any, Callable
 
 from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, Field
@@ -102,31 +102,82 @@ def resolve_template(template: str | None) -> str:
     return DEFAULT_TEMPLATE
 
 
-def summarize_pasted_text(article_text: str) -> str:
-    normalized = re.sub(r"\s+", " ", article_text).strip()
-    sentence_parts = re.split(r"(?<=[.!?])\s+", normalized)
-    meaningful_parts = [part.strip() for part in sentence_parts if len(part.strip()) >= 30]
+def load_article_summarizer() -> Callable[[str], dict[str, Any]]:
+    try:
+        from ml.summary.app.summarizer import summarize_article
+    except ImportError:
+        try:
+            from summary.app.summarizer import summarize_article
+        except ImportError:
+            try:
+                from summary.main import summarize_article  # type: ignore
+            except ImportError as exc:
+                raise RuntimeError("Article summarizer is not available in this build") from exc
+    return summarize_article
 
-    if meaningful_parts:
-        summary_seed = " ".join(meaningful_parts[:3])
+
+def summarize_with_openai(article_text: str) -> dict[str, Any]:
+    if not os.getenv("OPENAI_API_KEY"):
+        raise RuntimeError("OPENAI_API_KEY is not configured")
+
+    try:
+        from openai import OpenAI
+    except ImportError as exc:
+        raise RuntimeError("OpenAI client is not installed in this build") from exc
+
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    system_prompt = """You are a news summarization system.
+Return JSON only with these keys:
+- title: extract or infer the article title
+- summary: a neutral, objective summary in 2-3 sentences
+- article_type: one of technology, sports, education, product reviews, news, other
+Rules:
+- Do not add information that is not in the article text.
+- Preserve key facts, names, and numbers.
+- Use \"other\" if the article does not clearly fit another category."""
+    response = client.chat.completions.create(
+        model=os.getenv("OPENAI_MODEL", "gpt-4.1-mini"),
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"Article:\n{article_text[:20000]}"},
+        ],
+        response_format={"type": "json_object"},
+        temperature=0.2,
+    )
+    content = response.choices[0].message.content
+    if content is None:
+        raise RuntimeError("OpenAI returned an empty response")
+    return json.loads(content)
+
+
+def summarize_pasted_text(
+    article_text: str,
+) -> tuple[str, str | None, str | None, str | None]:
+    try:
+        summarize_article = load_article_summarizer()
+    except RuntimeError:
+        summary_result = summarize_with_openai(article_text)
     else:
-        summary_seed = normalized
+        try:
+            summary_result = summarize_article(article_text)
+        except Exception as exc:
+            raise RuntimeError(f"Article summarization failed: {exc}") from exc
 
-    return shorten(summary_seed, width=280, placeholder="...")
+    article_summary = clean_optional_text(
+        summary_result.get("article_summary") or summary_result.get("summary")
+    )
+    if article_summary is None:
+        raise RuntimeError("Summarizer returned no article summary")
+
+    resolved_text = clean_optional_text(summary_result.get("article_text")) or article_text
+    title = clean_optional_text(summary_result.get("title"))
+    article_type = clean_optional_text(summary_result.get("article_type"))
+    return article_summary, resolved_text, title, article_type
 
 
 def summarize_url(source_url: str) -> dict[str, Any]:
-    try:
-        from summary.app.summarizer import summarize_article
-    except ImportError as first_exc:
-        try:
-            from summary.main import summarize_article  # type: ignore
-        except ImportError as second_exc:
-            raise RuntimeError("URL summarizer is not available in this build") from second_exc
-        else:
-            return summarize_article(source_url)
-    else:
-        return summarize_article(source_url)
+    summarize_article = load_article_summarizer()
+    return summarize_article(source_url)
 
 
 def summarize_from_url(
@@ -179,12 +230,17 @@ def resolve_article_content(
 
     article_text = clean_optional_text(payload.text)
     if article_text is not None:
-        article_summary = summarize_pasted_text(article_text)
+        try:
+            article_summary, article_text, inferred_title, inferred_article_type = summarize_pasted_text(
+                article_text
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
         return (
             article_summary,
             article_text,
-            clean_optional_text(payload.title),
-            clean_optional_text(payload.article_type),
+            clean_optional_text(payload.title) or inferred_title,
+            clean_optional_text(payload.article_type) or inferred_article_type,
             None,
         )
 
