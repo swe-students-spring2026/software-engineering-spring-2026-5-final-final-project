@@ -1,22 +1,27 @@
 """Routes for the meme generator Flask app."""
 
-import os
 from flask import Blueprint, render_template, request, redirect, url_for
-from pymongo import MongoClient
 from bson import ObjectId
 from dotenv import load_dotenv
+
+from .db import get_collection
 
 load_dotenv(dotenv_path="../.env")
 
 main = Blueprint("main", __name__)
 
-# MongoDB connection
-client = MongoClient(os.getenv("MONGODB_URI"), serverSelectionTimeoutMS=5000)
+collection = get_collection()
 
-# print(client.admin.command("ping"))
 
-db = client[os.getenv("MONGODB_DB_NAME")]
-collection = db[os.getenv("MONGODB_COLLECTION_NAME")]
+def _get_collection():
+    """Return the configured collection or raise a route-level error."""
+    configured_collection = collection if collection is not None else get_collection()
+    if configured_collection is None:
+        raise RuntimeError(
+            "MongoDB is not configured. Set MONGODB_URI to enable history."
+        )
+
+    return configured_collection
 
 
 def check_url(url):
@@ -41,7 +46,7 @@ def show_error(message):
 @main.route("/")
 def index():
     """Render homepage with all memes."""
-    docs = list(collection.find().sort("created_at", -1))
+    docs = list(_get_collection().find().sort("created_at", -1))
 
     for doc in docs:
         doc["_id"] = str(doc["_id"])
@@ -53,7 +58,7 @@ def index():
 @main.route("/debug")
 def debug():
     """Return test DB entry for debugging."""
-    docs = list(collection.find())
+    docs = list(_get_collection().find())
     return {"count": len(docs), "sample": str(docs[:1])}
 
 
@@ -61,7 +66,7 @@ def debug():
 @main.route("/meme/<meme_id>")
 def meme_detail(meme_id):
     """Show a single meme."""
-    doc = collection.find_one({"_id": ObjectId(meme_id)})
+    doc = _get_collection().find_one({"_id": ObjectId(meme_id)})
 
     if not doc:
         return "Not found", 404
@@ -75,7 +80,7 @@ def meme_detail(meme_id):
 @main.route("/gallery")
 def gallery():
     """Show all memes present in the DB."""
-    memes = list(collection.find().sort("created_at", -1))
+    memes = list(_get_collection().find().sort("created_at", -1))
     return render_template("gallery.html", memes=memes)
 
 
@@ -93,6 +98,6 @@ def submit():
         "article_text": text,
     }
 
-    collection.insert_one(doc)
+    _get_collection().insert_one(doc)
 
     return redirect(url_for("main.gallery"))
