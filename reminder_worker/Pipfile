@@ -4,8 +4,11 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-
-[dev-packages]
+pymongo = "*"
+pytest = "*"
+pytest-cov = "*"
+pylint = "*"
+black = "*"
 
 [requires]
-python_version = "3.13"
+python_version = "3.11"
