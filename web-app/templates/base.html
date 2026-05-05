@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Moodify — music recommendations powered by your mood and the weather.">
+  <meta name="color-scheme" content="dark">
+  <title>{% block title %}Moodify{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  {% block head_extra %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+
+  <a href="#main" class="skip-link">Skip to content</a>
+
+  <div class="blob blob-1" aria-hidden="true"></div>
+  <div class="blob blob-2" aria-hidden="true"></div>
+
+  {% block layout %}
+  <div class="page">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div role="status" aria-live="polite">
+          {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+
+    {% block footer %}
+    <footer class="footer">
+      <p>
+        Moodify · built for NYU Software Engineering, Spring 2026
+        · <a href="https://github.com/swe-students-spring2026" target="_blank" rel="noopener">GitHub</a>
+      </p>
+    </footer>
+    {% endblock %}
+  </div>
+  {% endblock %}
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

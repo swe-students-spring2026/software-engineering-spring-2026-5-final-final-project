@@ -1,192 +1,23 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Moodify · Sign in</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-  <style>
-    /* ── Login-specific styles ── */
-    body { display: grid; place-items: center; min-height: 100vh; }
+{% extends "base.html" %}
 
-    .login-wrap {
-      position: relative;
-      z-index: 1;
-      width: 100%;
-      max-width: 400px;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      animation: fadeUp 0.5s ease both;
-    }
+{% block title %}Moodify · Sign in{% endblock %}
 
-    /* Logo mark */
-    .login-logo {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 14px;
-      margin-bottom: 40px;
-    }
-    .login-logo-icon {
-      width: 64px; height: 64px;
-      background: var(--purple-dim);
-      border: 1px solid rgba(127,119,221,0.4);
-      border-radius: 18px;
-      display: grid;
-      place-items: center;
-      box-shadow: 0 0 40px var(--purple-glow);
-    }
-    .login-logo-icon svg { width: 32px; height: 32px; }
-    .login-wordmark {
-      font-family: var(--font-display);
-      font-size: 32px;
-      color: var(--text-1);
-      letter-spacing: -0.01em;
-    }
-    .login-tagline {
-      font-size: 14px;
-      color: var(--text-2);
-      text-align: center;
-      line-height: 1.5;
-      margin-top: -6px;
-    }
+{% block body_class %}login-body{% endblock %}
 
-    /* Card */
-    .login-card {
-      width: 100%;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-xl);
-      padding: 32px 28px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 20px;
-    }
-
-    /* Features list */
-    .feature-list {
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .feature-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 13.5px;
-      color: var(--text-2);
-    }
-    .feature-icon {
-      width: 32px; height: 32px;
-      border-radius: 8px;
-      display: grid;
-      place-items: center;
-      flex-shrink: 0;
-      font-size: 16px;
-    }
-    .feature-icon.purple { background: var(--purple-dim); }
-    .feature-icon.green  { background: var(--green-dim); }
-    .feature-icon.amber  { background: rgba(245,158,11,0.1); }
-
-    /* Divider with text */
-    .login-divider {
-      width: 100%;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      color: var(--text-3);
-      font-size: 12px;
-    }
-    .login-divider::before,
-    .login-divider::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--border);
-    }
-
-    /* Spotify connect button */
-    .btn-connect {
-      width: 100%;
-      padding: 15px;
-      background: var(--green);
-      color: #fff;
-      border: none;
-      border-radius: var(--radius-md);
-      font-size: 15px;
-      font-weight: 500;
-      font-family: var(--font);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      text-decoration: none;
-      transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
-      box-shadow: 0 4px 24px rgba(29,185,84,0.3);
-    }
-    .btn-connect:hover {
-      opacity: 0.92;
-      transform: translateY(-1px);
-      box-shadow: 0 8px 32px rgba(29,185,84,0.4);
-    }
-    .btn-connect svg { width: 20px; height: 20px; fill: white; flex-shrink: 0; }
-
-    /* Fine print */
-    .login-fine {
-      font-size: 11.5px;
-      color: var(--text-3);
-      text-align: center;
-      line-height: 1.6;
-    }
-    .login-fine a { color: var(--text-2); text-underline-offset: 2px; }
-
-    /* Floating music notes decoration */
-    .notes {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 0;
-      overflow: hidden;
-    }
-    .note {
-      position: absolute;
-      font-size: 20px;
-      opacity: 0;
-      animation: floatNote linear infinite;
-    }
-    @keyframes floatNote {
-      0%   { opacity: 0;    transform: translateY(0)    rotate(0deg); }
-      10%  { opacity: 0.07; }
-      90%  { opacity: 0.07; }
-      100% { opacity: 0;    transform: translateY(-80vh) rotate(20deg); }
-    }
-  </style>
-</head>
-<body>
-
-  <div class="blob blob-1"></div>
-  <div class="blob blob-2"></div>
-
-  <!-- Floating notes -->
+{% block layout %}
   <div class="notes" aria-hidden="true">
-    <span class="note" style="left:8%;  bottom:-5%; animation-duration:18s; animation-delay:0s;   font-size:18px;">♪</span>
-    <span class="note" style="left:22%; bottom:-5%; animation-duration:22s; animation-delay:3s;   font-size:14px;">♫</span>
-    <span class="note" style="left:40%; bottom:-5%; animation-duration:16s; animation-delay:7s;   font-size:22px;">♩</span>
-    <span class="note" style="left:60%; bottom:-5%; animation-duration:20s; animation-delay:1s;   font-size:16px;">♪</span>
-    <span class="note" style="left:75%; bottom:-5%; animation-duration:24s; animation-delay:5s;   font-size:12px;">♫</span>
-    <span class="note" style="left:88%; bottom:-5%; animation-duration:19s; animation-delay:9s;   font-size:20px;">♩</span>
+    <span class="note" style="left:8%;  bottom:-5%; animation-duration:18s; animation-delay:0s;  font-size:18px;">♪</span>
+    <span class="note" style="left:22%; bottom:-5%; animation-duration:22s; animation-delay:3s;  font-size:14px;">♫</span>
+    <span class="note" style="left:40%; bottom:-5%; animation-duration:16s; animation-delay:7s;  font-size:22px;">♩</span>
+    <span class="note" style="left:60%; bottom:-5%; animation-duration:20s; animation-delay:1s;  font-size:16px;">♪</span>
+    <span class="note" style="left:75%; bottom:-5%; animation-duration:24s; animation-delay:5s;  font-size:12px;">♫</span>
+    <span class="note" style="left:88%; bottom:-5%; animation-duration:19s; animation-delay:9s;  font-size:20px;">♩</span>
   </div>
 
   <div class="login-wrap">
 
-    <!-- Logo -->
     <div class="login-logo">
-      <div class="login-logo-icon">
+      <div class="login-logo-icon" aria-hidden="true">
         <svg viewBox="0 0 32 32" fill="none" stroke="#7f77dd" stroke-width="2" stroke-linecap="round">
           <path d="M4 20 Q8 8 16 16 Q24 24 28 12"/>
           <circle cx="4"  cy="20" r="3" fill="#7f77dd" stroke="none"/>
@@ -194,31 +25,44 @@
         </svg>
       </div>
       <div class="login-wordmark">Moodify</div>
-      <p class="login-tagline">Music that matches how you feel,<br>powered by your mood and the weather.</p>
+      <p class="login-tagline">
+        Music that matches how you feel,<br>powered by your mood and the weather.
+      </p>
     </div>
 
-    <!-- Card -->
-    <div class="login-card">
+    <main id="main" class="login-card">
 
-      <div class="feature-list">
-        <div class="feature-item">
-          <div class="feature-icon purple">🎭</div>
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="flash flash-{{ category }}" style="width:100%">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      {% if error %}
+        <div class="flash flash-error" style="width:100%" role="alert">{{ error }}</div>
+      {% endif %}
+
+      <ul class="feature-list">
+        <li class="feature-item">
+          <span class="feature-icon purple" aria-hidden="true">🎭</span>
           Describe your mood in your own words
-        </div>
-        <div class="feature-item">
-          <div class="feature-icon amber">🌤️</div>
+        </li>
+        <li class="feature-item">
+          <span class="feature-icon amber" aria-hidden="true">🌤️</span>
           Auto-detects your local weather
-        </div>
-        <div class="feature-item">
-          <div class="feature-icon green">🎵</div>
+        </li>
+        <li class="feature-item">
+          <span class="feature-icon green" aria-hidden="true">🎵</span>
           Save playlists directly to your Spotify
-        </div>
-      </div>
+        </li>
+      </ul>
 
       <div class="login-divider">connect with</div>
 
       <a href="{{ auth_url }}" class="btn-connect">
-        <svg viewBox="0 0 24 24">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
         </svg>
         Continue with Spotify
@@ -226,13 +70,11 @@
 
       <p class="login-fine">
         By continuing you agree to Spotify's
-        <a href="https://www.spotify.com/legal/end-user-agreement/" target="_blank">Terms of Service</a>.
+        <a href="https://www.spotify.com/legal/end-user-agreement/" target="_blank" rel="noopener">Terms of Service</a>.
         Moodify only reads your profile and saves playlists you choose to create.
       </p>
 
-    </div>
+    </main>
 
   </div>
-
-</body>
-</html>
+{% endblock %}

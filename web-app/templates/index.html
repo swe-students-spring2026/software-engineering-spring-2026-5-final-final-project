@@ -1,128 +1,89 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Moodify</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-</head>
-<body>
+{% extends "base.html" %}
 
-  <!-- Ambient background blobs -->
-  <div class="blob blob-1"></div>
-  <div class="blob blob-2"></div>
+{% block title %}Moodify · Find your vibe{% endblock %}
 
-  <div class="page">
+{% block content %}
+  {% include "_nav.html" %}
 
-    <!-- Flash messages -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% for category, message in messages %}
-        <div class="flash flash-{{ category }}">{{ message }}</div>
-      {% endfor %}
-    {% endwith %}
+  <main id="main">
 
-    <!-- Nav -->
-    <nav class="nav">
-      <div class="logo">
-        <div class="logo-icon">
-          <svg viewBox="0 0 16 16" fill="none" stroke="#7f77dd" stroke-width="1.5" stroke-linecap="round">
-            <path d="M2 10 Q4 4 8 8 Q12 12 14 6"/>
-            <circle cx="2" cy="10" r="1.5" fill="#7f77dd" stroke="none"/>
-            <circle cx="14" cy="6" r="1.5" fill="#7f77dd" stroke="none"/>
-          </svg>
-        </div>
-        <span>Moodify</span>
-      </div>
-      <div class="nav-right">
-        <div class="chip">
-          <!-- weather injected by Flask -->
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round">
-            <circle cx="8" cy="8" r="3"/>
-            <line x1="8" y1="1" x2="8" y2="3"/><line x1="8" y1="13" x2="8" y2="15"/>
-            <line x1="1" y1="8" x2="3" y2="8"/><line x1="13" y1="8" x2="15" y2="8"/>
-          </svg>
-          {{ weather_desc | default("-- °F") }}
-        </div>
-        <div class="chip">
-          <div class="chip-dot"></div>
-          {{ username }}
-        </div>
-        <a href="{{ url_for('logout') }}">
-          <button class="btn-logout">Sign out</button>
-        </a>
-      </div>
-    </nav>
+    <h1 class="section-label">How are you feeling?</h1>
 
-    <!-- ── Input section ── -->
-    <div class="section-label">How are you feeling?</div>
+    <form action="{{ url_for('recommend') }}" method="POST" id="mood-form" novalidate>
 
-    <form action="{{ url_for('recommend') }}" method="POST" id="mood-form">
+      <section class="card" aria-labelledby="mood-card-title">
+        <p class="card-title" id="mood-card-title">Describe your mood</p>
+        <p class="card-sub">Write freely or pick a vibe below.</p>
 
-      <div class="card">
-        <p class="card-title">Describe your mood</p>
-        <p class="card-sub">Write freely or pick a vibe below</p>
-
+        <label for="mood-text" class="sr-only">Mood description</label>
         <textarea
           class="mood-textarea"
           name="mood_text"
           id="mood-text"
           rows="2"
+          maxlength="500"
           placeholder="e.g. feeling calm and a bit nostalgic today..."
         >{{ mood_text | default('') }}</textarea>
 
-        <!-- Emoji quick-select -->
-        <div class="emoji-row">
-          <button type="button" class="emoji-btn" data-mood="happy"    data-energy="70" data-valence="80">😊 Happy</button>
-          <button type="button" class="emoji-btn" data-mood="sad"      data-energy="25" data-valence="20">😔 Sad</button>
-          <button type="button" class="emoji-btn" data-mood="energized"data-energy="90" data-valence="65">😤 Energized</button>
-          <button type="button" class="emoji-btn" data-mood="chill"    data-energy="35" data-valence="60">😌 Chill</button>
-          <button type="button" class="emoji-btn" data-mood="anxious"  data-energy="75" data-valence="30">😰 Anxious</button>
-          <button type="button" class="emoji-btn" data-mood="romantic" data-energy="45" data-valence="75">🥰 Romantic</button>
+        <div class="emoji-row" role="group" aria-label="Quick mood picker">
+          <button type="button" class="emoji-btn" data-mood="happy"     data-energy="70" data-valence="80">😊 Happy</button>
+          <button type="button" class="emoji-btn" data-mood="sad"       data-energy="25" data-valence="20">😔 Sad</button>
+          <button type="button" class="emoji-btn" data-mood="energized" data-energy="90" data-valence="65">😤 Energized</button>
+          <button type="button" class="emoji-btn" data-mood="chill"     data-energy="35" data-valence="60">😌 Chill</button>
+          <button type="button" class="emoji-btn" data-mood="anxious"   data-energy="75" data-valence="30">😰 Anxious</button>
+          <button type="button" class="emoji-btn" data-mood="romantic"  data-energy="45" data-valence="75">🥰 Romantic</button>
         </div>
 
-        <!-- Fine-tune sliders -->
         <div class="sliders">
           <div class="slider-row">
-            <span class="slider-end">Mellow</span>
+            <span class="slider-end" id="energy-low">Mellow</span>
             <input type="range" min="0" max="100" value="{{ energy | default(50) }}"
-                   name="energy" id="energy-slider">
-            <span class="slider-end right">Energetic</span>
-            <span class="slider-val" id="energy-val">{{ energy | default(50) }}</span>
+                   name="energy" id="energy-slider"
+                   aria-labelledby="energy-low energy-high"
+                   aria-valuemin="0" aria-valuemax="100">
+            <span class="slider-end right" id="energy-high">Energetic</span>
+            <span class="slider-val" id="energy-val" aria-live="off">{{ energy | default(50) }}</span>
           </div>
           <div class="slider-row">
-            <span class="slider-end">Sad</span>
+            <span class="slider-end" id="valence-low">Sad</span>
             <input type="range" min="0" max="100" value="{{ valence | default(50) }}"
-                   name="valence" id="valence-slider">
-            <span class="slider-end right">Happy</span>
-            <span class="slider-val" id="valence-val">{{ valence | default(50) }}</span>
+                   name="valence" id="valence-slider"
+                   aria-labelledby="valence-low valence-high"
+                   aria-valuemin="0" aria-valuemax="100">
+            <span class="slider-end right" id="valence-high">Happy</span>
+            <span class="slider-val" id="valence-val" aria-live="off">{{ valence | default(50) }}</span>
           </div>
         </div>
 
-        <!-- Hidden fields for selected emoji mood -->
         <input type="hidden" name="mood_label" id="mood-label" value="{{ mood_label | default('') }}">
-      </div>
+        <input type="hidden" id="saved-mood-label" value="{{ mood_label | default('') }}">
+      </section>
 
-      <!-- City selector -->
-      <div class="card">
-        <p class="card-title">Your city</p>
-        <p class="card-sub">Used to pull local weather for your vibe</p>
+      <section class="card" aria-labelledby="city-card-title">
+        <p class="card-title" id="city-card-title">Your city</p>
+        <p class="card-sub">Used to pull local weather for your vibe.</p>
+
         <div class="city-select">
+          <label for="city-search" class="sr-only">City</label>
           <input
             type="text"
             class="city-input"
             id="city-search"
             placeholder="Search a city..."
             autocomplete="off"
+            role="combobox"
+            aria-controls="city-dropdown"
+            aria-autocomplete="list"
             value="{{ city_name | default('New York, NY') }}"
           >
-          <div class="city-dropdown" id="city-dropdown"></div>
+          <div class="city-dropdown" id="city-dropdown" role="listbox"></div>
         </div>
+
         <input type="hidden" name="city_lat"  id="city-lat"  value="{{ city_lat  | default('40.7128') }}">
         <input type="hidden" name="city_lon"  id="city-lon"  value="{{ city_lon  | default('-74.0060') }}">
         <input type="hidden" name="city_name" id="city-name-hidden" value="{{ city_name | default('New York, NY') }}">
-      </div>
+      </section>
 
-      <!-- Weather + time context -->
       <div class="context-grid">
         <div class="context-card">
           <div class="context-card-label">Weather</div>
@@ -131,203 +92,120 @@
         </div>
         <div class="context-card">
           <div class="context-card-label">Time of day</div>
-          <div class="context-card-val" id="time-label">--</div>
+          <div class="context-card-val" id="time-label">—</div>
           <div class="context-card-sub" id="time-sub">local time</div>
         </div>
       </div>
 
-      <button type="submit" class="btn-submit">Get recommendations →</button>
+      <button type="submit" class="btn-submit" id="submit-btn">
+        Get recommendations →
+      </button>
 
     </form>
 
-    <!-- ── Results section (only shown when tracks exist) ── -->
     {% if tracks %}
-    <hr class="divider">
+      <hr class="divider">
 
-    <div class="results-header">
-      <span class="results-title">Your playlist</span>
-      <span class="results-meta">
-        {% if mood_label %}{{ mood_label }} · {% endif %}
-        {{ tracks | length }} tracks
-      </span>
-    </div>
-
-    <div class="track-list">
-      {% for track in tracks %}
-      <div class="track-card" style="animation-delay: {{ loop.index0 * 0.05 }}s">
-        <span class="track-num">{{ loop.index }}</span>
-
-        {% if track.album_art %}
-          <img class="track-art" src="{{ track.album_art }}" alt="{{ track.name }}">
-        {% else %}
-          <div class="track-art"></div>
-        {% endif %}
-
-        <div class="track-info">
-          <div class="track-name">{{ track.name }}</div>
-          <div class="track-artist">{{ track.artists | join(', ') }}</div>
+      {% if is_replay %}
+        <div class="replay-banner" role="status">
+          <span class="replay-banner-label">Past session</span>
+          <span class="replay-banner-meta">
+            {% if replay_date %}{{ replay_date.strftime('%b %d, %Y · %I:%M %p') }}{% endif %}
+          </span>
+          <a href="{{ url_for('index') }}" class="replay-banner-back">New search</a>
         </div>
+      {% endif %}
 
-        {% if track.valence and track.valence > 0.6 %}
-          <span class="tag tag-purple">uplifting</span>
-        {% elif track.energy and track.energy > 0.7 %}
-          <span class="tag tag-green">energetic</span>
-        {% else %}
-          <span class="tag tag-purple">chill</span>
-        {% endif %}
-
-        {% if track.external_url %}
-        <a class="btn-play" href="{{ track.external_url }}" target="_blank" rel="noopener" title="Open in Spotify">
-          <svg viewBox="0 0 12 12"><polygon points="2,1 11,6 2,11"/></svg>
-        </a>
-        {% endif %}
+      <div class="results-header">
+        <h2 class="results-title">{% if is_replay %}Replayed playlist{% else %}Your playlist{% endif %}</h2>
+        <span class="results-meta">
+          {% if mood_label %}{{ mood_label }} · {% endif %}{{ tracks | length }} tracks
+        </span>
       </div>
-      {% endfor %}
-    </div>
 
-    <!-- Save to Spotify -->
-    <div class="playlist-actions">
-      <button class="btn-outline" onclick="document.getElementById('mood-form').reset(); location.href='/';">
-        Try again
-      </button>
-      <form action="{{ url_for('save_playlist') }}" method="POST" style="flex:1; display:flex;">
-        <input type="hidden" name="track_ids" value="{{ track_ids | join(',') }}">
-        <button type="submit" class="btn-spotify" style="width:100%">
-          <svg viewBox="0 0 24 24"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
-          Save to Spotify
-        </button>
-      </form>
-    </div>
+      <ol class="track-list">
+        {% for track in tracks %}
+          <li class="track-card" style="animation-delay: {{ loop.index0 * 0.05 }}s">
+            <span class="track-num">{{ loop.index }}</span>
+
+            {% if track.album_art %}
+              <img class="track-art" src="{{ track.album_art }}" alt="" loading="lazy">
+            {% else %}
+              <div class="track-art" aria-hidden="true">♪</div>
+            {% endif %}
+
+            <div class="track-info">
+              <div class="track-name">{{ track.name }}</div>
+              <div class="track-artist">
+                {% if track.artist %}
+                  {{ track.artist }}
+                {% elif track.artists %}
+                  {{ track.artists | join(', ') }}
+                {% endif %}
+                {% if track.album %} · <span>{{ track.album }}</span>{% endif %}
+              </div>
+              {% if track.reason %}
+                <div class="track-reason">“{{ track.reason }}”</div>
+              {% endif %}
+            </div>
+
+            {% if track.valence is defined and track.valence and track.valence > 0.6 %}
+              <span class="tag tag-purple">uplifting</span>
+            {% elif track.energy is defined and track.energy and track.energy > 0.7 %}
+              <span class="tag tag-green">energetic</span>
+            {% else %}
+              <span class="tag tag-purple">on vibe</span>
+            {% endif %}
+
+            {% if track.external_url %}
+              <a class="btn-play" href="{{ track.external_url }}" target="_blank"
+                 rel="noopener noreferrer" aria-label="Open {{ track.name }} in Spotify">
+                <svg viewBox="0 0 12 12" aria-hidden="true"><polygon points="2,1 11,6 2,11"/></svg>
+              </a>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ol>
+
+      <div class="playlist-actions">
+        <a href="{{ url_for('index') }}" class="btn-outline">Try again</a>
+        <form action="{{ url_for('save_playlist') }}" method="POST" style="flex:1; display:flex;">
+          <input type="hidden" name="track_ids" value="{{ track_ids | join(',') }}">
+          <button type="submit" class="btn-spotify" style="width:100%">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+            </svg>
+            Save to Spotify
+          </button>
+        </form>
+      </div>
 
     {% elif request.method == 'POST' %}
-    <!-- Posted but no results -->
-    <hr class="divider">
-    <div class="empty-state">
-      <div class="big">🎵</div>
-      No tracks found — try adjusting your mood or sliders.
-    </div>
+      <hr class="divider">
+      <div class="empty-state">
+        <div class="big" aria-hidden="true">🎵</div>
+        No tracks found — try adjusting your mood or sliders.
+      </div>
     {% endif %}
 
-    <!-- ── History ── -->
     {% if history %}
-    <hr class="divider">
-    <div class="section-label">Recent searches</div>
-    <div class="history-row">
-      {% for item in history %}
-      <div class="history-pill">{{ item.mood_label or '🎵' }} · {{ item.created_at.strftime('%b %d') if item.created_at else '' }}</div>
-      {% endfor %}
-    </div>
+      <hr class="divider">
+      <h2 class="section-label">Recent searches</h2>
+      <div class="history-row">
+        {% for item in history %}
+          <a href="{{ url_for('replay_session', session_id=item._id) }}" class="history-pill" title="Replay this session">
+            {{ item.mood_label or '🎵' }}
+            · {{ item.created_at.strftime('%b %d') if item.created_at else '' }}
+          </a>
+        {% endfor %}
+      </div>
     {% endif %}
 
-  </div><!-- /page -->
+  </main>
 
-  <script>
-    // ── Slider live values ──
-    const energySlider = document.getElementById('energy-slider');
-    const valenceSlider = document.getElementById('valence-slider');
-    const energyVal = document.getElementById('energy-val');
-    const valenceVal = document.getElementById('valence-val');
+  <script id="cities-data" type="application/json">{{ cities | tojson }}</script>
+{% endblock %}
 
-    energySlider.addEventListener('input', () => energyVal.textContent = energySlider.value);
-    valenceSlider.addEventListener('input', () => valenceVal.textContent = valenceSlider.value);
-
-    // ── Emoji mood buttons ──
-    document.querySelectorAll('.emoji-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-
-        // Auto-fill sliders
-        energySlider.value = btn.dataset.energy;
-        valenceSlider.value = btn.dataset.valence;
-        energyVal.textContent = btn.dataset.energy;
-        valenceVal.textContent = btn.dataset.valence;
-
-        // Store mood label
-        document.getElementById('mood-label').value = btn.dataset.mood;
-
-        // Append emoji text to textarea if empty
-        const ta = document.getElementById('mood-text');
-        if (!ta.value.trim()) ta.value = btn.textContent.trim();
-      });
-    });
-
-    // Restore active emoji on page reload (after POST)
-    const savedMood = "{{ mood_label | default('') }}";
-    if (savedMood) {
-      const btn = document.querySelector(`.emoji-btn[data-mood="${savedMood}"]`);
-      if (btn) btn.classList.add('active');
-    }
-
-    // ── City selector ──
-    const CITIES = {{ cities | tojson }};
-    const citySearch     = document.getElementById('city-search');
-    const cityDropdown   = document.getElementById('city-dropdown');
-    const cityLatInput   = document.getElementById('city-lat');
-    const cityLonInput   = document.getElementById('city-lon');
-    const cityNameHidden = document.getElementById('city-name-hidden');
-
-    let currentFiltered = [];
-    let highlightedIdx  = -1;
-
-    function renderDropdown(query) {
-      const q = query.trim().toLowerCase();
-      currentFiltered = q
-        ? CITIES.filter(c => c.name.toLowerCase().includes(q) || c.state.toLowerCase().includes(q))
-        : CITIES;
-      highlightedIdx = -1;
-      cityDropdown.innerHTML = '';
-      if (!currentFiltered.length) {
-        cityDropdown.innerHTML = '<div class="city-no-results">No cities found</div>';
-        return;
-      }
-      currentFiltered.slice(0, 50).forEach(city => {
-        const div = document.createElement('div');
-        div.className = 'city-option';
-        div.innerHTML = `<span>${city.name}</span><span class="city-opt-state">${city.state}</span>`;
-        div.addEventListener('mousedown', e => { e.preventDefault(); selectCity(city); });
-        cityDropdown.appendChild(div);
-      });
-    }
-
-    function selectCity(city) {
-      const label = `${city.name}, ${city.state}`;
-      citySearch.value      = label;
-      cityLatInput.value    = city.lat;
-      cityLonInput.value    = city.lon;
-      cityNameHidden.value  = label;
-      cityDropdown.classList.remove('open');
-    }
-
-    function updateHighlight() {
-      cityDropdown.querySelectorAll('.city-option').forEach((el, i) =>
-        el.classList.toggle('highlighted', i === highlightedIdx)
-      );
-      const hl = cityDropdown.querySelector('.city-option.highlighted');
-      if (hl) hl.scrollIntoView({ block: 'nearest' });
-    }
-
-    citySearch.addEventListener('focus', () => { renderDropdown(citySearch.value); cityDropdown.classList.add('open'); });
-    citySearch.addEventListener('input', () => { renderDropdown(citySearch.value); cityDropdown.classList.add('open'); });
-    citySearch.addEventListener('blur',  () => cityDropdown.classList.remove('open'));
-    citySearch.addEventListener('keydown', e => {
-      const opts = cityDropdown.querySelectorAll('.city-option');
-      if (e.key === 'ArrowDown')       { e.preventDefault(); highlightedIdx = Math.min(highlightedIdx + 1, opts.length - 1); updateHighlight(); }
-      else if (e.key === 'ArrowUp')    { e.preventDefault(); highlightedIdx = Math.max(highlightedIdx - 1, 0); updateHighlight(); }
-      else if (e.key === 'Enter' && highlightedIdx >= 0) { e.preventDefault(); selectCity(currentFiltered[highlightedIdx]); }
-      else if (e.key === 'Escape')     { cityDropdown.classList.remove('open'); }
-    });
-
-    // ── Time of day ──
-    const hour = new Date().getHours();
-    const timeLabel = document.getElementById('time-label');
-    const timeSub   = document.getElementById('time-sub');
-    if (hour < 6)       { timeLabel.textContent = 'Late night';  timeSub.textContent = 'quiet & reflective'; }
-    else if (hour < 12) { timeLabel.textContent = 'Morning';     timeSub.textContent = 'boosts energy'; }
-    else if (hour < 17) { timeLabel.textContent = 'Afternoon';   timeSub.textContent = 'upbeat vibes'; }
-    else if (hour < 21) { timeLabel.textContent = 'Evening';     timeSub.textContent = 'wind-down mode'; }
-    else                { timeLabel.textContent = 'Night';       timeSub.textContent = 'chill & mellow'; }
-  </script>
-
-</body>
-</html>
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+{% endblock %}
