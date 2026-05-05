@@ -420,6 +420,72 @@ function collectSatisfiedRequirementKeys(tables, choiceTables) {
     return keys;
 }
 
+function collectReservedRequirementCourseCodes(tables, choiceTables, assignedCourseCodes = new Set()) {
+    const reserved = new Set();
+
+    tables.forEach(t => {
+        (t.rows || []).forEach(row => {
+            const cells = row || [];
+            const first = (cells[0] || "").trim();
+            const isCourse = looksLikeCourseCode(first);
+            const isAlt = first.toLowerCase().startsWith("or ");
+            const choice = findChoiceRequirement(first, choiceTables);
+            const specialReq = findSpecialRequirement(first);
+
+            if (specialReq) {
+                const matched = matchedSpecialRequirementCourse(specialReq, completedSet)
+                    || matchedSpecialRequirementCourse(specialReq, currentSet);
+                if (matched) {
+                    const canon = canonicalRequirementCode(matched);
+                    if (!assignedCourseCodes.has(canon)) {
+                        assignedCourseCodes.add(canon);
+                        reserved.add(canon);
+                    }
+                }
+                return;
+            }
+
+            if (choice) {
+                const matched = matchedChoiceOption(choice.options);
+                if (matched && statusOf(matched.code) !== "needed") {
+                    const canon = choiceOptionKey(matched);
+                    if (!assignedCourseCodes.has(canon)) {
+                        assignedCourseCodes.add(canon);
+                        reserved.add(canon);
+                    }
+                }
+                return;
+            }
+
+            const wildcardElectivePrefix = parseWildcardElectivePrefix(first);
+            if (wildcardElectivePrefix) {
+                const matched = matchWildcardElectiveCourse(wildcardElectivePrefix, assignedCourseCodes);
+                if (matched) {
+                    const canon = canonicalRequirementCode(matched);
+                    if (!assignedCourseCodes.has(canon)) {
+                        assignedCourseCodes.add(canon);
+                        reserved.add(canon);
+                    }
+                }
+                return;
+            }
+
+            if (!isCourse && !isAlt) return;
+
+            const code = extractCode(first);
+            if (code && statusOf(code) !== "needed") {
+                const canon = canonicalRequirementCode(code);
+                if (!assignedCourseCodes.has(canon)) {
+                    assignedCourseCodes.add(canon);
+                    reserved.add(canon);
+                }
+            }
+        });
+    });
+
+    return reserved;
+}
+
 function collectCourseCreditLookupCodes(tables, choiceTables) {
     const codes = new Set();
     const maybeAdd = (code, fallbackValue = "") => {
@@ -481,8 +547,11 @@ async function fetchCourseCatalogCredits(code) {
     return null;
 }
 
-function electiveCreditBreakdown(creditedRequirementKeys) {
-    const isOutsideRequirement = code => !creditedRequirementKeys.has(canonicalRequirementCode(code));
+function electiveCreditBreakdown(creditedRequirementKeys, reservedCourseCodes = new Set()) {
+    const isOutsideRequirement = code => {
+        const canonical = canonicalRequirementCode(code);
+        return !creditedRequirementKeys.has(canonical) && !reservedCourseCodes.has(canonical);
+    };
     const completedOutside = [...completedSet].filter(isOutsideRequirement);
     const currentOutside = [...currentSet].filter(isOutsideRequirement);
     const completedCourseCredits = sumTranscriptCredits(completedOutside);
@@ -615,7 +684,7 @@ function renderChoiceOptions(choice) {
     </details>`;
 }
 
-function renderTable(t, choiceTables, creditedRequirementKeys, assignedElectiveCourseCodes = new Set()) {
+function renderTable(t, choiceTables, creditedRequirementKeys, assignedElectiveCourseCodes = new Set(), reservedCourseCodes = new Set()) {
     const rows = t.rows || [];
     let doneCnt = 0, currentCnt = 0, neededCnt = 0;
     let doneCredits = 0, currentCredits = 0, requiredCredits = 0;
@@ -709,7 +778,7 @@ function renderTable(t, choiceTables, creditedRequirementKeys, assignedElectiveC
         if (!isCourse && !isAlt) {
             // "Other Elective Credits" — count unmatched completed courses toward it
             if (/other\s+elective/i.test(first)) {
-                const breakdown = electiveCreditBreakdown(creditedRequirementKeys);
+                const breakdown = electiveCreditBreakdown(creditedRequirementKeys, reservedCourseCodes);
                 const requirementCredits = parseCredits(cells[1] || cells[2]);
                 const appliedDoneCredits = requirementCredits
                     ? Math.min(breakdown.earnedCredits, requirementCredits)
@@ -896,6 +965,10 @@ async function render() {
         collectCourseCreditLookupCodes(item.tables, item.choiceTables).forEach(code => lookupCodes.add(code));
     });
     await loadCourseCatalogCredits(lookupCodes);
+    const reservedCourseCodes = new Set();
+    preparedPrograms.forEach(item => {
+        collectReservedRequirementCourseCodes(item.tables, item.choiceTables, reservedCourseCodes);
+    });
     let totalDone = 0, totalCurrent = 0, totalNeeded = 0;
     let totalDoneCredits = 0, totalCurrentCredits = 0, totalRequiredCredits = 0;
     const renderedPrograms = preparedPrograms.map((item, programIndex) => {
@@ -903,7 +976,7 @@ async function render() {
         const assignedElectiveCourseCodes = new Set();
         let programRequiredCredits = 0;
         const sections = item.tables.map((t, tableIndex) => {
-            const r = renderTable(t, item.choiceTables, creditedRequirementKeys, assignedElectiveCourseCodes);
+            const r = renderTable(t, item.choiceTables, creditedRequirementKeys, assignedElectiveCourseCodes, reservedCourseCodes);
             totalDone += r.done;
             totalCurrent += r.current;
             totalNeeded += r.needed;
