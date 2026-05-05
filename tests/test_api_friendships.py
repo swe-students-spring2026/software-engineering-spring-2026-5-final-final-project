@@ -85,6 +85,14 @@ def test_create_friendship_returns_400_when_fields_missing(monkeypatch):
     assert response.get_json()["error"] == "username and friend_username are required"
 
 
+def test_create_friendship_returns_400_when_payload_is_not_object(monkeypatch):
+    client, _ = create_test_client(monkeypatch)
+    response = client.post("/api/friendships", json=["alice", "bob"])
+
+    assert response.status_code == 400
+    assert response.get_json()["error"] == "request body must be a JSON object"
+
+
 def test_create_friendship_returns_201_on_success(monkeypatch):
     client, friendships = create_test_client(monkeypatch)
     response = client.post(

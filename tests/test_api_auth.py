@@ -61,6 +61,17 @@ def test_create_user_returns_201_on_success(monkeypatch):
     assert users.inserted_docs[0]["username"] == "alice"
 
 
+def test_create_user_omits_email_field_when_blank(monkeypatch):
+    client, users = create_test_client(monkeypatch)
+    response = client.post(
+        "/api/users",
+        json={"username": "alice", "password": "secret", "email": "   "},
+    )
+
+    assert response.status_code == 201
+    assert "email" not in users.inserted_docs[0]
+
+
 def test_create_user_returns_409_on_duplicate_user(monkeypatch):
     client, users = create_test_client(monkeypatch)
     users.insert_error = DuplicateKeyError("duplicate key error on username")
@@ -79,6 +90,14 @@ def test_login_returns_400_when_required_fields_missing(monkeypatch):
 
     assert response.status_code == 400
     assert response.get_json()["error"] == "username and password are required"
+
+
+def test_login_returns_400_when_payload_is_not_object(monkeypatch):
+    client, _ = create_test_client(monkeypatch)
+    response = client.post("/api/login", json=["alice", "secret"])
+
+    assert response.status_code == 400
+    assert response.get_json()["error"] == "request body must be a JSON object"
 
 
 def test_login_returns_401_for_invalid_credentials(monkeypatch):

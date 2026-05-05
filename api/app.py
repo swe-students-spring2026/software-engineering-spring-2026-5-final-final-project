@@ -19,13 +19,25 @@ def ordered_pair_ids(first_id, second_id):
     return second_id, first_id
 
 
+def get_json_object():
+    """Parse request JSON and ensure the payload is an object."""
+    data = request.get_json(silent=True)
+    if data is None:
+        data = {}
+    if not isinstance(data, dict):
+        return None
+    return data
+
+
 @app.route("/api/users", methods=["POST"])
 def create_user():
-    data = request.get_json()
+    data = get_json_object()
+    if data is None:
+        return jsonify({"error": "request body must be a JSON object"}), 400
 
-    username = (data or {}).get("username", "").strip()
-    password = (data or {}).get("password", "").strip()
-    email_raw = (data or {}).get("email") or ""
+    username = data.get("username", "").strip()
+    password = data.get("password", "").strip()
+    email_raw = data.get("email") or ""
     email = email_raw.strip() or None
 
     if not username or not password:
@@ -34,9 +46,10 @@ def create_user():
     user = {
         "username": username,
         "password_hash": generate_password_hash(password),
-        "email": email,
         "created_at": datetime.now(timezone.utc),
     }
+    if email is not None:
+        user["email"] = email
 
     try:
         result = db["users"].insert_one(user)
@@ -49,10 +62,12 @@ def create_user():
 
 @app.route("/api/login", methods=["POST"])
 def login():
-    data = request.get_json()
+    data = get_json_object()
+    if data is None:
+        return jsonify({"error": "request body must be a JSON object"}), 400
 
-    username = (data or {}).get("username", "").strip()
-    password = (data or {}).get("password", "").strip()
+    username = data.get("username", "").strip()
+    password = data.get("password", "").strip()
 
     if not username or not password:
         return jsonify({"error": "username and password are required"}), 400
@@ -66,10 +81,12 @@ def login():
 
 @app.route("/api/friendships", methods=["POST"])
 def create_friendship():
-    data = request.get_json()
+    data = get_json_object()
+    if data is None:
+        return jsonify({"error": "request body must be a JSON object"}), 400
 
-    username = (data or {}).get("username", "").strip()
-    friend_username = (data or {}).get("friend_username", "").strip()
+    username = data.get("username", "").strip()
+    friend_username = data.get("friend_username", "").strip()
 
     if not username or not friend_username:
         return jsonify({"error": "username and friend_username are required"}), 400
