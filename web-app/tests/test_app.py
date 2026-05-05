@@ -1,9 +1,8 @@
 import pytest
 from unittest.mock import patch
-from app import app
 from bson.objectid import ObjectId
+from app import app, User
 import json
-from app import User
 
 
 @pytest.fixture
@@ -36,7 +35,7 @@ def test_user_loader():
     from app import user_loader
 
     with patch("app.mongo") as mock_mongo:
-        mock_mongo.db.users.find_one.return_value = {
+        mock_mongo.users.find_one.return_value = {
             "user_email": "test@example.com",
         }
         user = user_loader("test@example.com")
@@ -49,7 +48,7 @@ def test_request_loader():
     from app import request_loader
 
     with patch("app.mongo") as mock_mongo:
-        mock_mongo.db.users.find_one.return_value = {
+        mock_mongo.users.find_one.return_value = {
             "user_email": "test@example.com",
         }
         user = request_loader(
@@ -74,16 +73,21 @@ def test_add_id():
 
 def test_compute_status():
     from app import compute_status
+    from datetime import datetime, timedelta
 
-    assert compute_status("2020-01-01") == "overdue"
-    assert compute_status("2026-05-05") == "due_soon"
-    assert compute_status("2026-07-10") == "upcoming"
+    past = (datetime.now() - timedelta(days=10)).strftime("%Y-%m-%d")
+    due_soon = (datetime.now() + timedelta(days=2)).strftime("%Y-%m-%d")
+    upcoming = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d")
+
+    assert compute_status(past) == "overdue"
+    assert compute_status(due_soon) == "due_soon"
+    assert compute_status(upcoming) == "upcoming"
 
 
 def test_index_route(client, login_test_user):
-    with patch("app.mongo") as mock_find:
-        mock_find.db.assignments.find.side_effect = [
-            [  # non_completed tasks
+    with patch("app.mongo") as mock_mongo:
+        mock_mongo.assignments.find.side_effect = [
+            [
                 {
                     "_id": ObjectId(),
                     "title": "Overdue Assignment",
@@ -109,7 +113,7 @@ def test_index_route(client, login_test_user):
                     "status": "upcoming",
                 },
             ],
-            [],  # completed tasks (empty)
+            [],
         ]
         response = client.get("/")
 
@@ -120,11 +124,9 @@ def test_index_route(client, login_test_user):
 
 
 def test_submit_new_task_route_failure(client, login_test_user, sample_data):
-    # test failure
     with patch("app.requests.post") as mock_ml_request:
-        with patch("app.mongo") as mock_mongo:
+        with patch("app.mongo"):
             mock_ml_request.side_effect = Exception("ML service error")
-
             response = client.post("/submit_new_task", json=sample_data)
 
     data = json.loads(response.data)
@@ -133,15 +135,13 @@ def test_submit_new_task_route_failure(client, login_test_user, sample_data):
 
 
 def test_submit_new_task_route_success(client, login_test_user, sample_data):
-    # test success
     with patch("app.requests.post") as mock_ml_request:
-        with patch("app.mongo") as mock_mongo:
+        with patch("app.mongo"):
             mock_ml_request.return_value.json.return_value = {
                 "estimated_hours": 5,
                 "difficulty": "medium",
                 "priority": "high",
             }
-
             response = client.post("/submit_new_task", json=sample_data)
 
     data = json.loads(response.data)
@@ -151,8 +151,8 @@ def test_submit_new_task_route_success(client, login_test_user, sample_data):
 
 def test_login_success(client):
     with patch("app.mongo") as mock_mongo:
-        mock_mongo.db.users.find_one.return_value = {
-            "username": "test@example.com",
+        mock_mongo.users.find_one.return_value = {
+            "user_email": "test@example.com",
             "password": "testpassword",
         }
         response = client.post(
@@ -164,7 +164,7 @@ def test_login_success(client):
 
 def test_login_failure(client):
     with patch("app.mongo") as mock_mongo:
-        mock_mongo.db.users.find_one.return_value = None
+        mock_mongo.users.find_one.return_value = None
         response = client.post(
             "/api/auth/login",
             data={"username": "test@example.com", "password": "testpassword"},
@@ -174,7 +174,7 @@ def test_login_failure(client):
 
 def test_register_success(client):
     with patch("app.mongo") as mock_mongo:
-        mock_mongo.db.users.find_one.return_value = None
+        mock_mongo.users.find_one.return_value = None
         response = client.post(
             "/api/auth/register",
             data={"username": "test@example.com", "password": "testpassword"},
@@ -184,8 +184,8 @@ def test_register_success(client):
 
 def test_register_failure(client):
     with patch("app.mongo") as mock_mongo:
-        mock_mongo.db.users.find_one.return_value = {
-            "username": "test@example.com",
+        mock_mongo.users.find_one.return_value = {
+            "user_email": "test@example.com",
             "password": "testpassword",
         }
         response = client.post(
@@ -199,7 +199,7 @@ def test_edit_task_post_route(client, login_test_user, sample_data):
     with patch("app.mongo") as mock_mongo:
         with patch("app.ObjectId") as mock_object_id:
             mock_object_id.return_value = ObjectId("123456789012345678901234")
-        mock_mongo.db.assignments.find_one.return_value = sample_data
+        mock_mongo.assignments.find_one.return_value = sample_data
         response = client.post(
             "/task/123456789012345678901234/edit",
             data={
@@ -210,15 +210,15 @@ def test_edit_task_post_route(client, login_test_user, sample_data):
             },
         )
     assert response.status_code == 302
-    assert f"/task" in response.headers["Location"]
+    assert "/task" in response.headers["Location"]
 
 
 def test_complete_task_route(client):
     with patch("app.mongo") as mock_mongo:
         with patch("app.ObjectId") as mock_object_id:
             mock_object_id.return_value = ObjectId("123456789012345678901234")
-        mock_mongo.db.assignments.find_one.return_value = sample_data
+        mock_mongo.assignments.find_one.return_value = {}
         response = client.get("/complete_task/123456789012345678901234")
 
     assert response.status_code == 302
-    assert f"/" in response.headers["Location"]
+    assert "/" in response.headers["Location"]
