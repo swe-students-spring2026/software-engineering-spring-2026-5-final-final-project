@@ -1,0 +1,17 @@
+[MESSAGES CONTROL]
+disable=
+    missing-module-docstring,
+    missing-class-docstring,
+    missing-function-docstring,
+    too-few-public-methods,
+    too-many-instance-attributes,
+    too-many-public-methods,
+    too-many-arguments,
+    too-many-positional-arguments,
+    duplicate-code,
+    import-outside-toplevel,
+    unnecessary-lambda,
+    unused-argument,
+    unused-import,
+    redefined-outer-name,
+    unnecessary-ellipsis

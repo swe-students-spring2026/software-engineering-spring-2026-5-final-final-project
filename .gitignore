@@ -147,3 +147,10 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+# node
+node_modules/
+**/node_modules/
+dist/
+build/
+.vite/
