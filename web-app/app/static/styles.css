@@ -77,6 +77,12 @@ input[type="submit"] {
   margin: 5px 0;
   font-size: 14px;
 }
+.gallery-item a {
+  display: inline-block;
+  max-width: 100%;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
 
 .error {
   color: red;
