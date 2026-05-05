@@ -1,0 +1,60 @@
+name: API CI/CD
+
+on:
+  push:
+    branches: [main, master, develop]
+    paths:
+      - 'api/**'
+      - 'tests/test_api_*.py'
+      - '.github/workflows/api.yml'
+  pull_request:
+    branches: [main, master, develop]
+    paths:
+      - 'api/**'
+      - 'tests/test_api_*.py'
+      - '.github/workflows/api.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install flask pymongo==4.6.3 werkzeug==3.0.3 python-dotenv pytest pytest-cov
+      - name: Run tests with coverage
+        run: pytest tests/test_api_*.py --cov=api --cov-report=term-missing --cov-fail-under=80
+
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: ./api
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/swe-project-5-api:${{ github.ref_name }}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/swe-project-5-api:${{ github.sha }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    steps:
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+      - name: Deploy to Digital Ocean App Platform
+        run: doctl apps create-deployment ${{ secrets.DIGITAL_OCEAN_APP_ID }}

@@ -5,11 +5,14 @@ from flask import Flask, request, jsonify
 from pymongo import MongoClient
 from pymongo.errors import DuplicateKeyError
 from werkzeug.security import generate_password_hash, check_password_hash
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 
-client = MongoClient(os.environ["MONGO_URI"])
-db = client[os.environ.get("MONGO_DBNAME", "splitring")]
+client = MongoClient(os.getenv("MONGO_URI"))
+db = client[os.getenv("MONGO_DBNAME", "splitring")]
 
 
 def ordered_pair_ids(first_id, second_id):

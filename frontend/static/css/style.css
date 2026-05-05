@@ -392,3 +392,8 @@ html, body {
     color: #999;
     font-size: 14px;
 }
+
+.settings-row--logout {
+    text-decoration: none;
+    color: #111;
+}
