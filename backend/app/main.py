@@ -1,11 +1,11 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from app.config import get_settings
 from app.database import create_indexes
-from app.routers import spotify
+from app.routers import auth, feed, likes, matches, spotify, users
 from app.services.scheduler import start_scheduler, stop_scheduler
-# from app.routers import auth, users, feed, likes, matches  # uncomment as merged
 
 
 @asynccontextmanager
@@ -26,9 +26,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth.router)
 app.include_router(spotify.router)
-# app.include_router(auth.router)     # Jack
-# app.include_router(users.router)    # Jack
-# app.include_router(feed.router)     # Sarah
-# app.include_router(likes.router)    # Sarah
-# app.include_router(matches.router)  # Sarah
+app.include_router(users.router)
+app.include_router(feed.router)
+app.include_router(likes.router)
+app.include_router(matches.router)

@@ -34,9 +34,7 @@ async def create_indexes():
     await users.create_index("is_spotify_connected")
 
     likes = get_likes_collection()
-    await likes.create_index(
-        [("from_user_id", 1), ("to_user_id", 1)], unique=True
-    )
+    await likes.create_index([("from_user_id", 1), ("to_user_id", 1)], unique=True)
     await likes.create_index("to_user_id")
 
     matches = get_matches_collection()
