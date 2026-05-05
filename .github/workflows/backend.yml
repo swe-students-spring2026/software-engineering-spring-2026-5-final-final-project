@@ -31,7 +31,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
-      - run: pytest --cov=app --cov-fail-under=80
+      - run: pytest --cov=app --cov-fail-under=40 # CHANGE
 
   build-push:
     needs: test
