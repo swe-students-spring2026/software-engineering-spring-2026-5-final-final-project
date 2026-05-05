@@ -14,7 +14,8 @@ This repository contains three subsystems:
 - **`frontend/`** — Flask web frontend (port 3000). Proxies class search to the API and serves the UI.
 - **`scrapers/`** — CLI scraper that pulls course data from the NYU bulletin and writes to MongoDB or JSON files.
 
-MongoDB is **not** containerized in production. It is provided as an external Atlas connection string via `MONGO_URI`.
+MongoDB runs as a local Docker Compose service with a persistent `mongo_data` volume. The app services reach it with `MONGO_URI=mongodb://mongo:27017/final_project`.
+Compose also binds MongoDB to `127.0.0.1:${MONGO_PORT:-27017}` on the host for private import/export commands.
 
 ## Team
 
@@ -54,30 +55,19 @@ Each subsystem has its own workflow under `.github/workflows/`:
 
 Workflows run on every push and pull request to `main`/`master`. The Docker image is only pushed to Docker Hub on a push to `main`/`master` (not on PRs).
 
-## DigitalOcean App Platform Deployment
+## DigitalOcean Deployment
 
-1. Go to **App Platform → Create App → Docker Hub**.
-2. Add two services (the scraper runs manually, not as an App Platform service):
+Run the stack on a Droplet with Docker Compose. Compose starts four services: `frontend`, `apis`, `scrapers`, and `mongo`. MongoDB data is stored in the named `mongo_data` volume on the Droplet, so it survives container rebuilds.
 
-**API service**
-- Source: `kylec55/api-service:latest`
-- HTTP port: `8000`
-- Environment variables:
-  - `MONGO_URI` = your Atlas connection string
-  - `MONGO_DB_NAME` = `final_project`
-  - `API_INTERNAL_TOKEN` = same random token used by the frontend
-  - `GEMINI_API_KEY` = your Gemini key
-  - `GEMINI_MODEL` = `gemini-2.5-flash` (default model; used by transcript parsing and as the chat's Balanced-tier fallback)
-  - `GEMINI_MODEL_FAST` / `GEMINI_MODEL_BALANCED` / `GEMINI_MODEL_SMART` = optional per-tier overrides for the chat speed selector
+Use the local container URI in `.env`:
 
-**Frontend**
-- Source: `kylec55/web-app:latest`
-- HTTP port: `3000`
-- Environment variables:
-  - `API_URL` = the internal URL of the API service (e.g. `http://api-service:8000`)
-  - `API_INTERNAL_TOKEN` = same random token used by the API service
+```bash
+MONGO_URI=mongodb://mongo:27017/final_project
+MONGO_DB_NAME=final_project
+MONGO_PORT=27017
+```
 
-> DigitalOcean injects a `PORT` environment variable automatically. Both services read `PORT` first, then fall back to their own port variable, so no extra config is needed.
+Keep `FRONTEND_PUBLIC_URL` and the Google OAuth redirect URI pointed at the public DigitalOcean domain.
 
 ## Run Locally with Docker
 
@@ -85,7 +75,7 @@ Workflows run on every push and pull request to `main`/`master`. The Docker imag
 
 ```bash
 docker run --rm -p 8000:8000 \
-  -e MONGO_URI="your-atlas-uri" \
+  -e MONGO_URI="mongodb://host.docker.internal:27017/final_project" \
   -e MONGO_DB_NAME=final_project \
   -e GEMINI_API_KEY="your-key" \
   kylec55/api-service:latest
@@ -109,7 +99,7 @@ docker run --rm kylec55/scraper:latest
 docker run --rm \
   kylec55/scraper:latest \
   python scraper.py --term 1268 --subject CSCI-UA --details \
-    --to-mongo "your-atlas-uri"
+    --to-mongo "mongodb://host.docker.internal:27017/final_project"
 ```
 
 ### Run the Albert scraper from an already-open browser
@@ -132,7 +122,7 @@ This writes scraped classes to `scrapers/classes_example.json` and a coverage su
 
 ```bash
 cp .env.example .env
-# Edit .env and fill in MONGO_URI, GEMINI_API_KEY, etc.
+# Edit .env and fill in GEMINI_API_KEY, OAuth values, etc.
 docker compose up --build
 ```
 
@@ -158,7 +148,9 @@ cp .env.example .env
 
 | Variable | Used by | Description |
 |---|---|---|
-| `MONGO_URI` | `apis`, `scrapers` | Full MongoDB connection string |
+| `MONGO_IMAGE_TAG` | `mongo` | MongoDB image tag for the Compose service, default `7` |
+| `MONGO_PORT` | `mongo` | Loopback-only host port for private import/export commands, default `27017` |
+| `MONGO_URI` | `apis`, `scrapers` | MongoDB connection string; Compose default is `mongodb://mongo:27017/final_project` |
 | `MONGO_DB_NAME` | `apis` | Database name, e.g. `final_project` |
 | `API_INTERNAL_TOKEN` | `apis`, `frontend` | Shared token the frontend sends to protected API endpoints |
 | `GEMINI_API_KEY` | `apis` | Google Gemini API key |

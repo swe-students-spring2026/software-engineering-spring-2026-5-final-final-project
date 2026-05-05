@@ -235,6 +235,8 @@ def replace_classes_collection(db, docs: list[dict]) -> None:
 def main() -> None:
     if not MONGO_URI or not MONGO_DB_NAME:
         raise RuntimeError("MONGO_URI and MONGO_DB_NAME must be set in the environment or root .env file.")
+    if not DATA_PATH.exists():
+        raise RuntimeError(f"Albert classes JSON not found: {DATA_PATH}")
 
     client = MongoClient(MONGO_URI)
     db = client[MONGO_DB_NAME]

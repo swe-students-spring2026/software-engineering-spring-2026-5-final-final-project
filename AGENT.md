@@ -78,7 +78,7 @@ Each subsystem runs in an isolated `try/except` block — one failure does not a
 
 ## 3. Database
 
-**Provider:** MongoDB Atlas
+**Provider:** Local MongoDB container in Docker Compose
 **Config env vars:** `MONGO_URI`, `MONGO_DB_NAME`
 
 | Collection | Contents | Primary index |
@@ -116,7 +116,9 @@ The AI runs a synchronous tool-calling loop: it receives a system prompt + conve
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `MONGO_URI` | Yes | MongoDB Atlas connection string |
+| `MONGO_IMAGE_TAG` | No | MongoDB image tag for Docker Compose (default: `7`) |
+| `MONGO_PORT` | No | Loopback-only host port for MongoDB import/export commands (default: `27017`) |
+| `MONGO_URI` | Yes | MongoDB connection string; Compose uses `mongodb://mongo:27017/final_project` |
 | `MONGO_DB_NAME` | Yes | Database name |
 | `GEMINI_API_KEY` | Yes | Google Gemini API key |
 | `GEMINI_MODEL` | No | Default model used by transcript parsing and as the Balanced-tier fallback (default: `gemini-2.5-flash`) |
@@ -174,16 +176,16 @@ Key test files:
 
 ---
 
-## 9. Planned Migration
+## 9. DigitalOcean Deployment
 
-The application is currently run via Docker Compose on a local or self-hosted machine. The planned next step is to migrate to **Digital Ocean** as a fully cloud-hosted deployment. This will involve:
+The application runs on a DigitalOcean Droplet via Docker Compose:
 
-- Hosting all services on a Digital Ocean Droplet via Docker Compose
-- **Replacing MongoDB Atlas with a local MongoDB container** running on the same Droplet — `MONGO_URI` will point to the containerized instance instead of Atlas
-- Adding a `mongo` service to `docker-compose.yml` with a named volume for data persistence
-- Pointing `FRONTEND_PUBLIC_URL` and OAuth redirect URIs to the public domain
-- Managing secrets via Digital Ocean environment config or a secrets manager
-- Ensuring the scraper worker's persistent loop (`run_daily_scrape.py`) runs as a long-lived background process
+- `mongo` runs locally on the Compose network with persistent data in the `mongo_data` named volume
+- MongoDB is bound to `127.0.0.1:${MONGO_PORT:-27017}` on the host for private import/export commands
+- `apis` and `scrapers` use `MONGO_URI=mongodb://mongo:27017/final_project`
+- `frontend` talks to the API on the internal Compose network
+- `FRONTEND_PUBLIC_URL` and Google OAuth redirect URIs must point to the public domain
+- `run_daily_scrape.py` runs as the long-lived scraper worker
 
 ---
 
