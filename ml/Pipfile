@@ -6,8 +6,10 @@ name = "pypi"
 [packages]
 fastapi = "*"
 uvicorn = {extras = ["standard"], version = "*"}
-openai = "*"
 pydantic = "*"
+python-dotenv = "*"
+newspaper3k = "*"
+openai = "*"
 
 [dev-packages]
 pytest = "*"

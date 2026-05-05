@@ -1,15 +1,19 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from ml.summary.app.summarizer import summarize_article
+from .summarizer import process_input
 
+#Using FastAPI to test summarization functionality.
 app = FastAPI()
 
 # Request format goes here
 class ArticleRequest(BaseModel):
-    text: str
+    text: str | None = None
+    url: str | None = None
 
 # This is the API endpoint for summarization
 @app.post("/summarize")
 def summarize(req: ArticleRequest):
-    result = summarize_article(req.text)
-    return result
+    input_value = req.url or req.text
+    if not input_value:
+        raise ValueError("Article text or URL is required")
+    return process_input(input_value)
