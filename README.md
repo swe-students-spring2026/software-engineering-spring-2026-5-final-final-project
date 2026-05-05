@@ -1,4 +1,7 @@
 [![.github/workflows/web-app-ci.yml](https://github.com/swe-students-spring2026/5-final-treehopper_colony/actions/workflows/web-app-ci.yml/badge.svg)](https://github.com/swe-students-spring2026/5-final-treehopper_colony/actions/workflows/web-app-ci.yml)
+
+[![.github/workflows/reminder-worker.yml](https://github.com/swe-students-spring2026/5-final-treehopper_colony/actions/workflows/reminder-worker.yml/badge.svg)](https://github.com/swe-students-spring2026/5-final-treehopper_colony/actions/workflows/reminder-worker.yml)
+
 # Final Project
 
 An exercise to put to practice software development teamwork, subsystem communication, containers, deployment, and CI/CD pipelines. See [instructions](./instructions.md) for details.
