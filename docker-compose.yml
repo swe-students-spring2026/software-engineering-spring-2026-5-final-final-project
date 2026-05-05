@@ -1,27 +1,32 @@
+# MongoDB subsystem: MongoDB Atlas (connection string via MONGO_URI in .env)
+# Subsystems: web (Flask), ml-app (FastAPI), MongoDB Atlas
+
 services:
   web:
     build: ./web-app
     ports:
-      - "5000:5000"
+      - "5050:5000"
     environment:
-       - MONGO_URI=mongodb://mongo:27017/webapp
-    depends_on:
-      - mongo
-    networks:
-      - app-network
-
-  mongo:
-    image: mongo:7
-    ports:
-      - "27017:27017"
+      - MONGO_URI=${MONGO_URI}
+      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY}
+      - ML_APP_URL=http://ml-app:8000
     volumes:
-      - mongo_data:/data/db
-      - ./mongodb/init:/docker-entrypoint-initdb.d
+      - ./web-app/app.py:/app/app.py
+      - ./web-app/templates:/app/templates
+      - ./web-app/static:/app/static
     networks:
       - app-network
 
-volumes:
-  mongo_data:
+  ml-app:
+    build:
+      context: .
+      dockerfile: ml-app/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGO_URI=${MONGO_URI}
+    networks:
+      - app-network
 
 networks:
   app-network:
