@@ -1,4 +1,4 @@
-# Bloom Bugs: Mood Music Recommender 🎶🌸
+# Bloom Bugs: Mood Music Recommender
 
 [![Web App CI/CD](https://github.com/swe-students-spring2026/5-final-bloom_bugs/actions/workflows/web-app.yml/badge.svg)](https://github.com/swe-students-spring2026/5-final-bloom_bugs/actions/workflows/web-app.yml)
 [![ML Client CI/CD](https://github.com/swe-students-spring2026/5-final-bloom_bugs/actions/workflows/ml-client.yml/badge.svg)](https://github.com/swe-students-spring2026/5-final-bloom_bugs/actions/workflows/ml-client.yml)
@@ -16,8 +16,8 @@ This project is built using a microservices architecture with three distinct sub
 
 ## 🐳 DockerHub Images
 You can pull the container images for our custom subsystems directly from DockerHub:
-- 🌐 **Web App**: [Link to Web App DockerHub Image](https://hub.docker.com/r/hy2484/moodify-web)
-- 🧠 **ML Service**: [Link to ML Service DockerHub Image](https://hub.docker.com/r/hy2484/moodify-ml)
+- **Web App**: [Link to Web App DockerHub Image](https://hub.docker.com/r/hy2484/moodify-web)
+- **ML Service**: [Link to ML Service DockerHub Image](https://hub.docker.com/r/hy2484/moodify-ml)
 
 ---
 
@@ -74,7 +74,4 @@ pip install pymongo python-dotenv
 python seed_data.py
 ```
 
-If successful, you will see output indicating that session records and playlists have been inserted into the `moodmusic` database. When you log into the Web App, you should now see populated history!
-
----
-*Built with ❤️ by the Bloom Bugs Team for SWE Spring 2026.*
+If successful, you will see output indicating that session records and playlists have been inserted into the `moodmusic` database. When you log into the Web App, you should now see populated history.
