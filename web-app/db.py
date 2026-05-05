@@ -108,3 +108,22 @@ def find_user_by_username(username: str):
 
 def find_user_by_id(user_id:str):
     return users_collection().find_one({"_id":ObjectId(user_id)})
+
+
+def update_user_profile(user_id: str, username: str, email: str) -> bool:
+    result = users_collection().update_one(
+        {"_id": ObjectId(user_id)},
+        {
+            "$set": {
+                "username": username.strip(),
+                "email": email.strip().lower(),
+            }
+        },
+    )
+    return result.modified_count == 1
+
+
+def delete_user_profile(user_id: str) -> bool:
+    tasks_collection().delete_many({"user_id": ObjectId(user_id)})
+    result = users_collection().delete_one({"_id": ObjectId(user_id)})
+    return result.deleted_count == 1

@@ -2,6 +2,7 @@ import os
 import requests
 from flask import Flask, render_template, redirect, request, url_for, flash
 from flask_bcrypt import Bcrypt
+from datetime import datetime, date
 from flask_login import (
     LoginManager,
     UserMixin,
@@ -19,6 +20,8 @@ from db import (
     mark_task_complete,
     delete_task,
     find_user_by_id,
+    update_user_profile,
+    delete_user_profile,
 )
 from dotenv import load_dotenv
 load_dotenv()
@@ -133,6 +136,40 @@ def dashboard():
     tasks = get_tasks_for_user(current_user.id)
     return render_template("dashboard.html", tasks=tasks)
 
+@app.route("/profile", methods=["GET", "POST"])
+@login_required
+def profile():
+    user_doc = find_user_by_id(current_user.id)
+
+    if request.method == "GET":
+        return render_template("profile.html", user=user_doc)
+
+    username = request.form.get("username", "").strip()
+    email = request.form.get("email", "").strip().lower()
+
+    if not username or not email:
+        flash("Username and email are required.")
+        return redirect(url_for("profile"))
+
+    existing_user = find_user_by_username(username)
+
+    if existing_user and str(existing_user["_id"]) != current_user.id:
+        flash("That username is already taken.")
+        return redirect(url_for("profile"))
+
+    update_user_profile(current_user.id, username, email)
+    flash("Profile updated.")
+    return redirect(url_for("profile"))
+
+
+@app.route("/profile/delete", methods=["POST"])
+@login_required
+def delete_profile():
+    delete_user_profile(current_user.id)
+    logout_user()
+    flash("Your profile has been deleted.")
+    return redirect(url_for("login"))
+
 # Create task route (GET to show form, POST to handle creation)
 @app.route("/create", methods=["GET", "POST"])
 @login_required
@@ -142,10 +179,22 @@ def create_task():
 
     title = request.form.get("title", "").strip()
     description = request.form.get("description", "").strip()
-    days_to_complete = int(request.form.get("days_to_complete", 1))
+    due_date = request.form.get("due_date", "").strip()
 
-    if not title or not description:
-        flash("Title and description are required.")
+    if not title or not description or not due_date:
+        flash("Title, description, and due date are required.")
+        return redirect(url_for("create_task"))
+
+    try:
+        due = datetime.strptime(due_date, "%Y-%m-%d").date()
+
+        if due < date.today():
+            flash("Due date cannot be in the past.")
+            return redirect(url_for("create_task"))
+
+        days_to_complete = (due - date.today()).days
+    except ValueError:
+        flash("Invalid due date.")
         return redirect(url_for("create_task"))
 
     priority = get_priority_from_ml_client(title, description, days_to_complete)
