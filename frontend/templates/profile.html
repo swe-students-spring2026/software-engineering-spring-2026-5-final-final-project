@@ -6,22 +6,13 @@
 </div>
 
 <section class="profile-section">
-    <div class="profile-avatar">U</div>
-    <p class="profile-name">Username</p>
-    <p class="profile-email">user@example.com</p>
+    <div class="profile-avatar">{{ session.user.username[0].upper() }}</div>
+    <p class="profile-name">{{ session.user.username }}</p>
 </section>
 
 <section class="settings-list">
-    <div class="settings-row">
-        <span>Reminder threshold</span>
-        <span class="settings-value">7 days</span>
-    </div>
-    <div class="settings-row">
-        <span>Notifications</span>
-        <span class="settings-value">On</span>
-    </div>
-    <div class="settings-row">
+    <a href="{{ url_for('logout') }}" class="settings-row settings-row--logout">
         <span>Log out</span>
-    </div>
+    </a>
 </section>
 {% endblock %}
