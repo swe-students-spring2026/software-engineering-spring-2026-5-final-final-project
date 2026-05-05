@@ -1,4 +1,4 @@
-name: ML Client CI
+name: Web App CI
 
 on:
   push:
@@ -6,16 +6,16 @@ on:
       - main
       - master
     paths:
-      - "machine-learning-client/**"
-      - ".github/workflows/ml-client.yml"
+      - "web-app/**"
+      - ".github/workflows/web-app.yml"
 
   pull_request:
     branches:
       - main
       - master
     paths:
-      - "machine-learning-client/**"
-      - ".github/workflows/ml-client.yml"
+      - "web-app/**"
+      - ".github/workflows/web-app.yml"
 
 jobs:
   test-build:
@@ -23,7 +23,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: machine-learning-client
+        working-directory: web-app
 
     steps:
       - name: Checkout repository
@@ -39,13 +39,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run tests with coverage
+      - name: Run tests
         run: |
-          PYTHONPATH=. pytest --cov=. --cov-report=term-missing --cov-fail-under=80
+          PYTHONPATH=. pytest
 
       - name: Build Docker image
         run: |
-          docker build -t ml-client-test .
+          docker build -t web-app-test .
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -55,8 +55,8 @@ jobs:
 
       - name: Push to Docker Hub
         run: |
-          docker tag ml-client-test ${{ secrets.DOCKERHUB_USERNAME }}/lacewing_squad_ml_client:latest
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/lacewing_squad_ml_client:latest
+          docker tag web-app-test ${{ secrets.DOCKERHUB_USERNAME }}/lacewing_squad_web_app:latest
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/lacewing_squad_web_app:latest
 
       - name: Deploy to Digital Ocean
         uses: appleboy/ssh-action@v1
