@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "5a7184879d61d284ca3d7cfad012b403476f416fe53239055fa1b4c09c4a9b9a"
+            "sha256": "9692b84dcfab495e6bd1f279ab4b7e3376ca775953eb58306500ac441b2bc1d7"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -611,6 +611,14 @@
             ],
             "markers": "python_version >= '3.8'",
             "version": "==6.1.0"
+        },
+        "lxml-html-clean": {
+            "hashes": [
+                "sha256:58f39a9d632711202ed1d6d0b9b47a904e306c85de5761543b90e3e3f736acfb",
+                "sha256:ce2ef506614ecb85ee1c5fe0a2aa45b06a19514ec7949e9c8f34f06925cfabcb"
+            ],
+            "index": "pypi",
+            "version": "==0.4.4"
         },
         "newspaper3k": {
             "hashes": [

@@ -20,6 +20,9 @@
       Too lazy to read an article? Paste the link below or copy paste the
       contents to view a summary depicted by memes:
     </h2>
+    {% if error %}
+    <p class="error">{{ error }}</p>
+    {% endif %}
     <form action="/submit" method="POST">
       <label>Name:</label><br />
       <input type="text" name="name" /><br /><br />
@@ -29,6 +32,14 @@
 
       <label>Article Text:</label><br />
       <input type="text" name="article-text" /><br /><br />
+
+      <label>Template:</label><br />
+      <select name="template">
+        {% for template in templates %}
+        <option value="{{ template }}">{{ template }}</option>
+        {% endfor %}
+      </select>
+      <br /><br />
 
       <input type="submit" value="Submit" />
     </form>

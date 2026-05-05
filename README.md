@@ -46,6 +46,8 @@ The example contains:
 ```sh
 OPENAI_API_KEY=your_openai_api_key_here
 OPENAI_MODEL=gpt-5.4-mini
+WEB_APP_PORT=5001
+ML_URL=http://localhost:8000
 MONGODB_URI=mongodb://localhost:27017
 MONGODB_DB_NAME=meme_generator
 MONGODB_COLLECTION_NAME=generated_memes
@@ -57,7 +59,7 @@ Run the full local stack from the repository root with Docker Compose:
 docker compose up --build
 ```
 
-This builds and starts the web app, backend, machine learning subsystem, and MongoDB. The web app is available at `http://localhost:5000`.
+This builds and starts the web app, backend, machine learning subsystem, and MongoDB. By default, Compose publishes the web app at `http://localhost:5001` to avoid macOS services that commonly bind port `5000`. Set `WEB_APP_PORT` in `.env` if you need a different host port.
 
 The `.env.example` MongoDB URI uses `localhost` for host-machine development. The Compose file overrides it inside containers with `mongodb://mongodb:27017`, which is the correct service name on the Docker Compose network.
 
