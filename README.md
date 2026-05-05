@@ -86,6 +86,8 @@ SECRET_KEY=change-me-to-a-long-random-string
 REC_API_URL=http://localhost:5001
 INDEX_PATH=recommendation-engine/data/faiss.index
 METADATA_PATH=recommendation-engine/data/metadata.parquet
+EMBED_MODEL_NAME=nomic-ai/nomic-embed-text-v1.5
+NOMIC_QUERY_PREFIX=search_query:
 ```
 
 For Docker Compose, create a repository-root `.env` because `docker-compose.yml` uses `env_file: .env`.
@@ -98,6 +100,8 @@ The important variables are:
 - `INDEX_PATH`: Path to the FAISS index.
 - `METADATA_PATH`: Path to the movie metadata parquet file.
 - `RECOMMENDATION_PORT`: Port for the recommendation-engine Flask app, default `5001`.
+- `EMBED_MODEL_NAME`: Sentence-transformers model for semantic search, default `nomic-ai/nomic-embed-text-v1.5`.
+- `NOMIC_QUERY_PREFIX`: Query prefix required by the Nomic model, default `search_query:`.
 
 ## Data Preparation
 
@@ -191,7 +195,7 @@ Edit both `.env` files with real local credentials, generate the FAISS data, and
 
 ```bash
 cd recommendation-engine
-INDEX_PATH=data/faiss.index METADATA_PATH=data/metadata.parquet RECOMMENDATION_PORT=5001 ../.venv/bin/python app.py
+TOKENIZERS_PARALLELISM=false OMP_NUM_THREADS=1 INDEX_PATH=data/faiss.index METADATA_PATH=data/metadata.parquet RECOMMENDATION_PORT=5001 ../.venv/bin/python app.py
 ```
 
 In another terminal:
