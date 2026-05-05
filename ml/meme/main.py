@@ -16,11 +16,20 @@ app = FastAPI(
     version="0.4.0",
 )
 
+
 class GenerateRequest(BaseModel):
-    person_name: str = Field(..., min_length=1, description="Name of the person submitting the article")
-    text: str = Field(..., min_length=1, description="Article summary or pasted article text")
-    source_url: str | None = Field(default=None, description="Original article URL if one exists")
+    person_name: str = Field(
+        ..., min_length=1, description="Name of the person submitting the article"
+    )
+    text: str = Field(
+        ..., min_length=1, description="Article summary or pasted article text"
+    )
+    source_url: str | None = Field(
+        default=None, description="Original article URL if one exists"
+    )
     template: str = Field(default=DEFAULT_TEMPLATE, description="Memegen template ID")
+
+
 class GenerateResponse(BaseModel):
     person_name: str
     template: str
@@ -30,6 +39,7 @@ class GenerateResponse(BaseModel):
     source_url: str | None = None
     article_summary: str | None = None
     record_id: str | None = None
+
 
 class HistoryItem(BaseModel):
     id: str
@@ -43,15 +53,20 @@ class HistoryItem(BaseModel):
     article_summary: str | None = None
     created_at: datetime
 
+
 class HistoryResponse(BaseModel):
     items: list[HistoryItem]
+
 
 def database_status() -> str:
     if not os.getenv("MONGODB_URI"):
         return "not_configured"
     return "connected" if ping_database() else "unreachable"
 
-def build_record(payload: GenerateRequest, response: dict[str, str | None]) -> dict[str, object]:
+
+def build_record(
+    payload: GenerateRequest, response: dict[str, str | None]
+) -> dict[str, object]:
     return {
         "person_name": payload.person_name,
         "source_url": payload.source_url,
@@ -64,6 +79,7 @@ def build_record(payload: GenerateRequest, response: dict[str, str | None]) -> d
         "created_at": datetime.now(timezone.utc),
     }
 
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {
@@ -71,14 +87,19 @@ def health() -> dict[str, str]:
         "database": database_status(),
     }
 
+
 @app.get("/templates")
 def templates() -> dict[str, list[str]]:
     return {"templates": SUPPORTED_TEMPLATES}
 
+
 @app.get("/history", response_model=HistoryResponse)
-def history(limit: int = Query(default=20, ge=1, le=100)) -> dict[str, list[dict[str, object]]]:
+def history(
+    limit: int = Query(default=20, ge=1, le=100)
+) -> dict[str, list[dict[str, object]]]:
     items = get_recent_memes(limit=limit)
     return {"items": items}
+
 
 @app.get("/history/{record_id}", response_model=HistoryItem)
 def history_item(record_id: str) -> dict[str, object]:
@@ -86,6 +107,7 @@ def history_item(record_id: str) -> dict[str, object]:
     if item is None:
         raise HTTPException(status_code=404, detail="Meme record not found")
     return item
+
 
 @app.post("/generate", response_model=GenerateResponse)
 def generate_meme(payload: GenerateRequest) -> dict[str, str | None]:
@@ -96,4 +118,3 @@ def generate_meme(payload: GenerateRequest) -> dict[str, str | None]:
     response["article_summary"] = payload.text
     response["record_id"] = save_meme_record(build_record(payload, response))
     return response
-

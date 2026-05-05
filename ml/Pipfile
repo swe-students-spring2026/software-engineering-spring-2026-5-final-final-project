@@ -10,6 +10,7 @@ pydantic = "*"
 python-dotenv = "*"
 newspaper3k = "*"
 openai = "*"
+pymongo = "*"
 
 [dev-packages]
 pytest = "*"

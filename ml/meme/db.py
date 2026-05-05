@@ -29,7 +29,6 @@ def get_database() -> Database | None:
     return _client[db_name]
 
 
-
 def get_collection() -> Collection | None:
     database = get_database()
     if database is None:
@@ -39,12 +38,10 @@ def get_collection() -> Collection | None:
     return database[collection_name]
 
 
-
 def serialize_record(record: dict[str, Any]) -> dict[str, Any]:
     serialized = dict(record)
     serialized["id"] = str(serialized.pop("_id"))
     return serialized
-
 
 
 def save_meme_record(record: dict[str, Any]) -> str | None:
@@ -56,21 +53,23 @@ def save_meme_record(record: dict[str, Any]) -> str | None:
     return str(result.inserted_id)
 
 
-
 def get_recent_memes(limit: int = 20) -> list[dict[str, Any]]:
     collection = get_collection()
     if collection is None:
-        raise RuntimeError("MongoDB is not configured. Set MONGODB_URI to enable history.")
+        raise RuntimeError(
+            "MongoDB is not configured. Set MONGODB_URI to enable history."
+        )
 
     documents = collection.find().sort("created_at", DESCENDING).limit(limit)
     return [serialize_record(document) for document in documents]
 
 
-
 def get_meme_by_id(record_id: str) -> dict[str, Any] | None:
     collection = get_collection()
     if collection is None:
-        raise RuntimeError("MongoDB is not configured. Set MONGODB_URI to enable history.")
+        raise RuntimeError(
+            "MongoDB is not configured. Set MONGODB_URI to enable history."
+        )
 
     if not ObjectId.is_valid(record_id):
         return None
@@ -80,7 +79,6 @@ def get_meme_by_id(record_id: str) -> dict[str, Any] | None:
         return None
 
     return serialize_record(document)
-
 
 
 def ping_database() -> bool:

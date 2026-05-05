@@ -10,7 +10,7 @@ import re
 load_dotenv()
 
 MAX_INPUT_CHARS = 20000
-DEFAULT_MODEL = "gpt-5-nano" # make sure we are using gpt-5-nano for testing
+DEFAULT_MODEL = "gpt-5-nano"  # make sure we are using gpt-5-nano for testing
 
 prompt = """
     You are a news summarization system.
@@ -26,17 +26,20 @@ prompt = """
     - Use "other" if the article does not clearly fit another category.
     """
 
+
 # Helper functions for processing input and summarization
-#First is for checking if the input is a URL
+# First is for checking if the input is a URL
 def is_url(text):
     url = urlparse(text.strip()) if text else urlparse("")
     return url.scheme in {"http", "https"} and bool(url.netloc)
 
-#If it is text, we cleaning it up by removing extra whitespace. 
+
+# If it is text, we cleaning it up by removing extra whitespace.
 def clean(text):
     return re.sub(r"\s+", " ", text or "").strip()
 
-#Main func for extracting article text
+
+# Main func for extracting article text
 def extract_article(user_input):
     user_input = clean(user_input)
     if not user_input:
@@ -78,7 +81,7 @@ def summarize_article(user_input):
         ],
         response_format={"type": "json_object"},
     )
-    
+
     content = response.choices[0].message.content
     try:
         result = json.loads(content)
@@ -87,10 +90,11 @@ def summarize_article(user_input):
     return {
         "title": result.get("title") or title,
         "article_text": user_input if source_type == "text" else None,
-        "article_summary": result["summary"],        
+        "article_summary": result["summary"],
         "article_type": result.get("article_type", "other"),
         "source_type": source_type,
     }
+
 
 def process_input(user_input):
     return summarize_article(user_input)
