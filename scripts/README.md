@@ -25,21 +25,9 @@ To add fish later:
 3. Run `python3 scripts/build_fish_catalog.py`.
 4. Run `cd game-service && pipenv run pytest tests/test_fishing.py -v`.
 
-## Coding Problem Datasets
+## Coding Problem Dataset
 
-`clean_leetcode_dataset.py` normalizes the first 100 non-premium rows from
-`data/leetcode_dataset - lc.csv` into `data/leetcode_clean_100.json`:
-
-```bash
-python3 scripts/clean_leetcode_dataset.py
-```
-
-`build_judgeable_problem_dataset.py` builds the runtime problem dataset used by
-game-service:
-
-```bash
-python3 scripts/build_judgeable_problem_dataset.py
-```
-
-Only rows with curated overrides are judgeable. The CSV by itself provides
-descriptions and metadata, but not executable tests or revealable solutions.
+The runtime coding problem dataset is committed directly at
+`data/judgeable_problems.json`. It contains the curated 74 executable
+LeetCode-style problems used by game-service. Raw LeetCode CSV files and
+intermediate cleanup artifacts are intentionally not kept in the repo.

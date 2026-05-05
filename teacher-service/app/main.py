@@ -4,10 +4,11 @@ Cats create fish ponds, manage problems, and invite kittens. They never join
 the Cat Can Token economy, marketplace, fishing chance loop, or leaderboards.
 """
 
-from typing import Literal, Optional
 import os
 import secrets
 import string
+from typing import Literal, Optional
+from urllib.parse import quote
 
 import httpx
 from fastapi import FastAPI, HTTPException
@@ -52,6 +53,18 @@ class AddProblemRequest(BaseModel):
 
     cat_id: str
     pond_id: str
+    title: str
+    prompt: str
+    starter_code: str = ""
+    reference_solution: str
+    test_code: str
+    topic: Optional[str] = None
+
+
+class UpdateProblemRequest(BaseModel):
+    """Request body for editing a coding problem in a fish pond."""
+
+    cat_id: str
     title: str
     prompt: str
     starter_code: str = ""
@@ -108,16 +121,18 @@ def generate_room_code(length: int = 6) -> str:
     return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
-async def forward_to_game_service(method: str, path: str, payload: dict):
+async def forward_to_game_service(
+    method: str, path: str, payload: Optional[dict] = None
+):
     """Forward a teacher action to game-service and return the JSON response."""
 
     async with httpx.AsyncClient() as client:
         try:
+            request_kwargs = {"timeout": 10.0}
+            if payload is not None:
+                request_kwargs["json"] = payload
             response = await client.request(
-                method,
-                f"{GAME_SERVICE_URL}{path}",
-                json=payload,
-                timeout=10.0,
+                method, f"{GAME_SERVICE_URL}{path}", **request_kwargs
             )
         except httpx.RequestError as exc:
             raise HTTPException(
@@ -185,6 +200,30 @@ async def create_pond(payload: CreatePondRequest):
     )
 
 
+@app.get("/teacher/{cat_id}/ponds", tags=["teacher"])
+async def list_teacher_ponds(cat_id: str):
+    """Return classrooms created by one cat user."""
+
+    try:
+        return await forward_to_game_service("GET", f"/ponds/teacher/{cat_id}")
+    except HTTPException as exc:
+        if exc.status_code not in {404, 502}:
+            raise
+        return []
+
+
+@app.get("/teacher/ponds/{pond_id}/problems", tags=["teacher"])
+async def list_pond_problems(pond_id: str):
+    """Return problems created inside one teacher fish pond."""
+
+    try:
+        return await forward_to_game_service("GET", f"/ponds/{pond_id}/problems")
+    except HTTPException as exc:
+        if exc.status_code not in {404, 502}:
+            raise
+        return []
+
+
 @app.post("/teacher/ponds/{pond_id}/problems", tags=["teacher"])
 async def add_problem(pond_id: str, payload: AddProblemRequest):
     """Add a teacher-authored coding problem to a fish pond."""
@@ -210,6 +249,30 @@ async def add_problem(pond_id: str, payload: AddProblemRequest):
             "problem": forward_payload,
             "max_problems_per_pond": MAX_PROBLEMS_PER_POND,
         }
+
+
+@app.put("/teacher/ponds/{pond_id}/problems/{problem_id}", tags=["teacher"])
+async def update_problem(pond_id: str, problem_id: str, payload: UpdateProblemRequest):
+    """Edit a teacher-authored coding problem in a fish pond."""
+
+    forward_payload = payload.model_dump()
+    forward_payload["created_by_role"] = "cat"
+    forward_payload["fishing_reward"] = 1
+    forward_payload["cat_token_reward"] = 0
+
+    return await forward_to_game_service(
+        "PUT", f"/ponds/{pond_id}/problems/{problem_id}", forward_payload
+    )
+
+
+@app.delete("/teacher/ponds/{pond_id}/problems/{problem_id}", tags=["teacher"])
+async def delete_problem(pond_id: str, problem_id: str, cat_id: str):
+    """Delete a teacher-authored coding problem from a fish pond."""
+
+    escaped_cat_id = quote(cat_id, safe="")
+    return await forward_to_game_service(
+        "DELETE", f"/ponds/{pond_id}/problems/{problem_id}?cat_id={escaped_cat_id}"
+    )
 
 
 @app.post("/teacher/ponds/{pond_id}/assignments", tags=["teacher"])

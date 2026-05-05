@@ -1,1 +1,1 @@
-"""Integration service application package."""
+"""Routers for the integration service."""

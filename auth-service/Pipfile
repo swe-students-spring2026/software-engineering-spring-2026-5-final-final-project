@@ -13,6 +13,9 @@ python-dotenv = "==1.0.0"
 pymongo = "==4.10.1"
 
 [dev-packages]
+pytest = "*"
+httpx = "==0.25.2"
+pytest-cov = "*"
 black = "*"
 pylint = "*"
 

@@ -91,7 +91,7 @@ async def service_map():
         ServiceEndpoint(
             service="grader-service",
             base_url="http://localhost:8001",
-            owns=["Judge0-style code checking adapter", "student submission verdicts"],
+            owns=["local Python code checking", "student submission verdicts"],
         ),
     ]
 
