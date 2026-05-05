@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Moodify · History{% endblock %}
+
+{% block content %}
+  {% include "_nav.html" %}
+
+  <main id="main">
+    <h1 class="section-label">Your past sessions</h1>
+
+    {% if history %}
+      <ul class="history-list">
+        {% for item in history %}
+          <li class="history-item">
+            <a href="{{ url_for('replay_session', session_id=item._id) }}" class="history-item-link">
+              <div class="history-item-text">
+                <div class="history-item-mood">
+                  {% if item.mood_label %}{{ item.mood_label }} ·{% endif %}
+                  {{ item.mood | default('(no description)') | truncate(80) }}
+                </div>
+                <div class="history-item-meta">
+                  {% if item.weather %}
+                    {{ item.weather.condition | default('—') }}
+                    {% if item.weather.temp is defined %}
+                      · {{ item.weather.temp }}°
+                    {% endif %}
+                  {% endif %}
+                  {% if item.tracks %} · {{ item.tracks | length }} tracks{% endif %}
+                </div>
+              </div>
+              <div class="history-item-date">
+                {{ item.created_at.strftime('%b %d, %Y') if item.created_at else '' }}
+              </div>
+              <span class="history-item-arrow" aria-hidden="true">→</span>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="empty-state">
+        <div class="big" aria-hidden="true">🕘</div>
+        Nothing here yet. Try a recommendation to see it appear in your history.
+        <div style="margin-top:18px;">
+          <a href="{{ url_for('index') }}" class="btn-outline" style="display:inline-block; padding:10px 20px;">
+            Get recommendations
+          </a>
+        </div>
+      </div>
+    {% endif %}
+  </main>
+{% endblock %}

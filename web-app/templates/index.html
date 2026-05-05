@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}Moodify · Find your vibe{% endblock %}
+
+{% block content %}
+  {% include "_nav.html" %}
+
+  <main id="main">
+
+    <h1 class="section-label">How are you feeling?</h1>
+
+    <form action="{{ url_for('recommend') }}" method="POST" id="mood-form" novalidate>
+
+      <section class="card" aria-labelledby="mood-card-title">
+        <p class="card-title" id="mood-card-title">Describe your mood</p>
+        <p class="card-sub">Write freely or pick a vibe below.</p>
+
+        <label for="mood-text" class="sr-only">Mood description</label>
+        <textarea
+          class="mood-textarea"
+          name="mood_text"
+          id="mood-text"
+          rows="2"
+          maxlength="500"
+          placeholder="e.g. feeling calm and a bit nostalgic today..."
+        >{{ mood_text | default('') }}</textarea>
+
+        <div class="emoji-row" role="group" aria-label="Quick mood picker">
+          <button type="button" class="emoji-btn" data-mood="happy"     data-energy="70" data-valence="80">😊 Happy</button>
+          <button type="button" class="emoji-btn" data-mood="sad"       data-energy="25" data-valence="20">😔 Sad</button>
+          <button type="button" class="emoji-btn" data-mood="energized" data-energy="90" data-valence="65">😤 Energized</button>
+          <button type="button" class="emoji-btn" data-mood="chill"     data-energy="35" data-valence="60">😌 Chill</button>
+          <button type="button" class="emoji-btn" data-mood="anxious"   data-energy="75" data-valence="30">😰 Anxious</button>
+          <button type="button" class="emoji-btn" data-mood="romantic"  data-energy="45" data-valence="75">🥰 Romantic</button>
+        </div>
+
+        <div class="sliders">
+          <div class="slider-row">
+            <span class="slider-end" id="energy-low">Mellow</span>
+            <input type="range" min="0" max="100" value="{{ energy | default(50) }}"
+                   name="energy" id="energy-slider"
+                   aria-labelledby="energy-low energy-high"
+                   aria-valuemin="0" aria-valuemax="100">
+            <span class="slider-end right" id="energy-high">Energetic</span>
+            <span class="slider-val" id="energy-val" aria-live="off">{{ energy | default(50) }}</span>
+          </div>
+          <div class="slider-row">
+            <span class="slider-end" id="valence-low">Sad</span>
+            <input type="range" min="0" max="100" value="{{ valence | default(50) }}"
+                   name="valence" id="valence-slider"
+                   aria-labelledby="valence-low valence-high"
+                   aria-valuemin="0" aria-valuemax="100">
+            <span class="slider-end right" id="valence-high">Happy</span>
+            <span class="slider-val" id="valence-val" aria-live="off">{{ valence | default(50) }}</span>
+          </div>
+        </div>
+
+        <input type="hidden" name="mood_label" id="mood-label" value="{{ mood_label | default('') }}">
+        <input type="hidden" id="saved-mood-label" value="{{ mood_label | default('') }}">
+      </section>
+
+      <section class="card" aria-labelledby="city-card-title">
+        <p class="card-title" id="city-card-title">Your city</p>
+        <p class="card-sub">Used to pull local weather for your vibe.</p>
+
+        <div class="city-select">
+          <label for="city-search" class="sr-only">City</label>
+          <input
+            type="text"
+            class="city-input"
+            id="city-search"
+            placeholder="Search a city..."
+            autocomplete="off"
+            role="combobox"
+            aria-controls="city-dropdown"
+            aria-autocomplete="list"
+            value="{{ city_name | default('New York, NY') }}"
+          >
+          <div class="city-dropdown" id="city-dropdown" role="listbox"></div>
+        </div>
+
+        <input type="hidden" name="city_lat"  id="city-lat"  value="{{ city_lat  | default('40.7128') }}">
+        <input type="hidden" name="city_lon"  id="city-lon"  value="{{ city_lon  | default('-74.0060') }}">
+        <input type="hidden" name="city_name" id="city-name-hidden" value="{{ city_name | default('New York, NY') }}">
+      </section>
+
+      <div class="context-grid">
+        <div class="context-card">
+          <div class="context-card-label">Weather</div>
+          <div class="context-card-val">{{ weather_desc | default('—') }}</div>
+          <div class="context-card-sub">{{ city_name | default('select a city above') }}</div>
+        </div>
+        <div class="context-card">
+          <div class="context-card-label">Time of day</div>
+          <div class="context-card-val" id="time-label">—</div>
+          <div class="context-card-sub" id="time-sub">local time</div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-submit" id="submit-btn">
+        Get recommendations →
+      </button>
+
+    </form>
+
+    {% if tracks %}
+      <hr class="divider">
+
+      {% if is_replay %}
+        <div class="replay-banner" role="status">
+          <span class="replay-banner-label">Past session</span>
+          <span class="replay-banner-meta">
+            {% if replay_date %}{{ replay_date.strftime('%b %d, %Y · %I:%M %p') }}{% endif %}
+          </span>
+          <a href="{{ url_for('index') }}" class="replay-banner-back">New search</a>
+        </div>
+      {% endif %}
+
+      <div class="results-header">
+        <h2 class="results-title">{% if is_replay %}Replayed playlist{% else %}Your playlist{% endif %}</h2>
+        <span class="results-meta">
+          {% if mood_label %}{{ mood_label }} · {% endif %}{{ tracks | length }} tracks
+        </span>
+      </div>
+
+      <ol class="track-list">
+        {% for track in tracks %}
+          <li class="track-card" style="animation-delay: {{ loop.index0 * 0.05 }}s">
+            <span class="track-num">{{ loop.index }}</span>
+
+            {% if track.album_art %}
+              <img class="track-art" src="{{ track.album_art }}" alt="" loading="lazy">
+            {% else %}
+              <div class="track-art" aria-hidden="true">♪</div>
+            {% endif %}
+
+            <div class="track-info">
+              <div class="track-name">{{ track.name }}</div>
+              <div class="track-artist">
+                {% if track.artist %}
+                  {{ track.artist }}
+                {% elif track.artists %}
+                  {{ track.artists | join(', ') }}
+                {% endif %}
+                {% if track.album %} · <span>{{ track.album }}</span>{% endif %}
+              </div>
+              {% if track.reason %}
+                <div class="track-reason">“{{ track.reason }}”</div>
+              {% endif %}
+            </div>
+
+            {% if track.valence is defined and track.valence and track.valence > 0.6 %}
+              <span class="tag tag-purple">uplifting</span>
+            {% elif track.energy is defined and track.energy and track.energy > 0.7 %}
+              <span class="tag tag-green">energetic</span>
+            {% else %}
+              <span class="tag tag-purple">on vibe</span>
+            {% endif %}
+
+            {% if track.external_url %}
+              <a class="btn-play" href="{{ track.external_url }}" target="_blank"
+                 rel="noopener noreferrer" aria-label="Open {{ track.name }} in Spotify">
+                <svg viewBox="0 0 12 12" aria-hidden="true"><polygon points="2,1 11,6 2,11"/></svg>
+              </a>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ol>
+
+      <div class="playlist-actions">
+        <a href="{{ url_for('index') }}" class="btn-outline">Try again</a>
+        <form action="{{ url_for('save_playlist') }}" method="POST" style="flex:1; display:flex;">
+          <input type="hidden" name="track_ids" value="{{ track_ids | join(',') }}">
+          <button type="submit" class="btn-spotify" style="width:100%">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+            </svg>
+            Save to Spotify
+          </button>
+        </form>
+      </div>
+
+    {% elif request.method == 'POST' %}
+      <hr class="divider">
+      <div class="empty-state">
+        <div class="big" aria-hidden="true">🎵</div>
+        No tracks found — try adjusting your mood or sliders.
+      </div>
+    {% endif %}
+
+    {% if history %}
+      <hr class="divider">
+      <h2 class="section-label">Recent searches</h2>
+      <div class="history-row">
+        {% for item in history %}
+          <a href="{{ url_for('replay_session', session_id=item._id) }}" class="history-pill" title="Replay this session">
+            {{ item.mood_label or '🎵' }}
+            · {{ item.created_at.strftime('%b %d') if item.created_at else '' }}
+          </a>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+  </main>
+
+  <script id="cities-data" type="application/json">{{ cities | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+{% endblock %}

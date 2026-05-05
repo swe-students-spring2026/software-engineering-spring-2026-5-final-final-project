@@ -1,0 +1,39 @@
+<nav class="nav" aria-label="Primary">
+  <a href="{{ url_for('index') }}" class="logo">
+    <span class="logo-icon" aria-hidden="true">
+      <svg viewBox="0 0 16 16" fill="none" stroke="#7f77dd" stroke-width="1.5" stroke-linecap="round">
+        <path d="M2 10 Q4 4 8 8 Q12 12 14 6"/>
+        <circle cx="2" cy="10" r="1.5" fill="#7f77dd" stroke="none"/>
+        <circle cx="14" cy="6" r="1.5" fill="#7f77dd" stroke="none"/>
+      </svg>
+    </span>
+    <span>Moodify</span>
+  </a>
+
+  <div class="nav-right">
+    {% if weather_desc %}
+      <span class="chip" title="Current weather">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+          <circle cx="8" cy="8" r="3"/>
+          <line x1="8" y1="1" x2="8" y2="3"/><line x1="8" y1="13" x2="8" y2="15"/>
+          <line x1="1" y1="8" x2="3" y2="8"/><line x1="13" y1="8" x2="15" y2="8"/>
+        </svg>
+        {{ weather_desc }}
+      </span>
+    {% endif %}
+
+    <a href="{{ url_for('history_page') }}"
+       class="nav-link {% if request.endpoint == 'history_page' %}active{% endif %}">
+      History
+    </a>
+
+    {% if username %}
+      <span class="chip" title="Signed-in user">
+        <span class="chip-dot" aria-hidden="true"></span>
+        {{ username }}
+      </span>
+    {% endif %}
+
+    <a href="{{ url_for('logout') }}" class="btn-logout">Sign out</a>
+  </div>
+</nav>

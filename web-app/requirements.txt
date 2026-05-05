@@ -1,0 +1,13 @@
+pytest
+pytest-cov
+requests
+# Web framework
+flask>=3.0.0
+python-dotenv>=1.0.0
+ 
+# Spotify
+spotipy>=2.24.0
+ 
+# MongoDB
+pymongo>=4.7.0
+ 
