@@ -1,0 +1,93 @@
+name: CI/CD (Web App)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+
+jobs:
+  test-web-app:
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:latest
+        ports:
+          - 27017:27017
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Verify required directory exists
+        run: |
+          if [ ! -d web-app ]; then
+            echo "::error::Required directory 'web-app' does not exist. Quitting."
+            exit 1
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip"
+
+      - name: Install dependencies
+        working-directory: web-app
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pipenv
+          pipenv install --dev --python $(which python)
+
+      - name: Format check
+        working-directory: web-app
+        run: pipenv run black --check .
+
+      - name: Lint check
+        working-directory: web-app
+        run: |
+          if [ -d tests ]; then
+            pipenv run pylint app tests
+          else
+            pipenv run pylint app
+          fi
+
+      - name: Run tests with coverage if present
+        working-directory: web-app
+        run: |
+          if [ -d tests ] && find tests -type f | grep -q .; then
+            pipenv run pytest --cov=app --cov-report=term-missing --cov-fail-under=80
+          else
+            echo "No tests found in web-app/tests."
+          fi
+
+      - name: Verify Dockerfile exists
+        run: |
+          if [ ! -f web-app/Dockerfile ]; then
+            echo "::error::Required Dockerfile 'web-app/Dockerfile' does not exist. Quitting."
+            exit 1
+          fi
+
+      - name: Build Docker image
+        run: docker build -t project5-web-app:${{ github.sha }} web-app
+
+      - name: Push Docker image to DockerHub
+        if: github.event_name == 'push'
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          DOCKERHUB_USERNAME="${DOCKERHUB_USERNAME:-adamsolimannyu}"
+
+          if [ -z "$DOCKERHUB_TOKEN" ]; then
+            echo "::error::DockerHub secret DOCKERHUB_TOKEN is required to push images."
+            exit 1
+          fi
+
+          echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
+          docker tag project5-web-app:${{ github.sha }} "$DOCKERHUB_USERNAME/project5-web-app:latest"
+          docker tag project5-web-app:${{ github.sha }} "$DOCKERHUB_USERNAME/project5-web-app:${{ github.sha }}"
+          docker push "$DOCKERHUB_USERNAME/project5-web-app:latest"
+          docker push "$DOCKERHUB_USERNAME/project5-web-app:${{ github.sha }}"

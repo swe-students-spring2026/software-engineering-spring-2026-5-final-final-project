@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Article Meme Generator</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='styles.css') }}"
+    />
+  </head>
+
+  <body>
+    <div class="nav">
+      <a href="{{ url_for('main.index') }}">Home</a>
+      <a href="{{ url_for('main.gallery') }}">Gallery</a>
+    </div>
+    <h1>Article Meme Generator</h1>
+
+    <h2>
+      Too lazy to read an article? Paste the link below or copy paste the
+      contents to view a summary depicted by memes:
+    </h2>
+    {% if error %}
+    <p class="error">{{ error }}</p>
+    {% endif %}
+    <form action="/submit" method="POST">
+      <label>Name:</label><br />
+      <input type="text" name="name" /><br /><br />
+
+      <label>Link:</label><br />
+      <input type="text" name="article-link" /><br /><br />
+
+      <label>Article Text:</label><br />
+      <input type="text" name="article-text" /><br /><br />
+
+      <label>Template:</label><br />
+      <select name="template">
+        {% for template in templates %}
+        <option value="{{ template }}">{{ template }}</option>
+        {% endfor %}
+      </select>
+      <br /><br />
+
+      <input type="submit" value="Submit" />
+    </form>
+  </body>
+</html>
