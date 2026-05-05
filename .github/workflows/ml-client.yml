@@ -68,4 +68,5 @@ jobs:
             cd /root/5-final-lacewing_squad
             git pull
             docker compose down --remove-orphans
+            docker rm -f ml_client web_app mongodb_dockerhub || true
             docker compose up --build --force-recreate -d
