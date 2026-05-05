@@ -52,7 +52,7 @@ def test_safe_back_url_none_when_no_param_or_referrer(app):
 
 def test_home_renders(client):
     with patch("routes.movies.get_favorites", return_value=[]), \
-         patch("routes.movies.recommend_movies", return_value=[]):
+         patch("routes.movies.recommend_from_favorites", return_value=[]):
         db.mongo.db.watchlists.find.return_value = iter([])
         response = client.get("/")
     assert response.status_code == 200
@@ -60,7 +60,7 @@ def test_home_renders(client):
 
 def test_home_with_no_favorites_skips_recommendations(client):
     with patch("routes.movies.get_favorites", return_value=[]) as gf, \
-         patch("routes.movies.recommend_movies") as rm:
+         patch("routes.movies.recommend_from_favorites") as rm:
         db.mongo.db.watchlists.find.return_value = iter([])
         client.get("/")
     rm.assert_not_called()
