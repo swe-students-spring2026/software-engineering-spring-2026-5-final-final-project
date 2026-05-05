@@ -59,10 +59,19 @@ QUALITY_PRICE_MULTIPLIER = {
     Quality.SHINY.value: 2.0,
     Quality.PERFECT.value: 5.0,
 }
+MARKET_RARITIES = {
+    Rarity.UNCOMMON.value,
+    Rarity.RARE.value,
+    Rarity.EPIC.value,
+    Rarity.LEGENDARY.value,
+}
 
 # Small-fish refund returns a fraction of suggested_price. Bigger payouts
 # come from the market.
 SMALL_FISH_REFUND_RATIO = 0.5
+DEMO_MARKET_STARTER_TOKENS = 300
+STARTER_LIONFISH_FLAG = "starter_lionfish_granted"
+STARTER_LIONFISH_SPECIES_ID = "lionfish"
 
 # size ~ N(typical, typical * SIZE_SIGMA_FACTOR), clamped to a sane range.
 SIZE_SIGMA_FACTOR = 0.30
@@ -115,10 +124,8 @@ def _build_fish(species: dict, rng: random.Random) -> dict:
     image_url = rng.choice(image_pool) if image_pool else ""
     sell_value = int(species.get("sell_value", species["base_price"]))
     rarity = species["rarity"]
-    marketplace_eligible = bool(species.get("marketplace_eligible", False))
-    is_system_sellable = bool(
-    species.get("is_system_sellable", rarity in {"common", "uncommon"})
-    )
+    marketplace_eligible = rarity in MARKET_RARITIES
+    is_system_sellable = rarity == Rarity.COMMON.value
 
     return {
         "fish_id": str(uuid.uuid4()),
@@ -147,6 +154,67 @@ def _build_fish(species: dict, rng: random.Random) -> dict:
     }
 
 
+def _starter_lionfish_id(user_id: str) -> str:
+    safe_user_id = "".join(ch if ch.isalnum() else "_" for ch in user_id)
+    return f"starter_lionfish_{safe_user_id}"
+
+
+def _pick_lionfish_species(repository: Repository) -> dict | None:
+    species = repository.get_fish_species(STARTER_LIONFISH_SPECIES_ID)
+    if species is not None:
+        return species
+    for candidate in repository.list_fish_species():
+        if candidate.get("name") == "Lionfish":
+            return candidate
+    return None
+
+
+def _build_starter_lionfish(user_id: str, species: dict) -> dict:
+    fish = _build_fish(species, random.Random(f"starter-lionfish:{user_id}"))
+    fish["fish_id"] = _starter_lionfish_id(user_id)
+    fish["quality"] = Quality.NORMAL.value
+    fish["size_cm"] = float(species.get("typical_size_cm", fish["size_cm"]))
+    fish["suggested_price"] = int(species.get("base_price", species["sell_value"]))
+    fish["marketplace_eligible"] = True
+    fish["is_system_sellable"] = False
+    fish["is_small"] = False
+    return fish
+
+
+def _ensure_starter_lionfish(user_id: str, repository: Repository) -> None:
+    if not user_id.startswith("kitten_"):
+        return
+    if not token_service.is_kitten(repository, user_id):
+        return
+    if repository.get_user_flag(user_id, STARTER_LIONFISH_FLAG):
+        return
+
+    species = _pick_lionfish_species(repository)
+    if species is None:
+        return
+    repository.add_fish_to_inventory(
+        user_id,
+        _build_starter_lionfish(user_id, species),
+    )
+    if repository.get_tokens(user_id) < DEMO_MARKET_STARTER_TOKENS:
+        repository.add_tokens(
+            user_id,
+            DEMO_MARKET_STARTER_TOKENS - repository.get_tokens(user_id),
+        )
+    repository.set_user_flag(user_id, STARTER_LIONFISH_FLAG, True)
+
+
+def _inventory_response(user_id: str, repository: Repository) -> InventoryResponse:
+    fish = repository.get_inventory(user_id)
+    return InventoryResponse(
+        user_id=user_id,
+        fish=[InventoryFish(**f) for f in fish],
+        total_count=len(fish),
+        tokens=repository.get_tokens(user_id),
+        fishing_chances=repository.get_fishing_chances(user_id),
+    )
+
+
 # --- endpoints ---
 
 
@@ -169,11 +237,11 @@ async def cast(
 
     try:
         remaining = repository.consume_fishing_chance(user_id)
-    except ValueError:
+    except ValueError as exc:
         raise HTTPException(
             status_code=400,
             detail="no fishing chances; pass quiz problems to earn more",
-        )
+        ) from exc
 
     rng = random.Random()
     species = _pick_species(species_list, rng)
@@ -188,14 +256,34 @@ async def cast(
 
 @router.get("/inventory/{user_id}", response_model=InventoryResponse)
 async def get_inventory(user_id: str, repository: Repository = Depends(repo)):
-    fish = repository.get_inventory(user_id)
-    return InventoryResponse(
-        user_id=user_id,
-        fish=[InventoryFish(**f) for f in fish],
-        total_count=len(fish),
-        tokens=repository.get_tokens(user_id),
-        fishing_chances=repository.get_fishing_chances(user_id),
-    )
+    _ensure_starter_lionfish(user_id, repository)
+    return _inventory_response(user_id, repository)
+
+
+@router.post("/starter-lionfish/{user_id}", response_model=InventoryResponse)
+async def grant_starter_lionfish(
+    user_id: str,
+    repository: Repository = Depends(repo),
+):
+    """Give a kitten their one-time Lionfish starter for the aquarium."""
+
+    if not token_service.is_kitten(repository, user_id):
+        raise HTTPException(
+            status_code=403,
+            detail="cats do not participate in the token economy",
+        )
+    _ensure_starter_lionfish(user_id, repository)
+    return _inventory_response(user_id, repository)
+
+
+@router.post("/demo-market-starter/{user_id}", response_model=InventoryResponse)
+async def grant_demo_market_starter(
+    user_id: str,
+    repository: Repository = Depends(repo),
+):
+    """Backward-compatible alias for the Lionfish starter endpoint."""
+
+    return await grant_starter_lionfish(user_id, repository)
 
 
 @router.post("/sell-small/{fish_id}", response_model=SellSmallResponse)
@@ -243,16 +331,17 @@ async def sell_small(
         new_token_balance=new_balance,
     )
 
+
 @router.post("/sell/{fish_id}", response_model=SellSmallResponse)
 async def sell_to_system(
     fish_id: str,
     user_id: str = "demo_user",
     repository: Repository = Depends(repo),
 ):
-    """Direct system sale of a low-rarity fish (common/uncommon).
+    """Direct system sale of a common fish.
 
-    Rare/epic/legendary fish are blocked here — they must go through the
-    kitten-to-kitten marketplace. Cats are blocked outright.
+    Uncommon, rare, epic, and legendary fish are blocked here — they must go
+    through the kitten-to-kitten marketplace. Cats are blocked outright.
     """
 
     if not token_service.is_kitten(repository, user_id):
@@ -266,12 +355,12 @@ async def sell_to_system(
             status_code=404,
             detail=f"fish '{fish_id}' not found in {user_id}'s inventory",
         )
-    if not fish.get("is_system_sellable", False):
+    if fish.get("rarity") != Rarity.COMMON.value:
         raise HTTPException(
             status_code=400,
             detail=(
-                "this fish is too rare to sell to the system; "
-                "list it on the marketplace instead"
+                "only common fish can be sold directly; "
+                "list uncommon or rarer fish on the marketplace instead"
             ),
         )
 

@@ -1,0 +1,9 @@
+[MESSAGES CONTROL]
+disable=
+    missing-class-docstring,
+    missing-function-docstring,
+    too-many-locals,
+    wrong-import-position,
+    redefined-outer-name,
+    subprocess-run-check,
+    implicit-str-concat

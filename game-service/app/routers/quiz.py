@@ -2,6 +2,7 @@ from typing import List
 
 import httpx
 from fastapi import APIRouter, HTTPException, Depends
+from pydantic import BaseModel, Field
 
 from app.db import get_repository
 from app.db.repository import Repository
@@ -16,6 +17,13 @@ from app.models import (
 )
 
 router = APIRouter(prefix="/quiz", tags=["quiz"])
+
+
+class ResetQuizRequest(BaseModel):
+    """Request body for resetting a completed pond problem list."""
+
+    user_id: str
+    problem_ids: List[str] = Field(default_factory=list)
 
 
 def repo() -> Repository:
@@ -74,7 +82,7 @@ async def list_channels(
     public_channels = [
         {
             "pond_id": "catch_public",
-            "name": "CatCh Fish Pond",
+            "name": "Main Pond",
             "pinned": True,
             "problems": default_problems,
         }
@@ -119,6 +127,23 @@ async def quiz_progress(
     return {
         "user_id": user_id,
         "attempts": repository.list_problem_attempts(user_id),
+    }
+
+
+@router.post("/reset")
+async def reset_quiz_attempts(
+    payload: ResetQuizRequest,
+    repository: Repository = Depends(repo),
+):
+    """Reset attempt state for the selected quiz list so it can be replayed."""
+
+    if not payload.problem_ids:
+        raise HTTPException(status_code=400, detail="problem_ids is required")
+    repository.reset_problem_attempts(payload.user_id, payload.problem_ids)
+    return {
+        "status": "reset",
+        "user_id": payload.user_id,
+        "problem_ids": payload.problem_ids,
     }
 
 

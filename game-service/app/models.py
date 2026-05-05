@@ -62,6 +62,7 @@ class UncaughtProblem(BaseModel):
     user_id: str
     problem_id: str
     title: str
+    instructions: str = ""
     solution_code: str
     solution_explanation: Optional[str] = None
     attempts_used: int

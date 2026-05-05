@@ -134,6 +134,20 @@ def test_inventory_empty_for_new_user(client):
     assert data["fishing_chances"] == 0
 
 
+def test_kitten_inventory_gets_starter_lionfish_once(client):
+    resp = client.get("/fishing/inventory/kitten_new")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["total_count"] == 1
+    assert data["tokens"] == 300
+    assert data["fish"][0]["species_id"] == "lionfish"
+    assert data["fish"][0]["marketplace_eligible"] is True
+
+    second_resp = client.get("/fishing/inventory/kitten_new")
+    assert second_resp.status_code == 200
+    assert second_resp.json()["total_count"] == 1
+
+
 def test_inventory_reflects_casts(client):
     repo = MockRepository.get_instance()
     repo.add_fishing_chances("u1", 3)

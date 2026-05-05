@@ -5,15 +5,14 @@ from __future__ import annotations
 import json
 import os
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from datetime import datetime, timezone
 
 from pymongo import MongoClient, ReturnDocument
 
 from app.config import settings
 
-SEEDS_PATH = Path(__file__).parent.parent / "seeds" / "problems.json"
 SERVICE_ROOT = Path(__file__).resolve().parents[2]
 REPO_ROOT = Path(__file__).resolve().parents[3]
 DATA_DIR_CANDIDATES = [
@@ -29,7 +28,6 @@ PROBLEM_DATASET_PATHS = [
         else None
     ),
     *(data_dir / "judgeable_problems.json" for data_dir in DATA_DIRS),
-    SEEDS_PATH,
 ]
 FISH_SPECIES_PATHS = [
     (
@@ -82,8 +80,17 @@ class MongoRepository:
         self.db.uncaught.create_index([("user_id", 1), ("problem_id", 1)], unique=True)
 
     def _seed_static_data(self) -> None:
-        if self.db.problems.estimated_document_count() == 0:
-            for entry in _load_json_from_first_existing(PROBLEM_DATASET_PATHS):
+        problem_records = _load_json_from_first_existing(PROBLEM_DATASET_PATHS)
+        if problem_records:
+            problem_ids = [entry["id"] for entry in problem_records]
+            self.db.problems.delete_many(
+                {
+                    "_id": {"$nin": problem_ids},
+                    "pond_id": {"$exists": False},
+                    "source": {"$ne": "teacher"},
+                }
+            )
+            for entry in problem_records:
                 self.db.problems.replace_one(
                     {"_id": entry["id"]},
                     {"_id": entry["id"], **entry},
@@ -124,6 +131,17 @@ class MongoRepository:
             return []
         return [doc["_id"] for doc in self.db.users.find({"role": role}, {"_id": 1})]
 
+    def get_user_flag(self, user_id: str, flag: str) -> bool:
+        profile = self.db.users.find_one({"_id": user_id}, {flag: 1})
+        return bool(profile and profile.get(flag, False))
+
+    def set_user_flag(self, user_id: str, flag: str, value: bool) -> None:
+        self.db.users.update_one(
+            {"_id": user_id},
+            {"$set": {flag: value, "user_id": user_id}},
+            upsert=True,
+        )
+
     def list_problems(self) -> List[Dict[str, Any]]:
         return list(
             self.db.problems.find(
@@ -155,14 +173,26 @@ class MongoRepository:
             self.db.ponds.find(
                 {
                     "visibility": "private",
-                    "$or": [
-                        {"member_user_ids": user_id},
-                        {"member_user_ids": {"$exists": False}},
-                    ],
+                    "member_user_ids": user_id,
                 },
                 {"_id": False},
             )
         )
+
+    def join_private_pond(self, user_id: str, room_code: str) -> Dict[str, Any]:
+        normalized_code = room_code.strip().upper()
+        pond = self.db.ponds.find_one_and_update(
+            {"visibility": "private", "room_code": normalized_code},
+            {"$addToSet": {"member_user_ids": user_id}},
+            return_document=ReturnDocument.AFTER,
+            projection={"_id": False},
+        )
+        if pond is None:
+            raise ValueError("private pond not found")
+        return dict(pond)
+
+    def list_teacher_ponds(self, cat_id: str) -> List[Dict[str, Any]]:
+        return list(self.db.ponds.find({"cat_id": cat_id}, {"_id": False}))
 
     def add_problem_to_pond(
         self, pond_id: str, problem: Dict[str, Any]
@@ -179,6 +209,32 @@ class MongoRepository:
             {"$addToSet": {"problem_ids": problem["id"]}},
         )
         return problem
+
+    def update_pond_problem(
+        self, pond_id: str, problem_id: str, updates: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        pond = self.get_pond(pond_id) or {}
+        if problem_id not in pond.get("problem_ids", []):
+            raise ValueError("pond problem not found")
+        updated = self.db.problems.find_one_and_update(
+            {"_id": problem_id, "pond_id": pond_id},
+            {"$set": updates},
+            return_document=ReturnDocument.AFTER,
+            projection={"_id": False},
+        )
+        if updated is None:
+            raise ValueError("problem not found")
+        return dict(updated)
+
+    def delete_pond_problem(self, pond_id: str, problem_id: str) -> None:
+        pond = self.get_pond(pond_id) or {}
+        if problem_id not in pond.get("problem_ids", []):
+            raise ValueError("pond problem not found")
+        self.db.problems.delete_one({"_id": problem_id, "pond_id": pond_id})
+        self.db.ponds.update_one(
+            {"_id": pond_id},
+            {"$pull": {"problem_ids": problem_id}},
+        )
 
     def list_pond_problems(self, pond_id: str) -> List[Dict[str, Any]]:
         pond = self.get_pond(pond_id) or {}
@@ -322,6 +378,11 @@ class MongoRepository:
     def list_problem_attempts(self, user_id: str) -> List[Dict[str, Any]]:
         return list(self.db.attempts.find({"user_id": user_id}, {"_id": False}))
 
+    def reset_problem_attempts(self, user_id: str, problem_ids: List[str]) -> None:
+        self.db.attempts.delete_many(
+            {"user_id": user_id, "problem_id": {"$in": problem_ids}}
+        )
+
     def record_problem_attempt(
         self,
         user_id: str,
@@ -366,6 +427,7 @@ class MongoRepository:
                     "user_id": user_id,
                     "problem_id": problem["id"],
                     "title": problem["title"],
+                    "instructions": problem.get("instructions", ""),
                     "solution_code": problem.get("solution_code", ""),
                     "solution_explanation": problem.get("solution_explanation"),
                     "attempts_used": attempts_used,
@@ -387,9 +449,11 @@ class MongoRepository:
         fish = self.get_fish(user_id, fish_id)
         if fish is None:
             raise ValueError("fish not found")
-        if not fish.get("marketplace_eligible", False):
-            raise ValueError("fish is not marketplace eligible")
-        
+        if fish.get("rarity") == "common":
+            raise ValueError(
+                "only uncommon or rarer fish can be listed on the marketplace"
+            )
+
         # Move the fish out of the seller's inventory and into the listing.
         # Keeps the aquarium and "your eligible fish" view in sync, and
         # prevents double-listing.
@@ -445,7 +509,9 @@ class MongoRepository:
                 "epic": 3,
                 "legendary": 4,
             }
-            results.sort(key=lambda r: order.get(r["fish"].get("rarity"), 99), reverse=True)
+            results.sort(
+                key=lambda r: order.get(r["fish"].get("rarity"), 99), reverse=True
+            )
         else:
             results.sort(key=lambda r: r.get("created_at", ""), reverse=True)
         return results
