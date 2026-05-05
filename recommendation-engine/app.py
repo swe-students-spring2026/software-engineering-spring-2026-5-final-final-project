@@ -101,7 +101,7 @@ def _normalize_cast(raw: Any) -> list[str]:
     return [s] if s else []
 
 
-def _metadata_to_dict(row_idx: int, meta: dict, include_similarity: bool = False, similarity: float | None = None) -> dict:
+def _metadata_to_dict(meta: dict, include_similarity: bool = False, similarity: float | None = None) -> dict:
     """Normalize a metadata record to the shape the frontend templates expect."""
     raw_rating = meta.get("vote_average") or meta.get("imdb_rating") or 0.0
     try:
@@ -180,7 +180,7 @@ def recommend():
 
     results = recommender.recommend(favorite_ids, k=k)
     return jsonify([
-        _metadata_to_dict(store.id_to_row[r.movie_id], r.metadata, include_similarity=True, similarity=r.similarity)
+        _metadata_to_dict(r.metadata, include_similarity=True, similarity=r.similarity)
         for r in results
     ])
 
@@ -192,12 +192,12 @@ def search():
         return jsonify([])
 
     matches = []
-    for i, meta in enumerate(store.metadata):
+    for meta in store.metadata:
         title = str(meta.get("title", "")).lower()
         overview = str(meta.get("overview") or "").lower()
         genres = str(meta.get("genres") or "").lower()
         if query in title or query in overview or query in genres:
-            matches.append(_metadata_to_dict(i, meta))
+            matches.append(_metadata_to_dict(meta))
             if len(matches) >= 20:
                 break
     return jsonify(matches)
@@ -208,7 +208,7 @@ def movie_detail(movie_id):
     row = store.id_to_row.get(movie_id)
     if row is None:
         return jsonify({"error": "Not found"}), 404
-    return jsonify(_metadata_to_dict(row, store.metadata[row]))
+    return jsonify(_metadata_to_dict(store.metadata[row]))
 
 
 @app.route("/movies/<movie_id>/similar")
@@ -218,7 +218,7 @@ def similar_movies(movie_id):
         return jsonify({"error": "Not found"}), 404
     results = recommender.recommend([movie_id], k=4)
     return jsonify([
-        _metadata_to_dict(store.id_to_row[r.movie_id], r.metadata, include_similarity=True, similarity=r.similarity)
+        _metadata_to_dict(r.metadata, include_similarity=True, similarity=r.similarity)
         for r in results
     ])
 

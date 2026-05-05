@@ -1,8 +1,7 @@
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 
-from bson import ObjectId
-from flask import Blueprint, render_template, request, session
+from flask import Blueprint, render_template, request
 
 from db import mongo
 from services.api_client import (
@@ -10,9 +9,9 @@ from services.api_client import (
     get_movie_details,
     get_similar_movies,
     recommend_from_favorites,
-    recommend_movies,
 )
 from services.search_router import handle_search
+from utils import get_user_id, get_watchlist_ids
 
 movies_bp = Blueprint("movies", __name__)
 
@@ -34,7 +33,7 @@ def search():
             results=[],
             query="",
             mode=None,
-            watchlist_ids=_watchlist_ids(),
+            watchlist_ids=get_watchlist_ids(get_user_id()),
         )
 
     search_data = handle_search(query)
@@ -51,7 +50,7 @@ def search():
         results=search_data["results"],
         query=search_data["query"],
         mode=search_data["mode"],
-        watchlist_ids=_watchlist_ids(),
+        watchlist_ids=get_watchlist_ids(get_user_id()),
     )
 
 
@@ -82,7 +81,7 @@ def recommendations():
         results=results,
         query=", ".join(favorite_titles),
         mode="favorites",
-        watchlist_ids=_watchlist_ids(),
+        watchlist_ids=get_watchlist_ids(get_user_id()),
     )
 
 
@@ -95,7 +94,7 @@ def movie_detail(movie_id):
         "movie_detail.html",
         movie=movie,
         similar_movies=similar_movies,
-        watchlist_ids=_watchlist_ids(),
+        watchlist_ids=get_watchlist_ids(get_user_id()),
         back_url=back_url,
     )
 
@@ -111,21 +110,8 @@ def _safe_back_url(param: str | None, referrer: str | None) -> str | None:
     return None
 
 
-def _user_id():
-    uid = session.get("user_id")
-    return ObjectId(uid) if uid else None
-
-
-def _watchlist_ids() -> set[str]:
-    user_id = _user_id()
-    if not user_id:
-        return set()
-    docs = mongo.db.watchlists.find({"user_id": user_id}, {"movie_id": 1})
-    return {doc["movie_id"] for doc in docs}
-
-
 def _append_history(entry: dict) -> None:
-    user_id = _user_id()
+    user_id = get_user_id()
     if not user_id:
         return
     mongo.db.history.insert_one({
