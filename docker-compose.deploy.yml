@@ -7,6 +7,8 @@ services:
       - INDEX_PATH=data/faiss.index
       - METADATA_PATH=data/metadata.parquet
       - RECOMMENDATION_PORT=5001
+    volumes:
+      - './recommendation-engine/data:/app/data/'
     expose:
       - "5001"
     restart: unless-stopped

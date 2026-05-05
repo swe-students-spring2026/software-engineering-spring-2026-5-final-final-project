@@ -47,12 +47,14 @@ class Recommender:
             mid = self.movie_ids[idx]
             if mid in exclude:
                 continue
-            results.append(MovieResult(
-                movie_id=mid,
-                title=self.metadata[idx].get("title", ""),
-                similarity=float(sim),
-                metadata=self.metadata[idx],
-            ))
+            results.append(
+                MovieResult(
+                    movie_id=mid,
+                    title=self.metadata[idx].get("title", ""),
+                    similarity=float(sim),
+                    metadata=self.metadata[idx],
+                )
+            )
             if len(results) == k:
                 break
 
