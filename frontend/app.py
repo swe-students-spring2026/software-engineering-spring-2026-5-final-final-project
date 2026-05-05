@@ -101,6 +101,22 @@ def logout():
     session.pop("user", None)
     return redirect(url_for("login"))
 
+@app.route("/friends/add", methods=["GET"])
+def add_friend():
+    return render_template("add_friend.html", active_tab="friends")
+
+@app.route("/friends/add", methods=["POST"])
+def add_friend_post():
+    friend_username = request.form.get("friend_username", "").strip()
+    res = requests.post(f"{API_URL}/api/friendships", json={
+        "username": session["user"]["username"],
+        "friend_username": friend_username
+    })
+    if res.ok:
+        return render_template("add_friend.html", active_tab="friends", success=f"Friend request sent to {friend_username}!")
+    else:
+        error = res.json().get("error", "Oops! Something went wrong.")
+        return render_template("add_friend.html", active_tab="friends", error=error)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=3000, debug=True)

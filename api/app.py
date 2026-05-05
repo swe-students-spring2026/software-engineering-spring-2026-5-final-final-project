@@ -126,7 +126,7 @@ def create_friendship():
                 "$setOnInsert": {
                     "user1_id": user1_id,
                     "user2_id": user2_id,
-                    "status": "pending",
+                    "status": "accepted",
                     "requested_by": requester["_id"],
                     "requested_at": datetime.now(timezone.utc),
                     "accepted_at": None,
