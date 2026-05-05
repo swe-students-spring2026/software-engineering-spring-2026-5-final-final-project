@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}vibe — set up profile{% endblock %}
+{% block body %}
+<div class="page page--auth" style="justify-content:flex-start;padding-top:40px;">
+  <div style="margin-bottom:28px;">
+    <div class="auth-logo"><span class="logo">vibe</span></div>
+    <p class="auth-tagline">finish your profile</p>
+  </div>
+
+  <div class="auth-card">
+    <form method="POST" action="{{ url_for('main.profile_setup') }}" enctype="multipart/form-data">
+
+      <div class="form-group">
+        <label class="form-label" for="bio">Bio <span style="color:var(--text-dim)">(optional)</span></label>
+        <textarea id="bio" name="bio" placeholder="What's your music story?">{{ user.get('bio', '') or '' }}</textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="gender">I am</label>
+          <select id="gender" name="gender">
+            <option value="">— select —</option>
+            <option value="man" {% if user.get('gender')=='man' %}selected{% endif %}>Man</option>
+            <option value="woman" {% if user.get('gender')=='woman' %}selected{% endif %}>Woman</option>
+            <option value="non-binary" {% if user.get('gender')=='non-binary' %}selected{% endif %}>Non-binary</option>
+            <option value="other" {% if user.get('gender')=='other' %}selected{% endif %}>Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="gender_preference">Interested in</label>
+          <select id="gender_preference" name="gender_preference">
+            <option value="">Everyone</option>
+            <option value="man" {% if user.get('gender_preference')=='man' %}selected{% endif %}>Men</option>
+            <option value="woman" {% if user.get('gender_preference')=='woman' %}selected{% endif %}>Women</option>
+            <option value="non-binary" {% if user.get('gender_preference')=='non-binary' %}selected{% endif %}>Non-binary</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="age_min">Age min</label>
+          <input type="number" id="age_min" name="age_min" min="18" max="99" placeholder="18"
+                 value="{{ user.get('age_range_preference', {}).get('min', 18) }}" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="age_max">Age max</label>
+          <input type="number" id="age_max" name="age_max" min="18" max="99" placeholder="99"
+                 value="{{ user.get('age_range_preference', {}).get('max', 99) }}" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="photo">Profile photo <span style="color:var(--text-dim)">(optional, max 5 MB)</span></label>
+        <input type="file" id="photo" name="photo" accept="image/jpeg,image/png,image/webp"
+               style="padding:10px 14px;cursor:pointer;" />
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-full" style="margin-top:8px;">Go to feed →</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
