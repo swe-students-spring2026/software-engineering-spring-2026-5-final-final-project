@@ -1,0 +1,8 @@
+flask
+requests
+flask-bcrypt
+flask-login
+pymongo
+python-dotenv
+pytest
+pytest-cov

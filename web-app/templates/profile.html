@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Profile | PriorityManager</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <main class="page center">
+        <section class="card narrow">
+            <p class="eyebrow">PriorityManager</p>
+            <h1>Profile</h1>
+            <p class="muted">Manage your account information.</p>
+
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert warning">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" class="form">
+                <div class="field">
+                    <label for="username">Username</label>
+                    <input id="username" type="text" name="username" value="{{ user.username }}" required>
+                </div>
+
+                <div class="field">
+                    <label for="email">Email</label>
+                    <input id="email" type="email" name="email" value="{{ user.email }}" required>
+                </div>
+
+                <button type="submit">Save changes</button>
+            </form>
+
+            <div class="divider">
+                <span>account</span>
+            </div>
+
+            <a class="button secondary full-width" href="{{ url_for('logout') }}">Log out</a>
+
+            <form method="POST" action="{{ url_for('delete_profile') }}" class="form">
+                <button class="danger full-width" type="submit" onclick="return confirm('Delete your profile and all tasks? This cannot be undone.')">
+                    Delete profile
+                </button>
+            </form>
+
+            <p class="muted">
+                <a href="{{ url_for('dashboard') }}">← Back to dashboard</a>
+            </p>
+        </section>
+    </main>
+</body>
+</html>

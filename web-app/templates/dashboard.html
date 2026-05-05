@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard | PriorityManager</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <main class="page">
+        <nav class="top-nav">
+            <a class="button secondary" href="{{ url_for('profile') }}">Profile</a>
+        </nav>
+    
+        <section class="dashboard-header">
+            <div>
+                <p class="eyebrow">PriorityManager</p>
+                <h1>Your tasks</h1>
+                <p class="muted">Sorted by priority: High, Medium, Low.</p>
+            </div>
+
+        </section>
+
+        <section class="dashboard-cta">
+            <div>
+                <h2>Add a new assignment</h2>
+                <p class="muted">Create a task and let the priority system rank it for you.</p>
+            </div>
+
+            <a class="button" href="{{ url_for('create_task') }}">Add task</a>
+        </section>
+
+        {% if tasks %}
+            <section class="task-grid">
+                {% for task in tasks %}
+                    <article class="task-card">
+                        <div class="task-header">
+                            <h2>{{ task.title }}</h2>
+                            <span class="badge {{ task.priority|lower }}">{{ task.priority }}</span>
+                        </div>
+
+                        <p>{{ task.description }}</p>
+                        <p class="status">Status: {{ task.status }}</p>
+
+                        <div class="task-actions">
+                            {% if task.status != "Complete" %}
+                                <form action="{{ url_for('complete_task', task_id=task._id) }}" method="POST">
+                                    <button type="submit" class="small">Complete</button>
+                                </form>
+                            {% endif %}
+
+                            <form action="{{ url_for('remove_task', task_id=task._id) }}" method="POST">
+                                <button type="submit" class="small danger">Delete</button>
+                            </form>
+                        </div>
+                    </article>
+                {% endfor %}
+            </section>
+        {% else %}
+            <section class="empty compact-empty">
+                <h2>No tasks yet</h2>
+                <p>Your assignments will appear here once you add them.</p>
+            </section>
+        {% endif %}
+    </main>
+</body>
+</html>
