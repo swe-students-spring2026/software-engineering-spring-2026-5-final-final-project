@@ -62,35 +62,25 @@ def fixture_flask_app():
     return app
 
 
-@pytest.fixture
-def test_client():
-    """create test client."""
-    test_app = create_app()
-    test_app.config["TESTING"] = True
-
-    with test_app.test_client() as test_client:
-        yield test_client
+def test_check_url_empty():
+    """Check empty URL handling."""
+    assert check_url("") is False
 
 
-def test_home_route(test_client):
-    """check home page loads."""
-    response = test_client.get("/")
-
-    assert response.status_code == 200
+def test_check_url_normal():
+    """Check non-empty URL handling."""
+    assert check_url("https://example.com") is True
 
 
-def test_history_route_without_db(test_client, monkeypatch):
-    """check history route handles missing database."""
-    monkeypatch.delenv("MONGODB_URI", raising=False)
-
-    response = test_client.get("/history")
-
-    assert response.status_code in [200, 500]
+def test_make_request_data_empty():
+    """Check request data rejects missing URL."""
+    with pytest.raises(ValueError):
+        make_request_data("")
 
 
-def test_health_route(test_client):
-    """check health route if it exists."""
-    response = test_client.get("/health")
+def test_make_request_data_normal():
+    """Check request data shape."""
+    assert make_request_data("https://example.com") == {"url": "https://example.com"}
 
 
 def test_show_error():

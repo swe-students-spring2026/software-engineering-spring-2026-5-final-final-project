@@ -67,9 +67,6 @@ def get_recent_memes(limit: int = 20) -> list[dict[str, Any]]:
         raise RuntimeError(
             "MongoDB is not configured. Set MONGODB_URI to enable history."
         )
-        raise RuntimeError(
-            "MongoDB is not configured. Set MONGODB_URI to enable history."
-        )
 
     documents = collection.find().sort("created_at", DESCENDING).limit(limit)
     return [serialize_record(document) for document in documents]
@@ -79,9 +76,6 @@ def get_meme_by_id(record_id: str) -> dict[str, Any] | None:
     """Return one meme by MongoDB object id."""
     collection = get_collection()
     if collection is None:
-        raise RuntimeError(
-            "MongoDB is not configured. Set MONGODB_URI to enable history."
-        )
         raise RuntimeError(
             "MongoDB is not configured. Set MONGODB_URI to enable history."
         )

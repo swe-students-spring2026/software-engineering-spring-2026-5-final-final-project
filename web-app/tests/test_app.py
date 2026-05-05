@@ -2,6 +2,7 @@
 
 from app import create_app
 
+
 def test_create_app():
     """check flask app is created."""
     test_app = create_app()
