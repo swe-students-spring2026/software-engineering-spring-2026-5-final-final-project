@@ -16,7 +16,7 @@ SUPPORTED_TEMPLATES = ["buzz", "drake", "ds", "wonka", "fry", "doge"]
 
 main = Blueprint("main", __name__)
 
-collection = get_collection()
+collection = None
 ML_URL = os.getenv("ML_URL", "http://ml:8000").rstrip("/")
 
 
@@ -107,6 +107,12 @@ def index():
         doc["_id"] = str(doc["_id"])
 
     return render_template("index.html", memes=docs, templates=SUPPORTED_TEMPLATES)
+
+
+@main.route("/health")
+def health():
+    """Return readiness status without requiring downstream services."""
+    return {"status": "ok"}
 
 
 # Debug route

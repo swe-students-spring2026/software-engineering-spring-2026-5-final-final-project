@@ -11,5 +11,7 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 COPY . .
 
+EXPOSE 8080
+
 ENTRYPOINT ["docker-entrypoint.sh"]
-CMD ["python", "main.py"]
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-8080} main:app"]

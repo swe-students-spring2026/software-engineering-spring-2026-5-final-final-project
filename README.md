@@ -102,8 +102,12 @@ docker build -t project5-db:local backend
 The Docker images do not include a MongoDB server or a baked-in database URI. When running a pushed image from Docker Hub, pass the same live `MONGODB_URI` at runtime:
 
 ```sh
-docker run --env-file .env DOCKERHUB_USERNAME/project5-web-app:latest
+docker run --env-file .env -p 8080:8080 DOCKERHUB_USERNAME/project5-web-app:latest
 ```
+
+The web app image listens on `PORT` when set, otherwise `8080`. For DigitalOcean
+App Platform deployments that use the pre-built image, set the HTTP port to
+`8080` and use `/health` for readiness checks.
 
 ## CI/CD
 

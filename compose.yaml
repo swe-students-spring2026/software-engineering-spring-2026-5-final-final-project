@@ -11,7 +11,7 @@ services:
       MONGODB_DB_NAME: ${MONGODB_DB_NAME:-meme_generator}
       MONGODB_COLLECTION_NAME: ${MONGODB_COLLECTION_NAME:-generated_memes}
     ports:
-      - "${WEB_APP_PORT:-5001}:5000"
+      - "${WEB_APP_PORT:-5001}:8080"
     depends_on:
       - backend
       - ml
