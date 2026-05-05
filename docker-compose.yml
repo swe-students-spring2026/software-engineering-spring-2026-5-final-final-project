@@ -1,4 +1,19 @@
 services:
+  mongo:
+    image: mongo:${MONGO_IMAGE_TAG:-7}
+    container_name: mongo
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "127.0.0.1:${MONGO_PORT:-27017}:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
   apis:
     build:
       context: .
@@ -20,6 +35,9 @@ services:
       GEMINI_MODEL_SMART: ${GEMINI_MODEL_SMART:-}
     ports:
       - "${API_PORT}:${API_INTERNAL_PORT}"
+    depends_on:
+      mongo:
+        condition: service_healthy
 
   scrapers:
     build:
@@ -34,6 +52,9 @@ services:
       SCRAPER_TERMS: ${SCRAPER_TERMS}
       SCRAPE_INTERVAL_HOURS: ${SCRAPE_INTERVAL_HOURS}
     restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
 
   frontend:
     build:
@@ -55,3 +76,6 @@ services:
       - "${FRONTEND_PORT}:${FRONTEND_INTERNAL_PORT}"
     depends_on:
       - apis
+
+volumes:
+  mongo_data:
