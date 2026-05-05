@@ -91,6 +91,16 @@ function isSamplePlan(label) {
     return /sample|plan|semester|term/i.test(label || "");
 }
 
+// Return true if this table's section heading belongs to a different track than what the student selected.
+// NYU bulletin pages embed both regular and honors requirement tables on the same page.
+// We drop the "Honors Program" section for non-honors students, and non-honors sections for honors students.
+function isWrongTrackTable(label, selectedProgram) {
+    const l = (label || "").toLowerCase();
+    const programIsHonors = /honors/i.test(selectedProgram?.title || "");
+    if (!programIsHonors && /\bhonors\b/i.test(l)) return true;
+    return false;
+}
+
 function statusOf(code) {
     if (!code) return "none";
     const n = canonicalRequirementCode(code);
@@ -874,7 +884,9 @@ async function render() {
     }
 
     const preparedPrograms = programPayloads.map(({ selected, prog }) => {
-        const allTables = (prog.tables || []).filter(t => !isSamplePlan(t.label));
+        const allTables = (prog.tables || [])
+            .filter(t => !isSamplePlan(t.label))
+            .filter(t => !isWrongTrackTable(t.label, selected));
         const choiceTables = buildChoiceTables(allTables);
         const tables = allTables.filter(t => !isChoiceTable(t, choiceTables));
         return { selected, prog, choiceTables, tables };
