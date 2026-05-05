@@ -86,7 +86,8 @@ def summarize_article(user_input):
         raise RuntimeError("OpenAI returned invalid JSON") from exc
     return {
         "title": result.get("title") or title,
-        "summary": result.get("summary", ""),
+        "article_text": user_input if source_type == "text" else None,
+        "article_summary": result["summary"],        
         "article_type": result.get("article_type", "other"),
         "source_type": source_type,
     }
