@@ -1,0 +1,3909 @@
+[
+  {
+    "id": "leetcode-1",
+    "external_id": "1",
+    "slug": "two-sum",
+    "title": "Two Sum",
+    "description": "Given an array of integers `nums` and an integer `target`, return indices of the two numbers such that they add up to `target`.\n\nYou may assume that each input would have exactly one solution, and you may not use the same element twice.\n\nYou can return the answer in any order.\n\n\nExample 1:\nInput: nums = [2,7,11,15], target = 9\nOutput: [0,1]\nOutput: Because nums[0] + nums[1] == 9, we return [0, 1].\n\nExample 2:\nInput: nums = [3,2,4], target = 6\nOutput: [1,2]\n\nExample 3:\nInput: nums = [3,3], target = 6\nOutput: [0,1]\n\nConstraints:\n`2 <= nums.length <= 103`\n`-109 <= nums[i] <= 109`\n`-109 <= target <= 109`\nOnly one valid answer exists.",
+    "difficulty": "easy",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/two-sum",
+    "solution_url": "https://leetcode.com/articles/two-sum",
+    "topics": [
+      "Array",
+      "Hash Table"
+    ],
+    "companies": [
+      "Amazon",
+      "Google",
+      "Apple",
+      "Adobe",
+      "Microsoft",
+      "Bloomberg",
+      "Facebook",
+      "Oracle",
+      "Uber",
+      "Expedia",
+      "Twitter",
+      "Nagarro",
+      "SAP",
+      "Yahoo",
+      "Cisco",
+      "Qualcomm",
+      "tcs",
+      "Goldman Sachs",
+      "Yandex",
+      "ServiceNow"
+    ],
+    "stats": {
+      "acceptance_rate": 46.7,
+      "frequency": 100.0,
+      "discuss_count": 999,
+      "accepted": 4099999,
+      "submissions": 8700000,
+      "likes": 20217,
+      "dislikes": 712,
+      "rating": 97.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[3Sum, /problems/3sum/, Medium], [4Sum, /problems/4sum/, Medium], [Two Sum II - Input array is sorted, /problems/two-sum-ii-input-array-is-sorted/, Easy], [Two Sum III - Data structure design, /problems/two-sum-iii-data-structure-design/, Easy], [Subarray Sum Equals K, /problems/subarray-sum-equals-k/, Medium], [Two Sum IV - Input is a BST, /problems/two-sum-iv-input-is-a-bst/, Easy], [Two Sum Less Than K, /problems/two-sum-less-than-k/, Easy], [Max Number of K-Sum Pairs, /problems/max-number-of-k-sum-pairs/, Medium], [Count Good Meals, /problems/count-good-meals/, Medium]",
+    "judgeable": true,
+    "judgeable_reason": "curated tests and solution available"
+  },
+  {
+    "id": "leetcode-2",
+    "external_id": "2",
+    "slug": "add-two-numbers",
+    "title": "Add Two Numbers",
+    "description": "You are given two non-empty linked lists representing two non-negative integers. The digits are stored in reverse order, and each of their nodes contains a single digit. Add the two numbers and return the sum as a linked list.\n\nYou may assume the two numbers do not contain any leading zero, except the number 0 itself.\n\n\nExample 1:\nInput: l1 = [2,4,3], l2 = [5,6,4]\nOutput: [7,0,8]\nExplanation: 342 + 465 = 807.\n\n\nExample 2:\nInput: l1 = [0], l2 = [0]\nOutput: [0]\n\nExample 3:\nInput: l1 = [9,9,9,9,9,9,9], l2 = [9,9,9,9]\nOutput: [8,9,9,9,0,0,0,1]\n\nConstraints:\nThe number of nodes in each linked list is in the range `[1, 100]`.\n\n`0 <= Node.val <= 9`\nIt is guaranteed that the list represents a number that does not have leading zeros.",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/add-two-numbers",
+    "solution_url": "https://leetcode.com/articles/add-two-numbers",
+    "topics": [
+      "Linked List",
+      "Math",
+      "Recursion"
+    ],
+    "companies": [
+      "Bloomberg",
+      "Microsoft",
+      "Amazon",
+      "Google",
+      "Facebook",
+      "Apple",
+      "Adobe",
+      "Paypal",
+      "Coupang",
+      "Oracle",
+      "Uber",
+      "VMware",
+      "Yahoo"
+    ],
+    "stats": {
+      "acceptance_rate": 35.7,
+      "frequency": 93.1,
+      "discuss_count": 999,
+      "accepted": 1900000,
+      "submissions": 5200000,
+      "likes": 11350,
+      "dislikes": 2704,
+      "rating": 81.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Multiply Strings, /problems/multiply-strings/, Medium], [Add Binary, /problems/add-binary/, Easy], [Sum of Two Integers, /problems/sum-of-two-integers/, Medium], [Add Strings, /problems/add-strings/, Easy], [Add Two Numbers II, /problems/add-two-numbers-ii/, Medium], [Add to Array-Form of Integer, /problems/add-to-array-form-of-integer/, Easy], [Add Two Polynomials Represented as Linked Lists, /problems/add-two-polynomials-represented-as-linked-lists/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-3",
+    "external_id": "3",
+    "slug": "longest-substring-without-repeating-characters",
+    "title": "Longest Substring Without Repeating Characters",
+    "description": "Given a string `s`, find the length of the longest substring without repeating characters.\n\n\nExample 1:\nInput: s = \"abcabcbb\"\nOutput: 3\nExplanation: The answer is \"abc\", with the length of 3.\n\n\nExample 2:\nInput: s = \"bbbbb\"\nOutput: 1\nExplanation: The answer is \"b\", with the length of 1.\n\n\nExample 3:\nInput: s = \"pwwkew\"\nOutput: 3\nExplanation: The answer is \"wke\", with the length of 3.\n\nNotice that the answer must be a substring, \"pwke\" is a subsequence and not a substring.\n\n\nExample 4:\nInput: s = \"\"\nOutput: 0\n\nConstraints:\n`0 <= s.length <= 5 * 104`\n`s` consists of English letters, digits, symbols and spaces.",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/longest-substring-without-repeating-characters",
+    "solution_url": "https://leetcode.com/articles/longest-substring-without-repeating-characters",
+    "topics": [
+      "Hash Table",
+      "Two Pointers",
+      "String",
+      "Sliding Window"
+    ],
+    "companies": [
+      "Amazon",
+      "Bloomberg",
+      "Microsoft",
+      "Facebook",
+      "Apple",
+      "Adobe",
+      "eBay",
+      "Goldman Sachs",
+      "Google",
+      "Alation",
+      "VMware",
+      "Oracle",
+      "ByteDance",
+      "Yahoo",
+      "Uber",
+      "SAP",
+      "Salesforce",
+      "Coupang",
+      "Splunk",
+      "Spotify"
+    ],
+    "stats": {
+      "acceptance_rate": 31.5,
+      "frequency": 90.9,
+      "discuss_count": 999,
+      "accepted": 2100000,
+      "submissions": 6700000,
+      "likes": 13810,
+      "dislikes": 714,
+      "rating": 95.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Longest Substring with At Most Two Distinct Characters, /problems/longest-substring-with-at-most-two-distinct-characters/, Medium], [Longest Substring with At Most K Distinct Characters, /problems/longest-substring-with-at-most-k-distinct-characters/, Medium], [Subarrays with K Different Integers, /problems/subarrays-with-k-different-integers/, Hard], [Maximum Erasure Value, /problems/maximum-erasure-value/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-4",
+    "external_id": "4",
+    "slug": "median-of-two-sorted-arrays",
+    "title": "Median of Two Sorted Arrays",
+    "description": "Given two sorted arrays `nums1` and `nums2` of size `m` and `n` respectively, return the median of the two sorted arrays.\n\n\nExample 1:\nInput: nums1 = [1,3], nums2 = [2]\nOutput: 2.00000\nExplanation: merged array = [1,2,3] and median is 2.\n\n\nExample 2:\nInput: nums1 = [1,2], nums2 = [3,4]\nOutput: 2.50000\nExplanation: merged array = [1,2,3,4] and median is (2 + 3) / 2 = 2.5.\n\n\nExample 3:\nInput: nums1 = [0,0], nums2 = [0,0]\nOutput: 0.00000\n\nExample 4:\nInput: nums1 = [], nums2 = [1]\nOutput: 1.00000\n\nExample 5:\nInput: nums1 = [2], nums2 = []\nOutput: 2.00000\n\nConstraints:\n`nums1.length == m`\n`nums2.length == n`\n`0 <= m <= 1000`\n`0 <= n <= 1000`\n`1 <= m + n <= 2000`\n`-106 <= nums1[i], nums2[i] <= 106`\nFollow up: The overall run time complexity should be `O(log (m+n))`.",
+    "difficulty": "hard",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/median-of-two-sorted-arrays",
+    "solution_url": "https://leetcode.com/articles/median-of-two-sorted-arrays",
+    "topics": [
+      "Array",
+      "Binary Search",
+      "Divide and Conquer"
+    ],
+    "companies": [
+      "Amazon",
+      "Goldman Sachs",
+      "Facebook",
+      "Microsoft",
+      "Apple",
+      "Adobe",
+      "Google",
+      "Bloomberg",
+      "Zillow",
+      "Uber",
+      "Flipkart",
+      "Paypal"
+    ],
+    "stats": {
+      "acceptance_rate": 31.4,
+      "frequency": 86.2,
+      "discuss_count": 999,
+      "accepted": 904700,
+      "submissions": 2900000,
+      "likes": 9665,
+      "dislikes": 1486,
+      "rating": 87.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-5",
+    "external_id": "5",
+    "slug": "longest-palindromic-substring",
+    "title": "Longest Palindromic Substring",
+    "description": "Given a string `s`, return the longest palindromic substring in `s`.\n\n\nExample 1:\nInput: s = \"babad\"\nOutput: \"bab\"\nNote: \"aba\" is also a valid answer.\n\n\nExample 2:\nInput: s = \"cbbd\"\nOutput: \"bb\"\n\nExample 3:\nInput: s = \"a\"\nOutput: \"a\"\n\nExample 4:\nInput: s = \"ac\"\nOutput: \"a\"\n\nConstraints:\n`1 <= s.length <= 1000`\n`s` consist of only digits and English letters (lower-case and/or upper-case),",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/longest-palindromic-substring",
+    "solution_url": "https://leetcode.com/articles/longest-palindromic-substring",
+    "topics": [
+      "String",
+      "Dynamic Programming"
+    ],
+    "companies": [
+      "Amazon",
+      "Microsoft",
+      "Wayfair",
+      "Facebook",
+      "Adobe",
+      "eBay",
+      "Google",
+      "Oracle",
+      "Goldman Sachs",
+      "Yandex",
+      "Qualcomm"
+    ],
+    "stats": {
+      "acceptance_rate": 30.6,
+      "frequency": 84.7,
+      "discuss_count": 999,
+      "accepted": 1300000,
+      "submissions": 4099999,
+      "likes": 10271,
+      "dislikes": 670,
+      "rating": 94.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Shortest Palindrome, /problems/shortest-palindrome/, Hard], [Palindrome Permutation, /problems/palindrome-permutation/, Easy], [Palindrome Pairs, /problems/palindrome-pairs/, Hard], [Longest Palindromic Subsequence, /problems/longest-palindromic-subsequence/, Medium], [Palindromic Substrings, /problems/palindromic-substrings/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-6",
+    "external_id": "6",
+    "slug": "zigzag-conversion",
+    "title": "ZigZag Conversion",
+    "description": "The string `\"PAYPALISHIRING\"` is written in a zigzag pattern on a given number of rows like this: (you may want to display this pattern in a fixed font for better legibility)\nP   A   H   N\nA P L S I I G\nY   I   R\nAnd then read line by line: `\"PAHNAPLSIIGYIR\"`\nWrite the code that will take a string and make this conversion given a number of rows:\nstring convert(string s, int numRows);\n\nExample 1:\nInput: s = \"PAYPALISHIRING\", numRows = 3\nOutput: \"PAHNAPLSIIGYIR\"\n\nExample 2:\nInput: s = \"PAYPALISHIRING\", numRows = 4\nOutput: \"PINALSIGYAHRPI\"\nExplanation:\nP     I    N\nA   L S  I G\nY A   H R\nP     I\n\nExample 3:\nInput: s = \"A\", numRows = 1\nOutput: \"A\"\n\nConstraints:\n`1 <= s.length <= 1000`\n`s` consists of English letters (lower-case and upper-case), `','` and `'.'`.\n\n`1 <= numRows <= 1000`",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/zigzag-conversion",
+    "solution_url": "https://leetcode.com/articles/zigzag-conversion",
+    "topics": [
+      "String"
+    ],
+    "companies": [
+      "Microsoft"
+    ],
+    "stats": {
+      "acceptance_rate": 38.2,
+      "frequency": 44.3,
+      "discuss_count": 999,
+      "accepted": 558800,
+      "submissions": 1500000,
+      "likes": 2270,
+      "dislikes": 5686,
+      "rating": 29.0,
+      "asked_by_faang": false
+    },
+    "similar_questions_raw": "",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-7",
+    "external_id": "7",
+    "slug": "reverse-integer",
+    "title": "Reverse Integer",
+    "description": "Given a signed 32-bit integer `x`, return `x` with its digits reversed. If reversing `x` causes the value to go outside the signed 32-bit integer range `[-231, 231 - 1]`, then return `0`.\n\nAssume the environment does not allow you to store 64-bit integers (signed or unsigned).\n\n\nExample 1:\nInput: x = 123\nOutput: 321\n\nExample 2:\nInput: x = -123\nOutput: -321\n\nExample 3:\nInput: x = 120\nOutput: 21\n\nExample 4:\nInput: x = 0\nOutput: 0\n\nConstraints:\n`-231 <= x <= 231 - 1`",
+    "difficulty": "easy",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/reverse-integer",
+    "solution_url": "https://leetcode.com/articles/reverse-integer",
+    "topics": [
+      "Math"
+    ],
+    "companies": [
+      "Amazon",
+      "Google",
+      "Apple",
+      "Facebook",
+      "Bloomberg",
+      "American Express",
+      "Microsoft",
+      "Adobe",
+      "Uber"
+    ],
+    "stats": {
+      "acceptance_rate": 25.9,
+      "frequency": 80.9,
+      "discuss_count": 999,
+      "accepted": 1500000,
+      "submissions": 5700000,
+      "likes": 4548,
+      "dislikes": 6971,
+      "rating": 39.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[String to Integer (atoi), /problems/string-to-integer-atoi/, Medium], [Reverse Bits, /problems/reverse-bits/, Easy]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-8",
+    "external_id": "8",
+    "slug": "string-to-integer-atoi",
+    "title": "String to Integer (atoi)",
+    "description": "Implement the `myAtoi(string s)` function, which converts a string to a 32-bit signed integer (similar to C/C++'s `atoi` function).\n\nThe algorithm for `myAtoi(string s)` is as follows:\nRead in and ignore any leading whitespace.\n\nCheck if the next character (if not already at the end of the string) is `'-'` or `'+'`. Read this character in if it is either. This determines if the final result is negative or positive respectively. Assume the result is positive if neither is present.\n\nRead in next the characters until the next non-digit charcter or the end of the input is reached. The rest of the string is ignored.\n\nConvert these digits into an integer (i.e. `\"123\" -> 123`, `\"0032\" -> 32`). If no digits were read, then the integer is `0`. Change the sign as necessary (from step 2).\n\nIf the integer is out of the 32-bit signed integer range `[-231, 231 - 1]`, then clamp the integer so that it remains in the range. Specifically, integers less than `-231` should be clamped to `-231`, and integers greater than `231 - 1` should be clamped to `231 - 1`.\n\nReturn the integer as the final result.\n\nNote:\nOnly the space character `' '` is considered a whitespace character.\n\nDo not ignore any characters other than the leading whitespace or the rest of the string after the digits.\n\n\nExample 1:\nInput: s = \"42\"\nOutput: 42\nExplanation: The underlined characters are what is read in, the caret is the current reader position.\n\nStep 1: \"42\" (no characters read because there is no leading whitespace)\n         ^\nStep 2: \"42\" (no characters read because there is neither a '-' nor '+')\n         ^\nStep 3: \"42\" (\"42\" is read in)\n           ^\nThe parsed integer is 42.\n\nSince 42 is in the range [-231, 231 - 1], the final result is 42.\n\n\nExample 2:\nInput: s = \"   -42\"\nOutput: -42\nExplanation:\nStep 1: \"   -42\" (leading whitespace is read and ignored)\n            ^\nStep 2: \"   -42\" ('-' is read, so the result should be negative)\n             ^\nStep 3: \"   -42\" (\"42\" is read in)\n               ^\nThe parsed integer is -42.\n\nSince -42 is in the range [-231, 231 - 1], the final result is -42.\n\n\nExample 3:\nInput: s = \"4193 with words\"\nOutput: 4193\nExplanation:\nStep 1: \"4193 with words\" (no characters read because there is no leading whitespace)\n         ^\nStep 2: \"4193 with words\" (no characters read because there is neither a '-' nor '+')\n         ^\nStep 3: \"4193 with words\" (\"4193\" is read in; reading stops because the next character is a non-digit)\n             ^\nThe parsed integer is 4193.\n\nSince 4193 is in the range [-231, 231 - 1], the final result is 4193.\n\n\nExample 4:\nInput: s = \"words and 987\"\nOutput: 0\nExplanation:\nStep 1: \"words and 987\" (no characters read because there is no leading whitespace)\n         ^\nStep 2: \"words and 987\" (no characters read because there is neither a '-' nor '+')\n         ^\nStep 3: \"words and 987\" (reading stops immediately because there is a non-digit 'w')\n         ^\nThe parsed integer is 0 because no digits were read.\n\nSince 0 is in the range [-231, 231 - 1], the final result is 0.\n\n\nExample 5:\nInput: s = \"-91283472332\"\nOutput: -2147483648\nExplanation:\nStep 1: \"-91283472332\" (no characters read because there is no leading whitespace)\n         ^\nStep 2: \"-91283472332\" ('-' is read, so the result should be negative)\n          ^\nStep 3: \"-91283472332\" (\"91283472332\" is read in)\n                     ^\nThe parsed integer is -91283472332.\n\nSince -91283472332 is less than the lower bound of the range [-231, 231 - 1], the final result is clamped to -231 = -2147483648. \n\nConstraints:\n`0 <= s.length <= 200`\n`s` consists of English letters (lower-case and upper-case), digits (`0-9`), `' '`, `'+'`, `'-'`, and `'.'`.",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/string-to-integer-atoi",
+    "solution_url": "https://leetcode.com/articles/string-to-integer",
+    "topics": [
+      "Math",
+      "String"
+    ],
+    "companies": [
+      "Facebook",
+      "Amazon",
+      "Microsoft",
+      "Google",
+      "Goldman Sachs",
+      "Apple",
+      "Adobe",
+      "Bloomberg",
+      "Intel"
+    ],
+    "stats": {
+      "acceptance_rate": 15.7,
+      "frequency": 56.0,
+      "discuss_count": 999,
+      "accepted": 716100,
+      "submissions": 4600000,
+      "likes": 189,
+      "dislikes": 479,
+      "rating": 28.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Reverse Integer, /problems/reverse-integer/, Easy], [Valid Number, /problems/valid-number/, Hard]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-9",
+    "external_id": "9",
+    "slug": "palindrome-number",
+    "title": "Palindrome Number",
+    "description": "Given an integer `x`, return `true` if `x` is palindrome integer.\n\nAn integer is a palindrome when it reads the same backward as forward. For example, `121` is palindrome while `123` is not.\n\n\nExample 1:\nInput: x = 121\nOutput: true\n\nExample 2:\nInput: x = -121\nOutput: false\nExplanation: From left to right, it reads -121. From right to left, it becomes 121-. Therefore it is not a palindrome.\n\n\nExample 3:\nInput: x = 10\nOutput: false\nExplanation: Reads 01 from right to left. Therefore it is not a palindrome.\n\n\nExample 4:\nInput: x = -101\nOutput: false\n\nConstraints:\n`-231 <= x <= 231 - 1`\nFollow up: Could you solve it without converting the integer to a string?",
+    "difficulty": "easy",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/palindrome-number",
+    "solution_url": "https://leetcode.com/articles/palindrome-number",
+    "topics": [
+      "Math"
+    ],
+    "companies": [
+      "Microsoft",
+      "Adobe",
+      "Bloomberg",
+      "Facebook",
+      "Google",
+      "Yahoo"
+    ],
+    "stats": {
+      "acceptance_rate": 50.0,
+      "frequency": 58.2,
+      "discuss_count": 999,
+      "accepted": 1200000,
+      "submissions": 2400000,
+      "likes": 3199,
+      "dislikes": 1724,
+      "rating": 65.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Palindrome Linked List, /problems/palindrome-linked-list/, Easy]",
+    "judgeable": true,
+    "judgeable_reason": "curated tests and solution available"
+  },
+  {
+    "id": "leetcode-10",
+    "external_id": "10",
+    "slug": "regular-expression-matching",
+    "title": "Regular Expression Matching",
+    "description": "Given an input string (`s`) and a pattern (`p`), implement regular expression matching with support for `'.'` and `'*'` where:` `\n`'.'` Matches any single character.​​​​\n`'*'` Matches zero or more of the preceding element.\n\nThe matching should cover the entire input string (not partial).\n\n\nExample 1:\nInput: s = \"aa\", p = \"a\"\nOutput: false\nExplanation: \"a\" does not match the entire string \"aa\".\n\n\nExample 2:\nInput: s = \"aa\", p = \"a*\"\nOutput: true\nExplanation: '*' means zero or more of the preceding element, 'a'. Therefore, by repeating 'a' once, it becomes \"aa\".\n\n\nExample 3:\nInput: s = \"ab\", p = \".*\"\nOutput: true\nExplanation: \".*\" means \"zero or more (*) of any character (.)\".\n\n\nExample 4:\nInput: s = \"aab\", p = \"c*a*b\"\nOutput: true\nExplanation: c can be repeated 0 times, a can be repeated 1 time. Therefore, it matches \"aab\".\n\n\nExample 5:\nInput: s = \"mississippi\", p = \"mis*is*p*.\"\nOutput: false\n\nConstraints:\n`0 <= s.length <= 20`\n`0 <= p.length <= 30`\n`s` contains only lowercase English letters.\n\n`p` contains only lowercase English letters, `'.'`, and `'*'`.\n\nIt is guaranteed for each appearance of the character `'*'`, there will be a previous valid character to match.",
+    "difficulty": "hard",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/regular-expression-matching",
+    "solution_url": "https://leetcode.com/articles/regular-expression-matching",
+    "topics": [
+      "String",
+      "Dynamic Programming",
+      "Backtracking"
+    ],
+    "companies": [
+      "Facebook",
+      "Amazon",
+      "Microsoft",
+      "Google",
+      "Adobe",
+      "Coursera",
+      "Apple"
+    ],
+    "stats": {
+      "acceptance_rate": 27.4,
+      "frequency": 75.0,
+      "discuss_count": 999,
+      "accepted": 526600,
+      "submissions": 1900000,
+      "likes": 5583,
+      "dislikes": 841,
+      "rating": 87.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Wildcard Matching, /problems/wildcard-matching/, Hard]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-11",
+    "external_id": "11",
+    "slug": "container-with-most-water",
+    "title": "Container With Most Water",
+    "description": "Given `n` non-negative integers `a1, a2, ..., an` , where each represents a point at coordinate `(i, ai)`. `n` vertical lines are drawn such that the two endpoints of the line `i` is at `(i, ai)` and `(i, 0)`. Find two lines, which, together with the x-axis forms a container, such that the container contains the most water.\n\nNotice that you may not slant the container.\n\n\nExample 1:\nInput: height = [1,8,6,2,5,4,8,3,7]\nOutput: 49\nExplanation: The above vertical lines are represented by array [1,8,6,2,5,4,8,3,7]. In this case, the max area of water (blue section) the container can contain is 49.\n\n\nExample 2:\nInput: height = [1,1]\nOutput: 1\n\nExample 3:\nInput: height = [4,3,2,1,4]\nOutput: 16\n\nExample 4:\nInput: height = [1,2,1]\nOutput: 2\n\nConstraints:\n`n == height.length`\n`2 <= n <= 105`\n`0 <= height[i] <= 104`",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/container-with-most-water",
+    "solution_url": "https://leetcode.com/articles/container-with-most-water",
+    "topics": [
+      "Array",
+      "Two Pointers"
+    ],
+    "companies": [
+      "Amazon",
+      "Google",
+      "Microsoft",
+      "Facebook",
+      "Goldman Sachs",
+      "Adobe",
+      "Apple"
+    ],
+    "stats": {
+      "acceptance_rate": 52.9,
+      "frequency": 67.3,
+      "discuss_count": 999,
+      "accepted": 912200,
+      "submissions": 1700000,
+      "likes": 9031,
+      "dislikes": 696,
+      "rating": 93.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Trapping Rain Water, /problems/trapping-rain-water/, Hard]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-12",
+    "external_id": "12",
+    "slug": "integer-to-roman",
+    "title": "Integer to Roman",
+    "description": "Roman numerals are represented by seven different symbols: `I`, `V`, `X`, `L`, `C`, `D` and `M`.\n\nSymbol       Value\nI             1\nV             5\nX             10\nL             50\nC             100\nD             500\nM             1000\nFor example, `2` is written as `II` in Roman numeral, just two one's added together. `12` is written as `XII`, which is simply `X + II`. The number `27` is written as `XXVII`, which is `XX + V + II`.\n\nRoman numerals are usually written largest to smallest from left to right. However, the numeral for four is not `IIII`. Instead, the number four is written as `IV`. Because the one is before the five we subtract it making four. The same principle applies to the number nine, which is written as `IX`. There are six instances where subtraction is used:\n`I` can be placed before `V` (5) and `X` (10) to make 4 and 9. \n`X` can be placed before `L` (50) and `C` (100) to make 40 and 90. \n`C` can be placed before `D` (500) and `M` (1000) to make 400 and 900.\n\nGiven an integer, convert it to a roman numeral.\n\n\nExample 1:\nInput: num = 3\nOutput: \"III\"\n\nExample 2:\nInput: num = 4\nOutput: \"IV\"\n\nExample 3:\nInput: num = 9\nOutput: \"IX\"\n\nExample 4:\nInput: num = 58\nOutput: \"LVIII\"\nExplanation: L = 50, V = 5, III = 3.\n\n\nExample 5:\nInput: num = 1994\nOutput: \"MCMXCIV\"\nExplanation: M = 1000, CM = 900, XC = 90 and IV = 4.\n\n\nConstraints:\n`1 <= num <= 3999`",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/integer-to-roman",
+    "solution_url": "https://leetcode.com/articles/integer-to-roman",
+    "topics": [
+      "Math",
+      "String"
+    ],
+    "companies": [
+      "Amazon",
+      "Bloomberg",
+      "Microsoft",
+      "Adobe",
+      "Google",
+      "Apple",
+      "Oracle"
+    ],
+    "stats": {
+      "acceptance_rate": 57.1,
+      "frequency": 41.8,
+      "discuss_count": 999,
+      "accepted": 474600,
+      "submissions": 831100,
+      "likes": 1675,
+      "dislikes": 3112,
+      "rating": 35.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Roman to Integer, /problems/roman-to-integer/, Easy], [Integer to English Words, /problems/integer-to-english-words/, Hard]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-13",
+    "external_id": "13",
+    "slug": "roman-to-integer",
+    "title": "Roman to Integer",
+    "description": "Roman numerals are represented by seven different symbols: `I`, `V`, `X`, `L`, `C`, `D` and `M`.\n\nSymbol       Value\nI             1\nV             5\nX             10\nL             50\nC             100\nD             500\nM             1000\nFor example, `2` is written as `II` in Roman numeral, just two one's added together. `12` is written as `XII`, which is simply `X + II`. The number `27` is written as `XXVII`, which is `XX + V + II`.\n\nRoman numerals are usually written largest to smallest from left to right. However, the numeral for four is not `IIII`. Instead, the number four is written as `IV`. Because the one is before the five we subtract it making four. The same principle applies to the number nine, which is written as `IX`. There are six instances where subtraction is used:\n`I` can be placed before `V` (5) and `X` (10) to make 4 and 9. \n`X` can be placed before `L` (50) and `C` (100) to make 40 and 90. \n`C` can be placed before `D` (500) and `M` (1000) to make 400 and 900.\n\nGiven a roman numeral, convert it to an integer.\n\n\nExample 1:\nInput: s = \"III\"\nOutput: 3\n\nExample 2:\nInput: s = \"IV\"\nOutput: 4\n\nExample 3:\nInput: s = \"IX\"\nOutput: 9\n\nExample 4:\nInput: s = \"LVIII\"\nOutput: 58\nExplanation: L = 50, V= 5, III = 3.\n\n\nExample 5:\nInput: s = \"MCMXCIV\"\nOutput: 1994\nExplanation: M = 1000, CM = 900, XC = 90 and IV = 4.\n\n\nConstraints:\n`1 <= s.length <= 15`\n`s` contains only the characters `('I', 'V', 'X', 'L', 'C', 'D', 'M')`.\n\nIt is guaranteed that `s` is a valid roman numeral in the range `[1, 3999]`.",
+    "difficulty": "easy",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/roman-to-integer",
+    "solution_url": "https://leetcode.com/articles/roman-to-integer",
+    "topics": [
+      "Math",
+      "String"
+    ],
+    "companies": [
+      "Amazon",
+      "Roblox",
+      "Microsoft",
+      "Adobe",
+      "Facebook",
+      "LinkedIn",
+      "Google",
+      "Apple",
+      "Uber",
+      "Qualtrics",
+      "Oracle",
+      "eBay"
+    ],
+    "stats": {
+      "acceptance_rate": 57.0,
+      "frequency": 60.5,
+      "discuss_count": 999,
+      "accepted": 947400,
+      "submissions": 1700000,
+      "likes": 419,
+      "dislikes": 40,
+      "rating": 91.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Integer to Roman, /problems/integer-to-roman/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-14",
+    "external_id": "14",
+    "slug": "longest-common-prefix",
+    "title": "Longest Common Prefix",
+    "description": "Write a function to find the longest common prefix string amongst an array of strings.\n\nIf there is no common prefix, return an empty string `\"\"`.\n\n\nExample 1:\nInput: strs = [\"flower\",\"flow\",\"flight\"]\nOutput: \"fl\"\n\nExample 2:\nInput: strs = [\"dog\",\"racecar\",\"car\"]\nOutput: \"\"\nExplanation: There is no common prefix among the input strings.\n\n\nConstraints:\n`0 <= strs.length <= 200`\n`0 <= strs[i].length <= 200`\n`strs[i]` consists of only lower-case English letters.",
+    "difficulty": "easy",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/longest-common-prefix",
+    "solution_url": "https://leetcode.com/articles/longest-common-prefix",
+    "topics": [
+      "String"
+    ],
+    "companies": [
+      "Facebook",
+      "Adobe",
+      "Amazon",
+      "Apple",
+      "Bloomberg",
+      "Microsoft",
+      "Yahoo",
+      "Google"
+    ],
+    "stats": {
+      "acceptance_rate": 36.2,
+      "frequency": 69.1,
+      "discuss_count": 999,
+      "accepted": 991100,
+      "submissions": 2700000,
+      "likes": 3958,
+      "dislikes": 2192,
+      "rating": 64.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-15",
+    "external_id": "15",
+    "slug": "3sum",
+    "title": "3Sum",
+    "description": "Given an integer array nums, return all the triplets `[nums[i], nums[j], nums[k]]` such that `i != j`, `i != k`, and `j != k`, and `nums[i] + nums[j] + nums[k] == 0`.\n\nNotice that the solution set must not contain duplicate triplets.\n\n\nExample 1:\nInput: nums = [-1,0,1,2,-1,-4]\nOutput: [[-1,-1,2],[-1,0,1]]\n\nExample 2:\nInput: nums = []\nOutput: []\n\nExample 3:\nInput: nums = [0]\nOutput: []\n\nConstraints:\n`0 <= nums.length <= 3000`\n`-105 <= nums[i] <= 105`",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/3sum",
+    "solution_url": "https://leetcode.com/articles/3sum",
+    "topics": [
+      "Array",
+      "Two Pointers"
+    ],
+    "companies": [
+      "Amazon",
+      "Facebook",
+      "Microsoft",
+      "Bloomberg",
+      "Apple",
+      "Adobe",
+      "VMware",
+      "Google",
+      "Cisco",
+      "Tesla",
+      "Goldman Sachs",
+      "eBay"
+    ],
+    "stats": {
+      "acceptance_rate": 28.3,
+      "frequency": 78.8,
+      "discuss_count": 999,
+      "accepted": 1300000,
+      "submissions": 4400000,
+      "likes": 10032,
+      "dislikes": 1035,
+      "rating": 91.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Two Sum, /problems/two-sum/, Easy], [3Sum Closest, /problems/3sum-closest/, Medium], [4Sum, /problems/4sum/, Medium], [3Sum Smaller, /problems/3sum-smaller/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-16",
+    "external_id": "16",
+    "slug": "3sum-closest",
+    "title": "3Sum Closest",
+    "description": "Given an array `nums` of n integers and an integer `target`, find three integers in `nums` such that the sum is closest to `target`. Return the sum of the three integers. You may assume that each input would have exactly one solution.\n\n\nExample 1:\nInput: nums = [-1,2,1,-4], target = 1\nOutput: 2\nExplanation: The sum that is closest to the target is 2. (-1 + 2 + 1 = 2).\n\n\nConstraints:\n`3 <= nums.length <= 10^3`\n`-10^3 <= nums[i] <= 10^3`\n`-10^4 <= target <= 10^4`",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/3sum-closest",
+    "solution_url": "https://leetcode.com/articles/3sum-closest",
+    "topics": [
+      "Array",
+      "Two Pointers"
+    ],
+    "companies": [
+      "Amazon",
+      "Apple",
+      "Google",
+      "Facebook",
+      "Bloomberg"
+    ],
+    "stats": {
+      "acceptance_rate": 46.3,
+      "frequency": 55.8,
+      "discuss_count": 999,
+      "accepted": 571300,
+      "submissions": 1200000,
+      "likes": 3095,
+      "dislikes": 169,
+      "rating": 95.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[3Sum, /problems/3sum/, Medium], [3Sum Smaller, /problems/3sum-smaller/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-17",
+    "external_id": "17",
+    "slug": "letter-combinations-of-a-phone-number",
+    "title": "Letter Combinations of a Phone Number",
+    "description": "Given a string containing digits from `2-9` inclusive, return all possible letter combinations that the number could represent. Return the answer in any order.\n\nA mapping of digit to letters (just like on the telephone buttons) is given below. Note that 1 does not map to any letters.\n\n\nExample 1:\nInput: digits = \"23\"\nOutput: [\"ad\",\"ae\",\"af\",\"bd\",\"be\",\"bf\",\"cd\",\"ce\",\"cf\"]\n\nExample 2:\nInput: digits = \"\"\nOutput: []\n\nExample 3:\nInput: digits = \"2\"\nOutput: [\"a\",\"b\",\"c\"]\n\nConstraints:\n`0 <= digits.length <= 4`\n`digits[i]` is a digit in the range `['2', '9']`.",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/letter-combinations-of-a-phone-number",
+    "solution_url": "https://leetcode.com/articles/letter-combinations-of-a-phone-number",
+    "topics": [
+      "String",
+      "Backtracking",
+      "Depth-first Search",
+      "Recursion"
+    ],
+    "companies": [
+      "Amazon",
+      "Microsoft",
+      "Twilio",
+      "Facebook",
+      "Capital One",
+      "eBay",
+      "Google",
+      "Uber",
+      "Apple",
+      "Oracle",
+      "JPMorgan",
+      "Morgan Stanley",
+      "Tesla",
+      "Qualtrics",
+      "Samsung"
+    ],
+    "stats": {
+      "acceptance_rate": 49.5,
+      "frequency": 78.0,
+      "discuss_count": 999,
+      "accepted": 795700,
+      "submissions": 1600000,
+      "likes": 5684,
+      "dislikes": 509,
+      "rating": 92.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Generate Parentheses, /problems/generate-parentheses/, Medium], [Combination Sum, /problems/combination-sum/, Medium], [Binary Watch, /problems/binary-watch/, Easy]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-18",
+    "external_id": "18",
+    "slug": "4sum",
+    "title": "4Sum",
+    "description": "Given an array `nums` of n integers and an integer `target`, are there elements a, b, c, and d in `nums` such that a + b + c + d = `target`? Find all unique quadruplets in the array which gives the sum of `target`.\n\nNotice that the solution set must not contain duplicate quadruplets.\n\n\nExample 1:\nInput: nums = [1,0,-1,0,-2,2], target = 0\nOutput: [[-2,-1,1,2],[-2,0,0,2],[-1,0,0,1]]\n\nExample 2:\nInput: nums = [], target = 0\nOutput: []\n\nConstraints:\n`0 <= nums.length <= 200`\n`-109 <= nums[i] <= 109`\n`-109 <= target <= 109`",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/4sum",
+    "solution_url": "https://leetcode.com/articles/4sum",
+    "topics": [
+      "Array",
+      "Hash Table",
+      "Two Pointers"
+    ],
+    "companies": [
+      "Amazon",
+      "Bloomberg"
+    ],
+    "stats": {
+      "acceptance_rate": 35.1,
+      "frequency": 47.0,
+      "discuss_count": 999,
+      "accepted": 403700,
+      "submissions": 1200000,
+      "likes": 3154,
+      "dislikes": 406,
+      "rating": 89.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Two Sum, /problems/two-sum/, Easy], [3Sum, /problems/3sum/, Medium], [4Sum II, /problems/4sum-ii/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-19",
+    "external_id": "19",
+    "slug": "remove-nth-node-from-end-of-list",
+    "title": "Remove Nth Node From End of List",
+    "description": "Given the `head` of a linked list, remove the `nth` node from the end of the list and return its head.\n\nFollow up: Could you do this in one pass?\n\nExample 1:\nInput: head = [1,2,3,4,5], n = 2\nOutput: [1,2,3,5]\n\nExample 2:\nInput: head = [1], n = 1\nOutput: []\n\nExample 3:\nInput: head = [1,2], n = 1\nOutput: [1]\n\nConstraints:\nThe number of nodes in the list is `sz`.\n\n`1 <= sz <= 30`\n`0 <= Node.val <= 100`\n`1 <= n <= sz`",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/remove-nth-node-from-end-of-list",
+    "solution_url": "https://leetcode.com/articles/remove-nth-node-from-end-of-list",
+    "topics": [
+      "Linked List",
+      "Two Pointers"
+    ],
+    "companies": [
+      "Facebook",
+      "Amazon",
+      "Microsoft",
+      "Bloomberg",
+      "Apple"
+    ],
+    "stats": {
+      "acceptance_rate": 35.9,
+      "frequency": 42.8,
+      "discuss_count": 999,
+      "accepted": 829500,
+      "submissions": 2300000,
+      "likes": 5039,
+      "dislikes": 298,
+      "rating": 94.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Swapping Nodes in a Linked List, /problems/swapping-nodes-in-a-linked-list/, Medium], [Delete N Nodes After M Nodes of a Linked List, /problems/delete-n-nodes-after-m-nodes-of-a-linked-list/, Easy]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-20",
+    "external_id": "20",
+    "slug": "valid-parentheses",
+    "title": "Valid Parentheses",
+    "description": "Given a string `s` containing just the characters `'('`, `')'`, `'{'`, `'}'`, `'['` and `']'`, determine if the input string is valid.\n\nAn input string is valid if:\nOpen brackets must be closed by the same type of brackets.\n\nOpen brackets must be closed in the correct order.\n\n\nExample 1:\nInput: s = \"()\"\nOutput: true\n\nExample 2:\nInput: s = \"()[]{}\"\nOutput: true\n\nExample 3:\nInput: s = \"(]\"\nOutput: false\n\nExample 4:\nInput: s = \"([)]\"\nOutput: false\n\nExample 5:\nInput: s = \"{[]}\"\nOutput: true\n\nConstraints:\n`1 <= s.length <= 104`\n`s` consists of parentheses only `'()[]{}'`.",
+    "difficulty": "easy",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/valid-parentheses",
+    "solution_url": "https://leetcode.com/articles/valid-parentheses",
+    "topics": [
+      "String",
+      "Stack"
+    ],
+    "companies": [
+      "Amazon",
+      "Bloomberg",
+      "Facebook",
+      "Apple",
+      "Microsoft",
+      "Expedia",
+      "Spotify",
+      "Google",
+      "LinkedIn",
+      "Goldman Sachs",
+      "Oracle",
+      "IBM",
+      "JPMorgan",
+      "Intuit",
+      "Paypal",
+      "Atlassian",
+      "eBay",
+      "Adobe",
+      "ServiceNow",
+      "Qualcomm"
+    ],
+    "stats": {
+      "acceptance_rate": 40.0,
+      "frequency": 90.2,
+      "discuss_count": 999,
+      "accepted": 1400000,
+      "submissions": 3400000,
+      "likes": 7188,
+      "dislikes": 294,
+      "rating": 96.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Generate Parentheses, /problems/generate-parentheses/, Medium], [Longest Valid Parentheses, /problems/longest-valid-parentheses/, Hard], [Remove Invalid Parentheses, /problems/remove-invalid-parentheses/, Hard], [Check If Word Is Valid After Substitutions, /problems/check-if-word-is-valid-after-substitutions/, Medium]",
+    "judgeable": true,
+    "judgeable_reason": "curated tests and solution available"
+  },
+  {
+    "id": "leetcode-21",
+    "external_id": "21",
+    "slug": "merge-two-sorted-lists",
+    "title": "Merge Two Sorted Lists",
+    "description": "Merge two sorted linked lists and return it as a sorted list. The list should be made by splicing together the nodes of the first two lists.\n\n\nExample 1:\nInput: l1 = [1,2,4], l2 = [1,3,4]\nOutput: [1,1,2,3,4,4]\n\nExample 2:\nInput: l1 = [], l2 = []\nOutput: []\n\nExample 3:\nInput: l1 = [], l2 = [0]\nOutput: [0]\n\nConstraints:\nThe number of nodes in both lists is in the range `[0, 50]`.\n\n`-100 <= Node.val <= 100`\nBoth `l1` and `l2` are sorted in non-decreasing order.",
+    "difficulty": "easy",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/merge-two-sorted-lists",
+    "solution_url": "https://leetcode.com/articles/merge-two-sorted-lists",
+    "topics": [
+      "Linked List",
+      "Recursion"
+    ],
+    "companies": [
+      "Amazon",
+      "Adobe",
+      "Bloomberg",
+      "Capital One",
+      "Facebook",
+      "Microsoft",
+      "Oracle",
+      "LinkedIn",
+      "Uber",
+      "VMware",
+      "IBM",
+      "ByteDance"
+    ],
+    "stats": {
+      "acceptance_rate": 56.4,
+      "frequency": 71.9,
+      "discuss_count": 999,
+      "accepted": 1400000,
+      "submissions": 2400000,
+      "likes": 6467,
+      "dislikes": 753,
+      "rating": 90.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Merge k Sorted Lists, /problems/merge-k-sorted-lists/, Hard], [Merge Sorted Array, /problems/merge-sorted-array/, Easy], [Sort List, /problems/sort-list/, Medium], [Shortest Word Distance II, /problems/shortest-word-distance-ii/, Medium], [Add Two Polynomials Represented as Linked Lists, /problems/add-two-polynomials-represented-as-linked-lists/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-22",
+    "external_id": "22",
+    "slug": "generate-parentheses",
+    "title": "Generate Parentheses",
+    "description": "Given `n` pairs of parentheses, write a function to generate all combinations of well-formed parentheses.\n\n\nExample 1:\nInput: n = 3\nOutput: [\"((()))\",\"(()())\",\"(())()\",\"()(())\",\"()()()\"]\n\nExample 2:\nInput: n = 1\nOutput: [\"()\"]\n\nConstraints:\n`1 <= n <= 8`",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/generate-parentheses",
+    "solution_url": "https://leetcode.com/articles/generate-parentheses",
+    "topics": [
+      "String",
+      "Backtracking"
+    ],
+    "companies": [
+      "Microsoft",
+      "Facebook",
+      "Google",
+      "Bloomberg",
+      "Amazon",
+      "Apple",
+      "Adobe",
+      "Walmart Labs",
+      "ByteDance",
+      "Nvidia",
+      "Oracle"
+    ],
+    "stats": {
+      "acceptance_rate": 65.7,
+      "frequency": 72.6,
+      "discuss_count": 999,
+      "accepted": 714500,
+      "submissions": 1100000,
+      "likes": 7496,
+      "dislikes": 322,
+      "rating": 96.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Letter Combinations of a Phone Number, /problems/letter-combinations-of-a-phone-number/, Medium], [Valid Parentheses, /problems/valid-parentheses/, Easy]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-23",
+    "external_id": "23",
+    "slug": "merge-k-sorted-lists",
+    "title": "Merge k Sorted Lists",
+    "description": "You are given an array of `k` linked-lists `lists`, each linked-list is sorted in ascending order.\n\nMerge all the linked-lists into one sorted linked-list and return it.\n\n\nExample 1:\nInput: lists = [[1,4,5],[1,3,4],[2,6]]\nOutput: [1,1,2,3,4,4,5,6]\nExplanation: The linked-lists are:\n[\n  1->4->5,\n  1->3->4,\n  2->6\n]\nmerging them into one sorted list:\n1->1->2->3->4->4->5->6\n\nExample 2:\nInput: lists = []\nOutput: []\n\nExample 3:\nInput: lists = [[]]\nOutput: []\n\nConstraints:\n`k == lists.length`\n`0 <= k <= 10^4`\n`0 <= lists[i].length <= 500`\n`-10^4 <= lists[i][j] <= 10^4`\n`lists[i]` is sorted in ascending order.\n\nThe sum of `lists[i].length` won't exceed `10^4`.",
+    "difficulty": "hard",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/merge-k-sorted-lists",
+    "solution_url": "https://leetcode.com/articles/merge-k-sorted-list",
+    "topics": [
+      "Linked List",
+      "Divide and Conquer",
+      "Heap"
+    ],
+    "companies": [
+      "Amazon",
+      "Facebook",
+      "Microsoft",
+      "Bloomberg",
+      "Apple",
+      "Oracle",
+      "Databricks",
+      "Google",
+      "Twitter",
+      "Uber",
+      "Adobe",
+      "Wish",
+      "ByteDance",
+      "Palantir Technologies",
+      "Tesla"
+    ],
+    "stats": {
+      "acceptance_rate": 43.0,
+      "frequency": 83.2,
+      "discuss_count": 999,
+      "accepted": 856100,
+      "submissions": 2000000,
+      "likes": 6892,
+      "dislikes": 349,
+      "rating": 95.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Merge Two Sorted Lists, /problems/merge-two-sorted-lists/, Easy], [Ugly Number II, /problems/ugly-number-ii/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-24",
+    "external_id": "24",
+    "slug": "swap-nodes-in-pairs",
+    "title": "Swap Nodes in Pairs",
+    "description": "Given a linked list, swap every two adjacent nodes and return its head.\n\n\nExample 1:\nInput: head = [1,2,3,4]\nOutput: [2,1,4,3]\n\nExample 2:\nInput: head = []\nOutput: []\n\nExample 3:\nInput: head = [1]\nOutput: [1]\n\nConstraints:\nThe number of nodes in the list is in the range `[0, 100]`.\n\n`0 <= Node.val <= 100`\nFollow up: Can you solve the problem without modifying the values in the list's nodes? (i.e., Only nodes themselves may be changed.)",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/swap-nodes-in-pairs",
+    "solution_url": "https://leetcode.com/articles/swap-nodes-in-pairs",
+    "topics": [
+      "Linked List",
+      "Recursion"
+    ],
+    "companies": [
+      "Microsoft",
+      "Amazon",
+      "Facebook",
+      "Google",
+      "eBay",
+      "ByteDance"
+    ],
+    "stats": {
+      "acceptance_rate": 53.5,
+      "frequency": 27.5,
+      "discuss_count": 999,
+      "accepted": 594500,
+      "submissions": 1100000,
+      "likes": 3482,
+      "dislikes": 209,
+      "rating": 94.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Reverse Nodes in k-Group, /problems/reverse-nodes-in-k-group/, Hard], [Swapping Nodes in a Linked List, /problems/swapping-nodes-in-a-linked-list/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-25",
+    "external_id": "25",
+    "slug": "reverse-nodes-in-k-group",
+    "title": "Reverse Nodes in k-Group",
+    "description": "Given a linked list, reverse the nodes of a linked list k at a time and return its modified list.\n\nk is a positive integer and is less than or equal to the length of the linked list. If the number of nodes is not a multiple of k then left-out nodes, in the end, should remain as it is.\n\nFollow up:\nCould you solve the problem in `O(1)` extra memory space?\nYou may not alter the values in the list's nodes, only nodes itself may be changed.\n\n\nExample 1:\nInput: head = [1,2,3,4,5], k = 2\nOutput: [2,1,4,3,5]\n\nExample 2:\nInput: head = [1,2,3,4,5], k = 3\nOutput: [3,2,1,4,5]\n\nExample 3:\nInput: head = [1,2,3,4,5], k = 1\nOutput: [1,2,3,4,5]\n\nExample 4:\nInput: head = [1], k = 1\nOutput: [1]\n\nConstraints:\nThe number of nodes in the list is in the range `sz`.\n\n`1 <= sz <= 5000`\n`0 <= Node.val <= 1000`\n`1 <= k <= sz`",
+    "difficulty": "hard",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/reverse-nodes-in-k-group",
+    "solution_url": "https://leetcode.com/articles/reverse-nodes-in-k-group",
+    "topics": [
+      "Linked List"
+    ],
+    "companies": [
+      "Amazon",
+      "Microsoft",
+      "Apple",
+      "ByteDance",
+      "Facebook",
+      "Google"
+    ],
+    "stats": {
+      "acceptance_rate": 45.3,
+      "frequency": 69.1,
+      "discuss_count": 999,
+      "accepted": 341100,
+      "submissions": 752300,
+      "likes": 3490,
+      "dislikes": 400,
+      "rating": 90.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Swap Nodes in Pairs, /problems/swap-nodes-in-pairs/, Medium], [Swapping Nodes in a Linked List, /problems/swapping-nodes-in-a-linked-list/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-26",
+    "external_id": "26",
+    "slug": "remove-duplicates-from-sorted-array",
+    "title": "Remove Duplicates from Sorted Array",
+    "description": "Given a sorted array nums, remove the duplicates in-place such that each element appears only once and returns the new length.\n\nDo not allocate extra space for another array, you must do this by modifying the input array in-place with O(1) extra memory.\n\nClarification:\nConfused why the returned value is an integer but your answer is an array?\nNote that the input array is passed in by reference, which means a modification to the input array will be known to the caller as well.\n\nInternally you can think of this:\n// nums is passed in by reference. (i.e., without making a copy)\nint len = removeDuplicates(nums);\n// any modification to nums in your function would be known by the caller.\n\n// using the length returned by your function, it prints the first len elements.\n\nfor (int i = 0; i < len; i++) {\n    print(nums[i]);\n}\n\nExample 1:\nInput: nums = [1,1,2]\nOutput: 2, nums = [1,2]\nExplanation: Your function should return length = `2`, with the first two elements of `nums` being `1` and `2` respectively. It doesn't matter what you leave beyond the returned length.\n\n\nExample 2:\nInput: nums = [0,0,1,1,1,2,2,3,3,4]\nOutput: 5, nums = [0,1,2,3,4]\nExplanation: Your function should return length = `5`, with the first five elements of `nums` being modified to `0`, `1`, `2`, `3`, and `4` respectively. It doesn't matter what values are set beyond the returned length.\n\n\nConstraints:\n`0 <= nums.length <= 3 * 104`\n`-104 <= nums[i] <= 104`\n`nums` is sorted in ascending order.",
+    "difficulty": "easy",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/remove-duplicates-from-sorted-array",
+    "solution_url": "https://leetcode.com/articles/remove-duplicates-from-sorted-array",
+    "topics": [
+      "Array",
+      "Two Pointers"
+    ],
+    "companies": [
+      "Google",
+      "Facebook",
+      "Amazon",
+      "Microsoft"
+    ],
+    "stats": {
+      "acceptance_rate": 46.8,
+      "frequency": 35.8,
+      "discuss_count": 999,
+      "accepted": 1400000,
+      "submissions": 2900000,
+      "likes": 3727,
+      "dislikes": 6758,
+      "rating": 36.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Remove Element, /problems/remove-element/, Easy], [Remove Duplicates from Sorted Array II, /problems/remove-duplicates-from-sorted-array-ii/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-27",
+    "external_id": "27",
+    "slug": "remove-element",
+    "title": "Remove Element",
+    "description": "Given an array nums and a value `val`, remove all instances of that value in-place and return the new length.\n\nDo not allocate extra space for another array, you must do this by modifying the input array in-place with `O(1)` extra memory.\n\nThe order of elements can be changed. It doesn't matter what you leave beyond the new length.\n\nClarification:\nConfused why the returned value is an integer but your answer is an array?\nNote that the input array is passed in by reference, which means a modification to the input array will be known to the caller as well.\n\nInternally you can think of this:\n// nums is passed in by reference. (i.e., without making a copy)\nint len = removeElement(nums, val);\n// any modification to nums in your function would be known by the caller.\n\n// using the length returned by your function, it prints the first len elements.\n\nfor (int i = 0; i < len; i++) {\n    print(nums[i]);\n}\n\nExample 1:\nInput: nums = [3,2,2,3], val = 3\nOutput: 2, nums = [2,2]\nExplanation: Your function should return length = 2, with the first two elements of nums being 2.\n\nIt doesn't matter what you leave beyond the returned length. For example if you return 2 with nums = [2,2,3,3] or nums = [2,2,0,0], your answer will be accepted.\n\n\nExample 2:\nInput: nums = [0,1,2,2,3,0,4,2], val = 2\nOutput: 5, nums = [0,1,4,0,3]\nExplanation: Your function should return length = `5`, with the first five elements of `nums` containing `0`, `1`, `3`, `0`, and 4. Note that the order of those five elements can be arbitrary. It doesn't matter what values are set beyond the returned length.\n\n\nConstraints:\n`0 <= nums.length <= 100`\n`0 <= nums[i] <= 50`\n`0 <= val <= 100`",
+    "difficulty": "easy",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/remove-element",
+    "solution_url": "https://leetcode.com/articles/remove-element",
+    "topics": [
+      "Array",
+      "Two Pointers"
+    ],
+    "companies": [
+      "Adobe",
+      "Amazon",
+      "Oracle"
+    ],
+    "stats": {
+      "acceptance_rate": 49.5,
+      "frequency": 15.4,
+      "discuss_count": 999,
+      "accepted": 821300,
+      "submissions": 1700000,
+      "likes": 2044,
+      "dislikes": 3449,
+      "rating": 37.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Remove Duplicates from Sorted Array, /problems/remove-duplicates-from-sorted-array/, Easy], [Remove Linked List Elements, /problems/remove-linked-list-elements/, Easy], [Move Zeroes, /problems/move-zeroes/, Easy]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-28",
+    "external_id": "28",
+    "slug": "implement-strstr",
+    "title": "Implement strStr()",
+    "description": "Implement strStr().\n\nReturn the index of the first occurrence of needle in haystack, or `-1` if `needle` is not part of `haystack`.\n\nClarification:\nWhat should we return when `needle` is an empty string? This is a great question to ask during an interview.\n\nFor the purpose of this problem, we will return 0 when `needle` is an empty string. This is consistent to C's strstr() and Java's indexOf().\n\n\nExample 1:\nInput: haystack = \"hello\", needle = \"ll\"\nOutput: 2\n\nExample 2:\nInput: haystack = \"aaaaa\", needle = \"bba\"\nOutput: -1\n\nExample 3:\nInput: haystack = \"\", needle = \"\"\nOutput: 0\n\nConstraints:\n`0 <= haystack.length, needle.length <= 5 * 104`\n`haystack` and `needle` consist of only lower-case English characters.",
+    "difficulty": "easy",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/implement-strstr",
+    "solution_url": "https://leetcode.com/articles/implement-strstr",
+    "topics": [
+      "Two Pointers",
+      "String"
+    ],
+    "companies": [
+      "Facebook",
+      "Apple",
+      "Amazon"
+    ],
+    "stats": {
+      "acceptance_rate": 35.3,
+      "frequency": 24.9,
+      "discuss_count": 999,
+      "accepted": 854700,
+      "submissions": 2400000,
+      "likes": 2261,
+      "dislikes": 2319,
+      "rating": 49.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Shortest Palindrome, /problems/shortest-palindrome/, Hard], [Repeated Substring Pattern, /problems/repeated-substring-pattern/, Easy]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-29",
+    "external_id": "29",
+    "slug": "divide-two-integers",
+    "title": "Divide Two Integers",
+    "description": "Given two integers `dividend` and `divisor`, divide two integers without using multiplication, division, and mod operator.\n\nReturn the quotient after dividing `dividend` by `divisor`.\n\nThe integer division should truncate toward zero, which means losing its fractional part. For example, `truncate(8.345) = 8` and `truncate(-2.7335) = -2`.\n\nNote: Assume we are dealing with an environment that could only store integers within the 32-bit signed integer range: `[−231, 231 − 1]`. For this problem, assume that your function returns `231 − 1` when the division result overflows.\n\n\nExample 1:\nInput: dividend = 10, divisor = 3\nOutput: 3\nExplanation: 10/3 = truncate(3.33333..) = 3.\n\n\nExample 2:\nInput: dividend = 7, divisor = -3\nOutput: -2\nExplanation: 7/-3 = truncate(-2.33333..) = -2.\n\n\nExample 3:\nInput: dividend = 0, divisor = 1\nOutput: 0\n\nExample 4:\nInput: dividend = 1, divisor = 1\nOutput: 1\n\nConstraints:\n`-231 <= dividend, divisor <= 231 - 1`\n`divisor != 0`",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/divide-two-integers",
+    "solution_url": "https://leetcode.com/articles/divide-integers",
+    "topics": [
+      "Math",
+      "Binary Search"
+    ],
+    "companies": [
+      "Facebook",
+      "Amazon"
+    ],
+    "stats": {
+      "acceptance_rate": 16.9,
+      "frequency": 50.5,
+      "discuss_count": 999,
+      "accepted": 359200,
+      "submissions": 2100000,
+      "likes": 1727,
+      "dislikes": 6727,
+      "rating": 20.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-30",
+    "external_id": "30",
+    "slug": "substring-with-concatenation-of-all-words",
+    "title": "Substring with Concatenation of All Words",
+    "description": "You are given a string `s` and an array of strings `words` of the same length. Return all starting indices of substring(s) in `s` that is a concatenation of each word in `words` exactly once, in any order, and without any intervening characters.\n\nYou can return the answer in any order.\n\n\nExample 1:\nInput: s = \"barfoothefoobarman\", words = [\"foo\",\"bar\"]\nOutput: [0,9]\nExplanation: Substrings starting at index 0 and 9 are \"barfoo\" and \"foobar\" respectively.\n\nThe output order does not matter, returning [9,0] is fine too.\n\n\nExample 2:\nInput: s = \"wordgoodgoodgoodbestword\", words = [\"word\",\"good\",\"best\",\"word\"]\nOutput: []\n\nExample 3:\nInput: s = \"barfoofoobarthefoobarman\", words = [\"bar\",\"foo\",\"the\"]\nOutput: [6,9,12]\n\nConstraints:\n`1 <= s.length <= 104`\n`s` consists of lower-case English letters.\n\n`1 <= words.length <= 5000`\n`1 <= words[i].length <= 30`\n`words[i]` consists of lower-case English letters.",
+    "difficulty": "hard",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/substring-with-concatenation-of-all-words",
+    "solution_url": null,
+    "topics": [
+      "Hash Table",
+      "Two Pointers",
+      "String"
+    ],
+    "companies": [
+      "Amazon",
+      "Adobe"
+    ],
+    "stats": {
+      "acceptance_rate": 26.4,
+      "frequency": 31.0,
+      "discuss_count": 732,
+      "accepted": 203000,
+      "submissions": 770000,
+      "likes": 1209,
+      "dislikes": 1455,
+      "rating": 45.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Minimum Window Substring, /problems/minimum-window-substring/, Hard]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-31",
+    "external_id": "31",
+    "slug": "next-permutation",
+    "title": "Next Permutation",
+    "description": "Implement next permutation, which rearranges numbers into the lexicographically next greater permutation of numbers.\n\nIf such an arrangement is not possible, it must rearrange it as the lowest possible order (i.e., sorted in ascending order).\n\nThe replacement must be in place and use only constant extra memory.\n\n\nExample 1:\nInput: nums = [1,2,3]\nOutput: [1,3,2]\n\nExample 2:\nInput: nums = [3,2,1]\nOutput: [1,2,3]\n\nExample 3:\nInput: nums = [1,1,5]\nOutput: [1,5,1]\n\nExample 4:\nInput: nums = [1]\nOutput: [1]\n\nConstraints:\n`1 <= nums.length <= 100`\n`0 <= nums[i] <= 100`",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/next-permutation",
+    "solution_url": "https://leetcode.com/articles/next-permutation",
+    "topics": [
+      "Array"
+    ],
+    "companies": [
+      "Facebook",
+      "Amazon",
+      "Google",
+      "Microsoft",
+      "Rubrik",
+      "Bloomberg",
+      "Apple",
+      "Morgan Stanley",
+      "Goldman Sachs",
+      "Atlassian",
+      "tcs"
+    ],
+    "stats": {
+      "acceptance_rate": 33.9,
+      "frequency": 82.9,
+      "discuss_count": 999,
+      "accepted": 497700,
+      "submissions": 1500000,
+      "likes": 5271,
+      "dislikes": 1811,
+      "rating": 74.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Permutations, /problems/permutations/, Medium], [Permutations II, /problems/permutations-ii/, Medium], [Permutation Sequence, /problems/permutation-sequence/, Hard], [Palindrome Permutation II, /problems/palindrome-permutation-ii/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-32",
+    "external_id": "32",
+    "slug": "longest-valid-parentheses",
+    "title": "Longest Valid Parentheses",
+    "description": "Given a string containing just the characters `'('` and `')'`, find the length of the longest valid (well-formed) parentheses substring.\n\n\nExample 1:\nInput: s = \"(()\"\nOutput: 2\nExplanation: The longest valid parentheses substring is \"()\".\n\n\nExample 2:\nInput: s = \")()())\"\nOutput: 4\nExplanation: The longest valid parentheses substring is \"()()\".\n\n\nExample 3:\nInput: s = \"\"\nOutput: 0\n\nConstraints:\n`0 <= s.length <= 3 * 104`\n`s[i]` is `'('`, or `')'`.",
+    "difficulty": "hard",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/longest-valid-parentheses",
+    "solution_url": "https://leetcode.com/articles/longest-valid-parentheses",
+    "topics": [
+      "String",
+      "Dynamic Programming"
+    ],
+    "companies": [
+      "Amazon",
+      "Facebook",
+      "Apple",
+      "ByteDance"
+    ],
+    "stats": {
+      "acceptance_rate": 29.9,
+      "frequency": 24.5,
+      "discuss_count": 999,
+      "accepted": 366300,
+      "submissions": 1200000,
+      "likes": 5015,
+      "dislikes": 182,
+      "rating": 96.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Valid Parentheses, /problems/valid-parentheses/, Easy]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-33",
+    "external_id": "33",
+    "slug": "search-in-rotated-sorted-array",
+    "title": "Search in Rotated Sorted Array",
+    "description": "There is an integer array `nums` sorted in ascending order (with distinct values).\n\nPrior to being passed to your function, `nums` is rotated at an unknown pivot index `k` (`0 <= k < nums.length`) such that the resulting array is `[nums[k], nums[k+1], ..., nums[n-1], nums[0], nums[1], ..., nums[k-1]]` (0-indexed). For example, `[0,1,2,4,5,6,7]` might be rotated at pivot index `3` and become `[4,5,6,7,0,1,2]`.\n\nGiven the array `nums` after the rotation and an integer `target`, return the index of `target` if it is in `nums`, or `-1` if it is not in `nums`.\n\n\nExample 1:\nInput: nums = [4,5,6,7,0,1,2], target = 0\nOutput: 4\n\nExample 2:\nInput: nums = [4,5,6,7,0,1,2], target = 3\nOutput: -1\n\nExample 3:\nInput: nums = [1], target = 0\nOutput: -1\n\nConstraints:\n`1 <= nums.length <= 5000`\n`-104 <= nums[i] <= 104`\nAll values of `nums` are unique.\n\n`nums` is guaranteed to be rotated at some pivot.\n\n`-104 <= target <= 104`\nFollow up: Can you achieve this in `O(log n)` time complexity?",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/search-in-rotated-sorted-array",
+    "solution_url": "https://leetcode.com/articles/search-in-rotated-sorted-array",
+    "topics": [
+      "Array",
+      "Binary Search"
+    ],
+    "companies": [
+      "Amazon",
+      "Facebook",
+      "Microsoft",
+      "LinkedIn",
+      "Oracle",
+      "Apple",
+      "Bloomberg",
+      "Nvidia",
+      "Expedia",
+      "Google",
+      "Adobe",
+      "Zillow",
+      "ByteDance",
+      "eBay",
+      "Cisco",
+      "ServiceNow",
+      "C3 IoT"
+    ],
+    "stats": {
+      "acceptance_rate": 36.1,
+      "frequency": 77.8,
+      "discuss_count": 999,
+      "accepted": 960200,
+      "submissions": 2700000,
+      "likes": 7349,
+      "dislikes": 644,
+      "rating": 92.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Search in Rotated Sorted Array II, /problems/search-in-rotated-sorted-array-ii/, Medium], [Find Minimum in Rotated Sorted Array, /problems/find-minimum-in-rotated-sorted-array/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-34",
+    "external_id": "34",
+    "slug": "find-first-and-last-position-of-element-in-sorted-array",
+    "title": "Find First and Last Position of Element in Sorted Array",
+    "description": "Given an array of integers `nums` sorted in ascending order, find the starting and ending position of a given `target` value.\n\nIf `target` is not found in the array, return `[-1, -1]`.\n\nFollow up: Could you write an algorithm with `O(log n)` runtime complexity?\n\nExample 1:\nInput: nums = [5,7,7,8,8,10], target = 8\nOutput: [3,4]\n\nExample 2:\nInput: nums = [5,7,7,8,8,10], target = 6\nOutput: [-1,-1]\n\nExample 3:\nInput: nums = [], target = 0\nOutput: [-1,-1]\n\nConstraints:\n`0 <= nums.length <= 105`\n`-109 <= nums[i] <= 109`\n`nums` is a non-decreasing array.\n\n`-109 <= target <= 109`",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/find-first-and-last-position-of-element-in-sorted-array",
+    "solution_url": "https://leetcode.com/articles/find-first-and-last-position-of-element-in-sorted-array",
+    "topics": [
+      "Array",
+      "Binary Search"
+    ],
+    "companies": [
+      "Facebook",
+      "Amazon",
+      "Uber",
+      "Google",
+      "Microsoft",
+      "LinkedIn",
+      "Bloomberg",
+      "Snapchat",
+      "Oracle"
+    ],
+    "stats": {
+      "acceptance_rate": 37.5,
+      "frequency": 55.9,
+      "discuss_count": 999,
+      "accepted": 677500,
+      "submissions": 1800000,
+      "likes": 5257,
+      "dislikes": 201,
+      "rating": 96.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[First Bad Version, /problems/first-bad-version/, Easy]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-35",
+    "external_id": "35",
+    "slug": "search-insert-position",
+    "title": "Search Insert Position",
+    "description": "Given a sorted array of distinct integers and a target value, return the index if the target is found. If not, return the index where it would be if it were inserted in order.\n\n\nExample 1:\nInput: nums = [1,3,5,6], target = 5\nOutput: 2\n\nExample 2:\nInput: nums = [1,3,5,6], target = 2\nOutput: 1\n\nExample 3:\nInput: nums = [1,3,5,6], target = 7\nOutput: 4\n\nExample 4:\nInput: nums = [1,3,5,6], target = 0\nOutput: 0\n\nExample 5:\nInput: nums = [1], target = 0\nOutput: 0\n\nConstraints:\n`1 <= nums.length <= 104`\n`-104 <= nums[i] <= 104`\n`nums` contains distinct values sorted in ascending order.\n\n`-104 <= target <= 104`",
+    "difficulty": "easy",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/search-insert-position",
+    "solution_url": "https://leetcode.com/articles/search-insert-position",
+    "topics": [
+      "Array",
+      "Binary Search"
+    ],
+    "companies": [
+      "Apple",
+      "Amazon"
+    ],
+    "stats": {
+      "acceptance_rate": 42.9,
+      "frequency": 21.2,
+      "discuss_count": 999,
+      "accepted": 799500,
+      "submissions": 1900000,
+      "likes": 3384,
+      "dislikes": 287,
+      "rating": 92.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[First Bad Version, /problems/first-bad-version/, Easy]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-36",
+    "external_id": "36",
+    "slug": "valid-sudoku",
+    "title": "Valid Sudoku",
+    "description": "Determine if a `9 x 9` Sudoku board is valid. Only the filled cells need to be validated according to the following rules:\nEach row must contain the digits `1-9` without repetition.\n\nEach column must contain the digits `1-9` without repetition.\n\nEach of the nine `3 x 3` sub-boxes of the grid must contain the digits `1-9` without repetition.\n\nNote:\nA Sudoku board (partially filled) could be valid but is not necessarily solvable.\n\nOnly the filled cells need to be validated according to the mentioned rules.\n\n\nExample 1:\nInput: board = \n[[\"5\",\"3\",\".\",\".\",\"7\",\".\",\".\",\".\",\".\"]\n,[\"6\",\".\",\".\",\"1\",\"9\",\"5\",\".\",\".\",\".\"]\n,[\".\",\"9\",\"8\",\".\",\".\",\".\",\".\",\"6\",\".\"]\n,[\"8\",\".\",\".\",\".\",\"6\",\".\",\".\",\".\",\"3\"]\n,[\"4\",\".\",\".\",\"8\",\".\",\"3\",\".\",\".\",\"1\"]\n,[\"7\",\".\",\".\",\".\",\"2\",\".\",\".\",\".\",\"6\"]\n,[\".\",\"6\",\".\",\".\",\".\",\".\",\"2\",\"8\",\".\"]\n,[\".\",\".\",\".\",\"4\",\"1\",\"9\",\".\",\".\",\"5\"]\n,[\".\",\".\",\".\",\".\",\"8\",\".\",\".\",\"7\",\"9\"]]\nOutput: true\n\nExample 2:\nInput: board = \n[[\"8\",\"3\",\".\",\".\",\"7\",\".\",\".\",\".\",\".\"]\n,[\"6\",\".\",\".\",\"1\",\"9\",\"5\",\".\",\".\",\".\"]\n,[\".\",\"9\",\"8\",\".\",\".\",\".\",\".\",\"6\",\".\"]\n,[\"8\",\".\",\".\",\".\",\"6\",\".\",\".\",\".\",\"3\"]\n,[\"4\",\".\",\".\",\"8\",\".\",\"3\",\".\",\".\",\"1\"]\n,[\"7\",\".\",\".\",\".\",\"2\",\".\",\".\",\".\",\"6\"]\n,[\".\",\"6\",\".\",\".\",\".\",\".\",\"2\",\"8\",\".\"]\n,[\".\",\".\",\".\",\"4\",\"1\",\"9\",\".\",\".\",\"5\"]\n,[\".\",\".\",\".\",\".\",\"8\",\".\",\".\",\"7\",\"9\"]]\nOutput: false\n\nExplanation: Same as Example 1, except with the 5 in the top left corner being modified to 8. Since there are two 8's in the top left 3x3 sub-box, it is invalid.\n\n\nConstraints:\n`board.length == 9`\n`board[i].length == 9`\n`board[i][j]` is a digit or `'.'`.",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/valid-sudoku",
+    "solution_url": "https://leetcode.com/articles/valid-sudoku",
+    "topics": [
+      "Hash Table"
+    ],
+    "companies": [
+      "Amazon",
+      "Roblox",
+      "Uber",
+      "Apple",
+      "Facebook",
+      "Goldman Sachs",
+      "Oracle"
+    ],
+    "stats": {
+      "acceptance_rate": 50.8,
+      "frequency": 44.2,
+      "discuss_count": 999,
+      "accepted": 464900,
+      "submissions": 914200,
+      "likes": 2458,
+      "dislikes": 550,
+      "rating": 82.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Sudoku Solver, /problems/sudoku-solver/, Hard]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-37",
+    "external_id": "37",
+    "slug": "sudoku-solver",
+    "title": "Sudoku Solver",
+    "description": "Write a program to solve a Sudoku puzzle by filling the empty cells.\n\nA sudoku solution must satisfy all of the following rules:\nEach of the digits `1-9` must occur exactly once in each row.\n\nEach of the digits `1-9` must occur exactly once in each column.\n\nEach of the digits `1-9` must occur exactly once in each of the 9 `3x3` sub-boxes of the grid.\n\nThe `'.'` character indicates empty cells.\n\n\nExample 1:\nInput: board = [[\"5\",\"3\",\".\",\".\",\"7\",\".\",\".\",\".\",\".\"],[\"6\",\".\",\".\",\"1\",\"9\",\"5\",\".\",\".\",\".\"],[\".\",\"9\",\"8\",\".\",\".\",\".\",\".\",\"6\",\".\"],[\"8\",\".\",\".\",\".\",\"6\",\".\",\".\",\".\",\"3\"],[\"4\",\".\",\".\",\"8\",\".\",\"3\",\".\",\".\",\"1\"],[\"7\",\".\",\".\",\".\",\"2\",\".\",\".\",\".\",\"6\"],[\".\",\"6\",\".\",\".\",\".\",\".\",\"2\",\"8\",\".\"],[\".\",\".\",\".\",\"4\",\"1\",\"9\",\".\",\".\",\"5\"],[\".\",\".\",\".\",\".\",\"8\",\".\",\".\",\"7\",\"9\"]]\nOutput: [[\"5\",\"3\",\"4\",\"6\",\"7\",\"8\",\"9\",\"1\",\"2\"],[\"6\",\"7\",\"2\",\"1\",\"9\",\"5\",\"3\",\"4\",\"8\"],[\"1\",\"9\",\"8\",\"3\",\"4\",\"2\",\"5\",\"6\",\"7\"],[\"8\",\"5\",\"9\",\"7\",\"6\",\"1\",\"4\",\"2\",\"3\"],[\"4\",\"2\",\"6\",\"8\",\"5\",\"3\",\"7\",\"9\",\"1\"],[\"7\",\"1\",\"3\",\"9\",\"2\",\"4\",\"8\",\"5\",\"6\"],[\"9\",\"6\",\"1\",\"5\",\"3\",\"7\",\"2\",\"8\",\"4\"],[\"2\",\"8\",\"7\",\"4\",\"1\",\"9\",\"6\",\"3\",\"5\"],[\"3\",\"4\",\"5\",\"2\",\"8\",\"6\",\"1\",\"7\",\"9\"]]\nExplanation: The input board is shown above and the only valid solution is shown below:\n\nConstraints:\n`board.length == 9`\n`board[i].length == 9`\n`board[i][j]` is a digit or `'.'`.\n\nIt is guaranteed that the input board has only one solution.",
+    "difficulty": "hard",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/sudoku-solver",
+    "solution_url": "https://leetcode.com/articles/sudoku-solver",
+    "topics": [
+      "Hash Table",
+      "Backtracking"
+    ],
+    "companies": [
+      "DoorDash",
+      "Amazon",
+      "Oracle",
+      "Pinterest",
+      "Facebook",
+      "Intuit"
+    ],
+    "stats": {
+      "acceptance_rate": 47.0,
+      "frequency": 67.6,
+      "discuss_count": 999,
+      "accepted": 231500,
+      "submissions": 492200,
+      "likes": 2662,
+      "dislikes": 104,
+      "rating": 96.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Valid Sudoku, /problems/valid-sudoku/, Medium], [Unique Paths III, /problems/unique-paths-iii/, Hard]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-38",
+    "external_id": "38",
+    "slug": "count-and-say",
+    "title": "Count and Say",
+    "description": "The count-and-say sequence is a sequence of digit strings defined by the recursive formula:\n`countAndSay(1) = \"1\"`\n`countAndSay(n)` is the way you would \"say\" the digit string from `countAndSay(n-1)`, which is then converted into a different digit string.\n\nTo determine how you \"say\" a digit string, split it into the minimal number of groups so that each group is a contiguous section all of the same character. Then for each group, say the number of characters, then say the character. To convert the saying into a digit string, replace the counts with a number and concatenate every saying.\n\nFor example, the saying and conversion for digit string `\"3322251\"`:\nGiven a positive integer `n`, return the `nth` term of the count-and-say sequence.\n\n\nExample 1:\nInput: n = 1\nOutput: \"1\"\nExplanation: This is the base case.\n\n\nExample 2:\nInput: n = 4\nOutput: \"1211\"\nExplanation:\ncountAndSay(1) = \"1\"\ncountAndSay(2) = say \"1\" = one 1 = \"11\"\ncountAndSay(3) = say \"11\" = two 1's = \"21\"\ncountAndSay(4) = say \"21\" = one 2 + one 1 = \"12\" + \"11\" = \"1211\"\n\nConstraints:\n`1 <= n <= 30`",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/count-and-say",
+    "solution_url": "https://leetcode.com/articles/count-and-say",
+    "topics": [
+      "String"
+    ],
+    "companies": [
+      "Bloomberg",
+      "Facebook",
+      "Amazon",
+      "Microsoft",
+      "Apple",
+      "Epic Systems",
+      "Tesla"
+    ],
+    "stats": {
+      "acceptance_rate": 46.3,
+      "frequency": 64.3,
+      "discuss_count": 999,
+      "accepted": 493000,
+      "submissions": 1100000,
+      "likes": 367,
+      "dislikes": 1314,
+      "rating": 22.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Encode and Decode Strings, /problems/encode-and-decode-strings/, Medium], [String Compression, /problems/string-compression/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-39",
+    "external_id": "39",
+    "slug": "combination-sum",
+    "title": "Combination Sum",
+    "description": "Given an array of distinct integers `candidates` and a target integer `target`, return a list of all unique combinations of `candidates` where the chosen numbers sum to `target`. You may return the combinations in any order.\n\nThe same number may be chosen from `candidates` an unlimited number of times. Two combinations are unique if the frequency of at least one of the chosen numbers is different.\n\nIt is guaranteed that the number of unique combinations that sum up to `target` is less than `150` combinations for the given input.\n\n\nExample 1:\nInput: candidates = [2,3,6,7], target = 7\nOutput: [[2,2,3],[7]]\nExplanation:\n2 and 3 are candidates, and 2 + 2 + 3 = 7. Note that 2 can be used multiple times.\n\n7 is a candidate, and 7 = 7.\n\nThese are the only two combinations.\n\n\nExample 2:\nInput: candidates = [2,3,5], target = 8\nOutput: [[2,2,2,2],[2,3,3],[3,5]]\n\nExample 3:\nInput: candidates = [2], target = 1\nOutput: []\n\nExample 4:\nInput: candidates = [1], target = 1\nOutput: [[1]]\n\nExample 5:\nInput: candidates = [1], target = 2\nOutput: [[1,1]]\n\nConstraints:\n`1 <= candidates.length <= 30`\n`1 <= candidates[i] <= 200`\nAll elements of `candidates` are distinct.\n\n`1 <= target <= 500`",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/combination-sum",
+    "solution_url": "https://leetcode.com/articles/combination-sum",
+    "topics": [
+      "Array",
+      "Backtracking"
+    ],
+    "companies": [
+      "Facebook",
+      "Airbnb",
+      "Microsoft",
+      "Bloomberg",
+      "Amazon",
+      "Apple",
+      "Uber",
+      "Adobe",
+      "eBay",
+      "Citadel",
+      "ByteDance"
+    ],
+    "stats": {
+      "acceptance_rate": 59.7,
+      "frequency": 60.8,
+      "discuss_count": 999,
+      "accepted": 711700,
+      "submissions": 1200000,
+      "likes": 5708,
+      "dislikes": 150,
+      "rating": 97.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Letter Combinations of a Phone Number, /problems/letter-combinations-of-a-phone-number/, Medium], [Combination Sum II, /problems/combination-sum-ii/, Medium], [Combinations, /problems/combinations/, Medium], [Combination Sum III, /problems/combination-sum-iii/, Medium], [Factor Combinations, /problems/factor-combinations/, Medium], [Combination Sum IV, /problems/combination-sum-iv/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-40",
+    "external_id": "40",
+    "slug": "combination-sum-ii",
+    "title": "Combination Sum II",
+    "description": "Given a collection of candidate numbers (`candidates`) and a target number (`target`), find all unique combinations in `candidates` where the candidate numbers sum to `target`.\n\nEach number in `candidates` may only be used once in the combination.\n\nNote: The solution set must not contain duplicate combinations.\n\n\nExample 1:\nInput: candidates = [10,1,2,7,6,1,5], target = 8\nOutput: \n[\n[1,1,6],\n[1,2,5],\n[1,7],\n[2,6]\n]\n\nExample 2:\nInput: candidates = [2,5,2,1,2], target = 5\nOutput: \n[\n[1,2,2],\n[5]\n]\n\nConstraints:\n`1 <= candidates.length <= 100`\n`1 <= candidates[i] <= 50`\n`1 <= target <= 30`",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/combination-sum-ii",
+    "solution_url": "https://leetcode.com/articles/combination-sum-ii",
+    "topics": [
+      "Array",
+      "Backtracking"
+    ],
+    "companies": [
+      "Amazon",
+      "Uber",
+      "Microsoft",
+      "ByteDance"
+    ],
+    "stats": {
+      "acceptance_rate": 50.4,
+      "frequency": 21.6,
+      "discuss_count": 999,
+      "accepted": 399500,
+      "submissions": 792800,
+      "likes": 2629,
+      "dislikes": 86,
+      "rating": 97.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Combination Sum, /problems/combination-sum/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-41",
+    "external_id": "41",
+    "slug": "first-missing-positive",
+    "title": "First Missing Positive",
+    "description": "Given an unsorted integer array `nums`, find the smallest missing positive integer.\n\n\nExample 1:\nInput: nums = [1,2,0]\nOutput: 3\n\nExample 2:\nInput: nums = [3,4,-1,1]\nOutput: 2\n\nExample 3:\nInput: nums = [7,8,9,11,12]\nOutput: 1\n\nConstraints:\n`0 <= nums.length <= 300`\n`-231 <= nums[i] <= 231 - 1`\nFollow up: Could you implement an algorithm that runs in `O(n)` time and uses constant extra space?",
+    "difficulty": "hard",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/first-missing-positive",
+    "solution_url": "https://leetcode.com/articles/first-missing-positive",
+    "topics": [
+      "Array"
+    ],
+    "companies": [
+      "Microsoft",
+      "Amazon",
+      "Facebook",
+      "Google",
+      "Oracle",
+      "Adobe",
+      "Bloomberg",
+      "Wish",
+      "Uber",
+      "Apple",
+      "Walmart Labs",
+      "Tesla",
+      "JPMorgan"
+    ],
+    "stats": {
+      "acceptance_rate": 33.9,
+      "frequency": 77.3,
+      "discuss_count": 999,
+      "accepted": 466200,
+      "submissions": 1400000,
+      "likes": 5504,
+      "dislikes": 970,
+      "rating": 85.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Missing Number, /problems/missing-number/, Easy], [Find the Duplicate Number, /problems/find-the-duplicate-number/, Medium], [Find All Numbers Disappeared in an Array, /problems/find-all-numbers-disappeared-in-an-array/, Easy], [Couples Holding Hands, /problems/couples-holding-hands/, Hard]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-42",
+    "external_id": "42",
+    "slug": "trapping-rain-water",
+    "title": "Trapping Rain Water",
+    "description": "Given `n` non-negative integers representing an elevation map where the width of each bar is `1`, compute how much water it can trap after raining.\n\n\nExample 1:\nInput: height = [0,1,0,2,1,0,1,3,2,1,2,1]\nOutput: 6\nExplanation: The above elevation map (black section) is represented by array [0,1,0,2,1,0,1,3,2,1,2,1]. In this case, 6 units of rain water (blue section) are being trapped.\n\n\nExample 2:\nInput: height = [4,2,0,3,2,5]\nOutput: 9\n\nConstraints:\n`n == height.length`\n`0 <= n <= 3 * 104`\n`0 <= height[i] <= 105`",
+    "difficulty": "hard",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/trapping-rain-water",
+    "solution_url": "https://leetcode.com/articles/trapping-rain-water",
+    "topics": [
+      "Array",
+      "Two Pointers",
+      "Dynamic Programming",
+      "Stack"
+    ],
+    "companies": [
+      "Goldman Sachs",
+      "Facebook",
+      "Amazon",
+      "Microsoft",
+      "Bloomberg",
+      "Apple",
+      "Databricks",
+      "Google",
+      "Qualtrics",
+      "Adobe",
+      "Oracle",
+      "Yahoo"
+    ],
+    "stats": {
+      "acceptance_rate": 51.6,
+      "frequency": 96.3,
+      "discuss_count": 999,
+      "accepted": 715000,
+      "submissions": 1400000,
+      "likes": 10683,
+      "dislikes": 159,
+      "rating": 99.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Container With Most Water, /problems/container-with-most-water/, Medium], [Product of Array Except Self, /problems/product-of-array-except-self/, Medium], [Trapping Rain Water II, /problems/trapping-rain-water-ii/, Hard], [Pour Water, /problems/pour-water/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-43",
+    "external_id": "43",
+    "slug": "multiply-strings",
+    "title": "Multiply Strings",
+    "description": "Given two non-negative integers `num1` and `num2` represented as strings, return the product of `num1` and `num2`, also represented as a string.\n\nNote: You must not use any built-in BigInteger library or convert the inputs to integer directly.\n\n\nExample 1:\nInput: num1 = \"2\", num2 = \"3\"\nOutput: \"6\"\n\nExample 2:\nInput: num1 = \"123\", num2 = \"456\"\nOutput: \"56088\"\n\nConstraints:\n`1 <= num1.length, num2.length <= 200`\n`num1` and `num2` consist of digits only.\n\nBoth `num1` and `num2` do not contain any leading zero, except the number `0` itself.",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/multiply-strings",
+    "solution_url": null,
+    "topics": [
+      "Math",
+      "String"
+    ],
+    "companies": [
+      "Facebook",
+      "Microsoft",
+      "Amazon",
+      "Square",
+      "Apple",
+      "Bloomberg",
+      "Two Sigma",
+      "ByteDance"
+    ],
+    "stats": {
+      "acceptance_rate": 35.1,
+      "frequency": 56.3,
+      "discuss_count": 999,
+      "accepted": 360600,
+      "submissions": 1000000,
+      "likes": 2400,
+      "dislikes": 976,
+      "rating": 71.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Add Two Numbers, /problems/add-two-numbers/, Medium], [Plus One, /problems/plus-one/, Easy], [Add Binary, /problems/add-binary/, Easy], [Add Strings, /problems/add-strings/, Easy]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-44",
+    "external_id": "44",
+    "slug": "wildcard-matching",
+    "title": "Wildcard Matching",
+    "description": "Given an input string (`s`) and a pattern (`p`), implement wildcard pattern matching with support for `'?'` and `'*'` where:\n`'?'` Matches any single character.\n\n`'*'` Matches any sequence of characters (including the empty sequence).\n\nThe matching should cover the entire input string (not partial).\n\n\nExample 1:\nInput: s = \"aa\", p = \"a\"\nOutput: false\nExplanation: \"a\" does not match the entire string \"aa\".\n\n\nExample 2:\nInput: s = \"aa\", p = \"*\"\nOutput: true\nExplanation: '*' matches any sequence.\n\n\nExample 3:\nInput: s = \"cb\", p = \"?a\"\nOutput: false\nExplanation: '?' matches 'c', but the second letter is 'a', which does not match 'b'.\n\n\nExample 4:\nInput: s = \"adceb\", p = \"*a*b\"\nOutput: true\nExplanation: The first '*' matches the empty sequence, while the second '*' matches the substring \"dce\".\n\n\nExample 5:\nInput: s = \"acdcb\", p = \"a*c?b\"\nOutput: false\n\nConstraints:\n`0 <= s.length, p.length <= 2000`\n`s` contains only lowercase English letters.\n\n`p` contains only lowercase English letters, `'?'` or `'*'`.",
+    "difficulty": "hard",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/wildcard-matching",
+    "solution_url": "https://leetcode.com/articles/wildcard-matching",
+    "topics": [
+      "String",
+      "Dynamic Programming",
+      "Backtracking",
+      "Greedy"
+    ],
+    "companies": [
+      "Adobe",
+      "Amazon",
+      "Citadel",
+      "Facebook",
+      "Microsoft",
+      "Google",
+      "Bloomberg",
+      "Snapchat"
+    ],
+    "stats": {
+      "acceptance_rate": 25.5,
+      "frequency": 59.0,
+      "discuss_count": 823,
+      "accepted": 296200,
+      "submissions": 1200000,
+      "likes": 2848,
+      "dislikes": 139,
+      "rating": 95.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Regular Expression Matching, /problems/regular-expression-matching/, Hard]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-45",
+    "external_id": "45",
+    "slug": "jump-game-ii",
+    "title": "Jump Game II",
+    "description": "Given an array of non-negative integers `nums`, you are initially positioned at the first index of the array.\n\nEach element in the array represents your maximum jump length at that position.\n\nYour goal is to reach the last index in the minimum number of jumps.\n\nYou can assume that you can always reach the last index.\n\n\nExample 1:\nInput: nums = [2,3,1,1,4]\nOutput: 2\nExplanation: The minimum number of jumps to reach the last index is 2. Jump 1 step from index 0 to 1, then 3 steps to the last index.\n\n\nExample 2:\nInput: nums = [2,3,0,1,4]\nOutput: 2\n\nConstraints:\n`1 <= nums.length <= 1000`\n`0 <= nums[i] <= 105`",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/jump-game-ii",
+    "solution_url": "https://leetcode.com/articles/jump-game-ii",
+    "topics": [
+      "Array",
+      "Greedy"
+    ],
+    "companies": [
+      "Amazon",
+      "Apple"
+    ],
+    "stats": {
+      "acceptance_rate": 31.7,
+      "frequency": 51.1,
+      "discuss_count": 999,
+      "accepted": 327500,
+      "submissions": 1000000,
+      "likes": 3908,
+      "dislikes": 175,
+      "rating": 96.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Jump Game, /problems/jump-game/, Medium], [Jump Game III, /problems/jump-game-iii/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-46",
+    "external_id": "46",
+    "slug": "permutations",
+    "title": "Permutations",
+    "description": "Given an array `nums` of distinct integers, return all the possible permutations. You can return the answer in any order.\n\n\nExample 1:\nInput: nums = [1,2,3]\nOutput: [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]\n\nExample 2:\nInput: nums = [0,1]\nOutput: [[0,1],[1,0]]\n\nExample 3:\nInput: nums = [1]\nOutput: [[1]]\n\nConstraints:\n`1 <= nums.length <= 6`\n`-10 <= nums[i] <= 10`\nAll the integers of `nums` are unique.",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/permutations",
+    "solution_url": "https://leetcode.com/articles/permutations",
+    "topics": [
+      "Backtracking"
+    ],
+    "companies": [
+      "Facebook",
+      "Amazon",
+      "ByteDance",
+      "LinkedIn",
+      "Apple",
+      "eBay",
+      "Microsoft",
+      "Paypal",
+      "Oracle"
+    ],
+    "stats": {
+      "acceptance_rate": 67.1,
+      "frequency": 61.5,
+      "discuss_count": 999,
+      "accepted": 790100,
+      "submissions": 1200000,
+      "likes": 5749,
+      "dislikes": 131,
+      "rating": 98.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Next Permutation, /problems/next-permutation/, Medium], [Permutations II, /problems/permutations-ii/, Medium], [Permutation Sequence, /problems/permutation-sequence/, Hard], [Combinations, /problems/combinations/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-47",
+    "external_id": "47",
+    "slug": "permutations-ii",
+    "title": "Permutations II",
+    "description": "Given a collection of numbers, `nums`, that might contain duplicates, return all possible unique permutations in any order.\n\n\nExample 1:\nInput: nums = [1,1,2]\nOutput:\n[[1,1,2],\n [1,2,1],\n [2,1,1]]\n\nExample 2:\nInput: nums = [1,2,3]\nOutput: [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]\n\nConstraints:\n`1 <= nums.length <= 8`\n`-10 <= nums[i] <= 10`",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/permutations-ii",
+    "solution_url": "https://leetcode.com/articles/permutations-ii",
+    "topics": [
+      "Backtracking"
+    ],
+    "companies": [
+      "Facebook",
+      "Amazon",
+      "Microsoft"
+    ],
+    "stats": {
+      "acceptance_rate": 49.8,
+      "frequency": 22.1,
+      "discuss_count": 999,
+      "accepted": 445900,
+      "submissions": 895600,
+      "likes": 2871,
+      "dislikes": 78,
+      "rating": 97.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Next Permutation, /problems/next-permutation/, Medium], [Permutations, /problems/permutations/, Medium], [Palindrome Permutation II, /problems/palindrome-permutation-ii/, Medium], [Number of Squareful Arrays, /problems/number-of-squareful-arrays/, Hard]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-48",
+    "external_id": "48",
+    "slug": "rotate-image",
+    "title": "Rotate Image",
+    "description": "You are given an n x n 2D `matrix` representing an image, rotate the image by 90 degrees (clockwise).\n\nYou have to rotate the image in-place, which means you have to modify the input 2D matrix directly. DO NOT allocate another 2D matrix and do the rotation.\n\n\nExample 1:\nInput: matrix = [[1,2,3],[4,5,6],[7,8,9]]\nOutput: [[7,4,1],[8,5,2],[9,6,3]]\n\nExample 2:\nInput: matrix = [[5,1,9,11],[2,4,8,10],[13,3,6,7],[15,14,12,16]]\nOutput: [[15,13,2,5],[14,3,4,1],[12,6,8,9],[16,7,10,11]]\n\nExample 3:\nInput: matrix = [[1]]\nOutput: [[1]]\n\nExample 4:\nInput: matrix = [[1,2],[3,4]]\nOutput: [[3,1],[4,2]]\n\nConstraints:\n`matrix.length == n`\n`matrix[i].length == n`\n`1 <= n <= 20`\n`-1000 <= matrix[i][j] <= 1000`",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/rotate-image",
+    "solution_url": "https://leetcode.com/articles/rotate-image",
+    "topics": [
+      "Array"
+    ],
+    "companies": [
+      "Amazon",
+      "Microsoft",
+      "Apple",
+      "Uber",
+      "Cisco",
+      "Facebook",
+      "Rubrik",
+      "Adobe",
+      "Nvidia",
+      "Google",
+      "Quora",
+      "eBay",
+      "PayTM"
+    ],
+    "stats": {
+      "acceptance_rate": 60.5,
+      "frequency": 69.9,
+      "discuss_count": 999,
+      "accepted": 553500,
+      "submissions": 915200,
+      "likes": 4619,
+      "dislikes": 329,
+      "rating": 93.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-49",
+    "external_id": "49",
+    "slug": "group-anagrams",
+    "title": "Group Anagrams",
+    "description": "Given an array of strings `strs`, group the anagrams together. You can return the answer in any order.\n\nAn Anagram is a word or phrase formed by rearranging the letters of a different word or phrase, typically using all the original letters exactly once.\n\n\nExample 1:\nInput: strs = [\"eat\",\"tea\",\"tan\",\"ate\",\"nat\",\"bat\"]\nOutput: [[\"bat\"],[\"nat\",\"tan\"],[\"ate\",\"eat\",\"tea\"]]\n\nExample 2:\nInput: strs = [\"\"]\nOutput: [[\"\"]]\n\nExample 3:\nInput: strs = [\"a\"]\nOutput: [[\"a\"]]\n\nConstraints:\n`1 <= strs.length <= 104`\n`0 <= strs[i].length <= 100`\n`strs[i]` consists of lower-case English letters.",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/group-anagrams",
+    "solution_url": "https://leetcode.com/articles/group-anagrams",
+    "topics": [
+      "Hash Table",
+      "String"
+    ],
+    "companies": [
+      "Amazon",
+      "Microsoft",
+      "Goldman Sachs",
+      "Apple",
+      "Uber",
+      "eBay",
+      "VMware",
+      "Oracle",
+      "Yandex",
+      "Expedia",
+      "Affirm",
+      "Facebook",
+      "Google",
+      "Bloomberg",
+      "Twilio",
+      "Docusign",
+      "Cisco",
+      "Two Sigma",
+      "ByteDance",
+      "Intel"
+    ],
+    "stats": {
+      "acceptance_rate": 59.7,
+      "frequency": 79.9,
+      "discuss_count": 999,
+      "accepted": 891700,
+      "submissions": 1500000,
+      "likes": 5182,
+      "dislikes": 228,
+      "rating": 96.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Valid Anagram, /problems/valid-anagram/, Easy], [Group Shifted Strings, /problems/group-shifted-strings/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-50",
+    "external_id": "50",
+    "slug": "pow-x-n",
+    "title": "Pow(x, n)",
+    "description": "Implement pow(x, n), which calculates `x` raised to the power `n` (i.e., `xn`).\n\n\nExample 1:\nInput: x = 2.00000, n = 10\nOutput: 1024.00000\n\nExample 2:\nInput: x = 2.10000, n = 3\nOutput: 9.26100\n\nExample 3:\nInput: x = 2.00000, n = -2\nOutput: 0.25000\nExplanation: 2-2 = 1/22 = 1/4 = 0.25\n\nConstraints:\n`-100.0 < x < 100.0`\n`-231 <= n <= 231-1`\n`-104 <= xn <= 104`",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/powx-n",
+    "solution_url": "https://leetcode.com/articles/powx-n",
+    "topics": [
+      "Math",
+      "Binary Search"
+    ],
+    "companies": [
+      "Facebook",
+      "Microsoft",
+      "Amazon",
+      "LinkedIn",
+      "Bloomberg",
+      "Google",
+      "eBay",
+      "Goldman Sachs"
+    ],
+    "stats": {
+      "acceptance_rate": 31.0,
+      "frequency": 65.0,
+      "discuss_count": 999,
+      "accepted": 617000,
+      "submissions": 2000000,
+      "likes": 2263,
+      "dislikes": 3719,
+      "rating": 38.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Sqrt(x), /problems/sqrtx/, Easy], [Super Pow, /problems/super-pow/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-51",
+    "external_id": "51",
+    "slug": "n-queens",
+    "title": "N-Queens",
+    "description": "The n-queens puzzle is the problem of placing `n` queens on an `n x n` chessboard such that no two queens attack each other.\n\nGiven an integer `n`, return all distinct solutions to the n-queens puzzle.\n\nEach solution contains a distinct board configuration of the n-queens' placement, where `'Q'` and `'.'` both indicate a queen and an empty space, respectively.\n\n\nExample 1:\nInput: n = 4\nOutput: [[\".Q..\",\"...Q\",\"Q...\",\"..Q.\"],[\"..Q.\",\"Q...\",\"...Q\",\".Q..\"]]\nExplanation: There exist two distinct solutions to the 4-queens puzzle as shown above\n\nExample 2:\nInput: n = 1\nOutput: [[\"Q\"]]\n\nConstraints:\n`1 <= n <= 9`",
+    "difficulty": "hard",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/n-queens",
+    "solution_url": "https://leetcode.com/articles/n-queens",
+    "topics": [
+      "Backtracking"
+    ],
+    "companies": [
+      "Facebook",
+      "Microsoft",
+      "Amazon",
+      "ByteDance",
+      "Apple",
+      "Adobe"
+    ],
+    "stats": {
+      "acceptance_rate": 50.2,
+      "frequency": 60.1,
+      "discuss_count": 999,
+      "accepted": 248400,
+      "submissions": 495200,
+      "likes": 2803,
+      "dislikes": 102,
+      "rating": 96.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[N-Queens II, /problems/n-queens-ii/, Hard], [Grid Illumination, /problems/grid-illumination/, Hard]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-52",
+    "external_id": "52",
+    "slug": "n-queens-ii",
+    "title": "N-Queens II",
+    "description": "The n-queens puzzle is the problem of placing `n` queens on an `n x n` chessboard such that no two queens attack each other.\n\nGiven an integer `n`, return the number of distinct solutions to the n-queens puzzle.\n\n\nExample 1:\nInput: n = 4\nOutput: 2\nExplanation: There are two distinct solutions to the 4-queens puzzle as shown.\n\n\nExample 2:\nInput: n = 1\nOutput: 1\n\nConstraints:\n`1 <= n <= 9`",
+    "difficulty": "hard",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/n-queens-ii",
+    "solution_url": "https://leetcode.com/articles/n-queens-ii",
+    "topics": [
+      "Backtracking"
+    ],
+    "companies": [
+      "Amazon",
+      "Zenefits"
+    ],
+    "stats": {
+      "acceptance_rate": 60.5,
+      "frequency": 13.7,
+      "discuss_count": 643,
+      "accepted": 158900,
+      "submissions": 262400,
+      "likes": 790,
+      "dislikes": 181,
+      "rating": 81.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[N-Queens, /problems/n-queens/, Hard]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-53",
+    "external_id": "53",
+    "slug": "maximum-subarray",
+    "title": "Maximum Subarray",
+    "description": "Given an integer array `nums`, find the contiguous subarray (containing at least one number) which has the largest sum and return its sum.\n\n\nExample 1:\nInput: nums = [-2,1,-3,4,-1,2,1,-5,4]\nOutput: 6\nExplanation: [4,-1,2,1] has the largest sum = 6.\n\n\nExample 2:\nInput: nums = [1]\nOutput: 1\n\nExample 3:\nInput: nums = [5,4,-1,7,8]\nOutput: 23\n\nConstraints:\n`1 <= nums.length <= 3 * 104`\n`-105 <= nums[i] <= 105`\nFollow up: If you have figured out the `O(n)` solution, try coding another solution using the divide and conquer approach, which is more subtle.",
+    "difficulty": "easy",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/maximum-subarray",
+    "solution_url": "https://leetcode.com/articles/maximum-subarray",
+    "topics": [
+      "Array",
+      "Divide and Conquer",
+      "Dynamic Programming"
+    ],
+    "companies": [
+      "Microsoft",
+      "Amazon",
+      "Apple",
+      "LinkedIn",
+      "ByteDance",
+      "Google",
+      "Adobe",
+      "Cisco",
+      "Facebook",
+      "Oracle",
+      "Splunk",
+      "Bloomberg",
+      "Uber",
+      "Paypal",
+      "JPMorgan"
+    ],
+    "stats": {
+      "acceptance_rate": 47.9,
+      "frequency": 80.2,
+      "discuss_count": 999,
+      "accepted": 1400000,
+      "submissions": 2900000,
+      "likes": 11458,
+      "dislikes": 551,
+      "rating": 95.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Best Time to Buy and Sell Stock, /problems/best-time-to-buy-and-sell-stock/, Easy], [Maximum Product Subarray, /problems/maximum-product-subarray/, Medium], [Degree of an Array, /problems/degree-of-an-array/, Easy], [Longest Turbulent Subarray, /problems/longest-turbulent-subarray/, Medium], [Maximum Absolute Sum of Any Subarray, /problems/maximum-absolute-sum-of-any-subarray/, Medium], [Maximum Subarray Sum After One Operation, /problems/maximum-subarray-sum-after-one-operation/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-54",
+    "external_id": "54",
+    "slug": "spiral-matrix",
+    "title": "Spiral Matrix",
+    "description": "Given an `m x n` `matrix`, return all elements of the `matrix` in spiral order.\n\n\nExample 1:\nInput: matrix = [[1,2,3],[4,5,6],[7,8,9]]\nOutput: [1,2,3,6,9,8,7,4,5]\n\nExample 2:\nInput: matrix = [[1,2,3,4],[5,6,7,8],[9,10,11,12]]\nOutput: [1,2,3,4,8,12,11,10,9,5,6,7]\n\nConstraints:\n`m == matrix.length`\n`n == matrix[i].length`\n`1 <= m, n <= 10`\n`-100 <= matrix[i][j] <= 100`",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/spiral-matrix",
+    "solution_url": "https://leetcode.com/articles/spiral-matrix",
+    "topics": [
+      "Array"
+    ],
+    "companies": [
+      "Microsoft",
+      "Apple",
+      "Intuit",
+      "Facebook",
+      "Google",
+      "Amazon",
+      "ByteDance",
+      "Expedia",
+      "Paypal",
+      "eBay"
+    ],
+    "stats": {
+      "acceptance_rate": 36.5,
+      "frequency": 74.2,
+      "discuss_count": 999,
+      "accepted": 483300,
+      "submissions": 1300000,
+      "likes": 3671,
+      "dislikes": 656,
+      "rating": 85.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Spiral Matrix II, /problems/spiral-matrix-ii/, Medium], [Spiral Matrix III, /problems/spiral-matrix-iii/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-55",
+    "external_id": "55",
+    "slug": "jump-game",
+    "title": "Jump Game",
+    "description": "Given an array of non-negative integers `nums`, you are initially positioned at the first index of the array.\n\nEach element in the array represents your maximum jump length at that position.\n\nDetermine if you are able to reach the last index.\n\n\nExample 1:\nInput: nums = [2,3,1,1,4]\nOutput: true\nExplanation: Jump 1 step from index 0 to 1, then 3 steps to the last index.\n\n\nExample 2:\nInput: nums = [3,2,1,0,4]\nOutput: false\nExplanation: You will always arrive at index 3 no matter what. Its maximum jump length is 0, which makes it impossible to reach the last index.\n\n\nConstraints:\n`1 <= nums.length <= 3 * 104`\n`0 <= nums[i] <= 105`",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/jump-game",
+    "solution_url": "https://leetcode.com/articles/jump-game",
+    "topics": [
+      "Array",
+      "Greedy"
+    ],
+    "companies": [
+      "Amazon",
+      "Apple",
+      "Facebook"
+    ],
+    "stats": {
+      "acceptance_rate": 35.2,
+      "frequency": 39.4,
+      "discuss_count": 999,
+      "accepted": 610500,
+      "submissions": 1700000,
+      "likes": 6024,
+      "dislikes": 416,
+      "rating": 94.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Jump Game II, /problems/jump-game-ii/, Medium], [Jump Game III, /problems/jump-game-iii/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-56",
+    "external_id": "56",
+    "slug": "merge-intervals",
+    "title": "Merge Intervals",
+    "description": "Given an array of `intervals` where `intervals[i] = [starti, endi]`, merge all overlapping intervals, and return an array of the non-overlapping intervals that cover all the intervals in the input.\n\n\nExample 1:\nInput: intervals = [[1,3],[2,6],[8,10],[15,18]]\nOutput: [[1,6],[8,10],[15,18]]\nExplanation: Since intervals [1,3] and [2,6] overlaps, merge them into [1,6].\n\n\nExample 2:\nInput: intervals = [[1,4],[4,5]]\nOutput: [[1,5]]\nExplanation: Intervals [1,4] and [4,5] are considered overlapping.\n\n\nConstraints:\n`1 <= intervals.length <= 104`\n`intervals[i].length == 2`\n`0 <= starti <= endi <= 104`",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/merge-intervals",
+    "solution_url": "https://leetcode.com/articles/merge-intervals",
+    "topics": [
+      "Array",
+      "Sort"
+    ],
+    "companies": [
+      "Facebook",
+      "JPMorgan",
+      "Amazon",
+      "Bloomberg",
+      "Apple",
+      "Google",
+      "Microsoft",
+      "Adobe",
+      "Uber",
+      "Twitter",
+      "eBay",
+      "Paypal",
+      "Cisco",
+      "Oracle",
+      "Yandex",
+      "Qualtrics",
+      "Palantir Technologies",
+      "Yahoo",
+      "Walmart Labs",
+      "VMware"
+    ],
+    "stats": {
+      "acceptance_rate": 41.4,
+      "frequency": 97.1,
+      "discuss_count": 999,
+      "accepted": 856700,
+      "submissions": 2100000,
+      "likes": 6955,
+      "dislikes": 374,
+      "rating": 95.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Insert Interval, /problems/insert-interval/, Medium], [Meeting Rooms, /problems/meeting-rooms/, Easy], [Meeting Rooms II, /problems/meeting-rooms-ii/, Medium], [Teemo Attacking, /problems/teemo-attacking/, Medium], [Add Bold Tag in String, /problems/add-bold-tag-in-string/, Medium], [Range Module, /problems/range-module/, Hard], [Employee Free Time, /problems/employee-free-time/, Hard], [Partition Labels, /problems/partition-labels/, Medium], [Interval List Intersections, /problems/interval-list-intersections/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-57",
+    "external_id": "57",
+    "slug": "insert-interval",
+    "title": "Insert Interval",
+    "description": "Given a set of non-overlapping intervals, insert a new interval into the intervals (merge if necessary).\n\nYou may assume that the intervals were initially sorted according to their start times.\n\n\nExample 1:\nInput: intervals = [[1,3],[6,9]], newInterval = [2,5]\nOutput: [[1,5],[6,9]]\n\nExample 2:\nInput: intervals = [[1,2],[3,5],[6,7],[8,10],[12,16]], newInterval = [4,8]\nOutput: [[1,2],[3,10],[12,16]]\nExplanation: Because the new interval `[4,8]` overlaps with `[3,5],[6,7],[8,10]`.\n\n\nExample 3:\nInput: intervals = [], newInterval = [5,7]\nOutput: [[5,7]]\n\nExample 4:\nInput: intervals = [[1,5]], newInterval = [2,3]\nOutput: [[1,5]]\n\nExample 5:\nInput: intervals = [[1,5]], newInterval = [2,7]\nOutput: [[1,7]]\n\nConstraints:\n`0 <= intervals.length <= 104`\n`intervals[i].length == 2`\n`0 <= intervals[i][0] <= intervals[i][1] <= 105`\n`intervals` is sorted by `intervals[i][0]` in ascending order.\n\n`newInterval.length == 2`\n`0 <= newInterval[0] <= newInterval[1] <= 105`",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/insert-interval",
+    "solution_url": "https://leetcode.com/articles/insert-interval",
+    "topics": [
+      "Array",
+      "Sort"
+    ],
+    "companies": [
+      "Google",
+      "Twitter",
+      "Amazon",
+      "Apple",
+      "Facebook",
+      "Microsoft"
+    ],
+    "stats": {
+      "acceptance_rate": 35.3,
+      "frequency": 41.3,
+      "discuss_count": 999,
+      "accepted": 342100,
+      "submissions": 969000,
+      "likes": 2753,
+      "dislikes": 239,
+      "rating": 92.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Merge Intervals, /problems/merge-intervals/, Medium], [Range Module, /problems/range-module/, Hard]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-58",
+    "external_id": "58",
+    "slug": "length-of-last-word",
+    "title": "Length of Last Word",
+    "description": "Given a string `s` consists of some words separated by spaces, return the length of the last word in the string. If the last word does not exist, return `0`.\n\nA word is a maximal substring consisting of non-space characters only.\n\n\nExample 1:\nInput: s = \"Hello World\"\nOutput: 5\n\nExample 2:\nInput: s = \" \"\nOutput: 0\n\nConstraints:\n`1 <= s.length <= 104`\n`s` consists of only English letters and spaces `' '`.",
+    "difficulty": "easy",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/length-of-last-word",
+    "solution_url": "https://leetcode.com/articles/length-of-last-word",
+    "topics": [
+      "String"
+    ],
+    "companies": [
+      "Google",
+      "Bloomberg"
+    ],
+    "stats": {
+      "acceptance_rate": 33.5,
+      "frequency": 12.5,
+      "discuss_count": 999,
+      "accepted": 490700,
+      "submissions": 1500000,
+      "likes": 1041,
+      "dislikes": 3104,
+      "rating": 25.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-59",
+    "external_id": "59",
+    "slug": "spiral-matrix-ii",
+    "title": "Spiral Matrix II",
+    "description": "Given a positive integer `n`, generate an `n x n` `matrix` filled with elements from `1` to `n2` in spiral order.\n\n\nExample 1:\nInput: n = 3\nOutput: [[1,2,3],[8,9,4],[7,6,5]]\n\nExample 2:\nInput: n = 1\nOutput: [[1]]\n\nConstraints:\n`1 <= n <= 20`",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/spiral-matrix-ii",
+    "solution_url": "https://leetcode.com/articles/spiral-matrix-ii",
+    "topics": [
+      "Array"
+    ],
+    "companies": [
+      "Microsoft"
+    ],
+    "stats": {
+      "acceptance_rate": 58.2,
+      "frequency": 38.2,
+      "discuss_count": 999,
+      "accepted": 247900,
+      "submissions": 426000,
+      "likes": 1602,
+      "dislikes": 128,
+      "rating": 93.0,
+      "asked_by_faang": false
+    },
+    "similar_questions_raw": "[Spiral Matrix, /problems/spiral-matrix/, Medium], [Spiral Matrix III, /problems/spiral-matrix-iii/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-60",
+    "external_id": "60",
+    "slug": "permutation-sequence",
+    "title": "Permutation Sequence",
+    "description": "The set `[1, 2, 3, ..., n]` contains a total of `n!` unique permutations.\n\nBy listing and labeling all of the permutations in order, we get the following sequence for `n = 3`:\n`\"123\"`\n`\"132\"`\n`\"213\"`\n`\"231\"`\n`\"312\"`\n`\"321\"`\nGiven `n` and `k`, return the `kth` permutation sequence.\n\n\nExample 1:\nInput: n = 3, k = 3\nOutput: \"213\"\n\nExample 2:\nInput: n = 4, k = 9\nOutput: \"2314\"\n\nExample 3:\nInput: n = 3, k = 1\nOutput: \"123\"\n\nConstraints:\n`1 <= n <= 9`\n`1 <= k <= n!`",
+    "difficulty": "hard",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/permutation-sequence",
+    "solution_url": "https://leetcode.com/articles/permutation-sequence",
+    "topics": [
+      "Math",
+      "Backtracking"
+    ],
+    "companies": [
+      "Amazon",
+      "Adobe"
+    ],
+    "stats": {
+      "acceptance_rate": 39.5,
+      "frequency": 24.1,
+      "discuss_count": 999,
+      "accepted": 223000,
+      "submissions": 563900,
+      "likes": 2152,
+      "dislikes": 361,
+      "rating": 86.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Next Permutation, /problems/next-permutation/, Medium], [Permutations, /problems/permutations/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-61",
+    "external_id": "61",
+    "slug": "rotate-list",
+    "title": "Rotate List",
+    "description": "Given the `head` of a linked list, rotate the list to the right by `k` places.\n\n\nExample 1:\nInput: head = [1,2,3,4,5], k = 2\nOutput: [4,5,1,2,3]\n\nExample 2:\nInput: head = [0,1,2], k = 4\nOutput: [2,0,1]\n\nConstraints:\nThe number of nodes in the list is in the range `[0, 500]`.\n\n`-100 <= Node.val <= 100`\n`0 <= k <= 2 * 109`",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/rotate-list",
+    "solution_url": "https://leetcode.com/articles/rotate-list",
+    "topics": [
+      "Linked List",
+      "Two Pointers"
+    ],
+    "companies": [
+      "Amazon",
+      "Bloomberg",
+      "Microsoft",
+      "Apple"
+    ],
+    "stats": {
+      "acceptance_rate": 31.9,
+      "frequency": 31.4,
+      "discuss_count": 999,
+      "accepted": 367600,
+      "submissions": 1200000,
+      "likes": 2242,
+      "dislikes": 1148,
+      "rating": 66.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Rotate Array, /problems/rotate-array/, Medium], [Split Linked List in Parts, /problems/split-linked-list-in-parts/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-62",
+    "external_id": "62",
+    "slug": "unique-paths",
+    "title": "Unique Paths",
+    "description": "A robot is located at the top-left corner of a `m x n` grid (marked 'Start' in the diagram below).\n\nThe robot can only move either down or right at any point in time. The robot is trying to reach the bottom-right corner of the grid (marked 'Finish' in the diagram below).\n\nHow many possible unique paths are there?\n\nExample 1:\nInput: m = 3, n = 7\nOutput: 28\n\nExample 2:\nInput: m = 3, n = 2\nOutput: 3\nExplanation:\nFrom the top-left corner, there are a total of 3 ways to reach the bottom-right corner:\n1. Right -> Down -> Down\n2. Down -> Down -> Right\n3. Down -> Right -> Down\n\nExample 3:\nInput: m = 7, n = 3\nOutput: 28\n\nExample 4:\nInput: m = 3, n = 3\nOutput: 6\n\nConstraints:\n`1 <= m, n <= 100`\nIt's guaranteed that the answer will be less than or equal to `2 * 109`.",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/unique-paths",
+    "solution_url": "https://leetcode.com/articles/unique-paths",
+    "topics": [
+      "Array",
+      "Dynamic Programming"
+    ],
+    "companies": [
+      "Microsoft",
+      "Amazon",
+      "Facebook",
+      "Google",
+      "Bloomberg",
+      "Qualtrics",
+      "VMware",
+      "Salesforce",
+      "ByteDance"
+    ],
+    "stats": {
+      "acceptance_rate": 56.3,
+      "frequency": 50.8,
+      "discuss_count": 999,
+      "accepted": 621600,
+      "submissions": 1100000,
+      "likes": 4856,
+      "dislikes": 240,
+      "rating": 95.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Unique Paths II, /problems/unique-paths-ii/, Medium], [Minimum Path Sum, /problems/minimum-path-sum/, Medium], [Dungeon Game, /problems/dungeon-game/, Hard]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-63",
+    "external_id": "63",
+    "slug": "unique-paths-ii",
+    "title": "Unique Paths II",
+    "description": "A robot is located at the top-left corner of a `m x n` grid (marked 'Start' in the diagram below).\n\nThe robot can only move either down or right at any point in time. The robot is trying to reach the bottom-right corner of the grid (marked 'Finish' in the diagram below).\n\nNow consider if some obstacles are added to the grids. How many unique paths would there be?\nAn obstacle and space is marked as `1` and `0` respectively in the grid.\n\n\nExample 1:\nInput: obstacleGrid = [[0,0,0],[0,1,0],[0,0,0]]\nOutput: 2\nExplanation: There is one obstacle in the middle of the 3x3 grid above.\n\nThere are two ways to reach the bottom-right corner:\n1. Right -> Right -> Down -> Down\n2. Down -> Down -> Right -> Right\n\nExample 2:\nInput: obstacleGrid = [[0,1],[0,0]]\nOutput: 1\n\nConstraints:\n`m == obstacleGrid.length`\n`n == obstacleGrid[i].length`\n`1 <= m, n <= 100`\n`obstacleGrid[i][j]` is `0` or `1`.",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/unique-paths-ii",
+    "solution_url": "https://leetcode.com/articles/unique-paths-ii",
+    "topics": [
+      "Array",
+      "Dynamic Programming"
+    ],
+    "companies": [
+      "Amazon",
+      "Bloomberg",
+      "Facebook",
+      "Microsoft"
+    ],
+    "stats": {
+      "acceptance_rate": 35.4,
+      "frequency": 36.3,
+      "discuss_count": 999,
+      "accepted": 361500,
+      "submissions": 1000000,
+      "likes": 2603,
+      "dislikes": 291,
+      "rating": 90.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Unique Paths, /problems/unique-paths/, Medium], [Unique Paths III, /problems/unique-paths-iii/, Hard]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-64",
+    "external_id": "64",
+    "slug": "minimum-path-sum",
+    "title": "Minimum Path Sum",
+    "description": "Given a `m x n` `grid` filled with non-negative numbers, find a path from top left to bottom right, which minimizes the sum of all numbers along its path.\n\nNote: You can only move either down or right at any point in time.\n\n\nExample 1:\nInput: grid = [[1,3,1],[1,5,1],[4,2,1]]\nOutput: 7\nExplanation: Because the path 1 → 3 → 1 → 1 → 1 minimizes the sum.\n\n\nExample 2:\nInput: grid = [[1,2,3],[4,5,6]]\nOutput: 12\n\nConstraints:\n`m == grid.length`\n`n == grid[i].length`\n`1 <= m, n <= 200`\n`0 <= grid[i][j] <= 100`",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/minimum-path-sum",
+    "solution_url": "https://leetcode.com/articles/minimum-path-sum",
+    "topics": [
+      "Array",
+      "Dynamic Programming"
+    ],
+    "companies": [
+      "Google",
+      "Amazon",
+      "Goldman Sachs",
+      "Facebook",
+      "Apple",
+      "Snapchat",
+      "Tesla"
+    ],
+    "stats": {
+      "acceptance_rate": 56.5,
+      "frequency": 48.6,
+      "discuss_count": 999,
+      "accepted": 525400,
+      "submissions": 930400,
+      "likes": 4536,
+      "dislikes": 83,
+      "rating": 98.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Unique Paths, /problems/unique-paths/, Medium], [Dungeon Game, /problems/dungeon-game/, Hard], [Cherry Pickup, /problems/cherry-pickup/, Hard]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-65",
+    "external_id": "65",
+    "slug": "valid-number",
+    "title": "Valid Number",
+    "description": "A valid number can be split up into these components (in order):\nA decimal number or an integer.\n\n(Optional) An `'e'` or `'E'`, followed by an integer.\n\nA decimal number can be split up into these components (in order):\n(Optional) A sign character (either `'+'` or `'-'`).\n\nOne of the following formats:\n\t\nAt least one digit, followed by a dot `'.'`.\n\nAt least one digit, followed by a dot `'.'`, followed by at least one digit.\n\nA dot `'.'`, followed by at least one digit.\n\nAn integer can be split up into these components (in order):\n(Optional) A sign character (either `'+'` or `'-'`).\n\nAt least one digit.\n\nFor example, all the following are valid numbers: `[\"2\", \"0089\", \"-0.1\", \"+3.14\", \"4.\", \"-.9\", \"2e10\", \"-90E3\", \"3e+7\", \"+6e-1\", \"53.5e93\", \"-123.456e789\"]`, while the following are not valid numbers: `[\"abc\", \"1a\", \"1e\", \"e3\", \"99e2.5\", \"--6\", \"-+3\", \"95a54e53\"]`.\n\nGiven a string `s`, return `true` if `s` is a valid number.\n\n\nExample 1:\nInput: s = \"0\"\nOutput: true\n\nExample 2:\nInput: s = \"e\"\nOutput: false\n\nExample 3:\nInput: s = \".\"\nOutput: false\n\nExample 4:\nInput: s = \".1\"\nOutput: true\n\nConstraints:\n`1 <= s.length <= 20`\n`s` consists of only English letters (both uppercase and lowercase), digits (`0-9`), plus `'+'`, minus `'-'`, or dot `'.'`.",
+    "difficulty": "hard",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/valid-number",
+    "solution_url": null,
+    "topics": [
+      "Math",
+      "String"
+    ],
+    "companies": [
+      "Facebook",
+      "LinkedIn",
+      "Oracle",
+      "Twitch"
+    ],
+    "stats": {
+      "acceptance_rate": 16.0,
+      "frequency": 54.1,
+      "discuss_count": 999,
+      "accepted": 199500,
+      "submissions": 1200000,
+      "likes": 902,
+      "dislikes": 5572,
+      "rating": 14.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[String to Integer (atoi), /problems/string-to-integer-atoi/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-66",
+    "external_id": "66",
+    "slug": "plus-one",
+    "title": "Plus One",
+    "description": "Given a non-empty array of decimal digits representing a non-negative integer, increment one to the integer.\n\nThe digits are stored such that the most significant digit is at the head of the list, and each element in the array contains a single digit.\n\nYou may assume the integer does not contain any leading zero, except the number 0 itself.\n\n\nExample 1:\nInput: digits = [1,2,3]\nOutput: [1,2,4]\nExplanation: The array represents the integer 123.\n\n\nExample 2:\nInput: digits = [4,3,2,1]\nOutput: [4,3,2,2]\nExplanation: The array represents the integer 4321.\n\n\nExample 3:\nInput: digits = [0]\nOutput: [1]\n\nConstraints:\n`1 <= digits.length <= 100`\n`0 <= digits[i] <= 9`",
+    "difficulty": "easy",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/plus-one",
+    "solution_url": "https://leetcode.com/articles/plus-one",
+    "topics": [
+      "Array"
+    ],
+    "companies": [
+      "ByteDance",
+      "Facebook",
+      "Adobe",
+      "Amazon",
+      "Spotify",
+      "Google"
+    ],
+    "stats": {
+      "acceptance_rate": 42.2,
+      "frequency": 36.8,
+      "discuss_count": 999,
+      "accepted": 812000,
+      "submissions": 1900000,
+      "likes": 2251,
+      "dislikes": 3130,
+      "rating": 42.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Multiply Strings, /problems/multiply-strings/, Medium], [Add Binary, /problems/add-binary/, Easy], [Plus One Linked List, /problems/plus-one-linked-list/, Medium], [Add to Array-Form of Integer, /problems/add-to-array-form-of-integer/, Easy]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-67",
+    "external_id": "67",
+    "slug": "add-binary",
+    "title": "Add Binary",
+    "description": "Given two binary strings `a` and `b`, return their sum as a binary string.\n\n\nExample 1:\nInput: a = \"11\", b = \"1\"\nOutput: \"100\"\n\nExample 2:\nInput: a = \"1010\", b = \"1011\"\nOutput: \"10101\"\n\nConstraints:\n`1 <= a.length, b.length <= 104`\n`a` and `b` consist only of `'0'` or `'1'` characters.\n\nEach string does not contain leading zeros except for the zero itself.",
+    "difficulty": "easy",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/add-binary",
+    "solution_url": "https://leetcode.com/articles/add-binary",
+    "topics": [
+      "Math",
+      "String"
+    ],
+    "companies": [
+      "Facebook",
+      "Amazon",
+      "ByteDance"
+    ],
+    "stats": {
+      "acceptance_rate": 47.3,
+      "frequency": 65.5,
+      "discuss_count": 999,
+      "accepted": 587200,
+      "submissions": 1200000,
+      "likes": 2668,
+      "dislikes": 337,
+      "rating": 89.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Add Two Numbers, /problems/add-two-numbers/, Medium], [Multiply Strings, /problems/multiply-strings/, Medium], [Plus One, /problems/plus-one/, Easy], [Add to Array-Form of Integer, /problems/add-to-array-form-of-integer/, Easy]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-68",
+    "external_id": "68",
+    "slug": "text-justification",
+    "title": "Text Justification",
+    "description": "Given an array of words and a width maxWidth, format the text such that each line has exactly maxWidth characters and is fully (left and right) justified.\n\nYou should pack your words in a greedy approach; that is, pack as many words as you can in each line. Pad extra spaces `' '` when necessary so that each line has exactly maxWidth characters.\n\nExtra spaces between words should be distributed as evenly as possible. If the number of spaces on a line do not divide evenly between words, the empty slots on the left will be assigned more spaces than the slots on the right.\n\nFor the last line of text, it should be left justified and no extra space is inserted between words.\n\nNote:\nA word is defined as a character sequence consisting of non-space characters only.\n\nEach word's length is guaranteed to be greater than 0 and not exceed maxWidth.\n\nThe input array `words` contains at least one word.\n\n\nExample 1:\nInput: words = [\"This\", \"is\", \"an\", \"example\", \"of\", \"text\", \"justification.\"], maxWidth = 16\nOutput:\n[\n   \"This    is    an\",\n   \"example  of text\",\n   \"justification.  \"\n]\n\nExample 2:\nInput: words = [\"What\",\"must\",\"be\",\"acknowledgment\",\"shall\",\"be\"], maxWidth = 16\nOutput:\n[\n  \"What   must   be\",\n  \"acknowledgment  \",\n  \"shall be        \"\n]\nExplanation: Note that the last line is \"shall be    \" instead of \"shall     be\", because the last line must be left-justified instead of fully-justified.\n\nNote that the second line is also left-justified becase it contains only one word.\n\n\nExample 3:\nInput: words = [\"Science\",\"is\",\"what\",\"we\",\"understand\",\"well\",\"enough\",\"to\",\"explain\",\"to\",\"a\",\"computer.\",\"Art\",\"is\",\"everything\",\"else\",\"we\",\"do\"], maxWidth = 20\nOutput:\n[\n  \"Science  is  what we\",\n  \"understand      well\",\n  \"enough to explain to\",\n  \"a  computer.  Art is\",\n  \"everything  else  we\",\n  \"do                  \"\n]\n\nConstraints:\n`1 <= words.length <= 300`\n`1 <= words[i].length <= 20`\n`words[i]` consists of only English letters and symbols.\n\n`1 <= maxWidth <= 100`\n`words[i].length <= maxWidth`",
+    "difficulty": "hard",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/text-justification",
+    "solution_url": null,
+    "topics": [
+      "String"
+    ],
+    "companies": [
+      "Intuit",
+      "Twilio",
+      "Uber",
+      "Karat",
+      "Indeed",
+      "Google",
+      "Amazon",
+      "Reddit",
+      "LinkedIn",
+      "Bloomberg",
+      "Microsoft",
+      "Twitter",
+      "Paypal",
+      "Apple",
+      "ByteDance",
+      "Databricks",
+      "Netflix",
+      "eBay"
+    ],
+    "stats": {
+      "acceptance_rate": 30.1,
+      "frequency": 95.5,
+      "discuss_count": 936,
+      "accepted": 167000,
+      "submissions": 553900,
+      "likes": 987,
+      "dislikes": 1954,
+      "rating": 34.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Rearrange Spaces Between Words, /problems/rearrange-spaces-between-words/, Easy]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-69",
+    "external_id": "69",
+    "slug": "sqrt-x",
+    "title": "Sqrt(x)",
+    "description": "Given a non-negative integer `x`, compute and return the square root of `x`.\n\nSince the return type is an integer, the decimal digits are truncated, and only the integer part of the result is returned.\n\n\nExample 1:\nInput: x = 4\nOutput: 2\n\nExample 2:\nInput: x = 8\nOutput: 2\nExplanation: The square root of 8 is 2.82842..., and since the decimal part is truncated, 2 is returned.\n\n\nConstraints:\n`0 <= x <= 231 - 1`",
+    "difficulty": "easy",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/sqrtx",
+    "solution_url": "https://leetcode.com/articles/sqrtx",
+    "topics": [
+      "Math",
+      "Binary Search"
+    ],
+    "companies": [
+      "Microsoft",
+      "Bloomberg",
+      "Amazon",
+      "Uber",
+      "LinkedIn",
+      "Google"
+    ],
+    "stats": {
+      "acceptance_rate": 35.4,
+      "frequency": 29.4,
+      "discuss_count": 999,
+      "accepted": 704700,
+      "submissions": 2000000,
+      "likes": 1910,
+      "dislikes": 2306,
+      "rating": 45.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Pow(x, n), /problems/powx-n/, Medium], [Valid Perfect Square, /problems/valid-perfect-square/, Easy]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-70",
+    "external_id": "70",
+    "slug": "climbing-stairs",
+    "title": "Climbing Stairs",
+    "description": "You are climbing a staircase. It takes `n` steps to reach the top.\n\nEach time you can either climb `1` or `2` steps. In how many distinct ways can you climb to the top?\n\nExample 1:\nInput: n = 2\nOutput: 2\nExplanation: There are two ways to climb to the top.\n\n1. 1 step + 1 step\n2. 2 steps\n\nExample 2:\nInput: n = 3\nOutput: 3\nExplanation: There are three ways to climb to the top.\n\n1. 1 step + 1 step + 1 step\n2. 1 step + 2 steps\n3. 2 steps + 1 step\n\nConstraints:\n`1 <= n <= 45`",
+    "difficulty": "easy",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/climbing-stairs",
+    "solution_url": "https://leetcode.com/articles/climbing-stairs",
+    "topics": [
+      "Dynamic Programming"
+    ],
+    "companies": [
+      "Expedia",
+      "Amazon",
+      "Apple",
+      "Adobe",
+      "Goldman Sachs",
+      "Google",
+      "Nvidia",
+      "Intuit"
+    ],
+    "stats": {
+      "acceptance_rate": 48.8,
+      "frequency": 60.2,
+      "discuss_count": 999,
+      "accepted": 929300,
+      "submissions": 1900000,
+      "likes": 6294,
+      "dislikes": 200,
+      "rating": 97.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Min Cost Climbing Stairs, /problems/min-cost-climbing-stairs/, Easy], [Fibonacci Number, /problems/fibonacci-number/, Easy], [N-th Tribonacci Number, /problems/n-th-tribonacci-number/, Easy]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-71",
+    "external_id": "71",
+    "slug": "simplify-path",
+    "title": "Simplify Path",
+    "description": "Given a string `path`, which is an absolute path (starting with a slash `'/'`) to a file or directory in a Unix-style file system, convert it to the simplified canonical path.\n\nIn a Unix-style file system, a period `'.'` refers to the current directory, a double period `'..'` refers to the directory up a level, and any multiple consecutive slashes (i.e. `'//'`) are treated as a single slash `'/'`. For this problem, any other format of periods such as `'...'` are treated as file/directory names.\n\nThe canonical path should have the following format:\nThe path starts with a single slash `'/'`.\n\nAny two directories are separated by a single slash `'/'`.\n\nThe path does not end with a trailing `'/'`.\n\nThe path only contains the directories on the path from the root directory to the target file or directory (i.e., no period `'.'` or double period `'..'`)\nReturn the simplified canonical path.\n\n\nExample 1:\nInput: path = \"/home/\"\nOutput: \"/home\"\nExplanation: Note that there is no trailing slash after the last directory name.\n\n\nExample 2:\nInput: path = \"/../\"\nOutput: \"/\"\nExplanation: Going one level up from the root directory is a no-op, as the root level is the highest level you can go.\n\n\nExample 3:\nInput: path = \"/home//foo/\"\nOutput: \"/home/foo\"\nExplanation: In the canonical path, multiple consecutive slashes are replaced by a single one.\n\n\nExample 4:\nInput: path = \"/a/./b/../../c/\"\nOutput: \"/c\"\n\nConstraints:\n`1 <= path.length <= 3000`\n`path` consists of English letters, digits, period `'.'`, slash `'/'` or `'_'`.\n\n`path` is a valid absolute Unix path.",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/simplify-path",
+    "solution_url": "https://leetcode.com/articles/simplify-path",
+    "topics": [
+      "String",
+      "Stack"
+    ],
+    "companies": [
+      "Facebook",
+      "Google",
+      "Amazon",
+      "Microsoft"
+    ],
+    "stats": {
+      "acceptance_rate": 34.9,
+      "frequency": 50.1,
+      "discuss_count": 999,
+      "accepted": 273000,
+      "submissions": 781800,
+      "likes": 317,
+      "dislikes": 92,
+      "rating": 78.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-72",
+    "external_id": "72",
+    "slug": "edit-distance",
+    "title": "Edit Distance",
+    "description": "Given two strings `word1` and `word2`, return the minimum number of operations required to convert `word1` to `word2`.\n\nYou have the following three operations permitted on a word:\nInsert a character\nDelete a character\nReplace a character\n\nExample 1:\nInput: word1 = \"horse\", word2 = \"ros\"\nOutput: 3\nExplanation: \nhorse -> rorse (replace 'h' with 'r')\nrorse -> rose (remove 'r')\nrose -> ros (remove 'e')\n\nExample 2:\nInput: word1 = \"intention\", word2 = \"execution\"\nOutput: 5\nExplanation: \nintention -> inention (remove 't')\ninention -> enention (replace 'i' with 'e')\nenention -> exention (replace 'n' with 'x')\nexention -> exection (replace 'n' with 'c')\nexection -> execution (insert 'u')\n\nConstraints:\n`0 <= word1.length, word2.length <= 500`\n`word1` and `word2` consist of lowercase English letters.",
+    "difficulty": "hard",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/edit-distance",
+    "solution_url": "https://leetcode.com/articles/edit-distance",
+    "topics": [
+      "String",
+      "Dynamic Programming"
+    ],
+    "companies": [
+      "Amazon",
+      "Microsoft",
+      "Google",
+      "Square",
+      "Palantir Technologies"
+    ],
+    "stats": {
+      "acceptance_rate": 47.1,
+      "frequency": 59.8,
+      "discuss_count": 999,
+      "accepted": 346500,
+      "submissions": 736000,
+      "likes": 5416,
+      "dislikes": 67,
+      "rating": 99.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[One Edit Distance, /problems/one-edit-distance/, Medium], [Delete Operation for Two Strings, /problems/delete-operation-for-two-strings/, Medium], [Minimum ASCII Delete Sum for Two Strings, /problems/minimum-ascii-delete-sum-for-two-strings/, Medium], [Uncrossed Lines, /problems/uncrossed-lines/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-73",
+    "external_id": "73",
+    "slug": "set-matrix-zeroes",
+    "title": "Set Matrix Zeroes",
+    "description": "Given an `m x n` matrix. If an element is 0, set its entire row and column to 0. Do it in-place.\n\nFollow up:\nA straight forward solution using O(mn) space is probably a bad idea.\n\nA simple improvement uses O(m + n) space, but still not the best solution.\n\nCould you devise a constant space solution?\n\nExample 1:\nInput: matrix = [[1,1,1],[1,0,1],[1,1,1]]\nOutput: [[1,0,1],[0,0,0],[1,0,1]]\n\nExample 2:\nInput: matrix = [[0,1,2,0],[3,4,5,2],[1,3,1,5]]\nOutput: [[0,0,0,0],[0,4,5,0],[0,3,1,0]]\n\nConstraints:\n`m == matrix.length`\n`n == matrix[0].length`\n`1 <= m, n <= 200`\n`-231 <= matrix[i][j] <= 231 - 1`",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/set-matrix-zeroes",
+    "solution_url": "https://leetcode.com/articles/set-matrix-zeroes",
+    "topics": [
+      "Array"
+    ],
+    "companies": [
+      "Facebook",
+      "Microsoft",
+      "Oracle",
+      "Amazon",
+      "Expedia",
+      "Bloomberg",
+      "Goldman Sachs",
+      "Apple"
+    ],
+    "stats": {
+      "acceptance_rate": 44.6,
+      "frequency": 42.0,
+      "discuss_count": 999,
+      "accepted": 414500,
+      "submissions": 930300,
+      "likes": 3287,
+      "dislikes": 364,
+      "rating": 90.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Game of Life, /problems/game-of-life/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-74",
+    "external_id": "74",
+    "slug": "search-a-2d-matrix",
+    "title": "Search a 2D Matrix",
+    "description": "Write an efficient algorithm that searches for a value in an `m x n` matrix. This matrix has the following properties:\nIntegers in each row are sorted from left to right.\n\nThe first integer of each row is greater than the last integer of the previous row.\n\n\nExample 1:\nInput: matrix = [[1,3,5,7],[10,11,16,20],[23,30,34,60]], target = 3\nOutput: true\n\nExample 2:\nInput: matrix = [[1,3,5,7],[10,11,16,20],[23,30,34,60]], target = 13\nOutput: false\n\nConstraints:\n`m == matrix.length`\n`n == matrix[i].length`\n`1 <= m, n <= 100`\n`-104 <= matrix[i][j], target <= 104`",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/search-a-2d-matrix",
+    "solution_url": "https://leetcode.com/articles/search-in-2d-matrix",
+    "topics": [
+      "Array",
+      "Binary Search"
+    ],
+    "companies": [
+      "Amazon",
+      "Facebook",
+      "Apple",
+      "Microsoft",
+      "Nvidia"
+    ],
+    "stats": {
+      "acceptance_rate": 38.1,
+      "frequency": 51.9,
+      "discuss_count": 999,
+      "accepted": 435800,
+      "submissions": 1100000,
+      "likes": 3110,
+      "dislikes": 194,
+      "rating": 94.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Search a 2D Matrix II, /problems/search-a-2d-matrix-ii/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-75",
+    "external_id": "75",
+    "slug": "sort-colors",
+    "title": "Sort Colors",
+    "description": "Given an array `nums` with `n` objects colored red, white, or blue, sort them in-place so that objects of the same color are adjacent, with the colors in the order red, white, and blue.\n\nWe will use the integers `0`, `1`, and `2` to represent the color red, white, and blue, respectively.\n\n\nExample 1:\nInput: nums = [2,0,2,1,1,0]\nOutput: [0,0,1,1,2,2]\n\nExample 2:\nInput: nums = [2,0,1]\nOutput: [0,1,2]\n\nExample 3:\nInput: nums = [0]\nOutput: [0]\n\nExample 4:\nInput: nums = [1]\nOutput: [1]\n\nConstraints:\n`n == nums.length`\n`1 <= n <= 300`\n`nums[i]` is `0`, `1`, or `2`.\n\nFollow up:\nCould you solve this problem without using the library's sort function?\nCould you come up with a one-pass algorithm using only `O(1)` constant space?",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/sort-colors",
+    "solution_url": "https://leetcode.com/articles/sort-colors",
+    "topics": [
+      "Array",
+      "Two Pointers",
+      "Sort"
+    ],
+    "companies": [
+      "Microsoft",
+      "Facebook",
+      "eBay",
+      "Amazon",
+      "Oracle",
+      "Adobe",
+      "Nvidia",
+      "Expedia"
+    ],
+    "stats": {
+      "acceptance_rate": 49.8,
+      "frequency": 35.4,
+      "discuss_count": 999,
+      "accepted": 656000,
+      "submissions": 1300000,
+      "likes": 5114,
+      "dislikes": 293,
+      "rating": 95.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Sort List, /problems/sort-list/, Medium], [Wiggle Sort, /problems/wiggle-sort/, Medium], [Wiggle Sort II, /problems/wiggle-sort-ii/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-76",
+    "external_id": "76",
+    "slug": "minimum-window-substring",
+    "title": "Minimum Window Substring",
+    "description": "Given two strings `s` and `t`, return the minimum window in `s` which will contain all the characters in `t`. If there is no such window in `s` that covers all characters in `t`, return the empty string `\"\"`.\n\nNote that If there is such a window, it is guaranteed that there will always be only one unique minimum window in `s`.\n\n\nExample 1:\nInput: s = \"ADOBECODEBANC\", t = \"ABC\"\nOutput: \"BANC\"\n\nExample 2:\nInput: s = \"a\", t = \"a\"\nOutput: \"a\"\n\nConstraints:\n`1 <= s.length, t.length <= 105`\n`s` and `t` consist of English letters.\n\nFollow up: Could you find an algorithm that runs in `O(n)` time?",
+    "difficulty": "hard",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/minimum-window-substring",
+    "solution_url": "https://leetcode.com/articles/minimum-window-substring",
+    "topics": [
+      "Hash Table",
+      "Two Pointers",
+      "String",
+      "Sliding Window"
+    ],
+    "companies": [
+      "Facebook",
+      "Amazon",
+      "Microsoft",
+      "Lyft",
+      "Apple",
+      "LinkedIn",
+      "Google",
+      "Uber",
+      "Bloomberg",
+      "Pinterest",
+      "Snapchat",
+      "Adobe",
+      "ByteDance"
+    ],
+    "stats": {
+      "acceptance_rate": 36.2,
+      "frequency": 69.1,
+      "discuss_count": 999,
+      "accepted": 518500,
+      "submissions": 1400000,
+      "likes": 6350,
+      "dislikes": 428,
+      "rating": 94.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Substring with Concatenation of All Words, /problems/substring-with-concatenation-of-all-words/, Hard], [Minimum Size Subarray Sum, /problems/minimum-size-subarray-sum/, Medium], [Sliding Window Maximum, /problems/sliding-window-maximum/, Hard], [Permutation in String, /problems/permutation-in-string/, Medium], [Smallest Range Covering Elements from K Lists, /problems/smallest-range-covering-elements-from-k-lists/, Hard], [Minimum Window Subsequence, /problems/minimum-window-subsequence/, Hard]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-77",
+    "external_id": "77",
+    "slug": "combinations",
+    "title": "Combinations",
+    "description": "Given two integers `n` and `k`, return all possible combinations of `k` numbers out of the range `[1, n]`.\n\nYou may return the answer in any order.\n\n\nExample 1:\nInput: n = 4, k = 2\nOutput:\n[\n  [2,4],\n  [3,4],\n  [2,3],\n  [1,2],\n  [1,3],\n  [1,4],\n]\n\nExample 2:\nInput: n = 1, k = 1\nOutput: [[1]]\n\nConstraints:\n`1 <= n <= 20`\n`1 <= k <= n`",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/combinations",
+    "solution_url": "https://leetcode.com/articles/combinations",
+    "topics": [
+      "Backtracking"
+    ],
+    "companies": [
+      "Facebook",
+      "Amazon"
+    ],
+    "stats": {
+      "acceptance_rate": 57.9,
+      "frequency": 19.1,
+      "discuss_count": 999,
+      "accepted": 356500,
+      "submissions": 615200,
+      "likes": 2158,
+      "dislikes": 81,
+      "rating": 96.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Combination Sum, /problems/combination-sum/, Medium], [Permutations, /problems/permutations/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-78",
+    "external_id": "78",
+    "slug": "subsets",
+    "title": "Subsets",
+    "description": "Given an integer array `nums` of unique elements, return all possible subsets (the power set).\n\nThe solution set must not contain duplicate subsets. Return the solution in any order.\n\n\nExample 1:\nInput: nums = [1,2,3]\nOutput: [[],[1],[2],[1,2],[3],[1,3],[2,3],[1,2,3]]\n\nExample 2:\nInput: nums = [0]\nOutput: [[],[0]]\n\nConstraints:\n`1 <= nums.length <= 10`\n`-10 <= nums[i] <= 10`\nAll the numbers of `nums` are unique.",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/subsets",
+    "solution_url": "https://leetcode.com/articles/subsets",
+    "topics": [
+      "Array",
+      "Backtracking",
+      "Bit Manipulation"
+    ],
+    "companies": [
+      "Facebook",
+      "Bloomberg",
+      "Amazon",
+      "Uber",
+      "Microsoft",
+      "Apple",
+      "ByteDance"
+    ],
+    "stats": {
+      "acceptance_rate": 65.6,
+      "frequency": 54.5,
+      "discuss_count": 999,
+      "accepted": 746800,
+      "submissions": 1100000,
+      "likes": 5513,
+      "dislikes": 111,
+      "rating": 98.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Subsets II, /problems/subsets-ii/, Medium], [Generalized Abbreviation, /problems/generalized-abbreviation/, Medium], [Letter Case Permutation, /problems/letter-case-permutation/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-79",
+    "external_id": "79",
+    "slug": "word-search",
+    "title": "Word Search",
+    "description": "Given an `m x n` grid of characters `board` and a string `word`, return `true` if `word` exists in the grid.\n\nThe word can be constructed from letters of sequentially adjacent cells, where adjacent cells are horizontally or vertically neighboring. The same letter cell may not be used more than once.\n\n\nExample 1:\nInput: board = [[\"A\",\"B\",\"C\",\"E\"],[\"S\",\"F\",\"C\",\"S\"],[\"A\",\"D\",\"E\",\"E\"]], word = \"ABCCED\"\nOutput: true\n\nExample 2:\nInput: board = [[\"A\",\"B\",\"C\",\"E\"],[\"S\",\"F\",\"C\",\"S\"],[\"A\",\"D\",\"E\",\"E\"]], word = \"SEE\"\nOutput: true\n\nExample 3:\nInput: board = [[\"A\",\"B\",\"C\",\"E\"],[\"S\",\"F\",\"C\",\"S\"],[\"A\",\"D\",\"E\",\"E\"]], word = \"ABCB\"\nOutput: false\n\nConstraints:\n`m == board.length`\n`n = board[i].length`\n`1 <= m, n <= 6`\n`1 <= word.length <= 15`\n`board` and `word` consists of only lowercase and uppercase English letters.\n\nFollow up: Could you use search pruning to make your solution faster with a larger `board`?",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/word-search",
+    "solution_url": "https://leetcode.com/articles/word-search",
+    "topics": [
+      "Array",
+      "Backtracking"
+    ],
+    "companies": [
+      "Amazon",
+      "Bloomberg",
+      "Intuit",
+      "Microsoft",
+      "Facebook",
+      "Snapchat",
+      "Apple",
+      "Oracle",
+      "eBay",
+      "Pinterest",
+      "Expedia"
+    ],
+    "stats": {
+      "acceptance_rate": 37.1,
+      "frequency": 73.5,
+      "discuss_count": 999,
+      "accepted": 639900,
+      "submissions": 1700000,
+      "likes": 5459,
+      "dislikes": 240,
+      "rating": 96.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Word Search II, /problems/word-search-ii/, Hard]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-80",
+    "external_id": "80",
+    "slug": "remove-duplicates-from-sorted-array-ii",
+    "title": "Remove Duplicates from Sorted Array II",
+    "description": "Given a sorted array nums, remove the duplicates in-place such that duplicates appeared at most twice and return the new length.\n\nDo not allocate extra space for another array; you must do this by modifying the input array in-place with O(1) extra memory.\n\nClarification:\nConfused why the returned value is an integer, but your answer is an array?\nNote that the input array is passed in by reference, which means a modification to the input array will be known to the caller.\n\nInternally you can think of this:\n// nums is passed in by reference. (i.e., without making a copy)\nint len = removeDuplicates(nums);\n// any modification to nums in your function would be known by the caller.\n\n// using the length returned by your function, it prints the first len elements.\n\nfor (int i = 0; i < len; i++) {\n    print(nums[i]);\n}\n\nExample 1:\nInput: nums = [1,1,1,2,2,3]\nOutput: 5, nums = [1,1,2,2,3]\nExplanation: Your function should return length = `5`, with the first five elements of `nums` being `1, 1, 2, 2` and 3 respectively. It doesn't matter what you leave beyond the returned length.\n\n\nExample 2:\nInput: nums = [0,0,1,1,1,1,2,3,3]\nOutput: 7, nums = [0,0,1,1,2,3,3]\nExplanation: Your function should return length = `7`, with the first seven elements of `nums` being modified to `0`, 0, 1, 1, 2, 3 and 3 respectively. It doesn't matter what values are set beyond the returned length.\n\n\nConstraints:\n`1 <= nums.length <= 3 * 104`\n`-104 <= nums[i] <= 104`\n`nums` is sorted in ascending order.",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/remove-duplicates-from-sorted-array-ii",
+    "solution_url": "https://leetcode.com/articles/remove-duplicates-from-sorted-array-ii",
+    "topics": [
+      "Array",
+      "Two Pointers"
+    ],
+    "companies": [
+      "Microsoft"
+    ],
+    "stats": {
+      "acceptance_rate": 46.3,
+      "frequency": 11.0,
+      "discuss_count": 999,
+      "accepted": 323300,
+      "submissions": 697600,
+      "likes": 1794,
+      "dislikes": 781,
+      "rating": 70.0,
+      "asked_by_faang": false
+    },
+    "similar_questions_raw": "[Remove Duplicates from Sorted Array, /problems/remove-duplicates-from-sorted-array/, Easy]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-81",
+    "external_id": "81",
+    "slug": "search-in-rotated-sorted-array-ii",
+    "title": "Search in Rotated Sorted Array II",
+    "description": "There is an integer array `nums` sorted in non-decreasing order (not necessarily with distinct values).\n\nBefore being passed to your function, `nums` is rotated at an unknown pivot index `k` (`0 <= k < nums.length`) such that the resulting array is `[nums[k], nums[k+1], ..., nums[n-1], nums[0], nums[1], ..., nums[k-1]]` (0-indexed). For example, `[0,1,2,4,4,4,5,6,6,7]` might be rotated at pivot index `5` and become `[4,5,6,6,7,0,1,2,4,4]`.\n\nGiven the array `nums` after the rotation and an integer `target`, return `true` if `target` is in `nums`, or `false` if it is not in `nums`.\n\n\nExample 1:\nInput: nums = [2,5,6,0,0,1,2], target = 0\nOutput: true\n\nExample 2:\nInput: nums = [2,5,6,0,0,1,2], target = 3\nOutput: false\n\nConstraints:\n`1 <= nums.length <= 5000`\n`-104 <= nums[i] <= 104`\n`nums` is guaranteed to be rotated at some pivot.\n\n`-104 <= target <= 104`\nFollow up: This problem is the same as Search in Rotated Sorted Array, where `nums` may contain duplicates. Would this affect the runtime complexity? How and why?",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/search-in-rotated-sorted-array-ii",
+    "solution_url": "https://leetcode.com/articles/search-in-rotated-sorted-array-ii",
+    "topics": [
+      "Array",
+      "Binary Search"
+    ],
+    "companies": [
+      "Amazon"
+    ],
+    "stats": {
+      "acceptance_rate": 33.7,
+      "frequency": 19.3,
+      "discuss_count": 836,
+      "accepted": 299400,
+      "submissions": 889100,
+      "likes": 2045,
+      "dislikes": 576,
+      "rating": 78.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Search in Rotated Sorted Array, /problems/search-in-rotated-sorted-array/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-82",
+    "external_id": "82",
+    "slug": "remove-duplicates-from-sorted-list-ii",
+    "title": "Remove Duplicates from Sorted List II",
+    "description": "Given the `head` of a sorted linked list, delete all nodes that have duplicate numbers, leaving only distinct numbers from the original list. Return the linked list sorted as well.\n\n\nExample 1:\nInput: head = [1,2,3,3,4,4,5]\nOutput: [1,2,5]\n\nExample 2:\nInput: head = [1,1,1,2,3]\nOutput: [2,3]\n\nConstraints:\nThe number of nodes in the list is in the range `[0, 300]`.\n\n`-100 <= Node.val <= 100`\nThe list is guaranteed to be sorted in ascending order.",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/remove-duplicates-from-sorted-list-ii",
+    "solution_url": "https://leetcode.com/articles/remove-duplicates-from-sorted-list-ii",
+    "topics": [
+      "Linked List"
+    ],
+    "companies": [
+      "Amazon",
+      "Bloomberg"
+    ],
+    "stats": {
+      "acceptance_rate": 39.5,
+      "frequency": 35.3,
+      "discuss_count": 999,
+      "accepted": 324300,
+      "submissions": 820800,
+      "likes": 2818,
+      "dislikes": 123,
+      "rating": 96.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Remove Duplicates from Sorted List, /problems/remove-duplicates-from-sorted-list/, Easy]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-83",
+    "external_id": "83",
+    "slug": "remove-duplicates-from-sorted-list",
+    "title": "Remove Duplicates from Sorted List",
+    "description": "Given the `head` of a sorted linked list, delete all duplicates such that each element appears only once. Return the linked list sorted as well.\n\n\nExample 1:\nInput: head = [1,1,2]\nOutput: [1,2]\n\nExample 2:\nInput: head = [1,1,2,3,3]\nOutput: [1,2,3]\n\nConstraints:\nThe number of nodes in the list is in the range `[0, 300]`.\n\n`-100 <= Node.val <= 100`\nThe list is guaranteed to be sorted in ascending order.",
+    "difficulty": "easy",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/remove-duplicates-from-sorted-list",
+    "solution_url": "https://leetcode.com/articles/remove-duplicates-from-sorted-list",
+    "topics": [
+      "Linked List"
+    ],
+    "companies": [
+      "Amazon",
+      "Adobe",
+      "Goldman Sachs",
+      "Qualcomm"
+    ],
+    "stats": {
+      "acceptance_rate": 46.7,
+      "frequency": 34.0,
+      "discuss_count": 999,
+      "accepted": 577200,
+      "submissions": 1200000,
+      "likes": 2416,
+      "dislikes": 144,
+      "rating": 94.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Remove Duplicates from Sorted List II, /problems/remove-duplicates-from-sorted-list-ii/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-84",
+    "external_id": "84",
+    "slug": "largest-rectangle-in-histogram",
+    "title": "Largest Rectangle in Histogram",
+    "description": "Given an array of integers `heights` representing the histogram's bar height where the width of each bar is `1`, return the area of the largest rectangle in the histogram.\n\n\nExample 1:\nInput: heights = [2,1,5,6,2,3]\nOutput: 10\nExplanation: The above is a histogram where width of each bar is 1.\n\nThe largest rectangle is shown in the red area, which has an area = 10 units.\n\n\nExample 2:\nInput: heights = [2,4]\nOutput: 4\n\nConstraints:\n`1 <= heights.length <= 105`\n`0 <= heights[i] <= 104`",
+    "difficulty": "hard",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/largest-rectangle-in-histogram",
+    "solution_url": "https://leetcode.com/articles/largest-rectangle-in-histogram",
+    "topics": [
+      "Array",
+      "Stack"
+    ],
+    "companies": [
+      "Amazon",
+      "Microsoft",
+      "Adobe",
+      "MAQ Software"
+    ],
+    "stats": {
+      "acceptance_rate": 37.4,
+      "frequency": 57.5,
+      "discuss_count": 999,
+      "accepted": 350800,
+      "submissions": 937900,
+      "likes": 5576,
+      "dislikes": 111,
+      "rating": 98.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Maximal Rectangle, /problems/maximal-rectangle/, Hard], [Maximum Score of a Good Subarray, /problems/maximum-score-of-a-good-subarray/, Hard]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-85",
+    "external_id": "85",
+    "slug": "maximal-rectangle",
+    "title": "Maximal Rectangle",
+    "description": "Given a `rows x cols` binary `matrix` filled with `0`'s and `1`'s, find the largest rectangle containing only `1`'s and return its area.\n\n\nExample 1:\nInput: matrix = [[\"1\",\"0\",\"1\",\"0\",\"0\"],[\"1\",\"0\",\"1\",\"1\",\"1\"],[\"1\",\"1\",\"1\",\"1\",\"1\"],[\"1\",\"0\",\"0\",\"1\",\"0\"]]\nOutput: 6\nExplanation: The maximal rectangle is shown in the above picture.\n\n\nExample 2:\nInput: matrix = []\nOutput: 0\n\nExample 3:\nInput: matrix = [[\"0\"]]\nOutput: 0\n\nExample 4:\nInput: matrix = [[\"1\"]]\nOutput: 1\n\nExample 5:\nInput: matrix = [[\"0\",\"0\"]]\nOutput: 0\n\nConstraints:\n`rows == matrix.length`\n`cols == matrix[i].length`\n`0 <= row, cols <= 200`\n`matrix[i][j]` is `'0'` or `'1'`.",
+    "difficulty": "hard",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/maximal-rectangle",
+    "solution_url": "https://leetcode.com/articles/maximal-rectangle",
+    "topics": [
+      "Array",
+      "Hash Table",
+      "Dynamic Programming",
+      "Stack"
+    ],
+    "companies": [
+      "Google",
+      "Amazon",
+      "Adobe",
+      "Bloomberg",
+      "Apple"
+    ],
+    "stats": {
+      "acceptance_rate": 39.7,
+      "frequency": 62.6,
+      "discuss_count": 651,
+      "accepted": 222800,
+      "submissions": 561200,
+      "likes": 4086,
+      "dislikes": 86,
+      "rating": 98.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Largest Rectangle in Histogram, /problems/largest-rectangle-in-histogram/, Hard], [Maximal Square, /problems/maximal-square/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-86",
+    "external_id": "86",
+    "slug": "partition-list",
+    "title": "Partition List",
+    "description": "Given the `head` of a linked list and a value `x`, partition it such that all nodes less than `x` come before nodes greater than or equal to `x`.\n\nYou should preserve the original relative order of the nodes in each of the two partitions.\n\n\nExample 1:\nInput: head = [1,4,3,2,5,2], x = 3\nOutput: [1,2,2,4,3,5]\n\nExample 2:\nInput: head = [2,1], x = 2\nOutput: [1,2]\n\nConstraints:\nThe number of nodes in the list is in the range `[0, 200]`.\n\n`-100 <= Node.val <= 100`\n`-200 <= x <= 200`",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/partition-list",
+    "solution_url": "https://leetcode.com/articles/partition-list",
+    "topics": [
+      "Linked List",
+      "Two Pointers"
+    ],
+    "companies": [
+      "Microsoft",
+      "Amazon",
+      "Apple",
+      "Bloomberg",
+      "Facebook"
+    ],
+    "stats": {
+      "acceptance_rate": 43.7,
+      "frequency": 41.5,
+      "discuss_count": 999,
+      "accepted": 255600,
+      "submissions": 584400,
+      "likes": 1957,
+      "dislikes": 383,
+      "rating": 84.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-87",
+    "external_id": "87",
+    "slug": "scramble-string",
+    "title": "Scramble String",
+    "description": "We can scramble a string s to get a string t using the following algorithm:\nIf the length of the string is 1, stop.\n\nIf the length of the string is > 1, do the following:\n\t\nSplit the string into two non-empty substrings at a random index, i.e., if the string is `s`, divide it to `x` and `y` where `s = x + y`.\n\nRandomly decide to swap the two substrings or to keep them in the same order. i.e., after this step, `s` may become `s = x + y` or `s = y + x`.\n\nApply step 1 recursively on each of the two substrings `x` and `y`.\n\nGiven two strings `s1` and `s2` of the same length, return `true` if `s2` is a scrambled string of `s1`, otherwise, return `false`.\n\n\nExample 1:\nInput: s1 = \"great\", s2 = \"rgeat\"\nOutput: true\nExplanation: One possible scenario applied on s1 is:\n\"great\" --> \"gr/eat\" // divide at random index.\n\n\"gr/eat\" --> \"gr/eat\" // random decision is not to swap the two substrings and keep them in order.\n\n\"gr/eat\" --> \"g/r / e/at\" // apply the same algorithm recursively on both substrings. divide at ranom index each of them.\n\n\"g/r / e/at\" --> \"r/g / e/at\" // random decision was to swap the first substring and to keep the second substring in the same order.\n\n\"r/g / e/at\" --> \"r/g / e/ a/t\" // again apply the algorithm recursively, divide \"at\" to \"a/t\".\n\n\"r/g / e/ a/t\" --> \"r/g / e/ a/t\" // random decision is to keep both substrings in the same order.\n\nThe algorithm stops now and the result string is \"rgeat\" which is s2.\n\nAs there is one possible scenario that led s1 to be scrambled to s2, we return true.\n\n\nExample 2:\nInput: s1 = \"abcde\", s2 = \"caebd\"\nOutput: false\n\nExample 3:\nInput: s1 = \"a\", s2 = \"a\"\nOutput: true\n\nConstraints:\n`s1.length == s2.length`\n`1 <= s1.length <= 30`\n`s1` and `s2` consist of lower-case English letters.",
+    "difficulty": "hard",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/scramble-string",
+    "solution_url": null,
+    "topics": [
+      "String",
+      "Dynamic Programming"
+    ],
+    "companies": [
+      "Apple"
+    ],
+    "stats": {
+      "acceptance_rate": 34.8,
+      "frequency": 9.0,
+      "discuss_count": 335,
+      "accepted": 122900,
+      "submissions": 353200,
+      "likes": 760,
+      "dislikes": 805,
+      "rating": 49.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-88",
+    "external_id": "88",
+    "slug": "merge-sorted-array",
+    "title": "Merge Sorted Array",
+    "description": "Given two sorted integer arrays `nums1` and `nums2`, merge `nums2` into `nums1` as one sorted array.\n\nThe number of elements initialized in `nums1` and `nums2` are `m` and `n` respectively. You may assume that `nums1` has a size equal to `m + n` such that it has enough space to hold additional elements from `nums2`.\n\n\nExample 1:\nInput: nums1 = [1,2,3,0,0,0], m = 3, nums2 = [2,5,6], n = 3\nOutput: [1,2,2,3,5,6]\n\nExample 2:\nInput: nums1 = [1], m = 1, nums2 = [], n = 0\nOutput: [1]\n\nConstraints:\n`nums1.length == m + n`\n`nums2.length == n`\n`0 <= m, n <= 200`\n`1 <= m + n <= 200`\n`-109 <= nums1[i], nums2[i] <= 109`",
+    "difficulty": "easy",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/merge-sorted-array",
+    "solution_url": "https://leetcode.com/articles/merge-sorted-arrays",
+    "topics": [
+      "Array",
+      "Two Pointers"
+    ],
+    "companies": [
+      "Facebook",
+      "Microsoft",
+      "Amazon",
+      "Bloomberg",
+      "Walmart Labs",
+      "IBM",
+      "Oracle",
+      "Apple",
+      "LinkedIn",
+      "Goldman Sachs",
+      "Yandex",
+      "Wish"
+    ],
+    "stats": {
+      "acceptance_rate": 40.9,
+      "frequency": 70.4,
+      "discuss_count": 999,
+      "accepted": 843000,
+      "submissions": 2100000,
+      "likes": 3612,
+      "dislikes": 5190,
+      "rating": 41.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Merge Two Sorted Lists, /problems/merge-two-sorted-lists/, Easy], [Squares of a Sorted Array, /problems/squares-of-a-sorted-array/, Easy], [Interval List Intersections, /problems/interval-list-intersections/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-89",
+    "external_id": "89",
+    "slug": "gray-code",
+    "title": "Gray Code",
+    "description": "The gray code is a binary numeral system where two successive values differ in only one bit.\n\nGiven an integer `n` representing the total number of bits in the code, return any sequence of gray code.\n\nA gray code sequence must begin with `0`.\n\n\nExample 1:\nInput: n = 2\nOutput: [0,1,3,2]\nExplanation:\n00 - 0\n01 - 1\n11 - 3\n10 - 2\n[0,2,3,1] is also a valid gray code sequence.\n\n00 - 0\n10 - 2\n11 - 3\n01 - 1\n\nExample 2:\nInput: n = 1\nOutput: [0,1]\n\nConstraints:\n`1 <= n <= 16`",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/gray-code",
+    "solution_url": null,
+    "topics": [
+      "Backtracking"
+    ],
+    "companies": [
+      "Microsoft"
+    ],
+    "stats": {
+      "acceptance_rate": 50.7,
+      "frequency": 23.7,
+      "discuss_count": 830,
+      "accepted": 178900,
+      "submissions": 353100,
+      "likes": 811,
+      "dislikes": 1783,
+      "rating": 31.0,
+      "asked_by_faang": false
+    },
+    "similar_questions_raw": "[1-bit and 2-bit Characters, /problems/1-bit-and-2-bit-characters/, Easy]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-90",
+    "external_id": "90",
+    "slug": "subsets-ii",
+    "title": "Subsets II",
+    "description": "Given an integer array `nums` that may contain duplicates, return all possible subsets (the power set).\n\nThe solution set must not contain duplicate subsets. Return the solution in any order.\n\n\nExample 1:\nInput: nums = [1,2,2]\nOutput: [[],[1],[1,2],[1,2,2],[2],[2,2]]\n\nExample 2:\nInput: nums = [0]\nOutput: [[],[0]]\n\nConstraints:\n`1 <= nums.length <= 10`\n`-10 <= nums[i] <= 10`",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/subsets-ii",
+    "solution_url": null,
+    "topics": [
+      "Array",
+      "Backtracking"
+    ],
+    "companies": [
+      "Amazon",
+      "ByteDance"
+    ],
+    "stats": {
+      "acceptance_rate": 49.1,
+      "frequency": 20.9,
+      "discuss_count": 999,
+      "accepted": 335500,
+      "submissions": 682900,
+      "likes": 2394,
+      "dislikes": 104,
+      "rating": 96.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Subsets, /problems/subsets/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-91",
+    "external_id": "91",
+    "slug": "decode-ways",
+    "title": "Decode Ways",
+    "description": "A message containing letters from `A-Z` can be encoded into numbers using the following mapping:\n'A' -> \"1\"\n'B' -> \"2\"\n...\n\n'Z' -> \"26\"\nTo decode an encoded message, all the digits must be grouped then mapped back into letters using the reverse of the mapping above (there may be multiple ways). For example, `\"11106\"` can be mapped into:\n`\"AAJF\"` with the grouping `(1 1 10 6)`\n`\"KJF\"` with the grouping `(11 10 6)`\nNote that the grouping `(1 11 06)` is invalid because `\"06\"` cannot be mapped into `'F'` since `\"6\"` is different from `\"06\"`.\n\nGiven a string `s` containing only digits, return the number of ways to decode it.\n\nThe answer is guaranteed to fit in a 32-bit integer.\n\n\nExample 1:\nInput: s = \"12\"\nOutput: 2\nExplanation: \"12\" could be decoded as \"AB\" (1 2) or \"L\" (12).\n\n\nExample 2:\nInput: s = \"226\"\nOutput: 3\nExplanation: \"226\" could be decoded as \"BZ\" (2 26), \"VF\" (22 6), or \"BBF\" (2 2 6).\n\n\nExample 3:\nInput: s = \"0\"\nOutput: 0\nExplanation: There is no character that is mapped to a number starting with 0.\n\nThe only valid mappings with 0 are 'J' -> \"10\" and 'T' -> \"20\", neither of which start with 0.\n\nHence, there are no valid ways to decode this since all digits need to be mapped.\n\n\nExample 4:\nInput: s = \"06\"\nOutput: 0\nExplanation: \"06\" cannot be mapped to \"F\" because of the leading zero (\"6\" is different from \"06\").\n\n\nConstraints:\n`1 <= s.length <= 100`\n`s` contains only digits and may contain leading zero(s).",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/decode-ways",
+    "solution_url": "https://leetcode.com/articles/decode-ways",
+    "topics": [
+      "String",
+      "Dynamic Programming"
+    ],
+    "companies": [
+      "JPMorgan",
+      "Facebook",
+      "Google",
+      "Cisco",
+      "Amazon",
+      "Lyft",
+      "Microsoft",
+      "Goldman Sachs",
+      "ByteDance",
+      "Apple",
+      "Uber",
+      "Adobe"
+    ],
+    "stats": {
+      "acceptance_rate": 26.9,
+      "frequency": 94.0,
+      "discuss_count": 999,
+      "accepted": 548700,
+      "submissions": 2000000,
+      "likes": 4177,
+      "dislikes": 3414,
+      "rating": 55.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Decode Ways II, /problems/decode-ways-ii/, Hard]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-92",
+    "external_id": "92",
+    "slug": "reverse-linked-list-ii",
+    "title": "Reverse Linked List II",
+    "description": "Given the `head` of a singly linked list and two integers `left` and `right` where `left <= right`, reverse the nodes of the list from position `left` to position `right`, and return the reversed list.\n\n\nExample 1:\nInput: head = [1,2,3,4,5], left = 2, right = 4\nOutput: [1,4,3,2,5]\n\nExample 2:\nInput: head = [5], left = 1, right = 1\nOutput: [5]\n\nConstraints:\nThe number of nodes in the list is `n`.\n\n`1 <= n <= 500`\n`-500 <= Node.val <= 500`\n`1 <= left <= right <= n`\nFollow up: Could you do it in one pass?",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/reverse-linked-list-ii",
+    "solution_url": "https://leetcode.com/articles/reverse-linked-list-ii",
+    "topics": [
+      "Linked List"
+    ],
+    "companies": [
+      "Amazon",
+      "Facebook",
+      "Microsoft",
+      "Oracle",
+      "ByteDance"
+    ],
+    "stats": {
+      "acceptance_rate": 40.8,
+      "frequency": 63.9,
+      "discuss_count": 999,
+      "accepted": 341700,
+      "submissions": 837900,
+      "likes": 3501,
+      "dislikes": 180,
+      "rating": 95.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Reverse Linked List, /problems/reverse-linked-list/, Easy]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-93",
+    "external_id": "93",
+    "slug": "restore-ip-addresses",
+    "title": "Restore IP Addresses",
+    "description": "Given a string `s` containing only digits, return all possible valid IP addresses that can be obtained from `s`. You can return them in any order.\n\nA valid IP address consists of exactly four integers, each integer is between `0` and `255`, separated by single dots and cannot have leading zeros. For example, \"0.1.2.201\" and \"192.168.1.1\" are valid IP addresses and \"0.011.255.245\", \"192.168.1.312\" and \"192.168@1.1\" are invalid IP addresses. \n\nExample 1:\nInput: s = \"25525511135\"\nOutput: [\"255.255.11.135\",\"255.255.111.35\"]\n\nExample 2:\nInput: s = \"0000\"\nOutput: [\"0.0.0.0\"]\n\nExample 3:\nInput: s = \"1111\"\nOutput: [\"1.1.1.1\"]\n\nExample 4:\nInput: s = \"010010\"\nOutput: [\"0.10.0.10\",\"0.100.1.0\"]\n\nExample 5:\nInput: s = \"101023\"\nOutput: [\"1.0.10.23\",\"1.0.102.3\",\"10.1.0.23\",\"10.10.2.3\",\"101.0.2.3\"]\n\nConstraints:\n`0 <= s.length <= 3000`\n`s` consists of digits only.",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/restore-ip-addresses",
+    "solution_url": "https://leetcode.com/articles/restore-ip-addresses",
+    "topics": [
+      "String",
+      "Backtracking"
+    ],
+    "companies": [
+      "Microsoft",
+      "Oracle"
+    ],
+    "stats": {
+      "acceptance_rate": 37.9,
+      "frequency": 45.1,
+      "discuss_count": 999,
+      "accepted": 230900,
+      "submissions": 610000,
+      "likes": 1718,
+      "dislikes": 559,
+      "rating": 75.0,
+      "asked_by_faang": false
+    },
+    "similar_questions_raw": "[IP to CIDR, /problems/ip-to-cidr/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-94",
+    "external_id": "94",
+    "slug": "binary-tree-inorder-traversal",
+    "title": "Binary Tree Inorder Traversal",
+    "description": "Given the `root` of a binary tree, return the inorder traversal of its nodes' values.\n\n\nExample 1:\nInput: root = [1,null,2,3]\nOutput: [1,3,2]\n\nExample 2:\nInput: root = []\nOutput: []\n\nExample 3:\nInput: root = [1]\nOutput: [1]\n\nExample 4:\nInput: root = [1,2]\nOutput: [2,1]\n\nExample 5:\nInput: root = [1,null,2]\nOutput: [1,2]\n\nConstraints:\nThe number of nodes in the tree is in the range `[0, 100]`.\n\n`-100 <= Node.val <= 100`\nFollow up:\nRecursive solution is trivial, could you do it iteratively?",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/binary-tree-inorder-traversal",
+    "solution_url": "https://leetcode.com/articles/binary-tree-inorder-traversal",
+    "topics": [
+      "Hash Table",
+      "Stack",
+      "Tree"
+    ],
+    "companies": [
+      "Microsoft",
+      "Facebook",
+      "Oracle",
+      "Amazon",
+      "Google"
+    ],
+    "stats": {
+      "acceptance_rate": 66.3,
+      "frequency": 17.9,
+      "discuss_count": 999,
+      "accepted": 954700,
+      "submissions": 1400000,
+      "likes": 4528,
+      "dislikes": 204,
+      "rating": 96.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Validate Binary Search Tree, /problems/validate-binary-search-tree/, Medium], [Binary Tree Preorder Traversal, /problems/binary-tree-preorder-traversal/, Medium], [Binary Tree Postorder Traversal, /problems/binary-tree-postorder-traversal/, Medium], [Binary Search Tree Iterator, /problems/binary-search-tree-iterator/, Medium], [Kth Smallest Element in a BST, /problems/kth-smallest-element-in-a-bst/, Medium], [Closest Binary Search Tree Value II, /problems/closest-binary-search-tree-value-ii/, Hard], [Inorder Successor in BST, /problems/inorder-successor-in-bst/, Medium], [Convert Binary Search Tree to Sorted Doubly Linked List, /problems/convert-binary-search-tree-to-sorted-doubly-linked-list/, Medium], [Minimum Distance Between BST Nodes, /problems/minimum-distance-between-bst-nodes/, Easy]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-95",
+    "external_id": "95",
+    "slug": "unique-binary-search-trees-ii",
+    "title": "Unique Binary Search Trees II",
+    "description": "Given an integer `n`, return all the structurally unique BST's (binary search trees), which has exactly `n` nodes of unique values from `1` to `n`. Return the answer in any order.\n\n\nExample 1:\nInput: n = 3\nOutput: [[1,null,2,null,3],[1,null,3,2],[2,1,3],[3,1,null,null,2],[3,2,null,1]]\n\nExample 2:\nInput: n = 1\nOutput: [[1]]\n\nConstraints:\n`1 <= n <= 8`",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/unique-binary-search-trees-ii",
+    "solution_url": "https://leetcode.com/articles/unique-binary-search-trees-ii",
+    "topics": [
+      "Dynamic Programming",
+      "Tree"
+    ],
+    "companies": [
+      "Amazon",
+      "Google"
+    ],
+    "stats": {
+      "acceptance_rate": 43.0,
+      "frequency": 17.1,
+      "discuss_count": 705,
+      "accepted": 226300,
+      "submissions": 526100,
+      "likes": 2977,
+      "dislikes": 206,
+      "rating": 94.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "[Unique Binary Search Trees, /problems/unique-binary-search-trees/, Medium], [Different Ways to Add Parentheses, /problems/different-ways-to-add-parentheses/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-96",
+    "external_id": "96",
+    "slug": "unique-binary-search-trees",
+    "title": "Unique Binary Search Trees",
+    "description": "Given an integer `n`, return the number of structurally unique BST's (binary search trees) which has exactly `n` nodes of unique values from `1` to `n`.\n\n\nExample 1:\nInput: n = 3\nOutput: 5\n\nExample 2:\nInput: n = 1\nOutput: 1\n\nConstraints:\n`1 <= n <= 19`",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/unique-binary-search-trees",
+    "solution_url": "https://leetcode.com/articles/unique-binary-search-trees",
+    "topics": [
+      "Dynamic Programming",
+      "Tree"
+    ],
+    "companies": [
+      "Microsoft",
+      "Bloomberg"
+    ],
+    "stats": {
+      "acceptance_rate": 54.7,
+      "frequency": 26.7,
+      "discuss_count": 999,
+      "accepted": 356700,
+      "submissions": 652500,
+      "likes": 4491,
+      "dislikes": 164,
+      "rating": 96.0,
+      "asked_by_faang": false
+    },
+    "similar_questions_raw": "[Unique Binary Search Trees II, /problems/unique-binary-search-trees-ii/, Medium]",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-97",
+    "external_id": "97",
+    "slug": "interleaving-string",
+    "title": "Interleaving String",
+    "description": "Given strings `s1`, `s2`, and `s3`, find whether `s3` is formed by an interleaving of `s1` and `s2`.\n\nAn interleaving of two strings `s` and `t` is a configuration where they are divided into non-empty substrings such that:\n`s = s1 + s2 + ... + sn`\n`t = t1 + t2 + ... + tm`\n`|n - m| <= 1`\nThe interleaving is `s1 + t1 + s2 + t2 + s3 + t3 + ...` or `t1 + s1 + t2 + s2 + t3 + s3 + ...`\nNote: `a + b` is the concatenation of strings `a` and `b`.\n\n\nExample 1:\nInput: s1 = \"aabcc\", s2 = \"dbbca\", s3 = \"aadbbcbcac\"\nOutput: true\n\nExample 2:\nInput: s1 = \"aabcc\", s2 = \"dbbca\", s3 = \"aadbbbaccc\"\nOutput: false\n\nExample 3:\nInput: s1 = \"\", s2 = \"\", s3 = \"\"\nOutput: true\n\nConstraints:\n`0 <= s1.length, s2.length <= 100`\n`0 <= s3.length <= 200`\n`s1`, `s2`, and `s3` consist of lowercase English letters.\n\nFollow up: Could you solve it using only `O(s2.length)` additional memory space?",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/interleaving-string",
+    "solution_url": "https://leetcode.com/articles/interleaving-strings",
+    "topics": [
+      "String",
+      "Dynamic Programming"
+    ],
+    "companies": [
+      "Microsoft",
+      "Apple",
+      "Coupang"
+    ],
+    "stats": {
+      "acceptance_rate": 32.8,
+      "frequency": 31.3,
+      "discuss_count": 796,
+      "accepted": 178900,
+      "submissions": 546300,
+      "likes": 1962,
+      "dislikes": 105,
+      "rating": 95.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-98",
+    "external_id": "98",
+    "slug": "validate-binary-search-tree",
+    "title": "Validate Binary Search Tree",
+    "description": "Given the `root` of a binary tree, determine if it is a valid binary search tree (BST).\n\nA valid BST is defined as follows:\nThe left subtree of a node contains only nodes with keys less than the node's key.\n\nThe right subtree of a node contains only nodes with keys greater than the node's key.\n\nBoth the left and right subtrees must also be binary search trees.\n\n\nExample 1:\nInput: root = [2,1,3]\nOutput: true\n\nExample 2:\nInput: root = [5,1,4,null,null,3,6]\nOutput: false\nExplanation: The root node's value is 5 but its right child's value is 4.\n\n\nConstraints:\nThe number of nodes in the tree is in the range `[1, 104]`.\n\n`-231 <= Node.val <= 231 - 1`",
+    "difficulty": "medium",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/validate-binary-search-tree",
+    "solution_url": "https://leetcode.com/articles/validate-binary-search-tree",
+    "topics": [],
+    "companies": [],
+    "stats": {
+      "acceptance_rate": 28.9,
+      "frequency": 65.3,
+      "discuss_count": 999,
+      "accepted": 950500,
+      "submissions": 3300000,
+      "likes": 5790,
+      "dislikes": 671,
+      "rating": 90.0,
+      "asked_by_faang": false
+    },
+    "similar_questions_raw": "",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-99",
+    "external_id": "99",
+    "slug": "recover-binary-search-tree",
+    "title": "Recover Binary Search Tree",
+    "description": "You are given the `root` of a binary search tree (BST), where exactly two nodes of the tree were swapped by mistake. Recover the tree without changing its structure.\n\nFollow up: A solution using `O(n)` space is pretty straight forward. Could you devise a constant space solution?\n\nExample 1:\nInput: root = [1,3,null,null,2]\nOutput: [3,1,null,null,2]\nExplanation: 3 cannot be a left child of 1 because 3 > 1. Swapping 1 and 3 makes the BST valid.\n\n\nExample 2:\nInput: root = [3,1,4,null,null,2]\nOutput: [2,1,4,null,null,3]\nExplanation: 2 cannot be in the right subtree of 3 because 2 < 3. Swapping 2 and 3 makes the BST valid.\n\n\nConstraints:\nThe number of nodes in the tree is in the range `[2, 1000]`.\n\n`-231 <= Node.val <= 231 - 1`",
+    "difficulty": "hard",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/recover-binary-search-tree",
+    "solution_url": "https://leetcode.com/articles/recover-binary-search-tree",
+    "topics": [
+      "Tree",
+      "Depth-first Search"
+    ],
+    "companies": [
+      "Oracle",
+      "Amazon",
+      "Microsoft",
+      "Uber"
+    ],
+    "stats": {
+      "acceptance_rate": 42.8,
+      "frequency": 51.2,
+      "discuss_count": 631,
+      "accepted": 206900,
+      "submissions": 484000,
+      "likes": 2361,
+      "dislikes": 91,
+      "rating": 96.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  },
+  {
+    "id": "leetcode-100",
+    "external_id": "100",
+    "slug": "same-tree",
+    "title": "Same Tree",
+    "description": "Given the roots of two binary trees `p` and `q`, write a function to check if they are the same or not.\n\nTwo binary trees are considered the same if they are structurally identical, and the nodes have the same value.\n\n\nExample 1:\nInput: p = [1,2,3], q = [1,2,3]\nOutput: true\n\nExample 2:\nInput: p = [1,2], q = [1,null,2]\nOutput: false\n\nExample 3:\nInput: p = [1,2,1], q = [1,1,2]\nOutput: false\n\nConstraints:\nThe number of nodes in both trees is in the range `[0, 100]`.\n\n`-104 <= Node.val <= 104`",
+    "difficulty": "easy",
+    "is_premium": false,
+    "source": "LeetCode metadata CSV",
+    "source_url": "https://leetcode.com/problems/same-tree",
+    "solution_url": "https://leetcode.com/articles/same-tree",
+    "topics": [
+      "Tree",
+      "Depth-first Search"
+    ],
+    "companies": [
+      "Amazon",
+      "Google",
+      "Microsoft",
+      "Apple"
+    ],
+    "stats": {
+      "acceptance_rate": 54.2,
+      "frequency": 26.8,
+      "discuss_count": 999,
+      "accepted": 703400,
+      "submissions": 1300000,
+      "likes": 3109,
+      "dislikes": 85,
+      "rating": 97.0,
+      "asked_by_faang": true
+    },
+    "similar_questions_raw": "",
+    "judgeable": false,
+    "judgeable_reason": "metadata only; add starter_code, test_code, and solution_code"
+  }
+]
