@@ -84,6 +84,20 @@ def test_token_service_grant_skips_cats():
     assert repo.get_tokens("cat-1") == 0
 
 
+def test_token_service_rejects_negative_grants():
+    """Granting negative tokens is refused."""
+
+    from app.services import tokens as token_service
+
+    repo = MockRepository.get_instance()
+    try:
+        token_service.grant_tokens(repo, "kit-1", -1)
+    except ValueError as exc:
+        assert "non-negative" in str(exc)
+        return
+    assert False, "expected ValueError"
+
+
 def test_token_service_spend_refuses_cats():
     from app.services import tokens as token_service
 
@@ -95,6 +109,74 @@ def test_token_service_spend_refuses_cats():
     except token_service.TokensNotPermitted:
         return
     assert False, "expected TokensNotPermitted"
+
+
+def test_token_service_spend_rejects_negative_and_overdrafts():
+    """Spending rejects negative values and insufficient kitten balances."""
+
+    from app.services import tokens as token_service
+
+    repo = MockRepository.get_instance()
+    try:
+        token_service.spend_tokens(repo, "kit-1", -1)
+    except ValueError as exc:
+        assert "non-negative" in str(exc)
+    else:
+        assert False, "expected negative spend ValueError"
+
+    try:
+        token_service.spend_tokens(repo, "kit-1", 999)
+    except ValueError as exc:
+        assert "insufficient" in str(exc)
+        return
+    assert False, "expected insufficient token ValueError"
+
+
+def test_token_service_spend_deducts_kitten_balance():
+    """Spending tokens returns the kitten's new balance."""
+
+    from app.services import tokens as token_service
+
+    repo = MockRepository.get_instance()
+    repo.add_tokens("kit-1", 10)
+    assert token_service.spend_tokens(repo, "kit-1", 4) == 6
+
+
+def test_failed_attempt_token_deduction_skips_cats():
+    """Cats keep their non-token balance when quiz penalties are applied."""
+
+    from app.services import tokens as token_service
+
+    repo = MockRepository.get_instance()
+    repo.set_user_role("cat-1", "cat")
+    assert token_service.deduct_for_failed_attempt(repo, "cat-1") == 0
+
+
+def test_repository_factory_rejects_unknown_backend(monkeypatch):
+    """Unknown DB_BACKEND values fail loudly at repository selection time."""
+
+    from app.db import get_repository
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "db_backend", "unknown")
+    try:
+        get_repository()
+    except ValueError as exc:
+        assert "Unknown db_backend" in str(exc)
+        return
+    assert False, "expected unknown backend ValueError"
+
+
+def test_repository_factory_can_select_mongo(monkeypatch):
+    """The repository factory can select the Mongo implementation."""
+
+    import app.db as db_module
+    from app.config import settings
+
+    sentinel = object()
+    monkeypatch.setattr(settings, "db_backend", "mongo")
+    monkeypatch.setattr(db_module.MongoRepository, "get_instance", lambda: sentinel)
+    assert db_module.get_repository() is sentinel
 
 
 # ---------- Fish selling rules ----------
@@ -120,6 +202,24 @@ def test_sell_rare_fish_to_system_is_rejected(client):
     assert response.status_code == 400
     assert "marketplace" in response.json()["detail"]
     assert repo.get_fish("kit-1", "f-rare") is not None
+
+
+def test_sell_uncommon_fish_to_system_is_rejected(client):
+    repo = MockRepository.get_instance()
+    repo.add_fish_to_inventory(
+        "kit-1",
+        _fish(
+            "f-uncommon",
+            rarity="uncommon",
+            marketplace_eligible=False,
+            is_system_sellable=True,
+        ),
+    )
+
+    response = client.post("/fishing/sell/f-uncommon?user_id=kit-1")
+    assert response.status_code == 400
+    assert "marketplace" in response.json()["detail"]
+    assert repo.get_fish("kit-1", "f-uncommon") is not None
 
 
 def test_cat_cannot_sell_to_system(client):
@@ -159,6 +259,34 @@ def test_cat_cannot_buy_fish(client):
     assert response.status_code == 403
 
 
+def test_common_fish_cannot_be_listed_on_market(client):
+    repo = MockRepository.get_instance()
+    repo.add_fish_to_inventory("seller", _common_fish("f-common"))
+
+    response = client.post(
+        "/market/list",
+        json={"user_id": "seller", "fish_id": "f-common", "price": 10},
+    )
+    assert response.status_code == 400
+    assert "uncommon or rarer" in response.json()["detail"]
+    assert repo.get_fish("seller", "f-common") is not None
+
+
+def test_uncommon_fish_can_be_listed_on_market(client):
+    repo = MockRepository.get_instance()
+    repo.add_fish_to_inventory(
+        "seller",
+        _fish("f-uncommon", rarity="uncommon", marketplace_eligible=False),
+    )
+
+    response = client.post(
+        "/market/list",
+        json={"user_id": "seller", "fish_id": "f-uncommon", "price": 25},
+    )
+    assert response.status_code == 200
+    assert response.json()["listing"]["fish"]["rarity"] == "uncommon"
+
+
 def test_seller_can_unlist_their_listing(client):
     repo = MockRepository.get_instance()
     repo.add_fish_to_inventory("seller", _fish("f-rare"))
@@ -188,9 +316,15 @@ def test_non_seller_cannot_unlist(client):
 
 def test_listings_filter_by_rarity_price_species(client):
     repo = MockRepository.get_instance()
-    repo.add_fish_to_inventory("s1", _fish("f-1", species_id="bluefin_tuna", rarity="rare", sell_value=10))
-    repo.add_fish_to_inventory("s1", _fish("f-2", species_id="great_white", rarity="legendary", sell_value=200))
-    repo.add_fish_to_inventory("s1", _fish("f-3", species_id="bluefin_tuna", rarity="rare", sell_value=10))
+    repo.add_fish_to_inventory(
+        "s1", _fish("f-1", species_id="bluefin_tuna", rarity="rare", sell_value=10)
+    )
+    repo.add_fish_to_inventory(
+        "s1", _fish("f-2", species_id="great_white", rarity="legendary", sell_value=200)
+    )
+    repo.add_fish_to_inventory(
+        "s1", _fish("f-3", species_id="bluefin_tuna", rarity="rare", sell_value=10)
+    )
     repo.create_market_listing("s1", "f-1", 20)
     repo.create_market_listing("s1", "f-2", 500)
     repo.create_market_listing("s1", "f-3", 80)
@@ -208,6 +342,27 @@ def test_listings_filter_by_rarity_price_species(client):
 
     sorted_asc = client.get("/market/listings?sort_by=price_asc").json()
     assert [l["price"] for l in sorted_asc] == [20, 80, 500]
+
+
+def test_demo_market_starter_grants_rare_fish_and_tokens(client):
+    response = client.post("/fishing/demo-market-starter/kitten_demo")
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data["tokens"] == 300
+    assert data["total_count"] == 1
+    assert data["fish"][0]["rarity"] == "rare"
+    assert data["fish"][0]["marketplace_eligible"] is True
+
+    list_response = client.post(
+        "/market/list",
+        json={
+            "user_id": "kitten_demo",
+            "fish_id": data["fish"][0]["fish_id"],
+            "price": 120,
+        },
+    )
+    assert list_response.status_code == 200
 
 
 def test_buy_is_atomic_and_transfers_everything(client):
@@ -333,9 +488,9 @@ def test_buy_sets_suggested_price_to_paid_price(client):
 
     bought = repo.get_fish("buyer", "f-1")
     assert bought is not None
-    assert bought["suggested_price"] == 90, (
-        "buyer's relist default should be the price they paid, not the original catch-time value"
-    )
+    assert (
+        bought["suggested_price"] == 90
+    ), "buyer's relist default should be the price they paid, not the original catch-time value"
 
 
 def test_cannot_list_same_fish_twice(client):

@@ -1,9 +1,8 @@
-"""In-memory repository, phase 1 only.
+"""In-memory repository for local development and tests.
 
-Loads problems from app/seeds/problems.json and fish species from
-data/fish_species.json on first instantiation. fishing_chances, inventory,
-tokens, and submissions live in dicts/lists; they reset whenever the
-process restarts. That's intentional for phase 1.
+Loads problems from data/judgeable_problems.json and fish species from
+data/fish_species.json on first instantiation. Runtime state lives in
+dicts/lists and resets whenever the process restarts.
 """
 
 import json
@@ -14,7 +13,6 @@ from pathlib import Path
 from threading import RLock
 from typing import List, Optional, Dict, Any
 
-SEEDS_PATH = Path(__file__).parent.parent / "seeds" / "problems.json"
 SERVICE_ROOT = Path(__file__).resolve().parents[2]
 REPO_ROOT = Path(__file__).resolve().parents[3]
 DATA_DIR_CANDIDATES = [
@@ -30,7 +28,6 @@ PROBLEM_DATASET_PATHS = [
         else None
     ),
     *(data_dir / "judgeable_problems.json" for data_dir in DATA_DIRS),
-    SEEDS_PATH,
 ]
 FISH_SPECIES_PATHS = [
     (
@@ -58,6 +55,7 @@ class MockRepository:
         self._uncaught: Dict[str, Dict[str, Dict[str, Any]]] = {}
         self._market_listings: Dict[str, Dict[str, Any]] = {}
         self._user_roles: Dict[str, str] = {}
+        self._user_flags: Dict[str, Dict[str, bool]] = {}
         self._mutate_lock = RLock()
         self._load_seeds()
         self._load_fish_species()
@@ -129,8 +127,25 @@ class MockRepository:
             pond
             for pond in self._ponds.values()
             if pond.get("visibility") == "private"
-            and user_id in pond.get("member_user_ids", [user_id])
+            and user_id in pond.get("member_user_ids", [])
         ]
+
+    def join_private_pond(self, user_id: str, room_code: str) -> Dict[str, Any]:
+        normalized_code = room_code.strip().upper()
+        with self._mutate_lock:
+            for pond in self._ponds.values():
+                if (
+                    pond.get("visibility") == "private"
+                    and str(pond.get("room_code", "")).upper() == normalized_code
+                ):
+                    members = pond.setdefault("member_user_ids", [])
+                    if user_id not in members:
+                        members.append(user_id)
+                    return pond
+        raise ValueError("private pond not found")
+
+    def list_teacher_ponds(self, cat_id: str) -> List[Dict[str, Any]]:
+        return [pond for pond in self._ponds.values() if pond.get("cat_id") == cat_id]
 
     def add_problem_to_pond(
         self, pond_id: str, problem: Dict[str, Any]
@@ -142,6 +157,31 @@ class MockRepository:
             self._problems[problem["id"]] = problem
             pond.setdefault("problem_ids", []).append(problem["id"])
             return problem
+
+    def update_pond_problem(
+        self, pond_id: str, problem_id: str, updates: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        with self._mutate_lock:
+            pond = self._ponds.get(pond_id)
+            problem = self._problems.get(problem_id)
+            if pond is None or problem_id not in pond.get("problem_ids", []):
+                raise ValueError("pond problem not found")
+            if problem is None:
+                raise ValueError("problem not found")
+            problem.update(updates)
+            return problem
+
+    def delete_pond_problem(self, pond_id: str, problem_id: str) -> None:
+        with self._mutate_lock:
+            pond = self._ponds.get(pond_id)
+            if pond is None or problem_id not in pond.get("problem_ids", []):
+                raise ValueError("pond problem not found")
+            pond["problem_ids"] = [
+                existing_id
+                for existing_id in pond.get("problem_ids", [])
+                if existing_id != problem_id
+            ]
+            self._problems.pop(problem_id, None)
 
     def list_pond_problems(self, pond_id: str) -> List[Dict[str, Any]]:
         pond = self._ponds.get(pond_id, {})
@@ -177,6 +217,13 @@ class MockRepository:
         seen |= {uid for uid, r in self._user_roles.items() if r == "kitten"}
         seen -= {uid for uid, r in self._user_roles.items() if r != "kitten"}
         return sorted(seen | explicit)
+
+    def get_user_flag(self, user_id: str, flag: str) -> bool:
+        return bool(self._user_flags.get(user_id, {}).get(flag, False))
+
+    def set_user_flag(self, user_id: str, flag: str, value: bool) -> None:
+        with self._mutate_lock:
+            self._user_flags.setdefault(user_id, {})[flag] = value
 
     # --- fishing chances ---
 
@@ -315,6 +362,11 @@ class MockRepository:
             if uid == user_id
         ]
 
+    def reset_problem_attempts(self, user_id: str, problem_ids: List[str]) -> None:
+        with self._mutate_lock:
+            for problem_id in problem_ids:
+                self._attempts.pop((user_id, problem_id), None)
+
     # --- wrong-answer review ---
 
     def add_uncaught_problem(
@@ -332,6 +384,7 @@ class MockRepository:
                 "user_id": user_id,
                 "problem_id": problem_id,
                 "title": problem["title"],
+                "instructions": problem.get("instructions", ""),
                 "solution_code": problem.get("solution_code", ""),
                 "solution_explanation": problem.get("solution_explanation"),
                 "attempts_used": attempts_used,
@@ -353,8 +406,10 @@ class MockRepository:
             fish = self.get_fish(user_id, fish_id)
             if fish is None:
                 raise ValueError("fish not found")
-            if not fish.get("marketplace_eligible", False):
-                raise ValueError("fish is not marketplace eligible")
+            if fish.get("rarity") == "common":
+                raise ValueError(
+                    "only uncommon or rarer fish can be listed on the marketplace"
+                )
 
             # Move the fish out of the seller's inventory and into the listing.
             # This keeps the aquarium and "your eligible fish" view in sync,
@@ -408,7 +463,9 @@ class MockRepository:
                 "epic": 3,
                 "legendary": 4,
             }
-            results.sort(key=lambda r: order.get(r["fish"].get("rarity"), 99), reverse=True)
+            results.sort(
+                key=lambda r: order.get(r["fish"].get("rarity"), 99), reverse=True
+            )
         else:  # newest
             results.sort(key=lambda r: r.get("created_at", ""), reverse=True)
         return results
@@ -428,7 +485,7 @@ class MockRepository:
             self.add_fish_to_inventory(seller_id, listing["fish"])
             listing["status"] = "cancelled"
             return listing
-        
+
     def buy_market_listing(
         self,
         listing_id: str,
@@ -443,31 +500,21 @@ class MockRepository:
                 raise ValueError("buyer cannot purchase their own listing")
             if self.get_user_role(buyer_id) != "kitten":
                 raise ValueError("only kittens can buy from the marketplace")
-            
+
             price = int(listing["price"])
             buyer_tokens = self.get_tokens(buyer_id)
             if buyer_tokens < price:
                 raise ValueError("buyer has insufficient tokens")
 
-            fish = self.remove_fish_from_inventory(
-                seller_id,
-                listing["fish"]["fish_id"],
-            )
-            if fish is None:
-                listing["status"] = "cancelled"
-                raise ValueError("listed fish is no longer available")
-
-    # Atomic under self._mutate_lock: the fish already left the seller's
+            # Atomic under self._mutate_lock: the fish already left the seller's
             # inventory at list time, so we just deliver it from the listing,
             # transfer tokens, and close the listing — all-or-nothing.
             # Bump suggested_price to the price the buyer actually paid so the
             # buyer's relist input doesn't default below what they paid.
             delivered = {**listing["fish"], "suggested_price": price}
-            self.add_tokens(seller_id, price)
-            self.add_fish_to_inventory(buyer_id, delivered)
             self.add_tokens(buyer_id, -price)
             self.add_tokens(seller_id, price)
-            self.add_fish_to_inventory(buyer_id, fish)
+            self.add_fish_to_inventory(buyer_id, delivered)
             listing["status"] = "sold"
             listing["buyer_id"] = buyer_id
             return listing

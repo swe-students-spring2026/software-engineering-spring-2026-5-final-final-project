@@ -9,20 +9,16 @@ code cannot forge a PASS by printing a fake marker.
 """
 
 import asyncio
-import json
 import os
 import re
 import resource
 import secrets
 import subprocess
 import sys
-import urllib.error
-import urllib.request
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
-
 
 # --- limits ---
 # RLIMIT_CPU: child process CPU-seconds before SIGKILL
@@ -40,6 +36,7 @@ def _wall_clock_timeout() -> float:
 
 # --- models ---
 
+
 class GradeRequest(BaseModel):
     language: str = Field(default="python")
     student_code: str = Field(..., min_length=1, max_length=20_000)
@@ -56,12 +53,13 @@ class GradeResponse(BaseModel):
 
 # --- harness ---
 
+
 def _build_harness(nonce: str) -> str:
     """Test runner appended after student + test code.
 
     Outputs exactly one line: GRADER_RESULT_<nonce>:passed:N/M  or  :failed:<name>:N/M
     """
-    return f'''
+    return f"""
 # === harness (auto-injected) ===
 import unittest as _u
 import sys as _sys
@@ -88,7 +86,7 @@ else:
     _passed = _total - len(_fails)
     print("GRADER_RESULT_{nonce}:failed:" + _name + ":" + str(_passed) + "/" + str(_total))
     _sys.exit(1)
-'''
+"""
 
 
 def _build_script(student_code: str, test_code: str, nonce: str) -> str:
@@ -96,6 +94,7 @@ def _build_script(student_code: str, test_code: str, nonce: str) -> str:
 
 
 # --- subprocess ---
+
 
 def _set_limits():
     """preexec_fn applied in child before exec. Linux only.
@@ -105,9 +104,15 @@ def _set_limits():
     if sys.platform != "linux":
         return
     for setter in (
-        lambda: resource.setrlimit(resource.RLIMIT_CPU, (MAX_CPU_SECONDS, MAX_CPU_SECONDS)),
-        lambda: resource.setrlimit(resource.RLIMIT_AS, (MAX_MEMORY_BYTES, MAX_MEMORY_BYTES)),
-        lambda: resource.setrlimit(resource.RLIMIT_NPROC, (MAX_PROCESSES, MAX_PROCESSES)),
+        lambda: resource.setrlimit(
+            resource.RLIMIT_CPU, (MAX_CPU_SECONDS, MAX_CPU_SECONDS)
+        ),
+        lambda: resource.setrlimit(
+            resource.RLIMIT_AS, (MAX_MEMORY_BYTES, MAX_MEMORY_BYTES)
+        ),
+        lambda: resource.setrlimit(
+            resource.RLIMIT_NPROC, (MAX_PROCESSES, MAX_PROCESSES)
+        ),
     ):
         try:
             setter()
@@ -121,7 +126,7 @@ def _parse_marker(stdout: str, nonce: str) -> Optional[dict]:
     for line in reversed(stdout.splitlines()):
         if not line.startswith(prefix):
             continue
-        payload = line[len(prefix):]
+        payload = line[len(prefix) :]
         if payload.startswith("passed:"):
             m = re.match(r"passed:(\d+)/(\d+)", payload)
             if m:
@@ -192,90 +197,9 @@ def grade_python(student_code: str, test_code: str) -> GradeResponse:
         tests_run=parsed["tests_run"],
         tests_passed=parsed["tests_passed"],
         failed_test=parsed.get("failed_test"),
-        error_message=None if parsed["passed"] else (completed.stderr.strip()[-500:] or None),
-    )
-
-
-def _judge0_headers() -> dict[str, str]:
-    """Build Judge0 HTTP headers from environment variables."""
-
-    headers = {"Content-Type": "application/json"}
-    auth_token = os.environ.get("JUDGE0_AUTH_TOKEN")
-    rapidapi_key = os.environ.get("JUDGE0_RAPIDAPI_KEY")
-    rapidapi_host = os.environ.get("JUDGE0_RAPIDAPI_HOST")
-    if auth_token:
-        headers["X-Auth-Token"] = auth_token
-    if rapidapi_key:
-        headers["X-RapidAPI-Key"] = rapidapi_key
-    if rapidapi_host:
-        headers["X-RapidAPI-Host"] = rapidapi_host
-    return headers
-
-
-def grade_judge0_python(student_code: str, test_code: str) -> GradeResponse:
-    """Grade Python code through a Judge0-compatible HTTP API."""
-
-    nonce = secrets.token_hex(16)
-    script = _build_script(student_code, test_code, nonce)
-    base_url = os.environ.get("JUDGE0_API_URL", "http://localhost:2358").rstrip("/")
-    language_id = int(os.environ.get("JUDGE0_PYTHON_LANGUAGE_ID", "71"))
-    payload = json.dumps(
-        {
-            "source_code": script,
-            "language_id": language_id,
-        }
-    ).encode("utf-8")
-    request = urllib.request.Request(
-        f"{base_url}/submissions?base64_encoded=false&wait=true",
-        data=payload,
-        headers=_judge0_headers(),
-        method="POST",
-    )
-
-    try:
-        with urllib.request.urlopen(
-            request,
-            timeout=_wall_clock_timeout() + 5,
-        ) as response:
-            result = json.loads(response.read().decode("utf-8"))
-    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
-        return GradeResponse(
-            passed=False,
-            tests_run=0,
-            tests_passed=0,
-            error_message=f"judge0 request failed: {exc.__class__.__name__}",
-        )
-
-    stdout = result.get("stdout") or ""
-    stderr = result.get("stderr") or ""
-    compile_output = result.get("compile_output") or ""
-    status = result.get("status") or {}
-    status_id = status.get("id")
-    status_description = status.get("description") or "unknown status"
-    parsed = _parse_marker(stdout, nonce)
-
-    if parsed is None:
-        return GradeResponse(
-            passed=False,
-            tests_run=0,
-            tests_passed=0,
-            error_message=(compile_output or stderr or status_description)[-500:],
-        )
-
-    if parsed["passed"] and status_id != 3:
-        return GradeResponse(
-            passed=False,
-            tests_run=parsed["tests_run"],
-            tests_passed=parsed["tests_passed"],
-            error_message=f"judge0 status was {status_description}",
-        )
-
-    return GradeResponse(
-        passed=parsed["passed"],
-        tests_run=parsed["tests_run"],
-        tests_passed=parsed["tests_passed"],
-        failed_test=parsed.get("failed_test"),
-        error_message=None if parsed["passed"] else (stderr[-500:] or None),
+        error_message=(
+            None if parsed["passed"] else (completed.stderr.strip()[-500:] or None)
+        ),
     )
 
 
@@ -302,19 +226,9 @@ async def grade(body: GradeRequest):
         )
     # Run blocking subprocess off the event loop so we don't stall other requests.
     loop = asyncio.get_event_loop()
-    backend = os.environ.get("GRADER_BACKEND", "local").lower()
-    if backend == "local":
-        grade_func = grade_python
-    elif backend == "judge0":
-        grade_func = grade_judge0_python
-    else:
-        raise HTTPException(
-            status_code=500,
-            detail=f"unknown GRADER_BACKEND '{backend}'",
-        )
     return await loop.run_in_executor(
         None,
-        grade_func,
+        grade_python,
         body.student_code,
         body.test_code,
     )

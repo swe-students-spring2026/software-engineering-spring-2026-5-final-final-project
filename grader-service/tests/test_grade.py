@@ -9,6 +9,8 @@ Tests set GRADER_TIMEOUT_SECONDS=2 so the timeout test takes 2s instead of 10s.
 """
 
 import os
+import subprocess
+
 os.environ["GRADER_TIMEOUT_SECONDS"] = "2"
 
 import pytest
@@ -19,6 +21,8 @@ from app.main import (
     _build_harness,
     _build_script,
     _parse_marker,
+    _set_limits,
+    grade_python,
 )
 
 
@@ -28,6 +32,7 @@ def client():
 
 
 # --- pure-function tests ---
+
 
 def test_build_harness_embeds_nonce():
     h = _build_harness("abc123")
@@ -72,15 +77,45 @@ def test_parse_marker_no_marker_returns_none():
 
 
 def test_parse_marker_takes_last_when_multiple():
-    out = (
-        "GRADER_RESULT_xyz:failed:test_a:0/1\n"
-        "GRADER_RESULT_xyz:passed:1/1\n"
-    )
+    out = "GRADER_RESULT_xyz:failed:test_a:0/1\n" + "GRADER_RESULT_xyz:passed:1/1\n"
     parsed = _parse_marker(out, "xyz")
     assert parsed["passed"] is True
 
 
+def test_set_limits_ignores_rejected_resource_limits(monkeypatch):
+    """Linux resource limit setup ignores unsupported kernel limits."""
+
+    calls = []
+
+    def fake_setrlimit(limit_name, values):
+        calls.append((limit_name, values))
+        raise OSError("unsupported")
+
+    monkeypatch.setattr("app.main.sys.platform", "linux")
+    monkeypatch.setattr("app.main.resource.setrlimit", fake_setrlimit)
+    _set_limits()
+    assert len(calls) == 3
+
+
+def test_grade_python_detects_marker_exit_mismatch(monkeypatch):
+    """A passing marker with a failing process is treated as failure."""
+
+    completed = subprocess.CompletedProcess(
+        args=["python"],
+        returncode=1,
+        stdout="GRADER_RESULT_nonce:passed:1/1\n",
+        stderr="",
+    )
+
+    monkeypatch.setattr("app.main.secrets.token_hex", lambda size: "nonce")
+    monkeypatch.setattr("app.main.subprocess.run", lambda *args, **kwargs: completed)
+    result = grade_python("def x(): pass", "import unittest")
+    assert result.passed is False
+    assert result.error_message == "grader marker mismatch with exit code"
+
+
 # --- HTTP route tests ---
+
 
 def test_health(client):
     r = client.get("/health")
@@ -90,24 +125,31 @@ def test_health(client):
 
 
 def test_grade_unsupported_language(client):
-    r = client.post("/grade", json={
-        "language": "ruby",
-        "student_code": "def foo; end",
-        "test_code": "...",
-    })
+    r = client.post(
+        "/grade",
+        json={
+            "language": "ruby",
+            "student_code": "def foo; end",
+            "test_code": "...",
+        },
+    )
     assert r.status_code == 400
 
 
 def test_grade_rejects_empty_code(client):
-    r = client.post("/grade", json={
-        "language": "python",
-        "student_code": "",
-        "test_code": "import unittest",
-    })
+    r = client.post(
+        "/grade",
+        json={
+            "language": "python",
+            "student_code": "",
+            "test_code": "import unittest",
+        },
+    )
     assert r.status_code == 422
 
 
 # --- integration tests (real subprocess) ---
+
 
 def test_grade_correct_solution_passes(client):
     student = "def add(a, b):\n    return a + b\n"
@@ -121,11 +163,14 @@ def test_grade_correct_solution_passes(client):
         "    def test_zero(self):\n"
         "        self.assertEqual(add(0, 0), 0)\n"
     )
-    r = client.post("/grade", json={
-        "language": "python",
-        "student_code": student,
-        "test_code": test_code,
-    })
+    r = client.post(
+        "/grade",
+        json={
+            "language": "python",
+            "student_code": student,
+            "test_code": test_code,
+        },
+    )
     assert r.status_code == 200
     data = r.json()
     assert data["passed"] is True
@@ -146,11 +191,14 @@ def test_grade_wrong_solution_fails_with_test_name(client):
         "    def test_zero(self):\n"
         "        self.assertEqual(add(0, 0), 0)\n"
     )
-    r = client.post("/grade", json={
-        "language": "python",
-        "student_code": student,
-        "test_code": test_code,
-    })
+    r = client.post(
+        "/grade",
+        json={
+            "language": "python",
+            "student_code": student,
+            "test_code": test_code,
+        },
+    )
     assert r.status_code == 200
     data = r.json()
     assert data["passed"] is False
@@ -160,11 +208,18 @@ def test_grade_wrong_solution_fails_with_test_name(client):
 
 
 def test_grade_syntax_error_in_student_code(client):
-    r = client.post("/grade", json={
-        "language": "python",
-        "student_code": "def broken(:\n    pass\n",
-        "test_code": "import unittest\nclass X(unittest.TestCase):\n    def test_x(self): pass\n",
-    })
+    r = client.post(
+        "/grade",
+        json={
+            "language": "python",
+            "student_code": "def broken(:\n    pass\n",
+            "test_code": (
+                "import unittest\n"
+                "class X(unittest.TestCase):\n"
+                "    def test_x(self): pass\n"
+            ),
+        },
+    )
     assert r.status_code == 200
     data = r.json()
     assert data["passed"] is False
@@ -180,11 +235,14 @@ def test_grade_runtime_error_in_student_code(client):
         "    def test_basic(self):\n"
         "        self.assertEqual(add(1, 2), 3)\n"
     )
-    r = client.post("/grade", json={
-        "language": "python",
-        "student_code": student,
-        "test_code": test_code,
-    })
+    r = client.post(
+        "/grade",
+        json={
+            "language": "python",
+            "student_code": student,
+            "test_code": test_code,
+        },
+    )
     assert r.status_code == 200
     data = r.json()
     assert data["passed"] is False
@@ -201,11 +259,14 @@ def test_grade_timeout(client):
         "    def test_x(self):\n"
         "        add(1, 2)\n"
     )
-    r = client.post("/grade", json={
-        "language": "python",
-        "student_code": student,
-        "test_code": test_code,
-    })
+    r = client.post(
+        "/grade",
+        json={
+            "language": "python",
+            "student_code": student,
+            "test_code": test_code,
+        },
+    )
     assert r.status_code == 200
     data = r.json()
     assert data["passed"] is False
@@ -225,11 +286,14 @@ def test_grade_anti_spoof_fake_marker_does_not_pass(client):
         "    def test_basic(self):\n"
         "        self.assertEqual(add(2, 3), 5)\n"
     )
-    r = client.post("/grade", json={
-        "language": "python",
-        "student_code": student,
-        "test_code": test_code,
-    })
+    r = client.post(
+        "/grade",
+        json={
+            "language": "python",
+            "student_code": student,
+            "test_code": test_code,
+        },
+    )
     assert r.status_code == 200
     data = r.json()
     # Real harness ran, real test failed.
@@ -245,11 +309,14 @@ def test_grade_student_early_sys_exit_does_not_pass(client):
         "    def test_basic(self):\n"
         "        self.assertEqual(add(2, 3), 5)\n"
     )
-    r = client.post("/grade", json={
-        "language": "python",
-        "student_code": student,
-        "test_code": test_code,
-    })
+    r = client.post(
+        "/grade",
+        json={
+            "language": "python",
+            "student_code": student,
+            "test_code": test_code,
+        },
+    )
     assert r.status_code == 200
     assert r.json()["passed"] is False
 
@@ -273,11 +340,14 @@ def test_grade_real_leap_year_problem(client):
         "    def test_1900(self):\n"
         "        self.assertIs(leap_year(1900), False)\n"
     )
-    r = client.post("/grade", json={
-        "language": "python",
-        "student_code": student,
-        "test_code": test_code,
-    })
+    r = client.post(
+        "/grade",
+        json={
+            "language": "python",
+            "student_code": student,
+            "test_code": test_code,
+        },
+    )
     assert r.status_code == 200
     data = r.json()
     assert data["passed"] is True

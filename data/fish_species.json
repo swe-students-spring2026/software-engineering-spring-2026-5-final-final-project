@@ -17,7 +17,8 @@
     "image_pool": [
       "/fish_images/pond_minnow.png"
     ],
-    "marketplace_eligible": false
+    "marketplace_eligible": false,
+    "is_system_sellable": true
   },
   {
     "id": "bluegill",
@@ -37,7 +38,8 @@
     "image_pool": [
       "/fish_images/bluegill.png"
     ],
-    "marketplace_eligible": false
+    "marketplace_eligible": false,
+    "is_system_sellable": true
   },
   {
     "id": "golden_shiner",
@@ -57,7 +59,8 @@
     "image_pool": [
       "/fish_images/golden_shiner.png"
     ],
-    "marketplace_eligible": false
+    "marketplace_eligible": false,
+    "is_system_sellable": true
   },
   {
     "id": "creek_chub",
@@ -77,7 +80,8 @@
     "image_pool": [
       "/fish_images/creek_chub.png"
     ],
-    "marketplace_eligible": false
+    "marketplace_eligible": false,
+    "is_system_sellable": true
   },
   {
     "id": "yellow_perch",
@@ -97,7 +101,8 @@
     "image_pool": [
       "/fish_images/yellow_perch.png"
     ],
-    "marketplace_eligible": false
+    "marketplace_eligible": false,
+    "is_system_sellable": true
   },
   {
     "id": "sardine",
@@ -117,7 +122,8 @@
     "image_pool": [
       "/fish_images/sardine.png"
     ],
-    "marketplace_eligible": false
+    "marketplace_eligible": false,
+    "is_system_sellable": true
   },
   {
     "id": "anchovy",
@@ -137,7 +143,8 @@
     "image_pool": [
       "/fish_images/anchovy.png"
     ],
-    "marketplace_eligible": false
+    "marketplace_eligible": false,
+    "is_system_sellable": true
   },
   {
     "id": "black_sea_sprat",
@@ -157,7 +164,8 @@
     "image_pool": [
       "/fish_images/black_sea_sprat.png"
     ],
-    "marketplace_eligible": false
+    "marketplace_eligible": false,
+    "is_system_sellable": true
   },
   {
     "id": "horse_mackerel",
@@ -177,7 +185,8 @@
     "image_pool": [
       "/fish_images/horse_mackerel.png"
     ],
-    "marketplace_eligible": false
+    "marketplace_eligible": false,
+    "is_system_sellable": true
   },
   {
     "id": "redbelly_tilapia",
@@ -197,7 +206,8 @@
     "image_pool": [
       "/fish_images/redbelly_tilapia.png"
     ],
-    "marketplace_eligible": false
+    "marketplace_eligible": false,
+    "is_system_sellable": true
   },
   {
     "id": "mud_carp",
@@ -217,7 +227,8 @@
     "image_pool": [
       "/fish_images/mud_carp.png"
     ],
-    "marketplace_eligible": false
+    "marketplace_eligible": false,
+    "is_system_sellable": true
   },
   {
     "id": "rainbow_trout",
@@ -237,7 +248,8 @@
     "image_pool": [
       "/fish_images/rainbow_trout.png"
     ],
-    "marketplace_eligible": false
+    "marketplace_eligible": false,
+    "is_system_sellable": true
   },
   {
     "id": "red_mullet",
@@ -257,7 +269,8 @@
     "image_pool": [
       "/fish_images/red_mullet.png"
     ],
-    "marketplace_eligible": false
+    "marketplace_eligible": false,
+    "is_system_sellable": true
   },
   {
     "id": "sea_bass",
@@ -277,7 +290,8 @@
     "image_pool": [
       "/fish_images/sea_bass.png"
     ],
-    "marketplace_eligible": false
+    "marketplace_eligible": false,
+    "is_system_sellable": true
   },
   {
     "id": "koi",
@@ -297,7 +311,8 @@
     "image_pool": [
       "/fish_images/koi.png"
     ],
-    "marketplace_eligible": false
+    "marketplace_eligible": false,
+    "is_system_sellable": true
   },
   {
     "id": "clownfish",
@@ -317,7 +332,8 @@
     "image_pool": [
       "/fish_images/clownfish.png"
     ],
-    "marketplace_eligible": false
+    "marketplace_eligible": false,
+    "is_system_sellable": true
   },
   {
     "id": "flying_fish",
@@ -337,7 +353,8 @@
     "image_pool": [
       "/fish_images/flying_fish.png"
     ],
-    "marketplace_eligible": false
+    "marketplace_eligible": false,
+    "is_system_sellable": true
   },
   {
     "id": "channel_catfish",
@@ -357,7 +374,8 @@
     "image_pool": [
       "/fish_images/channel_catfish.png"
     ],
-    "marketplace_eligible": false
+    "marketplace_eligible": false,
+    "is_system_sellable": true
   },
   {
     "id": "pufferfish",
@@ -377,7 +395,8 @@
     "image_pool": [
       "/fish_images/pufferfish.png"
     ],
-    "marketplace_eligible": false
+    "marketplace_eligible": false,
+    "is_system_sellable": true
   },
   {
     "id": "lionfish",
@@ -397,7 +416,8 @@
     "image_pool": [
       "/fish_images/lionfish.png"
     ],
-    "marketplace_eligible": true
+    "marketplace_eligible": true,
+    "is_system_sellable": false
   },
   {
     "id": "anglerfish",
@@ -417,7 +437,8 @@
     "image_pool": [
       "/fish_images/anglerfish.png"
     ],
-    "marketplace_eligible": true
+    "marketplace_eligible": true,
+    "is_system_sellable": false
   },
   {
     "id": "mandarinfish",
@@ -437,7 +458,8 @@
     "image_pool": [
       "/fish_images/mandarinfish.png"
     ],
-    "marketplace_eligible": true
+    "marketplace_eligible": true,
+    "is_system_sellable": false
   },
   {
     "id": "electric_eel",
@@ -457,7 +479,8 @@
     "image_pool": [
       "/fish_images/electric_eel.png"
     ],
-    "marketplace_eligible": true
+    "marketplace_eligible": true,
+    "is_system_sellable": false
   },
   {
     "id": "mahi_mahi",
@@ -477,7 +500,8 @@
     "image_pool": [
       "/fish_images/mahi_mahi.png"
     ],
-    "marketplace_eligible": true
+    "marketplace_eligible": true,
+    "is_system_sellable": false
   },
   {
     "id": "lake_sturgeon",
@@ -497,7 +521,8 @@
     "image_pool": [
       "/fish_images/lake_sturgeon.png"
     ],
-    "marketplace_eligible": true
+    "marketplace_eligible": true,
+    "is_system_sellable": false
   },
   {
     "id": "swordfish",
@@ -517,7 +542,8 @@
     "image_pool": [
       "/fish_images/swordfish.png"
     ],
-    "marketplace_eligible": true
+    "marketplace_eligible": true,
+    "is_system_sellable": false
   },
   {
     "id": "giant_grouper",
@@ -537,7 +563,8 @@
     "image_pool": [
       "/fish_images/giant_grouper.png"
     ],
-    "marketplace_eligible": true
+    "marketplace_eligible": true,
+    "is_system_sellable": false
   },
   {
     "id": "arapaima",
@@ -557,7 +584,8 @@
     "image_pool": [
       "/fish_images/arapaima.png"
     ],
-    "marketplace_eligible": true
+    "marketplace_eligible": true,
+    "is_system_sellable": false
   },
   {
     "id": "sailfish",
@@ -577,7 +605,8 @@
     "image_pool": [
       "/fish_images/sailfish.png"
     ],
-    "marketplace_eligible": true
+    "marketplace_eligible": true,
+    "is_system_sellable": false
   },
   {
     "id": "bluefin_tuna",
@@ -597,7 +626,8 @@
     "image_pool": [
       "/fish_images/bluefin_tuna.png"
     ],
-    "marketplace_eligible": true
+    "marketplace_eligible": true,
+    "is_system_sellable": false
   },
   {
     "id": "coelacanth",
@@ -617,7 +647,8 @@
     "image_pool": [
       "/fish_images/coelacanth.png"
     ],
-    "marketplace_eligible": true
+    "marketplace_eligible": true,
+    "is_system_sellable": false
   },
   {
     "id": "guppy",
@@ -637,7 +668,8 @@
     "image_pool": [
       "/fish_images/guppy.png"
     ],
-    "marketplace_eligible": false
+    "marketplace_eligible": false,
+    "is_system_sellable": true
   },
   {
     "id": "zebra_danio",
@@ -657,7 +689,8 @@
     "image_pool": [
       "/fish_images/zebra_danio.png"
     ],
-    "marketplace_eligible": false
+    "marketplace_eligible": false,
+    "is_system_sellable": true
   },
   {
     "id": "rosy_barb",
@@ -677,7 +710,8 @@
     "image_pool": [
       "/fish_images/rosy_barb.png"
     ],
-    "marketplace_eligible": false
+    "marketplace_eligible": false,
+    "is_system_sellable": true
   },
   {
     "id": "white_cloud_minnow",
@@ -697,7 +731,8 @@
     "image_pool": [
       "/fish_images/white_cloud_minnow.png"
     ],
-    "marketplace_eligible": false
+    "marketplace_eligible": false,
+    "is_system_sellable": true
   },
   {
     "id": "silver_molly",
@@ -717,7 +752,8 @@
     "image_pool": [
       "/fish_images/silver_molly.png"
     ],
-    "marketplace_eligible": false
+    "marketplace_eligible": false,
+    "is_system_sellable": true
   },
   {
     "id": "sunset_platy",
@@ -737,7 +773,8 @@
     "image_pool": [
       "/fish_images/sunset_platy.png"
     ],
-    "marketplace_eligible": false
+    "marketplace_eligible": false,
+    "is_system_sellable": true
   },
   {
     "id": "neon_tetra",
@@ -757,7 +794,8 @@
     "image_pool": [
       "/fish_images/neon_tetra.png"
     ],
-    "marketplace_eligible": false
+    "marketplace_eligible": false,
+    "is_system_sellable": true
   },
   {
     "id": "peppered_cory",
@@ -777,7 +815,8 @@
     "image_pool": [
       "/fish_images/peppered_cory.png"
     ],
-    "marketplace_eligible": false
+    "marketplace_eligible": false,
+    "is_system_sellable": true
   },
   {
     "id": "green_swordtail",
@@ -797,7 +836,8 @@
     "image_pool": [
       "/fish_images/green_swordtail.png"
     ],
-    "marketplace_eligible": false
+    "marketplace_eligible": false,
+    "is_system_sellable": true
   },
   {
     "id": "betta",
@@ -817,7 +857,8 @@
     "image_pool": [
       "/fish_images/betta.png"
     ],
-    "marketplace_eligible": false
+    "marketplace_eligible": false,
+    "is_system_sellable": true
   },
   {
     "id": "dwarf_gourami",
@@ -837,7 +878,8 @@
     "image_pool": [
       "/fish_images/dwarf_gourami.png"
     ],
-    "marketplace_eligible": false
+    "marketplace_eligible": false,
+    "is_system_sellable": true
   },
   {
     "id": "glass_catfish",
@@ -857,7 +899,8 @@
     "image_pool": [
       "/fish_images/glass_catfish.png"
     ],
-    "marketplace_eligible": false
+    "marketplace_eligible": false,
+    "is_system_sellable": true
   },
   {
     "id": "cherry_barb",
@@ -877,7 +920,8 @@
     "image_pool": [
       "/fish_images/cherry_barb.png"
     ],
-    "marketplace_eligible": false
+    "marketplace_eligible": false,
+    "is_system_sellable": true
   },
   {
     "id": "opaline_gourami",
@@ -897,7 +941,8 @@
     "image_pool": [
       "/fish_images/opaline_gourami.png"
     ],
-    "marketplace_eligible": false
+    "marketplace_eligible": false,
+    "is_system_sellable": true
   },
   {
     "id": "discus",
@@ -917,7 +962,8 @@
     "image_pool": [
       "/fish_images/discus.png"
     ],
-    "marketplace_eligible": true
+    "marketplace_eligible": true,
+    "is_system_sellable": false
   },
   {
     "id": "lined_seahorse",
@@ -937,7 +983,8 @@
     "image_pool": [
       "/fish_images/lined_seahorse.png"
     ],
-    "marketplace_eligible": true
+    "marketplace_eligible": true,
+    "is_system_sellable": false
   },
   {
     "id": "green_moray",
@@ -957,7 +1004,8 @@
     "image_pool": [
       "/fish_images/green_moray.png"
     ],
-    "marketplace_eligible": true
+    "marketplace_eligible": true,
+    "is_system_sellable": false
   },
   {
     "id": "manta_ray",
@@ -977,7 +1025,8 @@
     "image_pool": [
       "/fish_images/manta_ray.png"
     ],
-    "marketplace_eligible": true
+    "marketplace_eligible": true,
+    "is_system_sellable": false
   },
   {
     "id": "oarfish",
@@ -997,6 +1046,7 @@
     "image_pool": [
       "/fish_images/oarfish.png"
     ],
-    "marketplace_eligible": true
+    "marketplace_eligible": true,
+    "is_system_sellable": false
   }
 ]
