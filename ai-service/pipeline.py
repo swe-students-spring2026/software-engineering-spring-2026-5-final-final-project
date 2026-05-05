@@ -1,4 +1,7 @@
+import os
 from dataclasses import dataclass
+
+from faster_whisper import WhisperModel
 
 
 @dataclass
@@ -75,6 +78,23 @@ def select_top_n(scored: list[ScoredWindow], n: int) -> list[ScoredWindow]:
 
 def _overlaps(a: Window, b: Window) -> bool:
     return a.start < b.end and b.start < a.end
+
+
+_whisper_model: WhisperModel | None = None
+
+
+def _get_whisper_model() -> WhisperModel:
+    global _whisper_model
+    if _whisper_model is None:
+        name = os.getenv("WHISPER_MODEL", "base.en")
+        _whisper_model = WhisperModel(name, device="cpu", compute_type="int8")
+    return _whisper_model
+
+
+def transcribe_real(video_path: str) -> list[Segment]:
+    model = _get_whisper_model()
+    segs, _info = model.transcribe(video_path)
+    return [Segment(start=float(s.start), end=float(s.end), text=s.text) for s in segs]
 
 
 def transcribe_mock(video_path: str) -> list[Segment]:
