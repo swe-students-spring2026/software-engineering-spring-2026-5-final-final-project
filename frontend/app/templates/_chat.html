@@ -16,6 +16,11 @@
     </span>
     <span>AI Course Assistant</span>
     <div class="chat-header-btns">
+      <select id="chat-speed" title="Faster ↔ smarter responses" aria-label="Response speed">
+        <option value="fast">Fast</option>
+        <option value="balanced" selected>Balanced</option>
+        <option value="smart">Smart</option>
+      </select>
       <button id="chat-new-btn" onclick="clearChatHistory()" title="Start a new conversation">New chat</button>
       <button id="chat-close-btn" onclick="toggleChat()">✕</button>
     </div>

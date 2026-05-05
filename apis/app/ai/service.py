@@ -80,28 +80,68 @@ def _entry_pair(it: Any) -> tuple[str, str]:
     return (str(it.get("code", "")).strip(), str(it.get("crn", "")).strip())
 
 
-def _split_kept_dropped(parsed: list[Any]) -> tuple[list[Any], list[str]]:
-    pairs = [p for p in (_entry_pair(it) for it in parsed) if p[0] and p[1]]
-    valid = verify_section_crns(pairs) if pairs else set()
+# Fields the calendar uses; if the model hallucinated any, we overwrite with
+# the value the tool actually returned for the matching (code, crn).
+_CALENDAR_FIELDS = ("title", "section", "meets_human", "instructor")
+
+
+def _apply_truth(entry: dict[str, Any], truth: dict[str, Any]) -> None:
+    """Overwrite calendar fields on the model's entry with real tool values."""
+    for field in _CALENDAR_FIELDS:
+        real = truth.get(field)
+        if real not in (None, ""):
+            entry[field] = real
+
+
+def _split_kept_dropped(
+    parsed: list[Any],
+    seen_sections: dict[tuple[str, str], dict[str, Any]],
+) -> tuple[list[Any], list[str]]:
+    """Keep only entries whose (code, crn) was returned by a tool call this turn.
+
+    Falls back to a Mongo lookup ONLY for pairs the model didn't fetch but that
+    happen to exist — kept as a safety net so we don't drop a legitimate add
+    when the model recalls a CRN from earlier context. Overwrites calendar
+    fields from the in-turn tool result so a hallucinated instructor/time in
+    the JSON gets replaced with the real one.
+    """
     kept: list[Any] = []
-    dropped: list[str] = []
-    for it in parsed:
+    needs_db_check: list[tuple[int, tuple[str, str]]] = []
+
+    for idx, it in enumerate(parsed):
         code, crn = _entry_pair(it)
         if not code or not crn:
             continue
-        if (code, crn) in valid:
+        truth = seen_sections.get((code, crn))
+        if truth is not None:
+            _apply_truth(it, truth)
             kept.append(it)
         else:
-            dropped.append(f"{code} (CRN {crn})")
+            needs_db_check.append((idx, (code, crn)))
+
+    if not needs_db_check:
+        return kept, []
+
+    valid = verify_section_crns([p for _, p in needs_db_check])
+    dropped: list[str] = []
+    for idx, pair in needs_db_check:
+        if pair in valid:
+            kept.append(parsed[idx])
+        else:
+            dropped.append(f"{pair[0]} (CRN {pair[1]})")
     return kept, dropped
 
 
-def _validate_add_courses_block(reply: str) -> str:
+def _validate_add_courses_block(
+    reply: str,
+    seen_sections: dict[tuple[str, str], dict[str, Any]] | None = None,
+) -> str:
     """Strip hallucinated entries from the model's `add-courses` block.
 
-    The model occasionally fabricates CRNs that look plausible but don't exist
-    in MongoDB. We parse the block, verify each (code, crn) pair against the
-    catalog, and rewrite the reply with only the verified entries.
+    Primary check: each (code, crn) must have come from a get_course_sections
+    result during this turn. Secondary fallback: the pair exists in Mongo at
+    all. This catches the common failure where the model invents plausible
+    CRNs (or copies the prompt example) for courses it never fetched.
     """
     match = _ADD_COURSES_BLOCK_RE.search(reply)
     if not match:
@@ -115,7 +155,7 @@ def _validate_add_courses_block(reply: str) -> str:
     if not isinstance(parsed, list):
         return _ADD_COURSES_BLOCK_RE.sub("", reply).rstrip()
 
-    kept, dropped = _split_kept_dropped(parsed)
+    kept, dropped = _split_kept_dropped(parsed, seen_sections or {})
 
     if not kept:
         cleaned = _ADD_COURSES_BLOCK_RE.sub("", reply).rstrip()
@@ -195,22 +235,28 @@ _SYSTEM_INSTRUCTION = (
     "ADDING TO THE STUDENT'S CALENDAR: When you have just recommended specific course "
     "sections AND the student's request implies they want them on their schedule "
     "(\"build me a schedule\", \"add these\", \"plan my semester\", etc.), append a "
-    "single fenced block at the very END of your reply listing the courses to add:\n\n"
+    "single fenced block at the very END of your reply listing the courses to add. "
+    "Use the EXACT field values returned by get_course_sections — copy them, do not "
+    "retype or paraphrase. The schema is:\n\n"
     "```add-courses\n"
     "[\n"
-    "  {\"code\": \"CSCI-UA 102\", \"crn\": \"12345\", \"title\": \"Data Structures\", "
-    "\"section\": \"003\", \"meets_human\": \"MW 11:00am-12:15pm\", "
-    "\"instructor\": \"Joanna Klukowska\"},\n"
-    "  {\"code\": \"MATH-UA 121\", \"crn\": \"67890\", \"title\": \"Calculus I\", "
-    "\"section\": \"001\", \"meets_human\": \"TR 9:30am-10:45am\", "
-    "\"instructor\": \"Jane Doe\"}\n"
+    "  {\"code\": \"<CODE_FROM_TOOL>\", \"crn\": \"<CRN_FROM_TOOL>\", "
+    "\"title\": \"<TITLE_FROM_TOOL>\", \"section\": \"<SECTION_FROM_TOOL>\", "
+    "\"meets_human\": \"<MEETS_HUMAN_FROM_TOOL>\", "
+    "\"instructor\": \"<INSTRUCTOR_FROM_TOOL>\"}\n"
     "]\n"
     "```\n\n"
     "Rules for the block:\n"
-    "• Only include courses/CRNs you actually fetched via get_course_sections in "
-    "this turn — never invent codes, CRNs, or meeting times.\n"
+    "• HARD REQUIREMENT: every entry's (code, crn) pair must come from a "
+    "get_course_sections result you received THIS TURN. If you did not call "
+    "get_course_sections for a course, do NOT include it. The server verifies "
+    "this and will silently drop entries you fabricated, leaving the student "
+    "with nothing to add.\n"
+    "• Never invent codes, CRNs, instructors, meeting times, or section numbers. "
+    "If search_courses gave you a course but you didn't fetch sections for it, "
+    "you may mention it in prose but you cannot add it to the calendar.\n"
     "• Each entry MUST include: code, crn, title, section, meets_human, instructor "
-    "(use \"\" if a field is genuinely missing — do not guess).\n"
+    "(use \"\" if the tool returned an empty value — do not guess).\n"
     "• Include only LECTURE sections. The frontend handles recitation/lab pairing.\n"
     "• Omit the block entirely if the student is just browsing or asking questions. "
     "Don't add courses unsolicited.\n"
@@ -316,6 +362,27 @@ def _history_to_contents(history: list[dict[str, Any]]) -> list[Any]:
     return cleaned
 
 
+def _harvest_sections(
+    name: str,
+    result: Any,
+    seen_sections: dict[tuple[str, str], dict[str, Any]],
+) -> None:
+    """Index sections returned by get_course_sections by (code, crn).
+
+    Used downstream to verify (and overwrite) the model's add-courses entries
+    against what the tools actually returned this turn.
+    """
+    if name != "get_course_sections" or not isinstance(result, dict):
+        return
+    for sec in result.get("sections") or []:
+        if not isinstance(sec, dict):
+            continue
+        code = str(sec.get("code", "")).strip()
+        crn = str(sec.get("crn", "")).strip()
+        if code and crn:
+            seen_sections[(code, crn)] = sec
+
+
 def _execute_calls_parallel(function_calls: list[Any]) -> list[Any]:
     """Run multiple tool calls in parallel. Each tool is a Mongo query (often
     with an RMP cache lookup), so they're I/O-bound and benefit from threads."""
@@ -331,17 +398,18 @@ def _execute_calls_parallel(function_calls: list[Any]) -> list[Any]:
         return [(name, fut.result()) for name, fut in futures]
 
 
-def _run_tool_loop(contents: list[Any]) -> str:
+def _run_tool_loop(contents: list[Any], model: str = MODEL) -> str:
     """Drive the generate → tool-call → generate loop until a text answer."""
     turn_start = time.perf_counter()
     gen_total = 0.0
     tool_total = 0.0
     rounds = 0
     tool_calls = 0
+    seen_sections: dict[tuple[str, str], dict[str, Any]] = {}
 
     t0 = time.perf_counter()
     response = _client.models.generate_content(
-        model=MODEL, contents=contents, config=_config,
+        model=model, contents=contents, config=_config,
     )
     gen_total += time.perf_counter() - t0
     print(f"DEBUG - AI gen #0: {(time.perf_counter() - t0):.2f}s", flush=True)
@@ -356,7 +424,7 @@ def _run_tool_loop(contents: list[Any]) -> str:
                 f"rounds={rounds} tool_calls={tool_calls}",
                 flush=True,
             )
-            return _validate_add_courses_block(response.text or "")
+            return _validate_add_courses_block(response.text or "", seen_sections)
 
         contents.append(response.candidates[0].content)
 
@@ -373,6 +441,9 @@ def _run_tool_loop(contents: list[Any]) -> str:
             flush=True,
         )
 
+        for name, result in results:
+            _harvest_sections(name, result, seen_sections)
+
         result_parts = [
             types.Part.from_function_response(
                 name=name,
@@ -385,7 +456,7 @@ def _run_tool_loop(contents: list[Any]) -> str:
         rounds += 1
         t_gen = time.perf_counter()
         response = _client.models.generate_content(
-            model=MODEL, contents=contents, config=_config,
+            model=model, contents=contents, config=_config,
         )
         elapsed_gen = time.perf_counter() - t_gen
         gen_total += elapsed_gen
@@ -406,7 +477,7 @@ def _run_tool_loop(contents: list[Any]) -> str:
 
     if response.candidates:
         print(f"DEBUG - AI STOP REASON: {response.candidates[0].finish_reason}", flush=True)
-    return _validate_add_courses_block(response.text or "")
+    return _validate_add_courses_block(response.text or "", seen_sections)
 
 
 def chat(
@@ -415,6 +486,7 @@ def chat(
     major: str = "",
     student_profile: dict[str, Any] | None = None,
     history: list[dict[str, Any]] | None = None,
+    model: str | None = None,
 ) -> str:
     """Run the full tool-calling loop for a single user turn.
 
@@ -425,6 +497,9 @@ def chat(
         student_profile: Profile context merged into the prompt.
         history: Prior conversation as [{role: "user"|"model", text: str}, ...].
             Trimmed server-side; safe to pass the whole transcript.
+        model: Optional override for the Gemini model ID. Defaults to MODEL
+            (from GEMINI_MODEL env var). The route validates against a
+            whitelist before passing it in, so this value is trusted here.
     """
     if _client is None or types is None:
         return (
@@ -448,4 +523,4 @@ def chat(
         parts=[types.Part.from_text(text=full_message)],
     ))
 
-    return _run_tool_loop(contents)
+    return _run_tool_loop(contents, model=model or MODEL)

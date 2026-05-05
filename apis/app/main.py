@@ -64,6 +64,13 @@ requirements_service = RequirementsService(db)
 # Wire professor ratings MongoDB cache and AI tools
 init_professor_ratings(db)
 db.users.create_index("email", unique=True, background=True)
+# Ensure the text index search_courses depends on exists even before the
+# scraper container has finished its first crawl — otherwise the AI chat's
+# first $text query right after `docker compose up` errors out.
+db.classes.create_index(
+    [("title", "text"), ("topic", "text"), ("code", "text"), ("description", "text")],
+    background=True,
+)
 
 from app.ai.tools import init_tools  # noqa: E402
 init_tools(db)
