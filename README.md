@@ -73,6 +73,72 @@ docker pull chasecvitale/invite-adjuster:latest
 docker compose up
 
 ```
+
 Then open this URL in your browser: `http://127.0.0.1:5002/`
 
 After creating an account and signing in, you can start exploring the main features of the app, including creating and sharing events, and accepting and declining event invitations.
+
+## Deployment
+
+Our project was deployed using _Azure Container Apps_ with Docker images stored in _Azure Container Registry (ACR)_.
+
+The application contains three containerized services:
+
+```bash
+| Service             | Description                      |
+| ------------------- | -------------------------------- |
+| ⁠ web-app ⁠         | Main Flask web application       |
+| ⁠ invite-adjuster ⁠ | Microservice used by the web app |
+| ⁠ mongodb ⁠         | MongoDB database container       |
+```
+
+The deployment uses the following Azure names:
+
+Resource Group: flakemate-rg
+Container Apps Environment: flakemate-env
+Azure Container Registry: project5flakemateacr
+Web App Container App: web-app
+Invite Adjuster Container App: invite-adjuster
+MongoDB Container App: mongodb
+Azure Compose File
+
+Because Azure Container Apps requires Linux AMD64 images, the images should be built with:
+
+```bash
+docker build --platform linux/amd64 -t web-app ./web_app
+docker tag web-app project5flakemateacr.azurecr.io/web-app:latest
+docker push project5flakemateacr.azurecr.io/web-app:latest
+```
+
+For the invite-adjuster microservice:
+
+```bash
+docker build --platform linux/amd64 -t invite-adjuster ./invite_adjuster
+docker tag invite-adjuster project5flakemateacr.azurecr.io/invite-adjuster:latest
+docker push project5flakemateacr.azurecr.io/invite-adjuster:latest
+```
+
+### Deploy to Azure Container Apps
+
+First, store the ACR password in a terminal variable:
+
+```bash
+ACR_PASS=$(az acr credential show \
+  --name project5flakemateacr \
+  --query "passwords[0].value" \
+  -o tsv)
+```
+
+Then deploy using the Azure compose file:
+
+```bash
+az containerapp compose create \
+  --resource-group flakemate-rg \
+  --environment flakemate-env \
+  --compose-file-path docker-compose.azure.yml \
+  --registry-server project5flakemateacr.azurecr.io \
+  --registry-username project5flakemateacr \
+  --registry-password "$ACR_PASS
+```
+
+Here is the link to our deployed project: [FlakeMate](https://web-app.redpebble-b390f80a.eastus.azurecontainerapps.io/)
