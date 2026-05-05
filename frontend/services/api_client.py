@@ -25,9 +25,17 @@ def _api_post(path: str, payload: dict) -> dict | list:
     return resp.json()
 
 
-def search_movies(query: str) -> list[dict]:
-    """Standard keyword search that returns matching movies from the API."""
-    return _api_get("/search", params={"q": query})
+def search_movies(query: str, mode: str = "direct") -> list:
+    try:
+        resp = requests.get(
+            f"{REC_API_URL}/search",
+            params={"q": query, "mode": mode},
+            timeout=10,
+        )
+        resp.raise_for_status()
+        return resp.json()
+    except Exception:
+        return []
 
 
 def recommend_movies(query: str) -> list[dict]:

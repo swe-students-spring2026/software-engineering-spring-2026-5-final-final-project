@@ -1,16 +1,24 @@
 import os
+os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+
 import json
 from typing import Any
-
+import faiss
+import numpy as np
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
-
+from sentence_transformers import SentenceTransformer
 from embeddings import load_store
 from recommender import Recommender
 
 load_dotenv()
 
 app = Flask(__name__)
+
+# Load once at startup — ~400MB download on first run
+_encoder = SentenceTransformer(
+    "nomic-ai/nomic-embed-text-v1.5", trust_remote_code=True)
 
 # ── load data at startup ──────────────────────────────────────────────────────
 store = load_store()
@@ -158,6 +166,11 @@ def _titles_to_ids(titles: list[str]) -> list[str]:
     return ids
 
 
+def _encode_query(text: str) -> np.ndarray:
+    vec = _encoder.encode([text], convert_to_numpy=True).astype(np.float32)
+    faiss.normalize_L2(vec)
+    return vec
+
 # ── routes ────────────────────────────────────────────────────────────────────
 
 @app.route("/recommend", methods=["POST"])
@@ -187,17 +200,41 @@ def recommend():
 
 @app.route("/search")
 def search():
-    query = request.args.get("q", "").strip().lower()
+    query = request.args.get("q", "").strip()
+    mode = request.args.get("mode", "direct")
+
     if not query:
         return jsonify([])
 
+    if mode == "intent":
+        # Real semantic search via FAISS
+        try:
+            vec = _encode_query(query)
+            k = 20
+            similarities, indices = store.index.search(vec, k)
+            results = []
+            for sim, idx in zip(similarities[0], indices[0]):
+                if idx < 0:
+                    continue
+                results.append(_metadata_to_dict(
+                    idx,
+                    store.metadata[idx],
+                    include_similarity=True,
+                    similarity=float(sim)
+                ))
+            return jsonify(results)
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    # Direct keyword search (unchanged)
+    query_lower = query.lower()
     matches = []
     for meta in store.metadata:
         title = str(meta.get("title", "")).lower()
         overview = str(meta.get("overview") or "").lower()
         genres = str(meta.get("genres") or "").lower()
-        if query in title or query in overview or query in genres:
-            matches.append(_metadata_to_dict(meta))
+        if query_lower in title or query_lower in overview or query_lower in genres:
+            matches.append(_metadata_to_dict(0, meta))
             if len(matches) >= 20:
                 break
     return jsonify(matches)

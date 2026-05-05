@@ -2,7 +2,9 @@ faiss-cpu
 numpy
 pandas
 datasets
-dotenv
+python-dotenv
 flask
 flask_pymongo
 gunicorn
+sentence-transformers
+einops
