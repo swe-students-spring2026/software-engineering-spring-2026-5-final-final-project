@@ -54,3 +54,12 @@ python -m pytest
 # run backend coverage (API + database)
 python -m pytest --cov=api --cov=database --cov-report=term-missing
 ```
+
+## Starter Data (Database)
+
+After the database is initialized, you can seed local starter data:
+
+```bash
+source .venv/bin/activate
+python database/seed_data.py
+```
