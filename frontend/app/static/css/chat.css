@@ -68,6 +68,18 @@
     transform-origin: bottom right;
     min-width: 320px;
     min-height: 420px;
+    /* Native resize grip (bottom-right). The transform-origin above means the
+       grip stays anchored to the corner the panel grows out of. Suppressed
+       while docked or dragging via the rules below. */
+    resize: both;
+}
+
+/* Hide the resize grip while the open/close scale animation is mid-flight,
+   and while the user is repositioning the panel — otherwise the grip
+   responds to drags meant for the header. */
+#chat-panel:not(.open),
+#chat-panel.dragging {
+    resize: none;
 }
 
 @media (max-width: 600px) {
@@ -201,6 +213,28 @@
 
 #chat-new-btn:hover {
     background: rgba(255, 255, 255, 0.25);
+}
+
+#chat-speed {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    font-size: 0.78rem;
+    cursor: pointer;
+    padding: 3px 6px;
+    border-radius: 4px;
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+#chat-speed:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+/* The popup itself renders against system colors — keep options legible. */
+#chat-speed option {
+    color: #222;
+    background: white;
 }
 
 #chat-close-btn {

@@ -6,8 +6,36 @@ from dotenv import load_dotenv
 # and searches upward from cwd for .env when running locally.
 load_dotenv(override=False)
 
+def _env_str(name: str, default: str) -> str:
+    """Like os.environ.get but treats an empty string as unset.
+
+    docker-compose's `${VAR:-}` expansion passes "" when the variable isn't
+    in `.env`, which would otherwise clobber our in-code defaults. Also
+    strips inline `# comment` text in case someone pasted a commented value
+    into `.env` (python-dotenv does honor inline comments, but only when
+    preceded by whitespace; we belt-and-braces it here so a bare `value#…`
+    doesn't sneak through either).
+    """
+    value = os.environ.get(name, "")
+    if "#" in value:
+        value = value.split("#", 1)[0]
+    value = value.strip()
+    return value or default
+
+
 GEMINI_API_KEY: str = os.environ.get("GEMINI_API_KEY", "")
-GEMINI_MODEL: str = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
+GEMINI_MODEL: str = _env_str("GEMINI_MODEL", "gemini-2.5-flash")
+
+# Per-request model selector. Frontend sends one of these labels; the route
+# maps it to a real model ID. Whitelisting (by tier name, not model ID)
+# prevents arbitrary model names from being passed to the API. Each tier
+# can be overridden independently via env vars; otherwise sensible defaults
+# apply. GEMINI_MODEL is the fallback for the Balanced tier.
+GEMINI_MODEL_CHOICES: dict[str, str] = {
+    "fast":     _env_str("GEMINI_MODEL_FAST",     "gemini-2.5-flash-lite"),
+    "balanced": _env_str("GEMINI_MODEL_BALANCED", GEMINI_MODEL),
+    "smart":    _env_str("GEMINI_MODEL_SMART",    "gemini-2.5-pro"),
+}
 
 
 def _env_float(name: str, default: float) -> float:
