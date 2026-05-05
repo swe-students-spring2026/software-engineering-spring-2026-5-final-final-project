@@ -17,10 +17,9 @@ services:
     build: ./backend
     ports:
       - "8000:8000"
-    env_file:
-      - .env
+    env_file: .env
     environment:
-      - MONGODB_URI=mongodb://mongodb:27017/vibe
+      MONGODB_URI: mongodb://mongodb:27017/vibe
     depends_on:
       mongodb:
         condition: service_healthy
@@ -29,10 +28,9 @@ services:
     build: ./frontend
     ports:
       - "3000:3000"
-    env_file:
-      - .env
+    env_file: .env
     environment:
-      - BACKEND_URL=http://backend:8000
+      BACKEND_URL: http://backend:8000
     depends_on:
       - backend
 

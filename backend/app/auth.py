@@ -32,8 +32,10 @@ def encode_jwt(payload: dict[str, Any], expiry_minutes: int | None = None) -> st
 
 
 def decode_jwt(token: str) -> dict[str, Any]:
-    settings = get_settings()
-    return jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
+    try:
+        return jwt.decode(token, get_settings().jwt_secret, algorithms=["HS256"])
+    except jwt.PyJWTError as exc:
+        raise ValueError(f"Invalid token: {exc}") from exc
 
 
 async def get_current_user(request: Request) -> dict:

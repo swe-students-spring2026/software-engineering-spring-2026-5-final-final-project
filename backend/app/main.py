@@ -3,12 +3,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
+from app.database import create_indexes
 from app.routers import auth, feed, likes, matches, spotify, users
 from app.services.scheduler import start_scheduler, stop_scheduler
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    await create_indexes()
     start_scheduler()
     yield
     stop_scheduler()
@@ -16,10 +18,9 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-settings = get_settings()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.frontend_url],
+    allow_origins=[get_settings().frontend_url],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
