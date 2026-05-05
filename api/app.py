@@ -12,6 +12,13 @@ client = MongoClient(os.environ["MONGO_URI"])
 db = client[os.environ.get("MONGO_DBNAME", "splitring")]
 
 
+def ordered_pair_ids(first_id, second_id):
+    """Return a deterministic pair order for friendship uniqueness."""
+    if str(first_id) <= str(second_id):
+        return first_id, second_id
+    return second_id, first_id
+
+
 @app.route("/api/users", methods=["POST"])
 def create_user():
     data = request.get_json()
@@ -55,6 +62,100 @@ def login():
         return jsonify({"error": "invalid credentials"}), 401
 
     return jsonify({"id": str(user["_id"]), "username": user["username"]}), 200
+
+
+@app.route("/api/friendships", methods=["POST"])
+def create_friendship():
+    data = request.get_json()
+
+    username = (data or {}).get("username", "").strip()
+    friend_username = (data or {}).get("friend_username", "").strip()
+
+    if not username or not friend_username:
+        return jsonify({"error": "username and friend_username are required"}), 400
+
+    if username == friend_username:
+        return jsonify({"error": "cannot create friendship with yourself"}), 400
+
+    users_collection = db["users"]
+    friendships_collection = db["friendships"]
+
+    requester = users_collection.find_one({"username": username})
+    target = users_collection.find_one({"username": friend_username})
+
+    if not requester or not target:
+        return jsonify({"error": "both users must exist"}), 404
+
+    user1_id, user2_id = ordered_pair_ids(requester["_id"], target["_id"])
+
+    try:
+        result = friendships_collection.update_one(
+            {"user1_id": user1_id, "user2_id": user2_id},
+            {
+                "$setOnInsert": {
+                    "user1_id": user1_id,
+                    "user2_id": user2_id,
+                    "status": "pending",
+                    "requested_by": requester["_id"],
+                    "requested_at": datetime.now(timezone.utc),
+                    "accepted_at": None,
+                }
+            },
+            upsert=True,
+        )
+    except DuplicateKeyError:
+        return jsonify({"error": "friendship already exists"}), 409
+
+    if result.upserted_id is None:
+        return jsonify({"error": "friendship already exists"}), 409
+
+    return (
+        jsonify(
+            {
+                "id": str(result.upserted_id),
+                "username": username,
+                "friend_username": friend_username,
+                "status": "pending",
+            }
+        ),
+        201,
+    )
+
+
+@app.route("/api/friendships", methods=["GET"])
+def list_friendships():
+    username = request.args.get("username", "").strip()
+
+    if not username:
+        return jsonify({"error": "username query param is required"}), 400
+
+    users_collection = db["users"]
+    friendships_collection = db["friendships"]
+
+    user = users_collection.find_one({"username": username})
+    if not user:
+        return jsonify({"error": "user not found"}), 404
+
+    friendships = friendships_collection.find(
+        {"$or": [{"user1_id": user["_id"]}, {"user2_id": user["_id"]}]}
+    )
+
+    items = []
+    for friendship in friendships:
+        if friendship["user1_id"] == user["_id"]:
+            friend_id = friendship["user2_id"]
+        else:
+            friend_id = friendship["user1_id"]
+
+        friend_user = users_collection.find_one({"_id": friend_id})
+        items.append(
+            {
+                "friend_username": friend_user["username"] if friend_user else None,
+                "status": friendship.get("status", "pending"),
+            }
+        )
+
+    return jsonify({"username": username, "friendships": items}), 200
 
 
 if __name__ == "__main__":
