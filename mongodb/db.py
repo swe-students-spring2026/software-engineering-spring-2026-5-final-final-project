@@ -2,75 +2,89 @@
 MongoDB integration for caching search results.
 Avoids re-running the expensive ML pipeline for repeated queries.
 
-Requires MONGO_URI environment variable to be set, e.g.:
-    MONGO_URI=mongodb://localhost:27017/rove_beetle
+Requires MONGO_URI environment variable to be set to a MongoDB Atlas connection string:
+    MONGO_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/rove_beetle?retryWrites=true&w=majority
 """
 
 import os
 import hashlib
-import json
 from datetime import datetime, timezone
 
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
 
 
-MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017/rove_beetle")
 DB_NAME = "rove_beetle"
 COLLECTION_NAME = "search_cache"
+
+_client = None
+
+
+def get_client():
+    """Return a shared MongoClient instance."""
+    global _client
+    if _client is None:
+        uri = os.environ.get("MONGO_URI")
+        if not uri:
+            raise RuntimeError(
+                "MONGO_URI environment variable is not set. "
+                "Use a MongoDB Atlas connection string."
+            )
+        _client = MongoClient(uri, serverSelectionTimeoutMS=3000)
+    return _client
+
+
+def reset_client():
+    """Reset the shared client. Used in tests to force a new connection."""
+    global _client
+    _client = None
 
 
 def get_db():
     """Return the MongoDB database instance."""
-    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=3000)
-    return client[DB_NAME]
+    return get_client()[DB_NAME]
 
 
-def make_cache_key(query_311: str, query_facilities: str) -> str:
-    """Create a unique hash key from the two search queries."""
-    raw = f"{query_311.strip().lower()}||{query_facilities.strip().lower()}"
+def make_cache_key(query: str, extra: str = "") -> str:
+    """Create a unique hash key from the search query."""
+    raw = f"{query.strip().lower()}||{extra.strip().lower()}"
     return hashlib.sha256(raw.encode()).hexdigest()
 
 
-def get_cached_result(query_311: str, query_facilities: str):
+def get_cached_result(query: str, extra: str = ""):
     """
     Look up a cached search result in MongoDB.
-    Returns the cluster_results list if found, None otherwise.
+    Returns the cached data dict if found, None otherwise.
     """
     try:
         db = get_db()
-        key = make_cache_key(query_311, query_facilities)
+        key = make_cache_key(query, extra)
         doc = db[COLLECTION_NAME].find_one({"_id": key})
-
         if doc:
-            return doc["cluster_results"]
-
+            return doc.get("data")
         return None
 
     except ConnectionFailure:
-        # if mongo is down, just skip the cache
         return None
 
     except Exception:
         return None
 
 
-def save_cached_result(query_311: str, query_facilities: str, cluster_results: list):
+def save_cached_result(query: str, extra: str, data: dict):
     """
     Save a search result to MongoDB cache.
     Uses upsert so repeated searches overwrite the old cache entry.
     """
     try:
         db = get_db()
-        key = make_cache_key(query_311, query_facilities)
-
+        key = make_cache_key(query, extra)
         db[COLLECTION_NAME].update_one(
             {"_id": key},
             {
                 "$set": {
-                    "query_311": query_311,
-                    "query_facilities": query_facilities,
-                    "cluster_results": cluster_results,
+                    "query": query,
+                    "data": data,
                     "cached_at": datetime.now(timezone.utc).isoformat(),
                 }
             },
@@ -78,7 +92,6 @@ def save_cached_result(query_311: str, query_facilities: str, cluster_results: l
         )
 
     except ConnectionFailure:
-        # if mongo is down, just skip saving
         pass
 
     except Exception:
@@ -86,21 +99,22 @@ def save_cached_result(query_311: str, query_facilities: str, cluster_results: l
 
 
 def clear_cache():
-    """Clear all cached search results. Useful for testing."""
+    """Clear all cached results. Useful for testing."""
     try:
         db = get_db()
         db[COLLECTION_NAME].delete_many({})
-
     except Exception:
         pass
 
 
 def health_check() -> bool:
-    """Check if MongoDB is reachable. Returns True if ok, False otherwise."""
+    """Check if MongoDB Atlas is reachable. Returns True if ok, False otherwise."""
     try:
-        client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=3000)
+        client = MongoClient(
+            os.environ.get("MONGO_URI", ""),
+            serverSelectionTimeoutMS=3000
+        )
         client.admin.command("ping")
         return True
-
     except Exception:
         return False
