@@ -36,3 +36,30 @@ Living with roommates necessitates purchases for the whole room (paper towels, B
 ### With Docker Compose
 
 ### Without Docker Compose
+
+## Backend Testing (Scoring-Critical)
+
+These commands verify backend unit tests and code coverage for the API and database subsystems.
+
+```bash
+# from repo root
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r api/requirements.txt -r database/requirements.txt
+python -m pip install pytest pytest-cov
+
+# run backend tests
+python -m pytest
+
+# run backend coverage (API + database)
+python -m pytest --cov=api --cov=database --cov-report=term-missing
+```
+
+## Starter Data (Database)
+
+After the database is initialized, you can seed local starter data:
+
+```bash
+source .venv/bin/activate
+python database/seed_data.py
+```
