@@ -11,10 +11,6 @@ services:
       - MONGO_URI=${MONGO_URI}
       - FLASK_SECRET_KEY=${FLASK_SECRET_KEY}
       - ML_APP_URL=http://ml-app:8000
-    volumes:
-      - ./web-app/app.py:/app/app.py
-      - ./web-app/templates:/app/templates
-      - ./web-app/static:/app/static
     networks:
       - app-network
 
