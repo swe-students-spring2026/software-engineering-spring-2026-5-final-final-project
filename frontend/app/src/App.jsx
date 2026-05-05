@@ -550,19 +550,25 @@ function MarketPanel({ inventory, userId, refreshInventory }) {
     refreshListings();
   }, []);
 
-  async function listFish(fishId) {
+  async function listFish(fish) {
     setError("");
+    // Fall back to the fish's suggested price when the user hasn't typed a value —
+    // the input shows suggested_price as a placeholder, but priceByFish is empty
+    // until the user touches it. Without this fallback the request sent 1.
+    const typed = priceByFish[fish.fish_id];
+    const price = Number(typed != null && typed !== "" ? typed : fish.suggested_price);
     try {
       await request(`${GAME_URL}/market/list`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          user_id: userId,
-          fish_id: fishId,
-          price: Number(priceByFish[fishId] || 1),
-        }),
+        user_id: userId,
+        fish_id: fish.fish_id,
+        price,
+      }),
       });
       refreshListings();
+      refreshInventory();
     } catch (err) {
       setError(err.message);
     }
@@ -583,6 +589,23 @@ function MarketPanel({ inventory, userId, refreshInventory }) {
     }
   }
 
+  async function unlist(listingId) {
+    setError("");
+    try {
+      await request(
+        `${GAME_URL}/market/listings/${listingId}?seller_id=${encodeURIComponent(userId)}`,
+        { method: "DELETE" },
+      );
+      refreshListings();
+      refreshInventory();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  const myListings = listings.filter((l) => l.seller_id === userId);
+  const otherListings = listings.filter((l) => l.seller_id !== userId);
+
   return (
     <section className="workbench two">
       <section className="panel">
@@ -593,18 +616,30 @@ function MarketPanel({ inventory, userId, refreshInventory }) {
             <input
               type="number"
               min="1"
-              value={priceByFish[fish.fish_id] || fish.suggested_price}
+              value={priceByFish[fish.fish_id] ?? fish.suggested_price}
               onChange={(event) =>
                 setPriceByFish({ ...priceByFish, [fish.fish_id]: event.target.value })
               }
             />
-            <button onClick={() => listFish(fish.fish_id)}>List</button>
+            <button onClick={() => listFish(fish)}>List</button>
           </div>
         ))}
+        {myListings.length > 0 ? (
+          <React.Fragment>
+            <h3>Your Listings</h3>
+            {myListings.map((listing) => (
+              <div className="market-row" key={listing.listing_id}>
+                <span>{listing.fish.species_name}</span>
+                <strong>{listing.price} tokens</strong>
+                <button onClick={() => unlist(listing.listing_id)}>Cancel</button>
+              </div>
+            ))}
+          </React.Fragment>
+        ) : null}
       </section>
       <section className="panel">
         <h2>Listings</h2>
-        {listings.map((listing) => (
+        {otherListings.map((listing) => (
           <div className="market-row" key={listing.listing_id}>
             <span>{listing.fish.species_name}</span>
             <strong>{listing.price} tokens</strong>

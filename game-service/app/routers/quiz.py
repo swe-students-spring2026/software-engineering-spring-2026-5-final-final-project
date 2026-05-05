@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from app.db import get_repository
 from app.db.repository import Repository
 from app.grader_client import grader_client
+from app.services import tokens as token_service
 from app.models import (
     Problem,
     ProblemSummary,
@@ -216,9 +217,9 @@ async def submit(
             problem=problem,
             attempts_used=state["attempts_used"],
         )
-        if added_to_uncaught:
+        if added_to_uncaught and token_service.is_kitten(repository, body.user_id):
             tokens_lost = 1
-            repository.add_tokens(body.user_id, -tokens_lost)
+            token_service.deduct_for_failed_attempt(repository, body.user_id)
 
     return SubmitResponse(
         passed=passed,

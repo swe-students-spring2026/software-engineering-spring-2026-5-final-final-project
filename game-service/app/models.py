@@ -100,6 +100,7 @@ class FishSpecies(BaseModel):
     sell_value: int
     sell_value_tokens: int
     marketplace_eligible: bool
+    is_system_sellable: bool = False
     base_price: int
     typical_size_cm: float
     image_pool: List[str]
@@ -124,6 +125,7 @@ class InventoryFish(BaseModel):
     sell_value: int
     sell_value_tokens: int
     marketplace_eligible: bool
+    is_system_sellable: bool = False
     is_small: bool
 
 

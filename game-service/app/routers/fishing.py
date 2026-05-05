@@ -29,6 +29,7 @@ from app.models import (
     Rarity,
     SellSmallResponse,
 )
+from app.services import tokens as token_service
 
 router = APIRouter(prefix="/fishing", tags=["fishing"])
 
@@ -113,13 +114,18 @@ def _build_fish(species: dict, rng: random.Random) -> dict:
     image_pool = species.get("image_pool") or []
     image_url = rng.choice(image_pool) if image_pool else ""
     sell_value = int(species.get("sell_value", species["base_price"]))
+    rarity = species["rarity"]
+    marketplace_eligible = bool(species.get("marketplace_eligible", False))
+    is_system_sellable = bool(
+    species.get("is_system_sellable", rarity in {"common", "uncommon"})
+    )
 
     return {
         "fish_id": str(uuid.uuid4()),
         "species_id": species["id"],
         "species_name": species["name"],
         "species": species.get("species", species["name"]),
-        "rarity": species["rarity"],
+        "rarity": rarity,
         "quality": quality,
         "size_cm": round(size_cm, 1),
         "weight_g": round(weight_g, 1),
@@ -135,7 +141,8 @@ def _build_fish(species: dict, rng: random.Random) -> dict:
         ),
         "sell_value": sell_value,
         "sell_value_tokens": sell_value,
-        "marketplace_eligible": bool(species.get("marketplace_eligible", False)),
+        "marketplace_eligible": marketplace_eligible,
+        "is_system_sellable": is_system_sellable,
         "is_small": size_cm < typical,
     }
 
@@ -197,6 +204,11 @@ async def sell_small(
     user_id: str = "demo_user",
     repository: Repository = Depends(repo),
 ):
+    if not token_service.is_kitten(repository, user_id):
+        raise HTTPException(
+            status_code=403,
+            detail="cats do not participate in the token economy",
+        )
     fish = repository.get_fish(user_id, fish_id)
     if fish is None:
         raise HTTPException(
@@ -222,11 +234,59 @@ async def sell_small(
             status_code=409,
             detail="fish was removed concurrently; please retry",
         )
-    new_balance = repository.add_tokens(user_id, refund)
+    new_balance = token_service.grant_tokens(repository, user_id, refund)
 
     return SellSmallResponse(
         fish_id=fish_id,
         species_id=fish["species_id"],
         tokens_earned=refund,
+        new_token_balance=new_balance,
+    )
+
+@router.post("/sell/{fish_id}", response_model=SellSmallResponse)
+async def sell_to_system(
+    fish_id: str,
+    user_id: str = "demo_user",
+    repository: Repository = Depends(repo),
+):
+    """Direct system sale of a low-rarity fish (common/uncommon).
+
+    Rare/epic/legendary fish are blocked here — they must go through the
+    kitten-to-kitten marketplace. Cats are blocked outright.
+    """
+
+    if not token_service.is_kitten(repository, user_id):
+        raise HTTPException(
+            status_code=403,
+            detail="cats do not participate in the token economy",
+        )
+    fish = repository.get_fish(user_id, fish_id)
+    if fish is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"fish '{fish_id}' not found in {user_id}'s inventory",
+        )
+    if not fish.get("is_system_sellable", False):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "this fish is too rare to sell to the system; "
+                "list it on the marketplace instead"
+            ),
+        )
+
+    payout = max(1, int(fish.get("sell_value_tokens", fish.get("sell_value", 1))))
+    removed = repository.remove_fish_from_inventory(user_id, fish_id)
+    if removed is None:
+        raise HTTPException(
+            status_code=409,
+            detail="fish was removed concurrently; please retry",
+        )
+    new_balance = token_service.grant_tokens(repository, user_id, payout)
+
+    return SellSmallResponse(
+        fish_id=fish_id,
+        species_id=fish["species_id"],
+        tokens_earned=payout,
         new_token_balance=new_balance,
     )

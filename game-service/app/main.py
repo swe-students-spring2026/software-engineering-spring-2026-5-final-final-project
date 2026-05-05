@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
-from app.routers import aquarium, fishing, leaderboard, market, ponds, quiz
+from app.routers import aquarium, fishing, leaderboard, market, ponds, quiz, tokens
 
 SERVICE_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -43,6 +43,7 @@ def create_app() -> FastAPI:
     app.include_router(aquarium.router)
     app.include_router(leaderboard.router)
     app.include_router(ponds.router)
+    app.include_router(tokens.router)
     app.mount(
         "/fish_images",
         StaticFiles(directory=FISH_IMAGES_DIR),

@@ -4,6 +4,8 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+fastapi = "<1.0,>=0.111"
+uvicorn = {extras = ["standard"], version = "<1.0,>=0.30"}
 
 [dev-packages]
 black = "*"

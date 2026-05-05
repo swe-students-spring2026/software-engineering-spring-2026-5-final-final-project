@@ -9,6 +9,7 @@ process restarts. That's intentional for phase 1.
 import json
 import os
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 from threading import RLock
 from typing import List, Optional, Dict, Any
@@ -56,6 +57,7 @@ class MockRepository:
         self._attempts: Dict[tuple[str, str], Dict[str, Any]] = {}
         self._uncaught: Dict[str, Dict[str, Dict[str, Any]]] = {}
         self._market_listings: Dict[str, Dict[str, Any]] = {}
+        self._user_roles: Dict[str, str] = {}
         self._mutate_lock = RLock()
         self._load_seeds()
         self._load_fish_species()
@@ -150,7 +152,31 @@ class MockRepository:
         ]
 
     def get_user_profile(self, user_id: str) -> Optional[Dict[str, Any]]:
-        return {"user_id": user_id, "username": user_id}
+        return {
+            "user_id": user_id,
+            "username": user_id,
+            "role": self.get_user_role(user_id),
+        }
+
+    def get_user_role(self, user_id: str) -> str:
+        return self._user_roles.get(user_id, "kitten")
+
+    def set_user_role(self, user_id: str, role: str) -> None:
+        if role not in ("kitten", "cat"):
+            raise ValueError(f"unknown role: {role}")
+        with self._mutate_lock:
+            self._user_roles[user_id] = role
+
+    def list_user_ids_by_role(self, role: str) -> List[str]:
+        explicit = {uid for uid, r in self._user_roles.items() if r == role}
+        if role != "kitten":
+            return sorted(explicit)
+        # default role is kitten — include any user_id we've ever seen with no
+        # explicit role assignment.
+        seen = set(self._tokens) | set(self._inventory) | set(self._fishing)
+        seen |= {uid for uid, r in self._user_roles.items() if r == "kitten"}
+        seen -= {uid for uid, r in self._user_roles.items() if r != "kitten"}
+        return sorted(seen | explicit)
 
     # --- fishing chances ---
 
@@ -330,23 +356,79 @@ class MockRepository:
             if not fish.get("marketplace_eligible", False):
                 raise ValueError("fish is not marketplace eligible")
 
+            # Move the fish out of the seller's inventory and into the listing.
+            # This keeps the aquarium and "your eligible fish" view in sync,
+            # and prevents double-listing or selling-then-listing the same fish.
+            removed = self.remove_fish_from_inventory(user_id, fish_id)
+            if removed is None:
+                raise ValueError("fish not found")
+
             listing = {
                 "listing_id": str(uuid.uuid4()),
                 "seller_id": user_id,
-                "fish": fish,
-                "price": price,
+                "fish": removed,
+                "price": int(price),
                 "status": "active",
+                "created_at": datetime.now(timezone.utc).isoformat(),
             }
             self._market_listings[listing["listing_id"]] = listing
             return listing
 
-    def list_market_listings(self) -> List[Dict[str, Any]]:
-        return [
+    def list_market_listings(
+        self,
+        rarity: Optional[str] = None,
+        species_id: Optional[str] = None,
+        min_price: Optional[int] = None,
+        max_price: Optional[int] = None,
+        sort_by: str = "newest",
+    ) -> List[Dict[str, Any]]:
+        results = [
             listing
             for listing in self._market_listings.values()
             if listing["status"] == "active"
         ]
+        if rarity is not None:
+            results = [r for r in results if r["fish"].get("rarity") == rarity]
+        if species_id is not None:
+            results = [r for r in results if r["fish"].get("species_id") == species_id]
+        if min_price is not None:
+            results = [r for r in results if int(r["price"]) >= min_price]
+        if max_price is not None:
+            results = [r for r in results if int(r["price"]) <= max_price]
 
+        if sort_by == "price_asc":
+            results.sort(key=lambda r: int(r["price"]))
+        elif sort_by == "price_desc":
+            results.sort(key=lambda r: int(r["price"]), reverse=True)
+        elif sort_by == "rarity":
+            order = {
+                "common": 0,
+                "uncommon": 1,
+                "rare": 2,
+                "epic": 3,
+                "legendary": 4,
+            }
+            results.sort(key=lambda r: order.get(r["fish"].get("rarity"), 99), reverse=True)
+        else:  # newest
+            results.sort(key=lambda r: r.get("created_at", ""), reverse=True)
+        return results
+
+    def unlist_market_listing(
+        self,
+        listing_id: str,
+        seller_id: str,
+    ) -> Dict[str, Any]:
+        with self._mutate_lock:
+            listing = self._market_listings.get(listing_id)
+            if listing is None or listing["status"] != "active":
+                raise ValueError("listing not found")
+            if listing["seller_id"] != seller_id:
+                raise ValueError("only the seller may unlist this fish")
+            # Return the fish to the seller — they had it before listing.
+            self.add_fish_to_inventory(seller_id, listing["fish"])
+            listing["status"] = "cancelled"
+            return listing
+        
     def buy_market_listing(
         self,
         listing_id: str,
@@ -359,7 +441,9 @@ class MockRepository:
             seller_id = listing["seller_id"]
             if seller_id == buyer_id:
                 raise ValueError("buyer cannot purchase their own listing")
-
+            if self.get_user_role(buyer_id) != "kitten":
+                raise ValueError("only kittens can buy from the marketplace")
+            
             price = int(listing["price"])
             buyer_tokens = self.get_tokens(buyer_id)
             if buyer_tokens < price:
@@ -373,6 +457,14 @@ class MockRepository:
                 listing["status"] = "cancelled"
                 raise ValueError("listed fish is no longer available")
 
+    # Atomic under self._mutate_lock: the fish already left the seller's
+            # inventory at list time, so we just deliver it from the listing,
+            # transfer tokens, and close the listing — all-or-nothing.
+            # Bump suggested_price to the price the buyer actually paid so the
+            # buyer's relist input doesn't default below what they paid.
+            delivered = {**listing["fish"], "suggested_price": price}
+            self.add_tokens(seller_id, price)
+            self.add_fish_to_inventory(buyer_id, delivered)
             self.add_tokens(buyer_id, -price)
             self.add_tokens(seller_id, price)
             self.add_fish_to_inventory(buyer_id, fish)
