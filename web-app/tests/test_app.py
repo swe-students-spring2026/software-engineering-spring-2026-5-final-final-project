@@ -1,7 +1,9 @@
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from bson.objectid import ObjectId
-from app import app, User
+
+with patch('config.Config.connect_to_db', return_value=MagicMock()):
+    from app import app, User
 import json
 
 
