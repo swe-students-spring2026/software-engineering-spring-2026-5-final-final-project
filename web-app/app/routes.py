@@ -2,6 +2,7 @@
 Defines all HTTP API endpoints for the web application:
 The main interface between the frontend and backend services.
 """
+import base64
 import os
 
 from flask import (
@@ -32,7 +33,7 @@ from app.services import (
 
 main = Blueprint('main', __name__)
 
-ML_CLIENT_URL = os.getenv("ML_CLIENT_URL", "http://ml-client:5001")
+ML_CLIENT_URL = os.getenv("ML_CLIENT_URL", "http://localhost:5001") # change this as needed.
 
 @main.route("/login", methods=["GET", "POST"])
 def login():
@@ -131,11 +132,11 @@ def analyze_board():
     image_file = request.files["image"]
     if image_file.filename == "":
         return jsonify({"error": "Empty filename."}), 400
-
+    image_b64 = base64.b64encode(image_file.read()).decode("utf-8")
     try:
         response = requests.post(
             f"{ML_CLIENT_URL}/extract-board",
-            files={"image": (image_file.filename, image_file.stream, image_file.mimetype)},
+            json={"image": image_b64},
             timeout=10,
         )
         response.raise_for_status()
@@ -170,7 +171,6 @@ def save_board():
     body = request.get_json(silent=True)
     if not body:
         return jsonify({"error": "JSON body required."}), 400
-    
     puzzle_name = body.get("puzzle_name", "").strip()
     board       = body.get("board")
     is_public   = body.get("is_public", True)
@@ -179,7 +179,6 @@ def save_board():
         return jsonify({"error": "puzzle_name is required."}), 400
     if not board or not isinstance(board, list):
         return jsonify({"error": "board is required and must be a list."}), 400
-    
     try:
         puzzle = save_puzzle(
             author_id=current_user.id,
