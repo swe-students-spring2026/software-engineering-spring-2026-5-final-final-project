@@ -18,6 +18,7 @@ Object.entries(profile.course_credits || {}).forEach(([code, credits]) => {
 });
 const courseCatalogCredits = {};
 const courseCatalogInfo = {};
+const testCreditMappedCourseCodes = new Set();
 
 const testCredits = (profile.test_credits || [])
     .map(credit => ({
@@ -50,6 +51,7 @@ testCredits.forEach(tc => {
                     const norm = normalizeCode(canon);
                     if (transcriptCredits[norm] === undefined && tc.units > 0) {
                         transcriptCredits[norm] = toCreditNumber(tc.units);
+                        testCreditMappedCourseCodes.add(canon);
                     }
                 } catch (e) {
                     // ignore mapping errors
@@ -129,6 +131,21 @@ function formatCredits(value) {
     return Number.isInteger(value) ? String(value) : value.toFixed(1).replace(/\.0$/, "");
 }
 
+const DEGREE_COMPLETION_CREDIT_FLOOR = 127;
+const DEGREE_COMPLETION_CREDIT_CEILING = 129;
+
+function progressPercent(value, total) {
+    if (!total) return 0;
+    if (
+        total >= DEGREE_COMPLETION_CREDIT_FLOOR
+        && total <= DEGREE_COMPLETION_CREDIT_CEILING
+        && value >= DEGREE_COMPLETION_CREDIT_FLOOR
+    ) {
+        return 100;
+    }
+    return Math.max(0, Math.min(100, Math.round((value / total) * 100)));
+}
+
 function hasTranscriptCredit(code) {
     return transcriptCredits[normalizeCode(code)] !== undefined;
 }
@@ -163,6 +180,50 @@ function courseMatchesCatalogKeywords(code, keywords) {
     const info = catalogInfoForCourse(code);
     const haystack = `${info?.title || ""} ${info?.description || ""} ${info?.topic || ""}`.toLowerCase();
     return keywords.some(keyword => haystack.includes(keyword));
+}
+
+function courseNumberForCode(code) {
+    const match = canonicalRequirementCode(code).match(/^([A-Z]{2,5}-[A-Z]{2,3})\s+(\d+)/i);
+    if (!match) return null;
+    const number = Number(match[2]);
+    return Number.isFinite(number)
+        ? { prefix: match[1].toUpperCase(), number }
+        : null;
+}
+
+function parseLevelElectiveRequirement(first) {
+    const cleaned = (first || "").replace(/^or\s+/i, "").trim();
+    const match = cleaned.match(/^([A-Z]{2,5}-[A-Z]{2,3})[\s-]+([1-9](?:00|XX))\s*[-\s]?level\s+electives?\b/i);
+    if (!match) return null;
+    const level = Number(match[2].replace(/x/gi, "0"));
+    if (!Number.isFinite(level)) return null;
+    const min = Math.floor(level / 100) * 100;
+    return {
+        prefix: match[1].toUpperCase(),
+        min,
+        max: min + 99,
+        label: cleaned,
+    };
+}
+
+function levelElectiveCourseMatches(req, code) {
+    const parsed = courseNumberForCode(code);
+    return !!parsed
+        && parsed.prefix === req.prefix
+        && parsed.number >= req.min
+        && parsed.number <= req.max;
+}
+
+function matchLevelElectiveCourse(req, assignedCourseCodes = new Set()) {
+    const isEligible = code => {
+        const normalized = canonicalRequirementCode(code);
+        return levelElectiveCourseMatches(req, normalized) && !assignedCourseCodes.has(normalized);
+    };
+
+    const completedMatch = [...completedSet].find(isEligible);
+    if (completedMatch) return completedMatch;
+
+    return [...currentSet].find(isEligible) || null;
 }
 
 const specialRequirements = [
@@ -230,13 +291,10 @@ const specialRequirements = [
         key: "cs-electives-400",
         label: "Computer Science Electives",
         match: text => /computer\s+science\s+electives?/i.test(text || "") && /400\s+level/i.test(text || ""),
-        options: ["Any CSCI-UA 400-level course that matches the catalog description"],
+        options: ["Any CSCI-UA course numbered 400-499"],
         matches: code => {
-            const normalized = canonicalRequirementCode(code);
-            const m = normalized.match(/^CSCI-UA\s+(\d+)/i);
-            if (!m || Number(m[1]) < 400) return false;
-            if (!hasCatalogInfo(code)) return true;
-            return courseMatchesCatalogKeywords(code, ["computer science", "elective", "csci"]);
+            const parsed = courseNumberForCode(code);
+            return !!parsed && parsed.prefix === "CSCI-UA" && parsed.number >= 400 && parsed.number <= 499;
         },
     },
     {
@@ -303,12 +361,7 @@ function buildChoiceTables(tables) {
         // Treat any table that looks like an elective list as a choice table.
         if (!/elective/i.test(label)) return;
         const options = (t.rows || [])
-            .map(row => {
-                const cells = row || [];
-                const first = (cells[0] || "").trim();
-                const code = extractCode(first);
-                return code ? { code, display: first, title: cells[1] || "", credits: cells[2] || "" } : null;
-            })
+            .map(row => requirementOptionFromRow(row))
             .filter(Boolean);
         if (options.length) choices.set(choiceKey(label), { label, options });
     });
@@ -350,7 +403,90 @@ function parseInlineChoiceRequirement(first) {
 
     return {
         label: cleaned,
-        options: codes.map(code => ({ code, display: code, title: "", credits: "" })),
+        options: codes.map(code => ({ type: "course", code, display: code, title: "", credits: "" })),
+    };
+}
+
+function requirementOptionFromRow(cells) {
+    const row = cells || [];
+    const first = (row[0] || "").trim();
+    if (!first || /total\s+credits/i.test(first)) return null;
+
+    const credits = row[2] !== undefined ? row[2] : (row.length === 2 ? row[1] : "");
+    const levelElectiveReq = parseLevelElectiveRequirement(first);
+    if (levelElectiveReq) {
+        return {
+            type: "level-elective",
+            requirement: levelElectiveReq,
+            display: first,
+            title: row[1] || "",
+            credits,
+        };
+    }
+
+    const code = extractCode(first);
+    return code
+        ? { type: "course", code, display: first, title: row[1] || "", credits }
+        : null;
+}
+
+function isFollowingChoicePrompt(first) {
+    return /^select\s+\w+\s+of\s+the\s+following\b/i.test((first || "").trim());
+}
+
+function parseFollowingChoiceRequirement(rows, rowIndex) {
+    const cells = rows[rowIndex] || [];
+    const first = (cells[0] || "").trim();
+    if (!isFollowingChoicePrompt(first)) return null;
+
+    const options = [];
+    let endIndex = rowIndex;
+    for (let i = rowIndex + 1; i < rows.length; i++) {
+        const option = requirementOptionFromRow(rows[i]);
+        if (!option) break;
+        options.push(option);
+        endIndex = i;
+    }
+
+    if (!options.length) return null;
+    return {
+        label: first,
+        options,
+        credits: cells[1] || cells[2] || "",
+        endIndex,
+    };
+}
+
+function parseAlternativeChoiceRequirement(rows, rowIndex) {
+    const cells = rows[rowIndex] || [];
+    const first = (cells[0] || "").trim();
+    if (!looksLikeCourseCode(first) || first.toLowerCase().startsWith("or ")) return null;
+
+    const options = [requirementOptionFromRow(cells)].filter(Boolean);
+    let endIndex = rowIndex;
+
+    for (let i = rowIndex + 1; i < rows.length; i++) {
+        const optionCells = rows[i] || [];
+        const optionFirst = (optionCells[0] || "").trim();
+        if (!optionFirst.toLowerCase().startsWith("or ")) break;
+        const option = requirementOptionFromRow(optionCells);
+        if (!option) break;
+        options.push(option);
+        endIndex = i;
+    }
+
+    if (options.length < 2) return null;
+
+    const label = options
+        .map(option => String(option.display || "").replace(/^or\s+/i, "").trim())
+        .join(" or ");
+    const credits = cells[2] !== undefined ? cells[2] : (cells.length === 2 ? cells[1] : "");
+
+    return {
+        label,
+        options,
+        credits,
+        endIndex,
     };
 }
 
@@ -372,26 +508,40 @@ function matchWildcardElectiveCourse(prefix, assignedCourseCodes) {
     return [...currentSet].find(isEligible) || null;
 }
 
-function statusOfChoice(options) {
-    if (options.some(option => statusOf(option.code) === "done")) return "done";
-    if (options.some(option => statusOf(option.code) === "current")) return "current";
+function matchedCodeForChoiceOption(option, assignedCourseCodes = new Set()) {
+    if (!option) return null;
+    if (option.type === "level-elective") {
+        return matchLevelElectiveCourse(option.requirement, assignedCourseCodes);
+    }
+    return option.code || null;
+}
+
+function statusOfChoiceOption(option, assignedCourseCodes = new Set()) {
+    const code = matchedCodeForChoiceOption(option, assignedCourseCodes);
+    return code ? statusOf(code) : "needed";
+}
+
+function statusOfChoice(options, assignedCourseCodes = new Set()) {
+    if (options.some(option => statusOfChoiceOption(option, assignedCourseCodes) === "done")) return "done";
+    if (options.some(option => statusOfChoiceOption(option, assignedCourseCodes) === "current")) return "current";
     return "needed";
 }
 
-function matchedChoiceOption(options) {
-    return options.find(option => statusOf(option.code) === "done")
-        || options.find(option => statusOf(option.code) === "current")
+function matchedChoiceOption(options, assignedCourseCodes = new Set()) {
+    return options.find(option => statusOfChoiceOption(option, assignedCourseCodes) === "done")
+        || options.find(option => statusOfChoiceOption(option, assignedCourseCodes) === "current")
         || null;
 }
 
-function choiceOptionKey(option) {
-    return canonicalRequirementCode(option?.code || "");
+function choiceOptionKey(option, assignedCourseCodes = new Set()) {
+    return canonicalRequirementCode(matchedCodeForChoiceOption(option, assignedCourseCodes) || option?.code || "");
 }
 
-function creditsForChoice(options, fallbackCredits) {
-    const matched = matchedChoiceOption(options);
-    if (matched?.code) {
-        return creditsForCourse(matched.code, parseCredits(matched.credits || fallbackCredits));
+function creditsForChoice(options, fallbackCredits, assignedCourseCodes = new Set()) {
+    const matched = matchedChoiceOption(options, assignedCourseCodes);
+    const matchedCode = matchedCodeForChoiceOption(matched, assignedCourseCodes);
+    if (matchedCode) {
+        return creditsForCourse(matchedCode, parseCredits(matched.credits || fallbackCredits));
     }
     return parseCredits(matched?.credits || fallbackCredits);
 }
@@ -423,6 +573,7 @@ function collectSatisfiedRequirementKeys(tables, choiceTables) {
             const isAlt = first.toLowerCase().startsWith("or ");
             const choice = findChoiceRequirement(first, choiceTables);
             const specialReq = findSpecialRequirement(first);
+            const levelElectiveReq = parseLevelElectiveRequirement(first);
 
             if (specialReq) {
                 const matched = matchedSpecialRequirementCourse(specialReq, completedSet)
@@ -432,8 +583,15 @@ function collectSatisfiedRequirementKeys(tables, choiceTables) {
             }
             if (choice) {
                 const matched = matchedChoiceOption(choice.options);
-                if (matched && statusOf(matched.code) !== "needed") {
+                if (matched && statusOfChoiceOption(matched) !== "needed") {
                     keys.add(choiceOptionKey(matched));
+                }
+                return;
+            }
+            if (levelElectiveReq) {
+                const matched = matchLevelElectiveCourse(levelElectiveReq);
+                if (matched && statusOf(matched) !== "needed") {
+                    keys.add(canonicalRequirementCode(matched));
                 }
                 return;
             }
@@ -459,6 +617,7 @@ function collectReservedRequirementCourseCodes(tables, choiceTables, assignedCou
             const isAlt = first.toLowerCase().startsWith("or ");
             const choice = findChoiceRequirement(first, choiceTables);
             const specialReq = findSpecialRequirement(first);
+            const levelElectiveReq = parseLevelElectiveRequirement(first);
 
             if (specialReq) {
                 const matches = [...completedSet, ...currentSet].filter(code => specialReq.matches(code));
@@ -484,9 +643,21 @@ function collectReservedRequirementCourseCodes(tables, choiceTables, assignedCou
             }
 
             if (choice) {
-                const matched = matchedChoiceOption(choice.options);
-                if (matched && statusOf(matched.code) !== "needed") {
-                    const canon = choiceOptionKey(matched);
+                const matched = matchedChoiceOption(choice.options, assignedCourseCodes);
+                if (matched && statusOfChoiceOption(matched, assignedCourseCodes) !== "needed") {
+                    const canon = choiceOptionKey(matched, assignedCourseCodes);
+                    if (!assignedCourseCodes.has(canon)) {
+                        assignedCourseCodes.add(canon);
+                        reserved.add(canon);
+                    }
+                }
+                return;
+            }
+
+            if (levelElectiveReq) {
+                const matched = matchLevelElectiveCourse(levelElectiveReq, assignedCourseCodes);
+                if (matched) {
+                    const canon = canonicalRequirementCode(matched);
                     if (!assignedCourseCodes.has(canon)) {
                         assignedCourseCodes.add(canon);
                         reserved.add(canon);
@@ -543,6 +714,7 @@ function collectCourseCreditLookupCodes(tables, choiceTables) {
                 choice.options.forEach(option => maybeAdd(option.code, option.credits));
                 return;
             }
+            if (parseLevelElectiveRequirement(first)) return;
             if (!isCourse && !isAlt) return;
 
             const code = extractCode(first);
@@ -593,7 +765,9 @@ async function fetchCourseCatalogCredits(code) {
 function electiveCreditBreakdown(creditedRequirementKeys, reservedCourseCodes = new Set()) {
     const isOutsideRequirement = code => {
         const canonical = canonicalRequirementCode(code);
-        return !creditedRequirementKeys.has(canonical) && !reservedCourseCodes.has(canonical);
+        return !creditedRequirementKeys.has(canonical)
+            && !reservedCourseCodes.has(canonical)
+            && !testCreditMappedCourseCodes.has(canonical);
     };
     const completedOutside = [...completedSet].filter(isOutsideRequirement);
     const currentOutside = [...currentSet].filter(isOutsideRequirement);
@@ -709,13 +883,19 @@ function renderStandaloneTestCreditsSection() {
 
 function renderChoiceOptions(choice) {
     const rows = choice.options.map(option => {
-        const st = statusOf(option.code);
+        const st = statusOfChoiceOption(option);
         const icon = st === "done" ? '<span class="status-icon status-done">✓</span>'
             : st === "current" ? '<span class="status-icon status-current">→</span>'
                 : '<span class="status-icon status-needed">○</span>';
         const rowCls = st === "done" ? "row-done" : st === "current" ? "row-current" : "";
-        const creditDisplay = displayCreditsForCourse(option.code, option.credits);
-        return `<tr class="${rowCls}"><td>${icon}</td><td><span class="course-code">${option.display}</span></td><td>${option.title}</td><td>${creditDisplay}</td></tr>`;
+        const matchedCode = matchedCodeForChoiceOption(option);
+        const display = matchedCode && option.type === "level-elective"
+            ? `${option.display} (${matchedCode})`
+            : option.display;
+        const creditDisplay = matchedCode
+            ? displayCreditsForCourse(matchedCode, option.credits)
+            : option.credits;
+        return `<tr class="${rowCls}"><td>${icon}</td><td><span class="course-code">${display}</span></td><td>${option.title}</td><td>${creditDisplay}</td></tr>`;
     }).join("");
     return `
     <details class="choice-options">
@@ -733,7 +913,9 @@ function renderTable(t, choiceTables, creditedRequirementKeys, assignedElectiveC
     let doneCredits = 0, currentCredits = 0, requiredCredits = 0;
     let tableHtml = `<table><thead><tr><th style="width:28px"></th><th>Course</th><th>Title</th><th>Credits</th></tr></thead><tbody>`;
 
-    rows.forEach(row => {
+    let skipChoiceRowsUntil = -1;
+    rows.forEach((row, rowIndex) => {
+        if (rowIndex <= skipChoiceRowsUntil) return;
         const cells = row || [];
         const first = (cells[0] || "").trim();
         const isCourse = looksLikeCourseCode(first);
@@ -741,6 +923,9 @@ function renderTable(t, choiceTables, creditedRequirementKeys, assignedElectiveC
         const isTotal = /total\s+credits/i.test(first);
         const choice = findChoiceRequirement(first, choiceTables);
         const specialReq = findSpecialRequirement(first);
+        const levelElectiveReq = parseLevelElectiveRequirement(first);
+        const followingChoice = !choice ? parseFollowingChoiceRequirement(rows, rowIndex) : null;
+        const alternativeChoice = !choice && !followingChoice ? parseAlternativeChoiceRequirement(rows, rowIndex) : null;
 
         if (isTotal) {
             const totalCredits = parseCredits(cells[1] || cells[2]);
@@ -761,7 +946,7 @@ function renderTable(t, choiceTables, creditedRequirementKeys, assignedElectiveC
                 : st === "current" ? '<span class="status-icon status-current">→</span>'
                     : '<span class="status-icon status-needed">○</span>';
             const rowCls = st === "done" ? "row-done" : st === "current" ? "row-current" : "";
-            tableHtml += `<tr class="${rowCls}"><td>${icon}</td><td colspan="2"><span class="choice-label">${first}</span></td><td>${cells[1] || ""}</td></tr>`;
+            tableHtml += `<tr class="${rowCls}"><td>${icon}</td><td colspan="2"><span class="choice-label">${first}</span></td><td>${cells[1] || cells[2] || ""}</td></tr>`;
             tableHtml += `<tr class="choice-options-row"><td></td><td colspan="3">${renderSpecialRequirementOptions(specialReq)}</td></tr>`;
             const matched = matchedSpecialRequirementCourse(specialReq, completedSet)
                 || matchedSpecialRequirementCourse(specialReq, currentSet);
@@ -771,24 +956,102 @@ function renderTable(t, choiceTables, creditedRequirementKeys, assignedElectiveC
             return;
         }
         if (choice) {
-            const st = statusOfChoice(choice.options);
-            const matched = matchedChoiceOption(choice.options);
-            const credits = creditsForChoice(choice.options, cells[1]);
+            const choiceCredits = cells[1] || cells[2] || "";
+            const st = statusOfChoice(choice.options, assignedElectiveCourseCodes);
+            const matched = matchedChoiceOption(choice.options, assignedElectiveCourseCodes);
+            const credits = creditsForChoice(choice.options, choiceCredits, assignedElectiveCourseCodes);
             if (st === "done") doneCnt++;
             else if (st === "current") currentCnt++;
             else neededCnt++;
             if (st === "done") doneCredits += credits;
             else if (st === "current") currentCredits += credits;
             if (matched && (st === "done" || st === "current")) {
-                creditedRequirementKeys.add(choiceOptionKey(matched));
+                const canon = choiceOptionKey(matched, assignedElectiveCourseCodes);
+                creditedRequirementKeys.add(canon);
+                assignedElectiveCourseCodes.add(canon);
             }
 
             const icon = st === "done" ? '<span class="status-icon status-done">✓</span>'
                 : st === "current" ? '<span class="status-icon status-current">→</span>'
                     : '<span class="status-icon status-needed">○</span>';
             const rowCls = st === "done" ? "row-done" : st === "current" ? "row-current" : "";
-            tableHtml += `<tr class="${rowCls}"><td>${icon}</td><td colspan="2"><span class="choice-label">${first}</span></td><td>${cells[1] || ""}</td></tr>`;
+            tableHtml += `<tr class="${rowCls}"><td>${icon}</td><td colspan="2"><span class="choice-label">${first}</span></td><td>${choiceCredits}</td></tr>`;
             tableHtml += `<tr class="choice-options-row"><td></td><td colspan="3">${renderChoiceOptions(choice)}</td></tr>`;
+            return;
+        }
+        if (followingChoice) {
+            skipChoiceRowsUntil = followingChoice.endIndex;
+            const st = statusOfChoice(followingChoice.options, assignedElectiveCourseCodes);
+            const matched = matchedChoiceOption(followingChoice.options, assignedElectiveCourseCodes);
+            const credits = creditsForChoice(followingChoice.options, followingChoice.credits, assignedElectiveCourseCodes);
+            if (st === "done") doneCnt++;
+            else if (st === "current") currentCnt++;
+            else neededCnt++;
+            if (st === "done") doneCredits += credits;
+            else if (st === "current") currentCredits += credits;
+            if (matched && (st === "done" || st === "current")) {
+                const canon = choiceOptionKey(matched, assignedElectiveCourseCodes);
+                creditedRequirementKeys.add(canon);
+                assignedElectiveCourseCodes.add(canon);
+            }
+
+            const icon = st === "done" ? '<span class="status-icon status-done">&#10003;</span>'
+                : st === "current" ? '<span class="status-icon status-current">&rarr;</span>'
+                    : '<span class="status-icon status-needed">&#9675;</span>';
+            const rowCls = st === "done" ? "row-done" : st === "current" ? "row-current" : "";
+            tableHtml += `<tr class="${rowCls}"><td>${icon}</td><td colspan="2"><span class="choice-label">${first}</span></td><td>${followingChoice.credits}</td></tr>`;
+            tableHtml += `<tr class="choice-options-row"><td></td><td colspan="3">${renderChoiceOptions(followingChoice)}</td></tr>`;
+            return;
+        }
+        if (alternativeChoice) {
+            skipChoiceRowsUntil = alternativeChoice.endIndex;
+            const st = statusOfChoice(alternativeChoice.options, assignedElectiveCourseCodes);
+            const matched = matchedChoiceOption(alternativeChoice.options, assignedElectiveCourseCodes);
+            const credits = creditsForChoice(alternativeChoice.options, alternativeChoice.credits, assignedElectiveCourseCodes);
+            if (st === "done") doneCnt++;
+            else if (st === "current") currentCnt++;
+            else neededCnt++;
+            if (st === "done") doneCredits += credits;
+            else if (st === "current") currentCredits += credits;
+            if (matched && (st === "done" || st === "current")) {
+                const canon = choiceOptionKey(matched, assignedElectiveCourseCodes);
+                creditedRequirementKeys.add(canon);
+                assignedElectiveCourseCodes.add(canon);
+            }
+
+            const icon = st === "done" ? '<span class="status-icon status-done">&#10003;</span>'
+                : st === "current" ? '<span class="status-icon status-current">&rarr;</span>'
+                    : '<span class="status-icon status-needed">&#9675;</span>';
+            const rowCls = st === "done" ? "row-done" : st === "current" ? "row-current" : "";
+            tableHtml += `<tr class="${rowCls}"><td>${icon}</td><td colspan="2"><span class="choice-label">${alternativeChoice.label}</span></td><td>${alternativeChoice.credits}</td></tr>`;
+            tableHtml += `<tr class="choice-options-row"><td></td><td colspan="3">${renderChoiceOptions(alternativeChoice)}</td></tr>`;
+            return;
+        }
+        if (levelElectiveReq) {
+            const matched = matchLevelElectiveCourse(levelElectiveReq, assignedElectiveCourseCodes);
+            const creditVal = cells[2] !== undefined ? cells[2] : (cells.length === 2 ? cells[1] : "");
+            const credits = matched ? creditsForCourse(matched, parseCredits(creditVal)) : parseCredits(creditVal);
+            const st = matched ? statusOf(matched) : "needed";
+            if (matched) {
+                assignedElectiveCourseCodes.add(canonicalRequirementCode(matched));
+                creditedRequirementKeys.add(canonicalRequirementCode(matched));
+            }
+
+            if (st === "done") doneCnt++;
+            else if (st === "current") currentCnt++;
+            else neededCnt++;
+            if (st === "done") doneCredits += credits;
+            else if (st === "current") currentCredits += credits;
+
+            const icon = st === "done" ? '<span class="status-icon status-done">&#10003;</span>'
+                : st === "current" ? '<span class="status-icon status-current">&rarr;</span>'
+                    : '<span class="status-icon status-needed">&#9675;</span>';
+            const rowCls = st === "done" ? "row-done" : st === "current" ? "row-current" : "";
+            const codeHtml = matched ? `<span class="course-code">${escapeHtml(matched)}</span>` : `<span class="course-code">${first}</span>`;
+            const title = matched && !cells[1] ? `${levelElectiveReq.min}-${levelElectiveReq.max} elective` : cells[1] || "";
+            const creditDisplay = matched ? displayCreditsForCourse(matched, creditVal) : creditVal;
+
+            tableHtml += `<tr class="${rowCls}"><td>${icon}</td><td>${codeHtml}</td><td>${title}</td><td>${creditDisplay}</td></tr>`;
             return;
         }
         const wildcardElectivePrefix = parseWildcardElectivePrefix(first);
@@ -823,30 +1086,23 @@ function renderTable(t, choiceTables, creditedRequirementKeys, assignedElectiveC
             if (/other\s+elective/i.test(first)) {
                 const breakdown = electiveCreditBreakdown(creditedRequirementKeys, reservedCourseCodes);
                 const requirementCredits = parseCredits(cells[1] || cells[2]);
-                const appliedDoneCredits = requirementCredits
-                    ? Math.min(breakdown.earnedCredits, requirementCredits)
-                    : breakdown.earnedCredits;
-                const remainingAfterDone = requirementCredits ? Math.max(requirementCredits - appliedDoneCredits, 0) : 0;
-                const appliedCurrentCredits = requirementCredits
-                    ? Math.min(breakdown.currentCourseCredits, remainingAfterDone)
-                    : breakdown.currentCourseCredits;
-                const appliedCredits = appliedDoneCredits + appliedCurrentCredits;
-                const st = requirementCredits && appliedCredits >= requirementCredits
+                const electiveCredits = breakdown.totalCredits;
+                const st = requirementCredits && electiveCredits >= requirementCredits
                     ? "done"
-                    : appliedCredits > 0 ? "current" : "needed";
+                    : electiveCredits > 0 ? "current" : "needed";
                 const icon = st === "done" ? '<span class="status-icon status-done">✓</span>' : '<span class="status-icon status-needed">○</span>';
                 const rowCls = st === "done" ? "row-done" : st === "current" ? "row-current" : "";
                 const displayIcon = st === "done" ? '<span class="status-icon status-done">&#10003;</span>'
                     : st === "current" ? '<span class="status-icon status-current">&rarr;</span>'
                         : '<span class="status-icon status-needed">&#9675;</span>';
                 const creditDisplay = requirementCredits
-                    ? `${formatCredits(appliedCredits)} / ${formatCredits(requirementCredits)}`
-                    : formatCredits(appliedCredits);
+                    ? `${formatCredits(electiveCredits)} / ${formatCredits(requirementCredits)}`
+                    : formatCredits(electiveCredits);
                 if (st === "done") doneCnt++;
                 else if (st === "current") currentCnt++;
                 else neededCnt++;
-                doneCredits += appliedDoneCredits;
-                currentCredits += appliedCurrentCredits;
+                doneCredits += breakdown.earnedCredits;
+                currentCredits += breakdown.currentCourseCredits;
 
                 tableHtml += `<tr class="${rowCls}"><td>${displayIcon}</td><td colspan="2">${first}</td><td>${creditDisplay}</td></tr>`;
                 tableHtml += renderElectiveCreditBreakdownRows(breakdown);
@@ -1008,28 +1264,34 @@ async function render() {
         collectCourseCreditLookupCodes(item.tables, item.choiceTables).forEach(code => lookupCodes.add(code));
     });
     await loadCourseCatalogCredits(lookupCodes);
-    const reservedCourseCodes = new Set();
     preparedPrograms.forEach(item => {
-        collectReservedRequirementCourseCodes(item.tables, item.choiceTables, reservedCourseCodes);
+        item.reservedCourseCodes = collectReservedRequirementCourseCodes(item.tables, item.choiceTables, new Set());
     });
+    const firstMajorIndex = preparedPrograms.findIndex(item => item.selected.type === "major");
+    const primaryCreditProgramIndex = firstMajorIndex >= 0 ? firstMajorIndex : 0;
     let totalDone = 0, totalCurrent = 0, totalNeeded = 0;
     let totalDoneCredits = 0, totalCurrentCredits = 0, totalRequiredCredits = 0;
     const renderedPrograms = preparedPrograms.map((item, programIndex) => {
         const creditedRequirementKeys = collectSatisfiedRequirementKeys(item.tables, item.choiceTables);
         const assignedElectiveCourseCodes = new Set();
+        const countsTowardDegreeCredits = programIndex === primaryCreditProgramIndex;
         let programRequiredCredits = 0;
         const sections = item.tables.map((t, tableIndex) => {
-            const r = renderTable(t, item.choiceTables, creditedRequirementKeys, assignedElectiveCourseCodes, reservedCourseCodes);
+            const r = renderTable(t, item.choiceTables, creditedRequirementKeys, assignedElectiveCourseCodes, item.reservedCourseCodes);
             totalDone += r.done;
             totalCurrent += r.current;
             totalNeeded += r.needed;
-            totalDoneCredits += r.doneCredits;
-            totalCurrentCredits += r.currentCredits;
+            if (countsTowardDegreeCredits) {
+                totalDoneCredits += r.doneCredits;
+                totalCurrentCredits += r.currentCredits;
+            }
             programRequiredCredits = Math.max(programRequiredCredits, r.requiredCredits || 0);
             return { label: t.label || "Requirements", id: `sec-${programIndex}-${tableIndex}`, ...r };
         });
-        totalRequiredCredits += programRequiredCredits;
-        return { ...item, sections, requiredCredits: programRequiredCredits };
+        if (countsTowardDegreeCredits) {
+            totalRequiredCredits += programRequiredCredits;
+        }
+        return { ...item, sections, requiredCredits: programRequiredCredits, countsTowardDegreeCredits };
     });
     const testCreditsSection = renderStandaloneTestCreditsSection();
     const renderedSections = [
@@ -1040,7 +1302,9 @@ async function render() {
         }),
     ];
     const totalCourses = totalDone + totalCurrent + totalNeeded;
-    const pct = totalCourses ? Math.round((totalDone / totalCourses) * 100) : 0;
+    const progressValue = totalRequiredCredits ? totalDoneCredits + totalCurrentCredits : totalDone + totalCurrent;
+    const progressTotal = totalRequiredCredits || totalCourses;
+    const pct = progressPercent(progressValue, progressTotal);
     const selectedProgramNames = selectedPrograms.map(program => `${program.type === "minor" ? "Minor: " : ""}${programLabel(program)}`);
     const prog = { school: selectedProgramNames.join(" · ") };
     profile.minor = "";
