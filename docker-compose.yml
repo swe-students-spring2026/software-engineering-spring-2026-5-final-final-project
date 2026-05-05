@@ -1,0 +1,27 @@
+services:
+  ml:
+    build: ./ML
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./ML/data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  web-app:
+    build: ./web-app
+    ports:
+      - "5000:5000"
+    environment:
+      - ML_API_URL=http://ml:8000
+      - SECRET_KEY=${SECRET_KEY:-change-me}
+      - FLASK_ENV=${FLASK_ENV:-production}
+    depends_on:
+      ml:
+        condition: service_healthy
