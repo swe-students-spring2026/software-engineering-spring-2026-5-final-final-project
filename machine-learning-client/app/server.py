@@ -1,8 +1,10 @@
+# pylint: disable=no-member
 """
 ML Image Parsing Service API
 
 Exposes image parsing functionality via HTTP.
 """
+
 import base64
 import numpy as np
 import cv2
@@ -10,6 +12,7 @@ from flask import Flask, request, jsonify
 from app.board_reader import extract_board
 
 app = Flask(__name__)
+
 
 @app.route("/extract-board", methods=["POST"])
 def extract_board_route():
@@ -26,8 +29,8 @@ def extract_board_route():
         img_bytes = base64.b64decode(data["image"])
         img_array = np.frombuffer(img_bytes, np.uint8)
         image = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
-    except Exception:
-        return jsonify({"error": "Invalid image data"}), 400
+    except ValueError as exc:
+        return jsonify({"error": f"Invalid image data: {exc}"}), 400
 
     if image is None:
         return jsonify({"error": "Could not decode image"}), 400
@@ -37,6 +40,7 @@ def extract_board_route():
         return jsonify({"error": "Could not extract board"}), 422
 
     return jsonify({"board": board_matrix})
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=True)
