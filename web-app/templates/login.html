@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VibeList</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body style="background:#121212;color:#fff;min-height:100vh;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;padding:24px;">
+
+  <div style="width:100%;max-width:400px;">
+
+    <!-- Logo -->
+    <div style="text-align:center;margin-bottom:32px;">
+      <span style="font-size:1.75rem;font-weight:700;color:#1DB954;letter-spacing:-.5px;">VibeList</span>
+      <p style="color:#888;font-size:.875rem;margin-top:6px;">Your personal playlist generator</p>
+    </div>
+
+    <!-- Card -->
+    <div style="background:#1e1e1e;border:1px solid #333;border-radius:16px;padding:28px;">
+
+      {% if auth_error %}
+        <div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:10px 14px;font-size:.875rem;color:#fca5a5;margin-bottom:20px;">
+          {{ auth_error }}
+        </div>
+      {% endif %}
+
+      {% if auth_success %}
+        <div style="background:rgba(29,185,84,.1);border:1px solid rgba(29,185,84,.3);border-radius:8px;padding:10px 14px;font-size:.875rem;color:#86efac;margin-bottom:20px;">
+          {{ auth_success }}
+        </div>
+      {% endif %}
+
+      {% if current_user %}
+        <!-- Already signed in -->
+        <p style="font-size:.8rem;color:#1DB954;font-weight:600;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;">Signed in</p>
+        <p style="font-size:1.1rem;font-weight:700;margin-bottom:4px;">{{ current_user.name }}</p>
+        <p style="color:#888;font-size:.875rem;margin-bottom:20px;">{{ current_user.email }}</p>
+        <div style="display:flex;gap:10px;">
+          <a href="/" style="flex:1;background:#1DB954;color:#000;font-weight:700;border:none;border-radius:9999px;padding:12px;font-size:.875rem;text-align:center;text-decoration:none;display:block;">Go to app</a>
+          <a href="/logout" style="flex:1;background:transparent;color:#fff;font-weight:600;border:1px solid #444;border-radius:9999px;padding:12px;font-size:.875rem;text-align:center;text-decoration:none;display:block;">Sign out</a>
+        </div>
+
+      {% else %}
+        <!-- Tabs -->
+        <div style="display:flex;gap:0;margin-bottom:24px;border-bottom:1px solid #333;">
+          <button id="tab-login" onclick="showTab('login')"
+                  style="flex:1;padding:10px;font-size:.9rem;font-weight:600;background:none;border:none;color:#1DB954;border-bottom:2px solid #1DB954;cursor:pointer;">
+            Sign In
+          </button>
+          <button id="tab-register" onclick="showTab('register')"
+                  style="flex:1;padding:10px;font-size:.9rem;font-weight:600;background:none;border:none;color:#888;border-bottom:2px solid transparent;cursor:pointer;">
+            Create Account
+          </button>
+        </div>
+
+        <!-- Sign In form -->
+        <div id="panel-login">
+          <form method="post" action="/login">
+            <div style="margin-bottom:16px;">
+              <label style="display:block;font-size:.8rem;font-weight:600;margin-bottom:6px;">Email</label>
+              <input name="email" type="email" value="{{ login_email }}" placeholder="you@example.com"
+                     style="width:100%;background:#2a2a2a;border:1px solid #444;border-radius:8px;padding:10px 14px;font-size:.875rem;color:#fff;outline:none;box-sizing:border-box;"
+                     onfocus="this.style.borderColor='#1DB954'" onblur="this.style.borderColor='#444'" />
+            </div>
+            <div style="margin-bottom:24px;">
+              <label style="display:block;font-size:.8rem;font-weight:600;margin-bottom:6px;">Password</label>
+              <input name="password" type="password" placeholder="Your password"
+                     style="width:100%;background:#2a2a2a;border:1px solid #444;border-radius:8px;padding:10px 14px;font-size:.875rem;color:#fff;outline:none;box-sizing:border-box;"
+                     onfocus="this.style.borderColor='#1DB954'" onblur="this.style.borderColor='#444'" />
+            </div>
+            <button type="submit"
+                    style="width:100%;background:#1DB954;color:#000;font-weight:700;border:none;border-radius:9999px;padding:13px;font-size:.9rem;cursor:pointer;">
+              Sign In
+            </button>
+          </form>
+        </div>
+
+        <!-- Create Account form -->
+        <div id="panel-register" style="display:none;">
+          <form method="post" action="/register">
+            <div style="margin-bottom:16px;">
+              <label style="display:block;font-size:.8rem;font-weight:600;margin-bottom:6px;">Name</label>
+              <input name="name" type="text" placeholder="Your name"
+                     style="width:100%;background:#2a2a2a;border:1px solid #444;border-radius:8px;padding:10px 14px;font-size:.875rem;color:#fff;outline:none;box-sizing:border-box;"
+                     onfocus="this.style.borderColor='#1DB954'" onblur="this.style.borderColor='#444'" />
+            </div>
+            <div style="margin-bottom:16px;">
+              <label style="display:block;font-size:.8rem;font-weight:600;margin-bottom:6px;">Email</label>
+              <input name="email" type="email" placeholder="you@example.com"
+                     style="width:100%;background:#2a2a2a;border:1px solid #444;border-radius:8px;padding:10px 14px;font-size:.875rem;color:#fff;outline:none;box-sizing:border-box;"
+                     onfocus="this.style.borderColor='#1DB954'" onblur="this.style.borderColor='#444'" />
+            </div>
+            <div style="margin-bottom:24px;">
+              <label style="display:block;font-size:.8rem;font-weight:600;margin-bottom:6px;">Password <span style="color:#888;font-weight:400;">(min 8 characters)</span></label>
+              <input name="password" type="password" placeholder="At least 8 characters"
+                     style="width:100%;background:#2a2a2a;border:1px solid #444;border-radius:8px;padding:10px 14px;font-size:.875rem;color:#fff;outline:none;box-sizing:border-box;"
+                     onfocus="this.style.borderColor='#1DB954'" onblur="this.style.borderColor='#444'" />
+            </div>
+            <button type="submit"
+                    style="width:100%;background:#1DB954;color:#000;font-weight:700;border:none;border-radius:9999px;padding:13px;font-size:.9rem;cursor:pointer;">
+              Create Account
+            </button>
+          </form>
+        </div>
+
+      {% endif %}
+    </div>
+  </div>
+
+  <script>
+    function showTab(tab) {
+      const isLogin = tab === 'login';
+      document.getElementById('panel-login').style.display    = isLogin ? 'block' : 'none';
+      document.getElementById('panel-register').style.display = isLogin ? 'none'  : 'block';
+      document.getElementById('tab-login').style.color        = isLogin ? '#1DB954' : '#888';
+      document.getElementById('tab-login').style.borderBottomColor    = isLogin ? '#1DB954' : 'transparent';
+      document.getElementById('tab-register').style.color     = isLogin ? '#888' : '#1DB954';
+      document.getElementById('tab-register').style.borderBottomColor = isLogin ? 'transparent' : '#1DB954';
+    }
+
+    // If there was a register error, open the register tab
+    {% if request.args.get('error') in ['missing_register_fields', 'user_exists', 'weak_password'] %}
+      showTab('register');
+    {% endif %}
+  </script>
+</body>
+</html>
