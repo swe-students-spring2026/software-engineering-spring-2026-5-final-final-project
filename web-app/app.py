@@ -179,13 +179,16 @@ def edit_task(task_id):
         return redirect('/')
 
     if request.method == 'POST':
+        new_due_date = request.form.get('due_date')
         mongo.assignments.update_one(
             {"_id": ObjectId(task_id)},
             {"$set": {
                 "title": request.form.get('title'),
                 "course": request.form.get('course'),
                 "description": request.form.get('description'),
-                "due_date": datetime.strptime(request.form.get('due_date'), "%Y-%m-%d"),
+                "due_date": datetime.strptime(new_due_date, "%Y-%m-%d"),
+                "status": compute_status(new_due_date),
+                "updated_at": datetime.now(timezone.utc),
             }}
         )
         return redirect(f'/task/{task_id}')

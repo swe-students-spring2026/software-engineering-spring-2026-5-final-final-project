@@ -3,7 +3,7 @@
 
 # Lacewing — Task Tracker
 
-## Container Imagines
+## Container Images
 
 [ML Client](https://hub.docker.com/r/eddy61676/lacewing_squad_ml_client)
 
