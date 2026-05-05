@@ -22,32 +22,35 @@ from db import (
     find_user_by_id,
     update_user_profile,
     delete_user_profile,
+    update_task,  # ✅ NEW (you need to add this in db.py)
+    find_task_by_id,  # ✅ NEW (you need to add this in db.py)
 )
 from dotenv import load_dotenv
+
 load_dotenv()
-# Initialize Flask app
+
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "dev-secret-key-change-this")
 
-# Initialize Flask-Bcrypt for password hashing
 bcrypt = Bcrypt(app)
 
-# Initialize Flask-Login for user sessions
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
 
-# ML Client URL (You can change this if you have the ML client running somewhere else)
 ML_CLIENT_URL = os.getenv("ML_CLIENT_URL", "http://localhost:8081")
 
-# User class for Flask-Login
+
+# =========================
+# USER MODEL
+# =========================
 class User(UserMixin):
     def __init__(self, user_doc: dict):
         self.id = str(user_doc["_id"])
         self.username = user_doc["username"]
         self.email = user_doc["email"]
 
-# Load user function for Flask-Login
+
 @login_manager.user_loader
 def load_user(user_id: str):
     user_doc = find_user_by_id(user_id)
@@ -55,19 +58,22 @@ def load_user(user_id: str):
         return None
     return User(user_doc)
 
-# Set up database indexes before every request
+
 @app.before_request
 def setup_database():
     create_indexes()
 
-# Home route (Redirects to login if not logged in)
+
+# =========================
+# AUTH ROUTES
+# =========================
 @app.route("/")
 def home():
     if current_user.is_authenticated:
         return redirect(url_for("dashboard"))
     return redirect(url_for("login"))
 
-# Register route (GET to show form, POST to handle submission)
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "GET":
@@ -81,9 +87,7 @@ def register():
         flash("All fields are required.")
         return redirect(url_for("register"))
 
-    # Check if username already exists
-    existing_user = find_user_by_username(username)
-    if existing_user:
+    if find_user_by_username(username):
         flash("That username is already taken.")
         return redirect(url_for("register"))
 
@@ -91,13 +95,12 @@ def register():
 
     user_id = insert_user(username=username, email=email, hashed_password=hashed_password)
 
-    # Log the user in after registration
     user_doc = find_user_by_id(user_id)
     login_user(User(user_doc))
 
     return redirect(url_for("dashboard"))
 
-# Login route (GET to show form, POST to handle login)
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "GET":
@@ -106,36 +109,39 @@ def login():
     username = request.form.get("username", "").strip()
     password = request.form.get("password", "")
 
-    # Find user by username
     user_doc = find_user_by_username(username)
     if not user_doc:
         flash("Invalid username or password.")
         return redirect(url_for("login"))
 
-    # Check password hash
-    password_is_correct = bcrypt.check_password_hash(user_doc["password"], password)
-    if not password_is_correct:
+    if not bcrypt.check_password_hash(user_doc["password"], password):
         flash("Invalid username or password.")
         return redirect(url_for("login"))
 
-    # Log the user in
     login_user(User(user_doc))
     return redirect(url_for("dashboard"))
 
-# Logout route
+
 @app.route("/logout")
 @login_required
 def logout():
     logout_user()
     return redirect(url_for("login"))
 
-# Dashboard route (Lists all tasks for the logged-in user)
+
+# =========================
+# DASHBOARD
+# =========================
 @app.route("/dashboard")
 @login_required
 def dashboard():
     tasks = get_tasks_for_user(current_user.id)
     return render_template("dashboard.html", tasks=tasks)
 
+
+# =========================
+# PROFILE
+# =========================
 @app.route("/profile", methods=["GET", "POST"])
 @login_required
 def profile():
@@ -152,7 +158,6 @@ def profile():
         return redirect(url_for("profile"))
 
     existing_user = find_user_by_username(username)
-
     if existing_user and str(existing_user["_id"]) != current_user.id:
         flash("That username is already taken.")
         return redirect(url_for("profile"))
@@ -170,7 +175,10 @@ def delete_profile():
     flash("Your profile has been deleted.")
     return redirect(url_for("login"))
 
-# Create task route (GET to show form, POST to handle creation)
+
+# =========================
+# CREATE TASK
+# =========================
 @app.route("/create", methods=["GET", "POST"])
 @login_required
 def create_task():
@@ -203,30 +211,80 @@ def create_task():
         user_id=current_user.id,
         title=title,
         description=description,
+        due_date=due_date,  # ✅ IMPORTANT (you weren’t saving this before)
         priority=priority
     )
 
     return redirect(url_for("dashboard"))
 
-# Mark task as complete route (POST to update task status)
+
+# =========================
+# ✅ EDIT TASK (NEW)
+# =========================
+@app.route("/edit_task/<task_id>", methods=["GET", "POST"])
+@login_required
+def edit_task(task_id):
+    task = find_task_by_id(task_id, current_user.id)
+
+    if not task:
+        flash("Task not found.")
+        return redirect(url_for("dashboard"))
+
+    if request.method == "POST":
+        title = request.form.get("title", "").strip()
+        description = request.form.get("description", "").strip()
+        due_date = request.form.get("due_date", "").strip()
+
+        if not title or not description or not due_date:
+            flash("All fields are required.")
+            return redirect(url_for("edit_task", task_id=task_id))
+
+        try:
+            due = datetime.strptime(due_date, "%Y-%m-%d").date()
+            days_to_complete = (due - date.today()).days
+        except ValueError:
+            flash("Invalid due date.")
+            return redirect(url_for("edit_task", task_id=task_id))
+
+        # ✅ recompute priority
+        priority = get_priority_from_ml_client(title, description, days_to_complete)
+
+        update_task(
+            task_id=task_id,
+            user_id=current_user.id,
+            title=title,
+            description=description,
+            due_date=due_date,
+            priority=priority
+        )
+
+        return redirect(url_for("dashboard"))
+
+    return render_template("edit_task.html", task=task)
+
+
+# =========================
+# TASK ACTIONS
+# =========================
 @app.route("/complete/<task_id>", methods=["POST"])
 @login_required
 def complete_task(task_id):
-    success = mark_task_complete(task_id, current_user.id)
-    if not success:
+    if not mark_task_complete(task_id, current_user.id):
         flash("Task could not be completed.")
     return redirect(url_for("dashboard"))
 
-# Delete task route (POST to remove task)
+
 @app.route("/delete/<task_id>", methods=["POST"])
 @login_required
 def remove_task(task_id):
-    success = delete_task(task_id, current_user.id)
-    if not success:
+    if not delete_task(task_id, current_user.id):
         flash("Task could not be deleted.")
     return redirect(url_for("dashboard"))
 
-# Helper function to call ML Client and get priority
+
+# =========================
+# ML PRIORITY
+# =========================
 def get_priority_from_ml_client(title: str, description: str, days_to_complete: int) -> str:
     try:
         response = requests.post(
@@ -239,8 +297,7 @@ def get_priority_from_ml_client(title: str, description: str, days_to_complete: 
         )
 
         response.raise_for_status()
-        data = response.json()
-        score = int(data.get("score", 5))
+        score = int(response.json().get("score", 5))
 
         if score >= 8:
             return "High"
@@ -251,6 +308,10 @@ def get_priority_from_ml_client(title: str, description: str, days_to_complete: 
 
     except Exception:
         return "Medium"
-# Run the Flask app
+
+
+# =========================
+# RUN
+# =========================
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
