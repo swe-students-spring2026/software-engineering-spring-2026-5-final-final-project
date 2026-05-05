@@ -502,3 +502,150 @@ textarea {
     flex-direction: column;
   }
 }
+
+.subtle-text {
+  color: #5d7076;
+  font-size: 14px;
+  line-height: 1.4;
+  margin: 4px 0 0;
+}
+
+.collection-summary {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 14px;
+}
+
+.collection-summary div {
+  background: #f6fbfc;
+  border: 1px solid #d4e3e5;
+  border-radius: 10px;
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+}
+
+.collection-summary strong {
+  color: #136f63;
+  font-size: 26px;
+}
+
+.collection-summary span {
+  color: #5d7076;
+  font-size: 13px;
+}
+
+.progress-track.labeled {
+  height: 14px;
+  margin-bottom: 14px;
+}
+
+.aquarium-panel .aquarium-stage {
+  background:
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.85), transparent 12%),
+    linear-gradient(180deg, #bfe9f3 0%, #dff8ff 45%, #f4fbff 100%);
+  border-radius: 18px;
+  box-shadow: inset 0 -30px 60px rgba(19, 111, 99, 0.12);
+}
+
+.aquarium-empty {
+  align-items: center;
+  background: #f6fbfc;
+  border: 1px dashed #9ccdd8;
+  border-radius: 14px;
+  color: #5d7076;
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  margin-top: 16px;
+  padding: 48px 20px;
+  text-align: center;
+}
+
+.aquarium-empty strong {
+  color: #15202b;
+}
+
+.swimmer {
+  align-items: center;
+  display: grid;
+  justify-items: center;
+}
+
+.swimmer span {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #d4e3e5;
+  border-radius: 999px;
+  color: #136f63;
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: -8px;
+  padding: 2px 8px;
+}
+
+.leaderboard-page {
+  align-items: start;
+}
+
+.leaderboard-card {
+  min-height: 360px;
+}
+
+.rank-list {
+  display: grid;
+  gap: 10px;
+}
+
+.rank-row.enhanced {
+  background: #f6fbfc;
+  border: 1px solid #d4e3e5;
+  border-radius: 12px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 54px 1fr auto;
+  padding: 14px;
+}
+
+.rank-medal {
+  align-items: center;
+  background: white;
+  border: 1px solid #d4e3e5;
+  border-radius: 999px;
+  display: flex;
+  font-weight: 800;
+  height: 38px;
+  justify-content: center;
+  width: 38px;
+}
+
+.rank-name {
+  display: grid;
+  gap: 2px;
+  font-weight: 700;
+}
+
+.rank-name small {
+  color: #5d7076;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.rank-value {
+  color: #136f63;
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .collection-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .rank-row.enhanced {
+    grid-template-columns: 44px 1fr;
+  }
+
+  .rank-value {
+    grid-column: 2;
+  }
+}

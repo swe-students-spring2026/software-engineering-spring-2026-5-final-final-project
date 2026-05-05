@@ -452,6 +452,7 @@ function AquariumPanel({ userId }) {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    setError("");
     request(`${GAME_URL}/aquarium/${userId}`)
       .then(setAquarium)
       .catch((err) => setError(err.message));
@@ -460,35 +461,74 @@ function AquariumPanel({ userId }) {
   if (!aquarium) {
     return (
       <section className="panel">
+        <div className="panel-head">
+          <h2>Aquarium Collection</h2>
+          <span>Loading collection...</span>
+        </div>
         <Status error={error} />
       </section>
     );
   }
 
+  const collected = aquarium.collected_species || 0;
+  const total = aquarium.total_species || 50;
+  const percentage = aquarium.collection_percentage || 0;
+
   return (
-    <section className="panel">
+    <section className="panel aquarium-panel">
       <div className="panel-head">
-        <h2>Aquarium</h2>
-        <span>{aquarium.collection_percentage}% collected</span>
+        <div>
+          <h2>Aquarium Collection</h2>
+          <p className="subtle-text">
+            Your medal wall: collect unique fish species to grow your aquarium.
+          </p>
+        </div>
+        <span>{percentage}% collected</span>
       </div>
-      <div className="progress-track">
-        <div style={{ width: `${aquarium.collection_percentage}%` }} />
+
+      <div className="collection-summary">
+        <div>
+          <strong>{collected}</strong>
+          <span>Species collected</span>
+        </div>
+        <div>
+          <strong>{total - collected}</strong>
+          <span>Species left</span>
+        </div>
+        <div>
+          <strong>{aquarium.fish.length}</strong>
+          <span>Unique fish shown</span>
+        </div>
       </div>
-      <div className="aquarium-stage">
-        {aquarium.fish.map((fish, index) => (
-          <button
-            className="swimmer"
-            key={fish.species_id}
-            style={{
-              top: `${18 + (index % 5) * 13}%`,
-              animationDelay: `${index * -1.4}s`,
-            }}
-            title={`${fish.species_name}, quantity ${fish.quantity}`}
-          >
-            <img src={imageUrl(fish.image_url)} alt={fish.species_name} />
-          </button>
-        ))}
+
+      <div className="progress-track labeled">
+        <div style={{ width: `${percentage}%` }} />
       </div>
+
+      {aquarium.fish.length === 0 ? (
+        <div className="aquarium-empty">
+          <strong>No fish collected yet.</strong>
+          <span>Solve quiz problems to earn fishing chances, then start collecting.</span>
+        </div>
+      ) : (
+        <div className="aquarium-stage">
+          {aquarium.fish.map((fish, index) => (
+            <button
+              className="swimmer"
+              key={fish.species_id}
+              style={{
+                top: `${14 + (index % 6) * 12}%`,
+                animationDelay: `${index * -1.25}s`,
+              }}
+              title={`${fish.species_name}, quantity ${fish.quantity}`}
+              type="button"
+            >
+              <img src={imageUrl(fish.image_url)} alt={fish.species_name} />
+              <span>x{fish.quantity}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
@@ -580,31 +620,82 @@ function MarketPanel({ inventory, userId, refreshInventory }) {
 function LeaderboardPanel() {
   const [tokens, setTokens] = useState([]);
   const [aquarium, setAquarium] = useState([]);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    request(`${GAME_URL}/leaderboard/tokens`).then(setTokens).catch(() => {});
-    request(`${GAME_URL}/leaderboard/aquarium`).then(setAquarium).catch(() => {});
+    setError("");
+
+    Promise.all([
+      request(`${GAME_URL}/leaderboard/tokens`),
+      request(`${GAME_URL}/leaderboard/aquarium`),
+    ])
+      .then(([tokenRows, aquariumRows]) => {
+        setTokens(tokenRows);
+        setAquarium(aquariumRows);
+      })
+      .catch((err) => setError(err.message));
   }, []);
 
+  function rankBadge(index) {
+    if (index === 0) return "🥇";
+    if (index === 1) return "🥈";
+    if (index === 2) return "🥉";
+    return `#${index + 1}`;
+  }
+
   return (
-    <section className="workbench two">
-      <section className="panel">
-        <h2>Token Leaderboard</h2>
-        {tokens.map((row) => (
-          <div className="rank-row" key={row.user_id}>
-            <span>{row.username || row.user_id}</span>
-            <strong>{row.tokens}</strong>
+    <section className="workbench two leaderboard-page">
+      <section className="panel leaderboard-card">
+        <div className="panel-head">
+          <div>
+            <h2>Token Leaderboard</h2>
+            <p className="subtle-text">Ranks kittens by total earned tokens.</p>
           </div>
-        ))}
+        </div>
+
+        {tokens.length === 0 ? (
+          <p className="empty">No token rankings yet.</p>
+        ) : (
+          <div className="rank-list">
+            {tokens.map((row, index) => (
+              <div className="rank-row enhanced" key={row.user_id}>
+                <span className="rank-medal">{rankBadge(index)}</span>
+                <span className="rank-name">{row.username || row.user_id}</span>
+                <strong className="rank-value">{row.tokens} tokens</strong>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
-      <section className="panel">
-        <h2>Aquarium Leaderboard</h2>
-        {aquarium.map((row) => (
-          <div className="rank-row" key={row.user_id}>
-            <span>{row.username || row.user_id}</span>
-            <strong>{row.collection_percentage}%</strong>
+
+      <section className="panel leaderboard-card">
+        <div className="panel-head">
+          <div>
+            <h2>Aquarium Leaderboard</h2>
+            <p className="subtle-text">Ranks kittens by fish species collection progress.</p>
           </div>
-        ))}
+        </div>
+
+        {aquarium.length === 0 ? (
+          <p className="empty">No aquarium rankings yet.</p>
+        ) : (
+          <div className="rank-list">
+            {aquarium.map((row, index) => (
+              <div className="rank-row enhanced" key={row.user_id}>
+                <span className="rank-medal">{rankBadge(index)}</span>
+                <span className="rank-name">
+                  {row.username || row.user_id}
+                  <small>
+                    {row.collected_species || 0}/{row.total_species || 50} species
+                  </small>
+                </span>
+                <strong className="rank-value">{row.collection_percentage}%</strong>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <Status error={error} />
       </section>
     </section>
   );
