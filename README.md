@@ -1,95 +1,273 @@
-# Final Project
+# CineMatch
 
-An exercise to put to practice software development teamwork, subsystem communication, containers, deployment, and CI/CD pipelines. See [instructions](./instructions.md) for details.
+[![Event Logger](https://github.com/swe-students-spring2026/5-final-lime_llama-2/actions/workflows/event-logger.yml/badge.svg)](https://github.com/swe-students-spring2026/5-final-lime_llama-2/actions/workflows/event-logger.yml)
+[![Frontend CI/CD](https://github.com/swe-students-spring2026/5-final-lime_llama-2/actions/workflows/frontend.yml/badge.svg)](https://github.com/swe-students-spring2026/5-final-lime_llama-2/actions/workflows/frontend.yml)
+[![Recommendation Engine CI/CD](https://github.com/swe-students-spring2026/5-final-lime_llama-2/actions/workflows/recommendation-engine.yml/badge.svg)](https://github.com/swe-students-spring2026/5-final-lime_llama-2/actions/workflows/recommendation-engine.yml)
+[![Nginx CI/CD](https://github.com/swe-students-spring2026/5-final-lime_llama-2/actions/workflows/nginx.yml/badge.svg)](https://github.com/swe-students-spring2026/5-final-lime_llama-2/actions/workflows/nginx.yml)
 
-## Frontend Features
+CineMatch is a containerized movie recommendation web application. Users can search for movies, enter four favorite movies to receive personalized recommendations, save movies to a watchlist, and review recommendation/search activity through history and analytics pages.
 
-1. Users can enter four favorite movies to receive personalized movie recommendations.
-2. The application generates recommendation results based on cosine similarity.
-3. Users can search directly by movie title.
-4. Users can make natural-language semantic searches, such as describing the type of movie they want to watch.
-5. Each movie has a detail page with key information such as title, description, genre, year, rating, director, and cast.
-6. Movie detail pages can display similar movie recommendations.
-7. Users can save movies to a personal watchlist.
-8. Recommendation history is stored in MongoDB for later retrieval.
-9. A simple analytics dashboard summarizes recommendation and search activity.
+The recommendation engine uses cosine similarity over precomputed movie embeddings stored in a FAISS index. User accounts, watchlists, and activity history are stored in MongoDB.
 
-## Description
+## Team
 
-CineMatch is a movie recommendation web app that learns your taste from just four films. Tell us your four all-time favourite movies and we'll offer a personalised list of films you're likely to love — powered by cosine similarity over pre-computed semantic embeddings from a dataset of one million movies.
+- [Laura Liu](https://github.com/lauraliu518)
+- [Ethan Demol](https://github.com/ethandemol)
+- [Yutong Liu](https://github.com/Abbyyyt)
+- [Owen Zhang](https://github.com/owenzhang2004)
+- [Howard Xia](https://github.com/hewlett-packard-lovecraft)
 
-You can also search the catalogue in two ways: type a title like "Gladiator" for a direct lookup, or describe what you're in the mood for — "a slow-burn psychological thriller like Christopher Nolan" — and the semantic search engine will find the closest matches based on meaning, not just keywords.
+## Features
 
-## Setup
+- Search movies by title, overview text, or genre.
+- Use natural-language queries such as "slow-burn psychological thriller".
+- Enter four favorite movies and receive cosine-similarity recommendations.
+- View movie detail pages with title, description, genre, year, rating, director, cast, and similar movies.
+- Register, log in, and maintain a personal watchlist.
+- Store recommendation and search history in MongoDB.
+- View a simple analytics dashboard for search, recommendation, semantic-search, and watchlist activity.
+- Run the application locally or through Docker Compose.
 
-> **System requirements:** 16GB+ RAM, ~10GB free disk. Python 3.12 recommended.
+## Repository Structure
 
-### 1. Create venv and install deps (~5 min)
+```text
+.
+|-- frontend/                  # Flask web app, routes, templates, static assets
+|-- recommendation-engine/     # Flask API, FAISS loading, recommendation logic
+|-- recommendation-engine/data # Generated FAISS index and metadata files, gitignored
+|-- nginx/                     # Reverse proxy used by Docker Compose
+|-- tests/                     # Existing frontend and recommendation-engine tests
+|-- .github/workflows/         # Event logger and subsystem CI/CD workflows
+|-- docker-compose.yml         # Multi-service container configuration
+|-- .env.example               # Dummy environment variable template
+|-- pyproject.toml             # Pytest configuration
+`-- README.md
+```
+
+## Architecture
+
+The system is organized into four subsystems:
+
+1. **MongoDB**  
+   Stores users, password hashes, watchlist entries, and search/recommendation history. The application can use MongoDB Atlas or a local MongoDB instance through `MONGO_URI`.
+
+2. **frontend**  
+   A Flask web app in `frontend/`. It renders the UI, handles authentication, reads/writes MongoDB data, and calls the recommendation engine through HTTP.
+
+3. **recommendation-engine**  
+   A Flask API in `recommendation-engine/`. It loads `faiss.index` and `metadata.parquet`, searches movie metadata, maps favorite titles to movie IDs, and returns ranked recommendations.
+
+4. **nginx**  
+   A reverse proxy in `nginx/`. Requests to `/api/*` are forwarded to the recommendation engine; all other requests are forwarded to the frontend.
+
+## Docker Images
+
+Each custom subsystem has a Dockerfile:
+
+- `frontend/Dockerfile`
+- `recommendation-engine/Dockerfile`
+- `nginx/Dockerfile`
+
+TODO: Publish these images to Docker Hub and replace the placeholders below:
+
+- Frontend: `https://hub.docker.com/r/<dockerhub-user-or-org>/cinematch-frontend`
+- Recommendation engine: `https://hub.docker.com/r/<dockerhub-user-or-org>/cinematch-recommendation-engine`
+- Nginx: `https://hub.docker.com/r/<dockerhub-user-or-org>/cinematch-nginx`
+
+## Environment Variables
+
+Do not commit real secrets. The repository includes `.env.example` with dummy values only. Real MongoDB Atlas credentials and secret keys should be shared through a private course-approved channel.
+
+For local Flask development, create `frontend/.env`:
+
+```env
+MONGO_URI=mongodb+srv://username:password@cluster0.example.mongodb.net/cinematch
+SECRET_KEY=change-me-to-a-long-random-string
+REC_API_URL=http://localhost:5001
+INDEX_PATH=recommendation-engine/data/faiss.index
+METADATA_PATH=recommendation-engine/data/metadata.parquet
+```
+
+For Docker Compose, create a repository-root `.env` because `docker-compose.yml` uses `env_file: .env`.
+
+The important variables are:
+
+- `MONGO_URI`: MongoDB Atlas or local MongoDB connection string.
+- `SECRET_KEY`: Flask session signing key.
+- `REC_API_URL`: Base URL for the frontend to call the recommendation engine.
+- `INDEX_PATH`: Path to the FAISS index.
+- `METADATA_PATH`: Path to the movie metadata parquet file.
+- `RECOMMENDATION_PORT`: Port for the recommendation-engine Flask app, default `5001`.
+
+## Data Preparation
+
+The recommendation engine does not start successfully until these generated files exist:
+
+```text
+recommendation-engine/data/faiss.index
+recommendation-engine/data/metadata.parquet
+```
+
+Generate them from the repository root:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install --upgrade pip
+.\.venv\Scripts\python.exe -m pip install -r recommendation-engine\requirements.txt
+.\.venv\Scripts\python.exe recommendation-engine\scripts\preprocess.py
+```
+
+The preprocessing script downloads `Remsky/Embeddings__Ultimate_1Million_Movies_Dataset` from Hugging Face, parses the embedding column, builds a FAISS `IndexFlatIP`, and writes the generated files into `recommendation-engine/data/`. These files are intentionally gitignored because they are large.
+
+## MongoDB Setup
+
+After configuring `MONGO_URI`, create the MongoDB indexes used by the frontend:
+
+```powershell
+cd D:\2026_Spring\SWE\5-final-lime_llama-2\frontend
+..\.venv\Scripts\python.exe setup_db.py
+```
+
+The setup script creates indexes for:
+
+- unique user email addresses
+- unique usernames
+- one watchlist entry per user and movie
+- history lookup by user and timestamp
+
+## Local Setup on Windows
+
+From the repository root:
+
+```powershell
+cd D:\2026_Spring\SWE\5-final-lime_llama-2
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install --upgrade pip
+.\.venv\Scripts\python.exe -m pip install -r frontend\requirements.txt
+.\.venv\Scripts\python.exe -m pip install -r recommendation-engine\requirements.txt
+Copy-Item .env.example frontend\.env
+Copy-Item .env.example .env
+```
+
+Edit both `.env` files with real local credentials, but do not commit them.
+
+Start the recommendation engine in one terminal:
+
+```powershell
+cd D:\2026_Spring\SWE\5-final-lime_llama-2\recommendation-engine
+$env:INDEX_PATH="data/faiss.index"
+$env:METADATA_PATH="data/metadata.parquet"
+$env:RECOMMENDATION_PORT="5001"
+..\.venv\Scripts\python.exe app.py
+```
+
+Start the frontend in a second terminal:
+
+```powershell
+cd D:\2026_Spring\SWE\5-final-lime_llama-2\frontend
+$env:REC_API_URL="http://localhost:5001"
+..\.venv\Scripts\python.exe app.py
+```
+
+Open:
+
+```text
+http://127.0.0.1:5000
+```
+
+## Local Setup on macOS or Linux
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r frontend/requirements.txt
-pip install -r recommendation-engine/requirements.txt
+python -m pip install --upgrade pip
+python -m pip install -r frontend/requirements.txt
+python -m pip install -r recommendation-engine/requirements.txt
+cp .env.example frontend/.env
+cp .env.example .env
 ```
 
-### 2. Build the FAISS index (~15–60 min)
-
-Downloads 7GB of embedded movie data from HuggingFace, builds a FAISS index (~3GB), and writes `data/faiss.index` + `data/metadata.parquet` (288MB). Needs ~10GB free disk and ~12GB peak RAM.
+Edit both `.env` files with real local credentials, generate the FAISS data, and then run:
 
 ```bash
 cd recommendation-engine
-python scripts/preprocess.py
-cd ..
+INDEX_PATH=data/faiss.index METADATA_PATH=data/metadata.parquet RECOMMENDATION_PORT=5001 ../.venv/bin/python app.py
 ```
 
-> **macOS users:** Close Chrome and other memory-heavy apps before running. Disable Low Power Mode.
-
-### 3. Configure environment
-
-Create `frontend/.env` with:
-MONGO_URI=mongodb+srv://...     # provided separately to teammates
-SECRET_KEY=any-long-random-string
-REC_API_URL=http://localhost:5001
-### 4. macOS-only: install certificates for Mongo TLS
-
-If you installed Python from python.org (not Homebrew or pyenv):
-
-```bash
-/Applications/Python\ 3.12/Install\ Certificates.command
-```
-
-Without this, the frontend will fail to connect to MongoDB Atlas with `CERTIFICATE_VERIFY_FAILED`.
-
-### 5. Run the services
-
-In **terminal 1**, start the recommendation engine (port 5001):
-
-```bash
-cd recommendation-engine
-source ../.venv/bin/activate
-python app.py
-```
-
-In **terminal 2**, start the frontend (port 5000):
+In another terminal:
 
 ```bash
 cd frontend
-source ../.venv/bin/activate
-python app.py
+REC_API_URL=http://localhost:5001 ../.venv/bin/python app.py
 ```
 
-Open `http://localhost:5000` in your browser.
+Open `http://127.0.0.1:5000`.
 
-### 6. Smoke test
+## Run with Docker Compose
 
-```bash
-curl localhost:5001/health
-# {"movies": 1035695, "status": "ok"}
-```
+After the repository-root `.env` is configured and the FAISS data files exist:
 
-### 7. Run with Docker (alternative)
-
-```bash
+```powershell
 docker compose up --build
 ```
+
+This starts:
+
+- `recommendation-engine`
+- `frontend`
+- `nginx`
+
+Open:
+
+```text
+http://localhost
+```
+
+Stop the system:
+
+```powershell
+docker compose down
+```
+
+## Testing
+
+The project already includes tests under `tests/frontend/` and `tests/recommendation_engine/`.
+
+Install dependencies and run the suite from the repository root:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r frontend\requirements.txt
+.\.venv\Scripts\python.exe -m pip install -r recommendation-engine\requirements.txt
+.\.venv\Scripts\python.exe -m pip install pytest pytest-cov
+.\.venv\Scripts\python.exe -m pytest
+```
+
+## CI/CD
+
+The repository includes the instructor-provided event logging workflow:
+
+- `.github/workflows/event-logger.yml`
+
+It also includes separate subsystem workflows for:
+
+- `.github/workflows/frontend.yml`
+- `.github/workflows/recommendation-engine.yml`
+- `.github/workflows/nginx.yml`
+
+These workflows run the existing unit tests, validate or build the service Docker images, push images to Docker Hub, and deploy services to Digital Ocean.
+
+## Technologies Used
+
+- Python
+- Flask
+- Jinja
+- MongoDB Atlas or local MongoDB
+- PyMongo and Flask-PyMongo
+- bcrypt
+- FAISS
+- pandas
+- Hugging Face datasets
+- Docker
+- Docker Compose
+- Nginx
+- GitHub Actions
