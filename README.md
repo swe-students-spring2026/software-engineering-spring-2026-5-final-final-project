@@ -258,7 +258,7 @@ This starts:
 - `nginx`
 - `watchtower`
 
-(Watchtower has been split into a seperate file as by default it will automatically update all your Docker containers, not just CineMatch.)
+(Watchtower has been split into a seperate file as by default it will automatically update all your Docker containers, not just for this system)
 
 Open:
 
