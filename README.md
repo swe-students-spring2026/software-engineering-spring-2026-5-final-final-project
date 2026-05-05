@@ -1,35 +1,45 @@
 # CatCh
 
-CatCh is a gamified programming practice platform where users solve coding problems, earn fishing chances, catch fish, collect medals, trade fish, and compete on leaderboards.
+## Project Summary
 
-In this project, programmers are represented as **kittens**, teachers are represented as **cats**, and classrooms are represented as **fish ponds**. Instead of only completing coding problems for scores, users complete problems to unlock fishing chances. Each fishing chance gives the user an opportunity to catch a fish with a certain rarity level.
+CatCh is a gamified programming practice platform that turns coding exercises into a collection-based fishing game. Users solve coding problems, earn fishing chances, catch fish with different rarity levels, collect medals, trade fish, and compete on leaderboards.
 
-CatCh combines coding practice, classroom management, collection-based gameplay, and a player marketplace into one learning platform.
+In this project, programming students are represented as **kittens**, teachers are represented as **cats**, and classrooms are represented as **fish ponds**. Instead of only completing coding problems for scores, kittens complete problems to unlock fishing chances. Each fishing chance gives the user an opportunity to catch a fish from a pond.
+
+A **kitten** solves coding problems to earn fishing chances. After earning a chance, the kitten can fish from a pond and catch different types of fish. Common and uncommon fish can be sold directly for Cat Can Tokens, while rarer fish are more valuable for collection, display, marketplace trading, and medal progress.
+
+A **cat** creates and manages classrooms, fish ponds, and coding problems. Cats are responsible for classroom and problem management rather than normal player progression. In the current implementation, cats do not participate in the kitten token economy, marketplace trading, or kitten leaderboards.
+
+The platform includes public fish ponds, private fish ponds, coding problem practice, fishing chance rewards, fish inventory, a marketplace, a medal wall, wrong-answer review, pond feedback, and leaderboards.
 
 ---
 
 ## Team Members
 
-- [Celia Liang](https://github.com/liangchuxin)
-- [Grace Yin](https://github.com/gy28611)
-- [Hollan Yuan](https://github.com/hwyuanzi)
-- [Jonas Chen](https://github.com/JonasChenJusFox)
-- [Meili Liang](https://github.com/ml8397)
+| Name | GitHub |
+|---|---|
+| Celia Liang | [liangchuxin](https://github.com/liangchuxin) |
+| Grace Yin | [gy28611](https://github.com/gy28611) |
+| Hollan Yuan | [hwyuanzi](https://github.com/hwyuanzi) |
+| Jonas Chen | [JonasChenJusFox](https://github.com/JonasChenJusFox) |
+| Meili Liang | [ml8397](https://github.com/ml8397) |
 
 ---
 
 ## Installation and Launch Guide
 
-This project is a monorepo with multiple subsystems:
+### Project Structure
 
-- `game-service`: main FastAPI backend for quiz, fishing, inventory, and gameplay APIs
-- `grader-service`: Python code checking service
-- `auth-service`: email verification and authentication service
-- `teacher-service`: teacher and fish pond management service
-- `integration`: integration layer
-- `mongo`: MongoDB database
-- `frontend/quiz`: quiz frontend
-- `frontend/fishing`: fishing frontend
+| Subsystem | Description |
+|---|---|
+| `game-service` | Main FastAPI backend for quiz, fishing, inventory, and gameplay APIs |
+| `grader-service` | Python code checking service |
+| `auth-service` | Email verification and authentication service |
+| `teacher-service` | Teacher and fish pond management service |
+| `integration` | Integration layer |
+| `mongo` | MongoDB database |
+| `frontend/quiz` | Quiz frontend |
+| `frontend/fishing` | Fishing frontend |
 
 ### Prerequisites
 
@@ -57,8 +67,8 @@ brew install pipenv
 ### Clone the Repository
 
 ```bash
-git clone <your-repository-url>
-cd SWE_Final_Project
+git clone <https://github.com/swe-students-spring2026/5-final-fish_likes_cat-1.git>
+cd 5-final-fish_likes_cat-1
 ```
 
 ### Environment Variables
@@ -84,7 +94,7 @@ JWT_SECRET=change-me-for-local-dev
 
 ---
 
-## Option A: Run Backend Services with Docker Compose
+### Option A: Run Backend Services with Docker Compose
 
 From the project root:
 
@@ -131,11 +141,11 @@ docker compose down -v
 
 ---
 
-## Option B: Run Services Locally for Development
+### Option B: Run Services Locally for Development
 
 Use separate terminal windows.
 
-### Terminal 1: Grader Service
+#### Terminal 1: Grader Service
 
 ```bash
 cd grader-service
@@ -143,7 +153,7 @@ pipenv install --dev
 pipenv run uvicorn app.main:app --reload --port 8001
 ```
 
-### Terminal 2: Game Service
+#### Terminal 2: Game Service
 
 ```bash
 cd game-service
@@ -158,7 +168,7 @@ Open:
 http://localhost:8000/docs
 ```
 
-### Terminal 3: Quiz Frontend
+#### Terminal 3: Quiz Frontend
 
 ```bash
 cd frontend/quiz
@@ -172,7 +182,7 @@ Open:
 http://localhost:5173
 ```
 
-### Terminal 4: Fishing Frontend
+#### Terminal 4: Fishing Frontend
 
 ```bash
 cd frontend/fishing
@@ -188,7 +198,9 @@ http://localhost:5174
 
 ---
 
-## Fishing Dataset
+## Fishing Dataset and Demo
+
+### Fishing Dataset
 
 The fish dataset is committed to the repository.
 
@@ -227,14 +239,14 @@ The backend serves them through:
 To regenerate the fish catalog metadata:
 
 ```bash
-python3 scripts/build_fish_catalog.py
+python3 script/build_fish_catalog.py
 ```
 
 No external dataset download is required for normal development.
 
 ---
 
-## Quick Fishing Demo
+### Quick Fishing Demo
 
 The fishing frontend may show no available chances at first. A user must earn fishing chances by solving quiz problems.
 
@@ -266,9 +278,11 @@ curl "http://localhost:8000/fishing/species"
 
 ---
 
-## Running Tests
+## Testing and Build Checks
 
-### Game Service Tests
+### Running Tests
+
+#### Game Service Tests
 
 ```bash
 cd game-service
@@ -276,14 +290,14 @@ pipenv install --dev
 pipenv run pytest --cov=app --cov-report=term-missing
 ```
 
-### Fishing Tests Only
+#### Fishing Tests Only
 
 ```bash
 cd game-service
 pipenv run pytest tests/test_fishing.py -v
 ```
 
-### Grader Service Tests
+#### Grader Service Tests
 
 ```bash
 cd grader-service
@@ -293,9 +307,9 @@ pipenv run pytest --cov=app --cov-report=term-missing
 
 ---
 
-## Frontend Build Check
+### Frontend Build Check
 
-### Quiz Frontend
+#### Quiz Frontend
 
 ```bash
 cd frontend/quiz
@@ -303,7 +317,7 @@ npm install
 npm run build
 ```
 
-### Fishing Frontend
+#### Fishing Frontend
 
 ```bash
 cd frontend/fishing
@@ -313,19 +327,9 @@ npm run build
 
 ---
 
-## Project Overview
+## Gameplay Design
 
-CatCh is designed to make programming practice more interactive and rewarding.
-
-A kitten solves coding problems to earn fishing chances. After earning a fishing chance, the kitten can fish from a pond and catch different types of fish. Some fish are common and can be sold directly for tokens, while rare fish are more valuable and can be collected, displayed, or traded with other users.
-
-A cat creates classrooms and coding problems. Cats cannot solve problems for fishing chances, but they can earn fishing chances by creating problems and receiving support from students on their fish ponds.
-
-The platform includes public fish ponds, private fish ponds, a marketplace, a medal wall, wrong-answer review, pond feedback, and leaderboards.
-
----
-
-## User Roles
+### User Roles
 
 CatCh has two main user roles:
 
@@ -334,7 +338,7 @@ CatCh has two main user roles:
 
 ---
 
-## Kitten Role
+### Kitten Role
 
 A **kitten** is a programmer or student user.
 
@@ -358,7 +362,7 @@ Kittens are the main problem-solving users of the platform.
 
 ---
 
-## Cat Role
+### Cat Role
 
 A **cat** is a teacher or problem creator.
 
@@ -389,7 +393,6 @@ CatCh includes the following main features:
 - Public fish ponds
 - Private fish ponds
 - Coding problem solving
-- Judge0-based code checking
 - Fishing chance system
 - Fish rarity system
 - Cat Can Token economy
@@ -511,23 +514,11 @@ Cats do not have an Uncaught Fish review page because cats do not solve coding p
 
 ---
 
-## Code Checking
+## Code Checking and Grader Service
 
-CatCh uses a Judge0-based code checking system.
+CatCh uses a separate `grader-service` to check submitted code.
 
-When a kitten submits code, the system sends the code and test cases to the judging service. The judging service runs the code and returns the result.
-
-The platform then decides whether the answer is correct.
-
-Possible results may include:
-
-- Correct answer
-- Wrong answer
-- Runtime error
-- Compilation error
-- Time limit exceeded
-
-Only correct answers allow kittens to earn fishing chances.
+When a kitten submits code, the `game-service` sends the submitted solution and test cases to the `grader-service`. The grader service runs the code, compares the output against the expected test behavior, and returns a structured result to the game service.
 
 ---
 
@@ -747,18 +738,6 @@ For every 10 support votes received by a cat’s fish ponds, the cat earns **1 f
 For every 10 not-support votes received by a cat’s fish ponds, the cat loses **1 Cat Can Token**.
 
 This feedback system rewards useful fish ponds, discourages low-quality problem sets, and helps better public ponds appear higher in the public fish pond list.
-
----
-
-## Login and Email Verification
-
-CatCh uses email-based login verification.
-
-When a user logs in or registers, the system sends a verification email using SMTP.
-
-This helps confirm that the user owns the email address.
-
-Email is also used for private fish pond invitations. When a cat creates a private fish pond, the cat can send the room code to students through email.
 
 ---
 
