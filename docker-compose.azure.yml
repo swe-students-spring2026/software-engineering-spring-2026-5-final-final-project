@@ -1,0 +1,27 @@
+services:
+  web-app:
+    image: project5flakemateacr.azurecr.io/web-app:latest
+    ports:
+      - "5002:5000"
+    depends_on:
+      - mongodb
+      - invite-adjuster
+    environment:
+      - MONGO_URI=mongodb://mongodb.redpebble-b390f80a.eastus.azurecontainerapps.io:27017/
+      - MONGO_DBNAME=flakemate
+      - INVITE_ADJUSTER_URL=http://invite-adjuster:5000
+
+  invite-adjuster:
+    image: project5flakemateacr.azurecr.io/invite-adjuster:latest
+    ports:
+      - "5001:5000"
+    depends_on:
+      - mongodb
+    environment:
+      - MONGO_URI=mongodb://mongodb.redpebble-b390f80a.eastus.azurecontainerapps.io:27017/
+      - MONGO_DBNAME=flakemate
+
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
