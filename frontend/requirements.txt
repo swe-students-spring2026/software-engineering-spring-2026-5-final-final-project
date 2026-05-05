@@ -14,3 +14,4 @@ pymongo
 flask-pymongo
 dotenv
 gunicorn
+bcrypt

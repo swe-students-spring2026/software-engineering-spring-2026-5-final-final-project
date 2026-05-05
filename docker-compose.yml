@@ -1,0 +1,34 @@
+services:
+  recommendation-engine:
+    build: ./recommendation-engine
+    container_name: rec_engine
+    env_file: .env
+    environment:
+      - INDEX_PATH=data/faiss.index
+      - METADATA_PATH=data/metadata.parquet
+      - RECOMMENDATION_PORT=5001
+    expose:
+      - "5001"
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    env_file: .env
+    environment:
+      - REC_API_URL=http://nginx/api
+    expose:
+      - "5000"
+    depends_on:
+      - recommendation-engine
+    restart: unless-stopped
+
+  nginx:
+    build: ./nginx
+    container_name: nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - frontend
+      - recommendation-engine
+    restart: unless-stopped
