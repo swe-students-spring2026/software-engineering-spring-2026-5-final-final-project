@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Add Friend{% endblock %}
+{% block content %}
+<div class="page-header">
+    <a href="/friends" class="back-button">← Back</a>
+    <h1 class="page-title">Add Friend</h1>
+</div>
+
+<section class="form-section">
+    {% if error %}
+    <p class="form-error">{{ error }}</p>
+    {% endif %}
+
+    {% if success %}
+    <p class="form-success">{{ success }}</p>
+    {% endif %}
+
+    <form method="POST">
+        <div class="form-group">
+            <label class="form-label">Username</label>
+            <input
+                type="text"
+                class="form-input"
+                name="friend_username"
+                placeholder="Enter their username"
+            />
+        </div>
+        <button type="submit" class="btn-primary">Send Friend Request</button>
+    </form>
+</section>
+{% endblock %}
