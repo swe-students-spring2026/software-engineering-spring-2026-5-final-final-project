@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Schedule — NYU Course Planner</title>
+  <link rel="stylesheet" href="/static/css/shared.css">
+  <link rel="stylesheet" href="/static/css/chat.css">
+  <link rel="stylesheet" href="/static/css/schedule.css">
+</head>
+
+<body>
+  <header>
+    <h1>My Schedule</h1>
+    <div class="header-nav">
+      <a href="/">Search</a>
+      <a href="/programs">Programs</a>
+      <a href="/graduation">Graduation</a>
+      <a href="/profile">Profile</a>
+      <a href="/logout">Sign Out</a>
+    </div>
+  </header>
+
+  <div class="page">
+    <div class="cal-wrap">
+      <div class="cal-toolbar">
+        <span id="schedule-summary"></span>
+        <div style="display:flex;gap:8px;">
+          <button class="export-btn" onclick="downloadCalendar()">⬇ Download Calendar</button>
+          <button onclick="clearAll()">Clear Schedule</button>
+        </div>
+      </div>
+      <div class="cal-scroll">
+        <div class="cal-grid" id="cal-grid"></div>
+      </div>
+    </div>
+
+    <div class="sidebar">
+      <h2>Selected Courses</h2>
+      <div id="sidebar-list"></div>
+    </div>
+  </div>
+
+  {% include '_chat.html' %}
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="/static/js/chat.js"></script>
+  <script src="/static/js/schedule.js"></script>
+</body>
+
+</html>

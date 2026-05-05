@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Graduation Progress — NYU Course Planner</title>
+  <link rel="stylesheet" href="/static/css/shared.css">
+  <link rel="stylesheet" href="/static/css/chat.css">
+  <link rel="stylesheet" href="/static/css/graduation.css">
+</head>
+
+<body>
+  <header>
+    <h1>Graduation Progress</h1>
+    <div class="header-nav">
+      <a href="/">Search</a>
+      <a href="/schedule">Schedule</a>
+      <a href="/programs">Programs</a>
+      <a href="/profile">Profile</a>
+      <a href="/logout">Sign Out</a>
+    </div>
+  </header>
+
+  <div class="page" id="page-root">
+    <div class="loading">Loading your graduation progress…</div>
+  </div>
+
+  {% include '_chat.html' %}
+  <script type="application/json" id="profile-data">{{ profile | tojson }}</script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="/static/js/chat.js"></script>
+  <script src="/static/js/graduation.js"></script>
+</body>
+
+</html>

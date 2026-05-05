@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NYU Course Planner</title>
+  <link rel="stylesheet" href="/static/css/shared.css">
+  <link rel="stylesheet" href="/static/css/chat.css">
+  <link rel="stylesheet" href="/static/css/index.css">
+</head>
+
+<body>
+  <header>
+    <h1>NYU Course Planner</h1>
+    <div class="header-nav">
+      <a href="/" class="active">Search</a>
+      <a href="/programs">Programs</a>
+      <a href="/schedule">Schedule</a>
+      <a href="/graduation">Graduation</a>
+      <a href="/profile">Profile</a>
+      <a href="/logout">Sign Out</a>
+    </div>
+  </header>
+
+  <div class="main">
+    <div class="panel-resizer" data-resize="chat-side"></div>
+    <div class="search-panel">
+      <div class="filters">
+        <select id="term">
+          <option value="1268">Fall 2026</option>
+          <option value="1266">Summer 2026</option>
+        </select>
+        <input type="text" id="query" placeholder="Search by name, subject code, instructor…" />
+        <select id="school">
+          <option value="">Any School</option>
+        </select>
+        <select id="component">
+          <option value="">Any Type</option>
+          <option value="Lecture">Lecture</option>
+          <option value="Recitation">Recitation</option>
+          <option value="Seminar">Seminar</option>
+          <option value="Laboratory">Laboratory</option>
+          <option value="Studio">Studio</option>
+          <option value="Workshop">Workshop</option>
+        </select>
+        <select id="status">
+          <option value="">Any Status</option>
+          <option value="open">Open</option>
+          <option value="waitlist">Wait List</option>
+          <option value="closed">Closed</option>
+        </select>
+        <button id="search-btn">Search</button>
+      </div>
+      <div id="results-count" class="results-count"></div>
+      <div id="pagination" class="pagination" style="display:none"></div>
+      <div id="results" class="results"></div>
+    </div>
+
+    <div class="panel-resizer" data-resize="search-cal"></div>
+    <div class="calendar-panel" id="cal-panel">
+      <div class="cal-header">
+        <h2>My Schedule</h2>
+        <div class="cal-header-btns">
+          <a href="/schedule"
+            style="padding:4px 10px;background:#f0e6f7;color:#57068c;border:1px solid #c9a7e0;border-radius:4px;font-size:0.78rem;text-decoration:none;"
+            class="schedule-btn">Full View</a>
+          <button class="export-btn" onclick="downloadCalendar()" title="Export to Google / Apple Calendar">⬇ Download
+            Calendar</button>
+          <button class="clear-btn" onclick="clearSchedule()">Clear</button>
+          <button class="cal-collapse-btn" onclick="toggleCalendar()" id="collapse-btn">▶</button>
+        </div>
+      </div>
+      <div class="cal-body">
+        <div class="cal-grid-wrap">
+          <div class="cal-grid" id="cal-grid"></div>
+        </div>
+        <div class="selected-list">
+          <div class="selected-list-title">Selected Courses</div>
+          <div id="selected-list-items"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal">
+    <div class="modal">
+      <h2 id="modal-title"></h2>
+      <p id="modal-subtitle"></p>
+      <div id="modal-rct-list"></div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+        <button class="btn-confirm" id="modal-confirm" disabled onclick="confirmSelection()">Add to Schedule</button>
+      </div>
+    </div>
+  </div>
+
+  {% include '_chat.html' %}
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="/static/js/chat.js"></script>
+  <script src="/static/js/index.js"></script>
+</body>
+
+</html>

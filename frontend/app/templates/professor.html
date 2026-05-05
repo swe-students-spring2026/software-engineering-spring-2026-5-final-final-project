@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Professor Profile</title>
+  <link rel="stylesheet" href="/static/css/shared.css">
+  <link rel="stylesheet" href="/static/css/chat.css">
+  <link rel="stylesheet" href="/static/css/professor.css">
+</head>
+
+<body>
+  <header>
+    <h1>Professor Profile</h1>
+    <div class="header-nav">
+      <a href="/">Search</a>
+      <a href="/schedule">Schedule</a>
+      <a href="/programs">Programs</a>
+      <a href="/profile">Profile</a>
+      <a href="/logout">Sign Out</a>
+    </div>
+  </header>
+
+  <div class="page">
+    <div class="searchbar">
+      <input id="name" type="text" placeholder="Search professor name" value="{{ professor_name }}">
+      <select id="term">
+        <option value="">Any Term</option>
+        <option value="1268">Fall 2026</option>
+        <option value="1266">Summer 2026</option>
+        <option value="1264">Spring 2026</option>
+      </select>
+      <button onclick="loadProfessor()">Search</button>
+    </div>
+
+    <div id="search-results" class="search-results"></div>
+    <div id="content" class="hero">
+      <div class="empty">Search for a professor to see their Rate My Professors link and current courses.</div>
+    </div>
+  </div>
+
+  {% include '_chat.html' %}
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="/static/js/chat.js"></script>
+  <script src="/static/js/professor.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,609 @@
+/* ── AI Chat widget ──────────────────────────────────────────────────────────
+   Shared across all pages. Loaded alongside each page's own stylesheet.
+   The bubble sits fixed at the bottom-right; the panel floats above it.
+   On the search page the panel can also dock left/right into the flex row.
+──────────────────────────────────────────────────────────────────────────── */
+
+/* ── Trigger bubble ── */
+#chat-bubble {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    min-width: 160px;
+    height: 46px;
+    padding: 0 18px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #6f16a7 0%, #57068c 100%);
+    color: white;
+    border: none;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(87, 6, 140, 0.28);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+#chat-bubble:hover {
+    background: linear-gradient(180deg, #7a25b2 0%, #650d9b 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(87, 6, 140, 0.34);
+}
+
+.chat-bubble-icon {
+    font-size: 0.85rem;
+    line-height: 1;
+}
+
+.chat-bubble-text {
+    font-size: 0.86rem;
+}
+
+/* ── Floating panel ── */
+#chat-panel {
+    position: fixed;
+    bottom: 80px;
+    right: 24px;
+    width: 520px;
+    height: 680px;
+    max-width: calc(100vw - 48px);
+    max-height: calc(100vh - 120px);
+    background: white;
+    border-radius: 14px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    /* closed: shrink slightly toward bubble */
+    transform: scale(0.95) translateY(20px);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+    transform-origin: bottom right;
+    min-width: 320px;
+    min-height: 420px;
+    /* Native resize grip (bottom-right). The transform-origin above means the
+       grip stays anchored to the corner the panel grows out of. Suppressed
+       while docked or dragging via the rules below. */
+    resize: both;
+}
+
+/* Hide the resize grip while the open/close scale animation is mid-flight,
+   and while the user is repositioning the panel — otherwise the grip
+   responds to drags meant for the header. */
+#chat-panel:not(.open),
+#chat-panel.dragging {
+    resize: none;
+}
+
+@media (max-width: 600px) {
+    #chat-panel {
+        width: calc(100vw - 24px);
+        height: calc(100vh - 110px);
+        right: 12px;
+        bottom: 80px;
+    }
+
+    #chat-bubble {
+        right: 16px;
+        bottom: 16px;
+    }
+}
+
+#chat-panel.open {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+    pointer-events: all;
+}
+
+#chat-panel.dragging {
+    transition: none;
+    user-select: none;
+}
+
+/* ── Side-panel dock (search page only) ─────────────────────────────────────
+   When the user drags the panel to the left/right edge on a page that has
+   a .main flex row, chat.js moves the element into .main and adds one of
+   these classes so it participates in the flex layout instead of floating. */
+#chat-panel.docked-left,
+#chat-panel.docked-right {
+    position: relative;
+    flex: 0 0 var(--chat-width, 360px);
+    width: auto;
+    min-width: 280px;
+    max-width: 600px;
+    height: auto;
+    max-height: none;
+    bottom: auto;
+    right: auto;
+    top: auto;
+    left: auto;
+    border-radius: 0;
+    box-shadow: none;
+    resize: none;
+    transform: none;
+    opacity: 1;
+    pointer-events: all;
+    transition: none;
+}
+
+#chat-panel.docked-left {
+    border-right: 1px solid #ddd;
+    order: -2;
+}
+
+#chat-panel.docked-right {
+    border-left: 1px solid #ddd;
+    order: 99;
+}
+
+/* Snap-zone preview highlight shown while dragging near an edge */
+#chat-snap-preview {
+    position: fixed;
+    top: 0;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 190;
+    display: none;
+}
+
+#chat-snap-preview.snap-preview-left {
+    left: 0;
+    width: 60px;
+    background: linear-gradient(to right, rgba(87, 6, 140, 0.18), transparent);
+}
+
+#chat-snap-preview.snap-preview-right {
+    right: 0;
+    left: auto;
+    width: 60px;
+    background: linear-gradient(to left, rgba(87, 6, 140, 0.18), transparent);
+}
+
+/* ── Panel chrome ── */
+#chat-panel-header {
+    background: #57068c;
+    color: white;
+    padding: 14px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+    cursor: grab;
+}
+
+#chat-panel.dragging #chat-panel-header {
+    cursor: grabbing;
+}
+
+#chat-panel-header>span:not(#chat-drag-handle) {
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+#chat-drag-handle {
+    display: flex;
+    align-items: center;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+
+.chat-header-btns {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#chat-new-btn {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    font-size: 0.78rem;
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+#chat-new-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+#chat-speed {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    font-size: 0.78rem;
+    cursor: pointer;
+    padding: 3px 6px;
+    border-radius: 4px;
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+#chat-speed:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+/* The popup itself renders against system colors — keep options legible. */
+#chat-speed option {
+    color: #222;
+    background: white;
+}
+
+#chat-close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.3rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 4px;
+}
+
+/* ── Context section ── */
+#chat-context {
+    border-bottom: 1px solid #eee;
+    flex-shrink: 0;
+}
+
+#chat-context-toggle {
+    width: 100%;
+    background: #f9f4ff;
+    border: none;
+    border-bottom: 1px solid #eee;
+    padding: 8px 16px;
+    text-align: left;
+    font-size: 0.85rem;
+    color: #57068c;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+#chat-context-toggle:hover {
+    background: #f0e6f7;
+}
+
+#chat-context-fields {
+    padding: 10px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: #faf7ff;
+}
+
+#chat-context-fields input,
+#chat-context-fields textarea {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 0.88rem;
+    font-family: inherit;
+    resize: none;
+    box-sizing: border-box;
+}
+
+#chat-context-fields input:focus,
+#chat-context-fields textarea:focus {
+    border-color: #57068c;
+    outline: none;
+}
+
+#chat-context-fields label {
+    font-size: 0.8rem;
+    color: #888;
+    margin-bottom: 1px;
+}
+
+/* ── Messages ── */
+#chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.chat-msg {
+    max-width: 88%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    line-height: 1.55;
+    word-wrap: break-word;
+}
+
+.chat-msg.user {
+    background: #57068c;
+    color: white;
+    align-self: flex-end;
+    border-bottom-right-radius: 3px;
+}
+
+.chat-msg.ai {
+    background: #f0e6f7;
+    color: #333;
+    align-self: flex-start;
+    border-bottom-left-radius: 3px;
+    max-width: 95%;
+}
+
+/* ── Typing indicator ── */
+.chat-msg.typing {
+    color: #999;
+    font-style: italic;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 38px;
+}
+
+.chat-msg.typing .typing-text {
+    font-size: 0.88rem;
+}
+
+.typing-dots {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.typing-dots span {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #9b59b6;
+    animation: typing-bounce 1.2s infinite ease-in-out;
+}
+
+.typing-dots span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-dots span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typing-bounce {
+
+    0%,
+    60%,
+    100% {
+        transform: translateY(0);
+        opacity: 0.4;
+    }
+
+    30% {
+        transform: translateY(-5px);
+        opacity: 1;
+    }
+}
+
+@keyframes msg-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.chat-msg.ai.fade-in {
+    animation: msg-fade-in 0.3s ease-out forwards;
+}
+
+/* ── Markdown rendering inside AI messages ── */
+.chat-msg.ai p {
+    margin: 0 0 6px;
+}
+
+.chat-msg.ai p:last-child {
+    margin-bottom: 0;
+}
+
+.chat-msg.ai ul,
+.chat-msg.ai ol {
+    margin: 4px 0 6px 18px;
+}
+
+.chat-msg.ai li {
+    margin-bottom: 3px;
+}
+
+.chat-msg.ai h2,
+.chat-msg.ai h3 {
+    font-size: 1rem;
+    font-weight: bold;
+    margin: 10px 0 4px;
+    color: #57068c;
+}
+
+.chat-msg.ai strong {
+    font-weight: 700;
+}
+
+.chat-msg.ai code {
+    background: rgba(87, 6, 140, 0.08);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 0.88rem;
+}
+
+.chat-msg.ai hr {
+    border: none;
+    border-top: 1px solid #ddd;
+    margin: 6px 0;
+}
+
+/* ── Add-to-calendar confirmation card ── */
+.chat-msg.chat-add-card {
+    background: #fff;
+    border: 1px solid #d6c2e6;
+    padding: 12px;
+    max-width: 95%;
+}
+
+.chat-add-header {
+    font-weight: 600;
+    color: #57068c;
+    margin-bottom: 8px;
+    font-size: 0.92rem;
+}
+
+.chat-add-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.chat-add-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    background: #f7f2fb;
+    border-radius: 8px;
+    padding: 8px 10px;
+}
+
+.chat-add-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.chat-add-code {
+    font-size: 0.92rem;
+    color: #333;
+}
+
+.chat-add-meta {
+    font-size: 0.82rem;
+    color: #666;
+    margin-top: 2px;
+}
+
+.chat-add-drop {
+    background: transparent;
+    border: none;
+    color: #999;
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    line-height: 1;
+}
+
+.chat-add-drop:hover {
+    background: rgba(87, 6, 140, 0.1);
+    color: #57068c;
+}
+
+.chat-add-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.chat-add-confirm {
+    background: #57068c;
+    color: #fff;
+    border: none;
+    padding: 7px 14px;
+    border-radius: 6px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.chat-add-confirm:hover:not(:disabled) {
+    background: #6b1aa3;
+}
+
+.chat-add-confirm:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.chat-add-cancel {
+    background: transparent;
+    color: #57068c;
+    border: 1px solid #d6c2e6;
+    padding: 7px 14px;
+    border-radius: 6px;
+    font-size: 0.88rem;
+    cursor: pointer;
+}
+
+.chat-add-cancel:hover {
+    background: #f7f2fb;
+}
+
+.chat-add-result,
+.chat-add-empty {
+    color: #444;
+    font-size: 0.9rem;
+}
+
+/* ── Input row ── */
+#chat-input-row {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+    border-top: 1px solid #eee;
+    flex-shrink: 0;
+    align-items: flex-end;
+}
+
+#chat-input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    outline: none;
+    resize: none;
+    overflow-y: hidden;
+    min-height: 42px;
+    max-height: 160px;
+    line-height: 1.45;
+    font-family: inherit;
+}
+
+#chat-input:focus {
+    border-color: #57068c;
+}
+
+#chat-send-btn {
+    padding: 10px 18px;
+    background: #57068c;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+#chat-send-btn:hover {
+    background: #7a0fa8;
+}
+
+#chat-send-btn:disabled {
+    background: #ccc;
+    cursor: default;
+}

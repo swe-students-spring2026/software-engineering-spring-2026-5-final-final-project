@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Programs — NYU Course Planner</title>
+  <link rel="stylesheet" href="/static/css/shared.css">
+  <link rel="stylesheet" href="/static/css/chat.css">
+  <link rel="stylesheet" href="/static/css/programs.css">
+</head>
+
+<body>
+  <header>
+    <h1>Programs</h1>
+    <div class="header-nav">
+      <a href="/">Search</a>
+      <a href="/schedule">Schedule</a>
+      <a href="/programs" class="active">Programs</a>
+      <a href="/profile">Profile</a>
+      <a href="/logout">Sign Out</a>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="list-panel">
+      <h2>Undergraduate Programs</h2>
+      <input type="text" class="search" id="search" placeholder="Filter programs…">
+      <div id="program-list"></div>
+    </div>
+    <div class="detail-panel" id="detail">
+      <div class="placeholder">Select a program to see its requirements</div>
+    </div>
+  </div>
+
+  {% include '_chat.html' %}
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="/static/js/chat.js"></script>
+  <script src="/static/js/programs.js"></script>
+</body>
+
+</html>

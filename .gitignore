@@ -36,6 +36,8 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+Pipfile.lock
+Pipfile
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -147,3 +149,22 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+# one-off migration scripts
+scrapers/fix_meeting_times.py
+scrapers/backfill_meeting_times.py
+scrapers/test_sample_text.txt
+scrapers/classes_example_report.json
+check_lectures.py
+
+# classes example
+scrapers/classes_example.json
+
+# local authenticated browser sessions
+.secrets/
+scrapers/session.json
+session.json
+*storage-state*.jsondoc
+*albert-state*.json
+
+

@@ -1,0 +1,375 @@
+/* shared base styles moved to shared.css */
+
+.container {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 16px;
+    padding: 16px;
+    height: calc(100vh - 56px);
+}
+
+.list-panel,
+.detail-panel {
+    background: white;
+    border-radius: 6px;
+    padding: 16px;
+    overflow-y: auto;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07);
+}
+
+.list-panel h2 {
+    font-size: 0.95rem;
+    color: #57068c;
+    margin-bottom: 10px;
+}
+
+.search {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    margin-bottom: 10px;
+}
+
+.school-group {
+    margin-bottom: 4px;
+}
+
+.school-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 10px;
+    background: #f0e6f7;
+    border-radius: 4px;
+    cursor: pointer;
+    user-select: none;
+    font-size: 0.82rem;
+    font-weight: bold;
+    color: #57068c;
+}
+
+.school-header:hover {
+    background: #e5d4f5;
+}
+
+.school-header .count {
+    font-size: 0.72rem;
+    color: #9a5cc6;
+    font-weight: normal;
+}
+
+.school-header .chevron {
+    font-size: 0.65rem;
+    transition: transform 0.15s;
+}
+
+.school-group.collapsed .chevron {
+    transform: rotate(-90deg);
+}
+
+.school-programs {
+    padding: 2px 0 4px 0;
+}
+
+.school-group.collapsed .school-programs {
+    display: none;
+}
+
+.program-item {
+    padding: 7px 10px 7px 18px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.82rem;
+    margin-bottom: 1px;
+}
+
+.program-item:hover {
+    background: #f5eeff;
+}
+
+.program-item.active {
+    background: #f0e6f7;
+    color: #57068c;
+    font-weight: bold;
+}
+
+.program-award {
+    color: #aaa;
+    font-size: 0.72rem;
+    margin-top: 1px;
+}
+
+.detail-panel h2 {
+    font-size: 1.1rem;
+    color: #57068c;
+    margin-bottom: 4px;
+}
+
+.detail-meta {
+    font-size: 0.82rem;
+    color: #888;
+    margin-bottom: 6px;
+}
+
+.detail-divider {
+    border: none;
+    border-top: 2px solid #f0e6f7;
+    margin: 4px 0 0;
+}
+
+/* Section blocks */
+.detail-section {
+    margin-top: 20px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid #e8e8e8;
+}
+
+.detail-section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+}
+
+.detail-section-header h3 {
+    font-size: 0.88rem;
+    font-weight: bold;
+    margin: 0;
+}
+
+.detail-section-body {
+    padding: 0 14px 12px;
+}
+
+.desc {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: #444;
+    padding-top: 10px;
+}
+
+/* About — neutral */
+.section-about .detail-section-header {
+    background: #f7f7f7;
+    border-bottom: 1px solid #e8e8e8;
+}
+
+.section-about .detail-section-header h3 {
+    color: #555;
+}
+
+/* Course Requirements — purple */
+.section-requirements .detail-section-header {
+    background: #f5eeff;
+    border-bottom: 2px solid #c9a7e0;
+}
+
+.section-requirements .detail-section-header h3 {
+    color: #57068c;
+}
+
+/* Honors / Supplemental — amber */
+.section-honors .detail-section-header {
+    background: #fffbeb;
+    border-bottom: 2px solid #f59e0b;
+}
+
+.section-honors .detail-section-header h3 {
+    color: #92400e;
+}
+
+.section-honors .detail-section-header .section-badge {
+    background: #fde68a;
+    color: #92400e;
+}
+
+/* Sample Plan — teal */
+.section-plan .detail-section-header {
+    background: #f0fdfa;
+    border-bottom: 2px solid #2dd4bf;
+}
+
+.section-plan .detail-section-header h3 {
+    color: #0f766e;
+}
+
+/* Policies — gray */
+.section-policies .detail-section-header {
+    background: #f9fafb;
+    border-bottom: 1px solid #e8e8e8;
+}
+
+.section-policies .detail-section-header h3 {
+    color: #6b7280;
+}
+
+.section-badge {
+    font-size: 0.68rem;
+    font-weight: bold;
+    padding: 2px 7px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.badge-requirements {
+    background: #ede9fe;
+    color: #57068c;
+}
+
+.badge-honors {
+    background: #fde68a;
+    color: #92400e;
+}
+
+.badge-plan {
+    background: #ccfbf1;
+    color: #0f766e;
+}
+
+/* Tables */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    margin-top: 8px;
+}
+
+th {
+    background: #f5eeff;
+    padding: 6px 10px;
+    text-align: left;
+    color: #57068c;
+    border-bottom: 2px solid #c9a7e0;
+}
+
+td {
+    padding: 6px 10px;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: top;
+}
+
+tr.section-row td {
+    background: #faf5ff;
+    font-weight: bold;
+    color: #57068c;
+    padding-top: 10px;
+    padding-bottom: 6px;
+    border-top: 1px solid #e0cef5;
+}
+
+tr.alt-row td {
+    color: #777;
+    padding-left: 24px;
+    font-style: italic;
+}
+
+tr.alt-row td:first-child::before {
+    content: "↳ ";
+    color: #aaa;
+    font-style: normal;
+}
+
+tr.summary-row td {
+    background: #fafafa;
+    font-style: italic;
+    color: #666;
+}
+
+tr.total-row td {
+    font-weight: bold;
+    background: #f0e6f7;
+    border-top: 2px solid #c9a7e0;
+}
+
+.course-code {
+    font-family: monospace;
+    color: #57068c;
+    font-weight: bold;
+}
+
+tr.alt-row .course-code {
+    color: #999;
+    font-weight: normal;
+}
+
+/* Sample plan table */
+.sample-plan-table td {
+    padding: 5px 10px;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 0.82rem;
+    vertical-align: top;
+}
+
+tr.term-header-row td {
+    background: #0f766e;
+    color: white;
+    font-weight: bold;
+    font-size: 0.82rem;
+    padding: 7px 10px;
+    border: none;
+    letter-spacing: 0.03em;
+}
+
+tr.term-subtotal-row td {
+    background: #f0fdfa;
+    color: #0f766e;
+    font-style: italic;
+    font-size: 0.78rem;
+    border-top: 1px solid #99f6e4;
+}
+
+tr.plan-elective-row td {
+    color: #555;
+}
+
+.section-plan th {
+    background: #f0fdfa;
+    color: #0f766e;
+    border-bottom: 2px solid #2dd4bf;
+}
+
+.section-plan tr.total-row td {
+    background: #ccfbf1;
+    border-top: 2px solid #2dd4bf;
+    color: #0f766e;
+}
+
+/* Honors table overrides */
+.section-honors th {
+    background: #fffbeb;
+    color: #92400e;
+    border-bottom: 2px solid #f59e0b;
+}
+
+.section-honors tr.section-row td {
+    background: #fffbeb;
+    color: #92400e;
+    border-top-color: #fde68a;
+}
+
+.section-honors tr.total-row td {
+    background: #fef3c7;
+    border-top-color: #f59e0b;
+    color: #92400e;
+}
+
+.section-honors .course-code {
+    color: #b45309;
+}
+
+.placeholder {
+    color: #bbb;
+    padding: 40px 0;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.loading {
+    color: #999;
+    font-size: 0.85rem;
+    padding: 20px;
+}

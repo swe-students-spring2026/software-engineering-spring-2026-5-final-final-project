@@ -1,0 +1,359 @@
+/* shared base styles moved to shared.css */
+
+/* Page layout - graduation is single column */
+.page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 28px 24px;
+    display: block;
+    width: 100%;
+}
+
+/* Ensure tables don't get squashed */
+.req-section-body {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.req-section-body table {
+    min-width: 600px;
+    width: 100%;
+}
+
+/* ── Summary card ── */
+.summary-card {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+    padding: 24px 28px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    flex-wrap: wrap;
+}
+
+.summary-info {
+    flex: 1;
+    min-width: 220px;
+}
+
+.summary-info h2 {
+    font-size: 1.2rem;
+    color: #57068c;
+    margin-bottom: 4px;
+}
+
+.summary-info .sub {
+    font-size: 0.85rem;
+    color: #777;
+}
+
+.progress-ring-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.progress-ring-wrap span {
+    font-size: 0.78rem;
+    color: #888;
+}
+
+.progress-bar-wrap {
+    flex: 1;
+    min-width: 200px;
+}
+
+.progress-bar-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: #666;
+    margin-bottom: 6px;
+}
+
+.progress-bar-track {
+    height: 10px;
+    background: #f0f0f0;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    border-radius: 5px;
+    background: linear-gradient(90deg, #57068c, #9a3dd1);
+    transition: width 0.6s ease;
+}
+
+.stat-pills {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+}
+
+.pill {
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.pill-done {
+    background: #d4edda;
+    color: #155724;
+}
+
+.pill-current {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.pill-needed {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* ── Legend ── */
+.legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 0.78rem;
+    color: #666;
+    margin-bottom: 16px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* ── Requirement sections ── */
+.req-section {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+    overflow: hidden;
+    margin-bottom: 16px;
+}
+
+.req-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 18px;
+    background: #f5eeff;
+    border-bottom: 2px solid #c9a7e0;
+    cursor: pointer;
+    user-select: none;
+}
+
+.req-section-header h3 {
+    font-size: 0.92rem;
+    color: #57068c;
+    font-weight: bold;
+}
+
+.req-section-header .sec-stats {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 0.75rem;
+}
+
+.req-section-body {
+    padding: 0;
+}
+
+.req-section.collapsed .req-section-body {
+    display: none;
+}
+
+.chevron {
+    font-size: 0.7rem;
+    color: #9a5cc6;
+    transition: transform 0.15s;
+}
+
+.req-section.collapsed .chevron {
+    transform: rotate(-90deg);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.83rem;
+}
+
+th {
+    background: #faf5ff;
+    padding: 8px 14px;
+    text-align: left;
+    color: #57068c;
+    border-bottom: 2px solid #e0cef5;
+    font-size: 0.78rem;
+}
+
+td {
+    padding: 8px 14px;
+    border-bottom: 1px solid #f5f5f5;
+    vertical-align: middle;
+}
+
+tr.group-row td {
+    background: #faf5ff;
+    font-weight: bold;
+    color: #57068c;
+    padding-top: 10px;
+    font-size: 0.8rem;
+}
+
+tr.alt-row td {
+    color: #888;
+    padding-left: 28px;
+    font-style: italic;
+    font-size: 0.8rem;
+}
+
+tr.total-row td {
+    background: #f0e6f7;
+    font-weight: bold;
+    border-top: 2px solid #c9a7e0;
+}
+
+tr.choice-options-row td {
+    background: #fff;
+    padding: 0 14px 10px 58px;
+}
+
+.credit-note {
+    color: #777;
+    font-size: 0.74rem;
+    font-weight: normal;
+}
+
+.course-code {
+    font-family: monospace;
+    font-weight: bold;
+}
+
+.choice-label {
+    font-weight: bold;
+    color: #57068c;
+}
+
+.choice-options {
+    margin-top: 6px;
+}
+
+.choice-options summary {
+    cursor: pointer;
+    color: #57068c;
+    font-size: 0.76rem;
+    font-weight: bold;
+}
+
+.choice-options table {
+    margin-top: 6px;
+    font-size: 0.78rem;
+    border: 1px solid #f0e6f7;
+}
+
+.choice-options th {
+    padding: 6px 8px;
+}
+
+.choice-options td {
+    padding: 6px 8px;
+}
+
+.elective-credit-options-row td {
+    padding-top: 6px;
+}
+
+.choice-options tr.elective-detail-group td {
+    background: #fbf8ff;
+    color: #57068c;
+    font-weight: bold;
+}
+
+/* ── Status indicators ── */
+.status-icon {
+    width: 22px;
+    text-align: center;
+    font-size: 0.85rem;
+}
+
+.status-done {
+    color: #28a745;
+}
+
+.status-current {
+    color: #0369a1;
+}
+
+.status-needed {
+    color: #ccc;
+}
+
+tr.row-done td {
+    background: #f6fff8;
+}
+
+tr.row-current td {
+    background: #f0f8ff;
+}
+
+.no-major {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+    padding: 48px 32px;
+    text-align: center;
+}
+
+.no-major h2 {
+    color: #57068c;
+    margin-bottom: 10px;
+}
+
+.no-major p {
+    color: #777;
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+}
+
+.btn {
+    padding: 10px 24px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: #57068c;
+    color: white;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn:hover {
+    background: #3d0066;
+}
+
+.loading {
+    text-align: center;
+    padding: 48px;
+    color: #999;
+}

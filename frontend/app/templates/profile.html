@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile — NYU Course Planner</title>
+  <link rel="stylesheet" href="/static/css/shared.css">
+  <link rel="stylesheet" href="/static/css/chat.css">
+  <link rel="stylesheet" href="/static/css/profile.css">
+</head>
+
+<body>
+  <header>
+    <h1>NYU Course Planner</h1>
+    <div class="header-nav">
+      <a href="/">Search</a>
+      <a href="/schedule">Schedule</a>
+      <a href="/programs">Programs</a>
+      <a href="/profile" class="active">Profile</a>
+      <a href="/logout">Sign Out</a>
+    </div>
+  </header>
+
+  <div class="page">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="profile-card">
+        <div class="avatar" id="avatar-letter">{{ (profile.name or user.name or user.email)[0] | upper }}</div>
+        <h2 id="sidebar-name">{{ profile.name or user.name or "Student" }}</h2>
+        <div class="email">{{ user.email }}</div>
+        {% if profile.major %}
+        <div class="badge" id="sidebar-major">{{ profile.major }}</div>
+        {% else %}
+        <div class="badge" id="sidebar-major" style="display:none"></div>
+        {% endif %}
+        {% if profile.graduation_year %}
+        <div class="stat">Class of <strong id="sidebar-year">{{ profile.graduation_year }}</strong></div>
+        {% endif %}
+        <div class="stat"><strong id="sidebar-course-count">{{ (profile.completed_courses or []) | length }}</strong>
+          courses completed</div>
+      </div>
+
+      <nav class="side-nav">
+        <a href="#" class="active" onclick="switchPanel('overview', this)" id="nav-overview">
+          <span class="icon">👤</span> Overview
+        </a>
+        <a href="#" onclick="switchPanel('settings', this)" id="nav-settings">
+          <span class="icon">⚙️</span> Edit Settings
+        </a>
+        <a href="#" onclick="switchPanel('transcript', this)" id="nav-transcript">
+          <span class="icon">📄</span> Transcript
+        </a>
+        <a href="/graduation">
+          <span class="icon">🎓</span> Graduation Progress
+        </a>
+      </nav>
+    </div>
+
+    <!-- Main content -->
+    <div class="main">
+
+      <!-- Overview Panel -->
+      <div class="panel active" id="panel-overview">
+        <div class="card">
+          <h3>Profile Information</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Full Name</label>
+              <input type="text" value="{{ profile.name or user.name or '' }}" disabled>
+            </div>
+            <div class="form-group">
+              <label>NYU Email</label>
+              <input type="email" value="{{ user.email }}" disabled>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Majors</label>
+              <input id="overview-majors" type="text"
+                value="{% if profile.majors %}{{ (profile.majors | map(attribute='title') | list) | join(', ') }}{% else %}{{ profile.major or 'Not set' }}{% endif %}"
+                disabled>
+            </div>
+            <div class="form-group">
+              <label>Graduation Year</label>
+              <input type="text" value="{{ profile.graduation_year or 'Not set' }}" disabled>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Minors</label>
+              <input id="overview-minors" type="text"
+                value="{% if profile.minors %}{{ (profile.minors | map(attribute='title') | list) | join(', ') }}{% else %}{{ profile.minor or 'Not set' }}{% endif %}"
+                disabled>
+            </div>
+          </div>
+          <div style="margin-top:8px">
+            <button class="btn btn-primary"
+              onclick="switchPanel('settings', document.getElementById('nav-settings'))">Edit Profile</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Completed Courses <span style="font-size:0.78rem;font-weight:400;color:#aaa;margin-left:6px">used by AI
+              for recommendations</span></h3>
+          <div class="course-tags" id="overview-courses">
+            {% for course in (profile.completed_courses or []) %}
+            <div class="course-tag">{{ course }}</div>
+            {% else %}
+            <div class="empty-state">No courses recorded yet. Upload your transcript to get started.</div>
+            {% endfor %}
+          </div>
+          {% if not (profile.completed_courses or []) %}
+          <div style="margin-top:14px">
+            <button class="btn btn-primary btn-sm"
+              onclick="switchPanel('transcript', document.getElementById('nav-transcript'))">Upload Transcript
+              →</button>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Settings Panel -->
+      <div class="panel" id="panel-settings">
+        <div class="card">
+          <h3>Edit Profile</h3>
+          <div id="settings-toast" class="toast"></div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="s-name">Full Name</label>
+              <input id="s-name" type="text" value="{{ profile.name or user.name or '' }}" placeholder="First Last">
+            </div>
+            <div class="form-group">
+              <label>NYU Email</label>
+              <input type="email" value="{{ user.email }}" disabled>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="s-school">School / College</label>
+              <select id="s-school" onchange="filterMajors()">
+                <option value="">Loading…</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="s-year">Graduation Year</label>
+              <select id="s-year">
+                <option value="">Select year</option>
+                {% for y in ['2025','2026','2027','2028','2029'] %}
+                <option value="{{ y }}" {% if profile.graduation_year==y %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="s-major">Primary Major</label>
+              <select id="s-major" onchange="renderProgramTags()">
+                <option value="">Select school first</option>
+              </select>
+              <input type="hidden" id="s-major-url" value="{{ profile.major_url or '' }}">
+            </div>
+            <div class="form-group">
+              <label for="s-extra-major">Additional Major / Double Major</label>
+              <div class="program-picker-row">
+                <select id="s-extra-major">
+                  <option value="">Loading…</option>
+                </select>
+                <button class="btn btn-primary btn-sm" type="button" onclick="addSelectedMajor()">Add</button>
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="s-minor-program">Minor</label>
+              <div class="program-picker-row">
+                <select id="s-minor-program">
+                  <option value="">Loading…</option>
+                </select>
+                <button class="btn btn-primary btn-sm" type="button" onclick="addSelectedMinor()">Add</button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="s-studentid">Student ID (optional)</label>
+              <input id="s-studentid" type="text" value="{{ profile.student_id or '' }}" placeholder="N12345678">
+            </div>
+          </div>
+          <div class="program-list-block">
+            <label>Selected Majors</label>
+            <div class="program-tags" id="selected-majors"></div>
+          </div>
+          <div class="program-list-block">
+            <label>Selected Minors</label>
+            <div class="program-tags" id="selected-minors"></div>
+          </div>
+          <button class="btn btn-primary" onclick="saveSettings()">Save Changes</button>
+        </div>
+
+        <div class="card">
+          <h3>Manage Completed Courses</h3>
+          <p style="font-size:0.82rem;color:#666;margin-bottom:14px">Manually add or remove courses. These are shared
+            with the AI assistant.</p>
+          <div class="course-picker">
+            <div class="course-picker-row">
+              <input id="add-course-input" type="text" placeholder="e.g. CSCI-UA 101 or Algorithms" autocomplete="off">
+              <button class="btn btn-primary btn-sm" onclick="addCourseManually()">Add</button>
+            </div>
+            <div class="course-picker-hint">Start typing a course code or title, then choose from the list.</div>
+            <div id="course-picker-status" class="course-picker-status" aria-live="polite"></div>
+            <div id="course-suggestions" class="course-suggestions" aria-label="Matching courses"></div>
+          </div>
+          <div class="course-tags" id="settings-courses">
+            {% for course in (profile.completed_courses or []) %}
+            <div class="course-tag">{{ course }}<button onclick="removeCourse(this, '{{ course }}')">✕</button></div>
+            {% else %}
+            <div class="empty-state" id="no-courses-msg">No courses added yet.</div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Transcript Panel -->
+      <div class="panel" id="panel-transcript">
+        <div class="card">
+          <h3>Upload Transcript</h3>
+          <p style="font-size:0.82rem;color:#666;margin-bottom:18px">
+            Upload your NYU unofficial transcript PDF. The AI will automatically extract your completed courses and use
+            them for personalized recommendations.
+          </p>
+
+          <div id="toast-transcript" class="toast"></div>
+
+          <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()"
+            ondragover="event.preventDefault();this.classList.add('dragover')"
+            ondragleave="this.classList.remove('dragover')" ondrop="handleDrop(event)">
+            <div class="upload-icon">📂</div>
+            <p><strong>Click to upload</strong> or drag and drop</p>
+            <p class="hint">PDF only · Max 10MB</p>
+          </div>
+          <input type="file" id="file-input" accept=".pdf" onchange="handleFileSelect(this.files[0])">
+
+          <div class="progress-bar" id="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+          </div>
+
+          <div class="parsed-results" id="parsed-results" style="display:none">
+            <h4 id="parsed-heading"></h4>
+            <div class="course-tags" id="parsed-courses"></div>
+            <h4 id="parsed-current-heading" style="margin-top:14px;display:none"></h4>
+            <div class="course-tags" id="parsed-current-courses"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Completed Courses</h3>
+          <div class="course-tags" id="transcript-courses">
+            {% for course in (profile.completed_courses or []) %}
+            <div class="course-tag">{{ course }}</div>
+            {% else %}
+            <div class="empty-state">No courses recorded yet.</div>
+            {% endfor %}
+          </div>
+
+          {% if profile.current_courses %}
+          <h3 style="margin-top:20px;padding-top:16px;border-top:1px solid #f0f0f0">Currently Enrolled</h3>
+          <div class="course-tags" id="transcript-current-courses">
+            {% for course in profile.current_courses %}
+            <div class="course-tag" style="background:#e8f4fd;color:#0369a1">{{ course }}</div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="course-tags" id="transcript-current-courses" style="display:none"></div>
+          {% endif %}
+        </div>
+      </div>
+
+    </div><!-- /.main -->
+  </div><!-- /.page -->
+
+  {% include '_chat.html' %}
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="/static/js/chat.js"></script>
+  <script type="application/json" id="profile-data">{{ {
+      "school": profile.school or "",
+      "major": profile.major or "",
+      "major_url": profile.major_url or "",
+      "majors": profile.majors or [],
+      "minor": profile.minor or "",
+      "minors": profile.minors or [],
+      "completed_courses": profile.completed_courses or [],
+      "current_courses": profile.current_courses or []
+    } | tojson }}</script>
+  <script src="/static/js/profile.js"></script>
+</body>
+
+</html>
