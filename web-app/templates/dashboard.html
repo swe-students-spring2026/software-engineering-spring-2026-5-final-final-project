@@ -17,7 +17,6 @@
                 <h1>Your tasks</h1>
                 <p class="muted">Sorted by priority: High, Medium, Low.</p>
             </div>
-
         </section>
 
         <section class="dashboard-cta">
@@ -47,6 +46,9 @@
                                     <button type="submit" class="small">Complete</button>
                                 </form>
                             {% endif %}
+
+                            <!-- ✅ NEW EDIT BUTTON -->
+                            <a href="{{ url_for('edit_task', task_id=task._id) }}" class="small">Edit</a>
 
                             <form action="{{ url_for('remove_task', task_id=task._id) }}" method="POST">
                                 <button type="submit" class="small danger">Delete</button>
